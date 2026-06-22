@@ -911,14 +911,14 @@
       transition: opacity 0.2s ease 0.08s;
     }
 
-    /* Cards 1 & 2 (Studio, Field Notes): text to the right */
+    /* Cards 1 & 2 (Videos, Photos): text to the right */
     .app:nth-child(1) .app-card-right,
     .app:nth-child(2) .app-card-right {
       left: calc(100% + 16px);
       text-align: left;
     }
 
-    /* Cards 3 & 4 (Garden, Northstar): text to the left */
+    /* Cards 3 & 4 (Writing, Labs): text to the left */
     .app:nth-child(3) .app-card-right,
     .app:nth-child(4) .app-card-right {
       right: calc(100% + 16px);
@@ -2140,7 +2140,7 @@
       padding: 0;
       text-align: left;
     }
-    /* Markdown article rows in Field Notes */
+    /* Markdown article rows in Videos */
     .sm-section-label {
       font-size: 0.72rem;
       font-weight: 600;
@@ -2149,7 +2149,7 @@
       color: var(--text-secondary);
       padding: 16px 14px 6px;
     }
-    /* Video embed in Field Notes detail */
+    /* Video embed in Videos detail */
     .fn-video-wrap {
       position: relative;
       width: 100%;
@@ -3990,6 +3990,154 @@
 
 a.portfolio-img-item:hover img {
   transform: scale(1.03);
+}
+
+/* ── Photos: immersive curated grid ── */
+.photos-masonry {
+  column-count: 3;
+  column-gap: 6px;
+  padding: 4px 0 24px;
+}
+
+@media (max-width: 560px) {
+  .photos-masonry { column-count: 2; }
+}
+
+.photo-item {
+  break-inside: avoid;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 8px;
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.photo-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), filter 0.3s ease;
+}
+
+.photo-item:hover img { transform: scale(1.04); }
+.photo-item:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* Photo lightbox */
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 10, 0.86);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.photo-lightbox.is-open { display: flex; }
+
+.photo-lb-img {
+  max-width: 92vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  object-fit: contain;
+}
+
+.photo-lb-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.photo-lb-btn:hover { background: rgba(255,255,255,0.24); }
+.photo-lb-close { top: 18px; right: 18px; }
+.photo-lb-prev { left: 18px; top: 50%; transform: translateY(-50%); }
+.photo-lb-next { right: 18px; top: 50%; transform: translateY(-50%); }
+.photo-lb-prev:hover, .photo-lb-next:hover { transform: translateY(-50%) scale(1.06); }
+
+@media (max-width: 560px) {
+  .photo-lb-prev { left: 10px; }
+  .photo-lb-next { right: 10px; }
+}
+
+/* ── Labs: experiment cards ── */
+.labs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 4px 0 28px;
+}
+
+@media (max-width: 560px) {
+  .labs-grid { grid-template-columns: 1fr; }
+}
+
+.lab-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease;
+}
+.lab-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+}
+
+.lab-card-thumb {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: rgba(127,127,127,0.12);
+}
+.lab-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.lab-card:hover .lab-card-thumb img { transform: scale(1.05); }
+
+.lab-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+.lab-card-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+.lab-card-arrow { color: var(--text-muted); transition: transform 0.25s ease, color 0.25s ease; }
+.lab-card:hover .lab-card-arrow { transform: translate(2px, -2px); color: var(--text-secondary); }
+.lab-card-desc {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 
 /* ── Career timeline ── */

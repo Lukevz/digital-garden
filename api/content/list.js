@@ -45,20 +45,21 @@ export default function handler(req, res) {
     return;
   }
 
-  // Photos: curated favorites pulled from the v1 gallery albums (referenced in place).
+  // Photos: single curated grid from content/photos/ (newest by mtime first).
+  // Drop image files into content/photos/; optional matching previews in content/photos/thumbs/.
   if (category === 'photos') {
-    const ALBUMS = ['2025 Snaps', '2024 Snaps', '2023 Snaps'];
     const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif']);
-    const galleryRoot = join(rootDir, 'v1', 'gallery');
+    const photosDir = join(rootDir, 'content', 'photos');
     const images = [];
-    for (const album of ALBUMS) {
-      const albumDir = join(galleryRoot, album);
-      if (!existsSync(albumDir)) continue;
-      const base = `/v1/gallery/${encodeURIComponent(album)}/`;
-      readdirSync(albumDir)
+    if (existsSync(photosDir)) {
+      const base = '/content/photos/';
+      const thumbsDir = join(photosDir, 'thumbs');
+      readdirSync(photosDir)
         .filter(f => IMAGE_EXTS.has(('.' + f.split('.').pop()).toLowerCase()))
-        .forEach(f => {
-          const hasThumb = existsSync(join(albumDir, 'thumbs', f));
+        .map(f => ({ f, m: statSync(join(photosDir, f)).mtimeMs }))
+        .sort((a, b) => b.m - a.m)
+        .forEach(({ f }) => {
+          const hasThumb = existsSync(join(thumbsDir, f));
           images.push({
             src: base + encodeURIComponent(f),
             thumb: hasThumb ? base + 'thumbs/' + encodeURIComponent(f) : base + encodeURIComponent(f)

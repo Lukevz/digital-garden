@@ -2317,6 +2317,10 @@
 
     function populateSectionCounts() {
       Object.entries(SECTION_SLUGS).forEach(([appName, slug]) => {
+        // Skip apps marked "coming soon" — no count beside the badge.
+        const appBtn = document.querySelector(`.app[data-app="${appName}"]`);
+        if (appBtn && appBtn.classList.contains('app--coming-soon')) return;
+
         if (slug === 'photos') {
           fetch('/api/content/list?category=photos')
             .then(r => r.json())
@@ -3042,6 +3046,13 @@
       }
 
       if (!SECTIONS[parsed.section]) {
+        closeSModal();
+        return;
+      }
+      // Don't open modals for sections marked "coming soon" (e.g. Labs).
+      const sectionApp = SECTION_APP_BY_SLUG[parsed.section];
+      const sectionBtn = sectionApp && document.querySelector(`.app[data-app="${sectionApp}"]`);
+      if (sectionBtn && sectionBtn.classList.contains('app--coming-soon')) {
         closeSModal();
         return;
       }
