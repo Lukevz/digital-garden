@@ -9,6 +9,11 @@
     { "source": "/v1/", "destination": "/v1/index.html" }
   ],
   "functions": {
+    "api/chat.js": {
+      "memory": 1024,
+      "maxDuration": 10,
+      "includeFiles": "{content/about/**,src/data/now.json}"
+    },
     "api/**/*.js": {
       "memory": 1024,
       "maxDuration": 10

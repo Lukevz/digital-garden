@@ -62,10 +62,26 @@
               peak: 0.5 + r() * 0.5
             };
           }
+          // Gentle opacity drift on a small fraction of dots and squares
+          if ((tp === 0 || tp === 1) && r() < 0.065) {
+            cell.fadeBreath = {
+              phase: r() * 90000,
+              period: 22000 + r() * 34000,
+              peak: 0.35 + r() * 0.45
+            };
+          }
+          // Slow pendulum rotation on a few slashes — like leaves swaying in wind
+          if (tp === 2 && r() < 0.12) {
+            cell.rotateDrift = {
+              phase: r() * 90000,
+              period: 19000 + r() * 26000,
+              range: 0.28 + r() * 0.22
+            };
+          }
           cells.push(cell);
         }
       }
-      ambientAnim = cells.some(c => c.fadeBreath);
+      ambientAnim = cells.some(c => c.fadeBreath || c.rotateDrift);
     }
 
     /* ── Ripples ── */
@@ -128,15 +144,34 @@
           c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
           c.lineWidth = 1.25;
           c.lineCap = 'round';
-          c.beginPath();
-          if (cl.slash === '/') {
-            c.moveTo(x - h * k, y + h * k);
-            c.lineTo(x + h * k, y - h * k);
+          if (cl.rotateDrift) {
+            const { phase, period, range } = cl.rotateDrift;
+            const u = ((performance.now() + phase) % period) / period;
+            const dAngle = range * Math.sin(u * 2 * Math.PI);
+            c.save();
+            c.translate(x, y);
+            c.rotate(dAngle);
+            c.beginPath();
+            if (cl.slash === '/') {
+              c.moveTo(-h * k, h * k);
+              c.lineTo(h * k, -h * k);
+            } else {
+              c.moveTo(-h * k, -h * k);
+              c.lineTo(h * k, h * k);
+            }
+            c.stroke();
+            c.restore();
           } else {
-            c.moveTo(x - h * k, y - h * k);
-            c.lineTo(x + h * k, y + h * k);
+            c.beginPath();
+            if (cl.slash === '/') {
+              c.moveTo(x - h * k, y + h * k);
+              c.lineTo(x + h * k, y - h * k);
+            } else {
+              c.moveTo(x - h * k, y - h * k);
+              c.lineTo(x + h * k, y + h * k);
+            }
+            c.stroke();
           }
-          c.stroke();
         }
       }
     }
@@ -244,7 +279,7 @@
 
     /* ── Slash flipper ── */
     function flipSlashes() {
-      const slashCells = cells.filter(c => c.tp === 2);
+      const slashCells = cells.filter(c => c.tp === 2 && !c.rotateDrift);
       if (!slashCells.length) return;
       const count = 1 + Math.floor(Math.random() * 2); // flip 1–2 at a time
       for (let i = 0; i < count; i++) {

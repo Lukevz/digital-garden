@@ -188,6 +188,14 @@
       left.appendChild(icon);
       left.appendChild(label);
 
+      if (btn.classList.contains('app--coming-soon')) {
+        label.style.position = 'relative';
+        const badge = document.createElement('span');
+        badge.className = 'app-coming-soon-badge';
+        badge.textContent = 'Coming Soon';
+        label.appendChild(badge);
+      }
+
       btn.prepend(left);
     });
 
@@ -421,34 +429,358 @@
     const gearView       = document.getElementById('gearView');
     const appStackView   = document.getElementById('appStackView');
     const placesView     = document.getElementById('placesView');
+    const chatView       = document.getElementById('chatView');
+    const chatInputBar   = document.getElementById('chatInputBar');
     const introEl = document.querySelector('.intro');
 
     const BOOKS = [
-      { title: 'Atomic Habits', author: 'James Clear', desc: 'An easy and proven way to build good habits and break bad ones — tiny changes that compound into remarkable results.', rating: 5, bg: '#1a1a1c', fg: '#ffd60a', lightBg: '#fffceb', lightFg: '#8a6800', amazon: 'https://www.amazon.com/dp/0735211299' },
-      { title: 'Build', author: 'Tony Fadell', desc: 'The inside story of how Apple and Nest were built — honest lessons on product development, leadership, and the nature of creative work.', rating: 5, bg: '#0d2137', fg: '#4db8ff', lightBg: '#eaf4ff', lightFg: '#0055a5', amazon: 'https://www.amazon.com/dp/0063046067' },
-      { title: 'Building A Second Brain', author: 'Tiago Forte', desc: 'A method for capturing and organizing ideas so your past thinking becomes your greatest asset for future creativity.', rating: 4, bg: '#1e0d30', fg: '#b388ff', lightBg: '#f0e8ff', lightFg: '#5b21b6', amazon: 'https://www.amazon.com/dp/1982167386' },
-      { title: 'Creativity, Inc.', author: 'Ed Catmull', desc: 'A handbook for anyone who strives for originality and the first book to describe Pixar\'s creative process.', rating: 5, bg: '#2b1c3a', fg: '#e8b4f8', lightBg: '#fbe8ff', lightFg: '#7e22ce', amazon: 'https://www.amazon.com/dp/0812998960' },
-      { title: 'Designing for Emotion', author: 'Aarron Walter', desc: 'How to use personality, surprise, and joy to design products that users genuinely love rather than merely tolerate.', rating: 4, bg: '#2d1206', fg: '#ff8a50', lightBg: '#fff4ed', lightFg: '#c2390a', amazon: 'https://www.amazon.com/dp/0321789355' },
-      { title: 'Emotional Design', author: 'Don Norman', desc: 'Why attractive things work better — how aesthetics and feeling shape our emotional and behavioral responses to objects.', rating: 4, bg: '#0a1f3c', fg: '#90caf9', lightBg: '#e9f2ff', lightFg: '#1347a0', amazon: 'https://www.amazon.com/dp/0465051367' },
-      { title: 'Feel-Good Productivity', author: 'Ali Abdaal', desc: 'How energizing your work through play, power, and people unlocks a more sustainable and joyful path to getting things done.', rating: 4, bg: '#0d2a1a', fg: '#69f0ae', lightBg: '#e8f8f0', lightFg: '#1a6b3c', amazon: 'https://www.amazon.com/dp/0063349336' },
-      { title: 'Money for Couples', author: 'Ramit Sethi', desc: 'A practical guide for partners to align on money, break financial taboos, and build a rich life together without resentment.', rating: 4, bg: '#1a2a1a', fg: '#a5d6a7', lightBg: '#ecf7ed', lightFg: '#2d6a31', amazon: 'https://www.amazon.com/dp/1523523689' },
-      { title: 'Show Your Work', author: 'Austin Kleon', desc: 'Ten ways to share your creativity without selling out — how to get discovered doing the work you love.', rating: 5, bg: '#111111', fg: '#f5f5f5', lightBg: '#f5f5f5', lightFg: '#111111', amazon: 'https://www.amazon.com/dp/0761162599' },
-      { title: 'Steal Like An Artist', author: 'Austin Kleon', desc: 'Creative work builds on what came before — why the best artists are skilled remixers with original voices.', rating: 5, bg: '#1c1c1c', fg: '#e0e0e0', lightBg: '#ebebeb', lightFg: '#242424', amazon: 'https://www.amazon.com/dp/0761169253' },
-      { title: 'The Design of Everyday Things', author: 'Don Norman', desc: 'A powerful primer on human-centered design that explains why some products delight while others only frustrate.', rating: 5, bg: '#bf3b28', fg: '#fdf0e0', lightBg: '#fdf0e0', lightFg: '#9b2d1d', amazon: 'https://www.amazon.com/dp/0465050654' },
-      { title: 'The Product Minded Engineer', author: 'Gergely Orosz', desc: 'How the best engineers think beyond code — deeply understanding products and working cross-functionally to drive real outcomes.', rating: 4, bg: '#0f1b2d', fg: '#64b5f6', lightBg: '#eaf2fc', lightFg: '#1255a0', amazon: 'https://www.amazon.com/s?k=Gergely+Orosz+product-minded+engineer&i=stripbooks' },
-      { title: 'The Ride of a Lifetime', author: 'Robert Iger', desc: 'Leadership lessons from twenty years running Disney — how optimism, courage, and decisiveness can reshape an iconic company.', rating: 5, bg: '#1a1a2e', fg: '#c0c0d8', lightBg: '#eeeef8', lightFg: '#2e2e54', amazon: 'https://www.amazon.com/dp/0399592091' },
-      { title: 'The Speed of Trust', author: 'Stephen M.R. Covey', desc: 'How trust — far more than ethics — is a practical, learnable business skill that changes everything when it increases.', rating: 4, bg: '#1a2744', fg: '#82b1ff', lightBg: '#eaeff9', lightFg: '#1a3d8a', amazon: 'https://www.amazon.com/dp/1982141066' },
+      // ── Most recently read first ──
+      {
+        title: 'Phoebe Berman\'s Gonna Lose It', author: 'Brooke Averick', series: null,
+        desc: 'A neurotic twenty-something\'s very modern quest to finally have sex leads her somewhere she never expected — a hilarious and heartfelt debut about love, anxiety, and knowing yourself.',
+        rating: 0, bg: '#180410', c2: '#c83880', c3: '#3a0820', fg: '#d04888',
+        lbg: '#f8e5ef', lc2: '#b82070', lc3: '#f0b0d0', lfg: '#680a38',
+        amazon: 'https://www.amazon.com/dp/B0FNVHR7CL',
+      },
+      {
+        title: 'Heir to the Empire', author: 'Timothy Zahn', series: 'Thrawn Trilogy · I',
+        desc: 'Five years after Endor, Grand Admiral Thrawn emerges from the Unknown Regions with a plan to restore the Empire — the novel that reignited the entire Star Wars Expanded Universe.',
+        rating: 0, bg: '#040c10', c2: '#1898a0', c3: '#0a2030', fg: '#28a8b0',
+        lbg: '#ddf0f2', lc2: '#0a8898', lc3: '#a8e0e8', lfg: '#065068',
+        amazon: 'https://www.amazon.com/dp/0553296124',
+      },
+      {
+        title: 'Dark Force Rising', author: 'Timothy Zahn', series: 'Thrawn Trilogy · II',
+        desc: 'Thrawn\'s campaign intensifies as Luke discovers a hidden fleet of warships from the Clone Wars — with Mara Jade closing in on her mission and the New Republic stretched to its limits.',
+        rating: 0, bg: '#060810', c2: '#405890', c3: '#0e1428', fg: '#5068a0',
+        lbg: '#e4e8f2', lc2: '#304880', lc3: '#b8c4e0', lfg: '#162050',
+        amazon: 'https://www.amazon.com/dp/0553560719',
+      },
+      {
+        title: 'Ready Player One', author: 'Ernest Cline', series: null,
+        desc: 'In a dystopian 2045, an obsessed teenager hunts for a billionaire\'s Easter egg hidden inside a vast virtual universe — the ultimate tribute to eighties pop culture and geek mythology.',
+        rating: 0, bg: '#020810', c2: '#00c0e8', c3: '#041830', fg: '#10d0f0',
+        lbg: '#ddf6ff', lc2: '#0098c0', lc3: '#a0e4f8', lfg: '#004870',
+        amazon: 'https://www.amazon.com/dp/0307887448',
+      },
+      {
+        title: 'Ready Player Two', author: 'Ernest Cline', series: null,
+        desc: 'After claiming Halliday\'s fortune and control of the OASIS, Wade discovers a new set of hidden challenges — but the stakes are now real-world survival, not just a game.',
+        rating: 0, bg: '#070415', c2: '#b018e8', c3: '#120828', fg: '#c028f8',
+        lbg: '#f5e8ff', lc2: '#9000d0', lc3: '#e0b0ff', lfg: '#4a0070',
+        amazon: 'https://www.amazon.com/dp/1524761338',
+      },
+      {
+        title: 'Tomorrow, and Tomorrow, and Tomorrow', author: 'Gabrielle Zevin', series: null,
+        desc: 'Two childhood friends reunite to make video games together over three decades — a sweeping novel about love, ambition, creativity, and the complicated ways we shape each other\'s lives.',
+        rating: 0, bg: '#0c0618', c2: '#a840d0', c3: '#180c2c', fg: '#b850e0',
+        lbg: '#f2e8ff', lc2: '#8828c0', lc3: '#d8b8f8', lfg: '#3c1078',
+        amazon: 'https://www.amazon.com/dp/0593321200',
+      },
+      {
+        title: 'Tress of the Emerald Sea', author: 'Brandon Sanderson', series: null,
+        desc: 'To rescue the man she loves from a deadly pirate captain, Tress sets sail on a spore-covered sea that turns to glass at a single drop of water — a fairytale adventure from the Cosmere.',
+        rating: 0, bg: '#030e0a', c2: '#08ac78', c3: '#082018', fg: '#18bc88',
+        lbg: '#ddf5ee', lc2: '#08906a', lc3: '#a8e8d4', lfg: '#055040',
+        amazon: 'https://www.amazon.com/dp/1250899656',
+      },
+      {
+        title: 'The Midnight Library', author: 'Matt Haig', series: null,
+        desc: 'Nora Seed finds a library between life and death where every book holds an alternative version of her life — a beautiful meditation on regret, possibility, and what makes a life worth living.',
+        rating: 0, bg: '#050418', c2: '#5850d8', c3: '#0c0830', fg: '#6860e8',
+        lbg: '#ece8ff', lc2: '#4038c8', lc3: '#c8c0f0', lfg: '#1a1080',
+        amazon: 'https://www.amazon.com/dp/0525559477',
+      },
+      {
+        title: 'Six of Crows', author: 'Leigh Bardugo', series: 'Six of Crows · I',
+        desc: 'A criminal prodigy assembles a crew of dangerous misfits for an impossible heist at the most heavily guarded location in the world — dark, witty, and utterly gripping fantasy.',
+        rating: 0, bg: '#080604', c2: '#d09820', c3: '#160e04', fg: '#e0a830',
+        lbg: '#f8f2e0', lc2: '#b88010', lc3: '#f0d8a0', lfg: '#604010',
+        amazon: 'https://www.amazon.com/dp/125007696X',
+      },
+      {
+        title: 'Crooked Kingdom', author: 'Leigh Bardugo', series: 'Six of Crows · II',
+        desc: 'Kaz Brekker and his crew have been betrayed and left with nothing — now they must stage a deadly comeback against the most powerful criminals in Ketterdam in the thrilling conclusion.',
+        rating: 0, bg: '#0c0402', c2: '#c05818', c3: '#200804', fg: '#d06828',
+        lbg: '#f8ece0', lc2: '#a04810', lc3: '#f0c8a8', lfg: '#582008',
+        amazon: 'https://www.amazon.com/dp/1627792139',
+      },
+      {
+        title: 'Dark Matter', author: 'Blake Crouch', series: null,
+        desc: 'A physicist wakes up in a life that isn\'t his — same face, different family, different career — and must navigate a mind-bending multiverse of alternate choices to find his way home.',
+        rating: 0, bg: '#060408', c2: '#7820b8', c3: '#100808', fg: '#8830c8',
+        lbg: '#f2e8f8', lc2: '#6010a0', lc3: '#d8b0f0', lfg: '#3a0868',
+        amazon: 'https://www.amazon.com/dp/1524763241',
+      },
+      {
+        title: 'Artemis', author: 'Andy Weir', series: null,
+        desc: 'Jazz Bashara lives on the first city on the moon, scraping by as a smuggler — until a seemingly simple heist pulls her into a conspiracy that threatens all of Artemis.',
+        rating: 3, bg: '#070d1c', c2: '#d4c8a8', c3: '#2a3a5c', fg: '#d4c8a8',
+        lbg: '#e8edf5', lc2: '#8a9cb8', lc3: '#c8d4e8', lfg: '#2a3a5c',
+        amazon: 'https://www.amazon.com/dp/0553448145',
+      },
+      {
+        title: 'Ruthless Vows', author: 'Rebecca Ross', series: 'Letters of Enchantment · II',
+        desc: 'The stunning conclusion to the Letters of Enchantment duology — as war and ancient magic collide, Roman and Iris must choose between duty and each other.',
+        rating: 4, bg: '#140820', c2: '#c8921e', c3: '#4a1850', fg: '#c8921e',
+        lbg: '#f5eedf', lc2: '#c8821e', lc3: '#d4c0e8', lfg: '#6a3010',
+        amazon: 'https://www.amazon.com/dp/1250883180',
+      },
+      {
+        title: 'Divine Rivals', author: 'Rebecca Ross', series: 'Letters of Enchantment · I',
+        desc: 'Two rival journalists at a war-torn newspaper discover each other\'s secret letters — a dark fantasy romance where gods walk among soldiers and love is written in ink.',
+        rating: 0, bg: '#1a0c06', c2: '#c88020', c3: '#5a2010', fg: '#c88020',
+        lbg: '#f8f0e0', lc2: '#c87020', lc3: '#f0d8b8', lfg: '#6a3010',
+        amazon: 'https://www.amazon.com/dp/1250883164',
+      },
+      {
+        title: 'Atomic Habits', author: 'James Clear', series: null,
+        desc: 'Tiny changes, remarkable results — a proven system for building good habits and breaking bad ones through small improvements that compound relentlessly over time.',
+        rating: 4, bg: '#0c0c0c', c2: '#f0b000', c3: '#d07000', fg: '#f0c000',
+        lbg: '#fff8e0', lc2: '#f0a000', lc3: '#f8d870', lfg: '#7a5000',
+        amazon: 'https://www.amazon.com/dp/0735211299',
+      },
+      {
+        title: 'Project Hail Mary', author: 'Andy Weir', series: null,
+        desc: 'A lone astronaut wakes up deep in space with no memory — his mission may be humanity\'s last hope, and his only ally is an alien from a completely different world.',
+        rating: 5, bg: '#020810', c2: '#20d0c0', c3: '#0a3050', fg: '#30c0b0',
+        lbg: '#e0f5f3', lc2: '#20a0a0', lc3: '#b0e0e0', lfg: '#0a5858',
+        amazon: 'https://www.amazon.com/dp/0593135202',
+      },
+      {
+        title: 'The Hero of Ages', author: 'Brandon Sanderson', series: 'Mistborn · III',
+        desc: 'The ultimate fate of the Final Empire is decided as ash swallows the sky and mists devour the land — the gripping conclusion to the original Mistborn trilogy.',
+        rating: 3, bg: '#060810', c2: '#9ab8cc', c3: '#1a2840', fg: '#8ab8cc',
+        lbg: '#e8eff5', lc2: '#6090b0', lc3: '#c0d8e8', lfg: '#1a4870',
+        amazon: 'https://www.amazon.com/dp/0765356147',
+      },
+      {
+        title: 'The Well of Ascension', author: 'Brandon Sanderson', series: 'Mistborn · II',
+        desc: 'With the Lord Ruler defeated, Vin and Elend struggle to hold a crumbling kingdom together while prophecy, politics, and an ancient secret close in from all sides.',
+        rating: 4, bg: '#040810', c2: '#7aaccc', c3: '#182038', fg: '#80b0cc',
+        lbg: '#e5ecf3', lc2: '#5088b0', lc3: '#b8cce0', lfg: '#1a4870',
+        amazon: 'https://www.amazon.com/dp/0765356139',
+      },
+      {
+        title: 'Mistborn: The Final Empire', author: 'Brandon Sanderson', series: 'Mistborn · I',
+        desc: 'In an empire where ash falls from the sky and a dark Lord Ruler reigns eternal, a crew of thieves plans the ultimate heist — to steal an entire empire.',
+        rating: 0, bg: '#040608', c2: '#6a9ab8', c3: '#0e1828', fg: '#80b0c8',
+        lbg: '#e0eaf2', lc2: '#4888b0', lc3: '#b0c8e0', lfg: '#1a4068',
+        amazon: 'https://www.amazon.com/dp/0765350386',
+      },
+      {
+        title: 'Iron Flame', author: 'Rebecca Yarros', series: 'The Empyrean · II',
+        desc: 'Violet Sorrengail returns to Basgiath War College for another brutal year — but the secrets buried in its walls run deeper than any dragon\'s fire.',
+        rating: 0, bg: '#0a0408', c2: '#b87020', c3: '#3a1008', fg: '#a07888',
+        lbg: '#f0e8e5', lc2: '#a06018', lc3: '#f0d0c0', lfg: '#5a2838',
+        amazon: 'https://www.amazon.com/dp/1649374528',
+      },
+      {
+        title: 'Show Your Work!', author: 'Austin Kleon', series: null,
+        desc: 'Ten ways to share your creativity without selling out — a manifesto for getting discovered by doing the work you love and sharing the process openly.',
+        rating: 0, bg: '#0e0e0e', c2: '#e0e0e0', c3: '#3a3a3a', fg: '#e8e8e8',
+        lbg: '#f5f5f5', lc2: '#888888', lc3: '#d8d8d8', lfg: '#181818',
+        amazon: 'https://www.amazon.com/dp/076116093X',
+      },
+      {
+        title: 'Steal Like an Artist', author: 'Austin Kleon', series: null,
+        desc: 'Nothing is truly original — the best creative work builds on what came before. An inspiring manifesto about influence, theft, and finding your own voice.',
+        rating: 4, bg: '#141414', c2: '#d0d0d0', c3: '#404040', fg: '#d8d8d8',
+        lbg: '#ebebeb', lc2: '#909090', lc3: '#d5d5d5', lfg: '#1a1a1a',
+        amazon: 'https://www.amazon.com/dp/0761169253',
+      },
+      {
+        title: 'The Ride of a Lifetime', author: 'Robert Iger', series: null,
+        desc: 'Leadership lessons from twenty years transforming Disney — how optimism, decisiveness, and creative courage can reshape an iconic company and an entire industry.',
+        rating: 4, bg: '#0c1230', c2: '#c0a830', c3: '#1a2a60', fg: '#9098c8',
+        lbg: '#eaecf8', lc2: '#c09020', lc3: '#d0d8f5', lfg: '#1a2878',
+        amazon: 'https://www.amazon.com/dp/0399592091',
+      },
+      {
+        title: 'Rogue Protocol', author: 'Martha Wells', series: 'Murderbot Diaries · III',
+        desc: 'Murderbot pursues a new lead on the company trying to destroy it — going undercover, reluctant as ever, and still just trying to watch its shows in peace.',
+        rating: 3, bg: '#060e18', c2: '#208898', c3: '#0a2838', fg: '#30a8c8',
+        lbg: '#e0f0f5', lc2: '#207888', lc3: '#b0d8e8', lfg: '#0a5068',
+        amazon: 'https://www.amazon.com/dp/1250191700',
+      },
+      {
+        title: 'The Speed of Trust', author: 'Stephen M.R. Covey', series: null,
+        desc: 'Trust is not a soft skill — it\'s a hard economic driver. High-trust organizations move faster, spend less, and outperform low-trust ones in every measurable way.',
+        rating: 4, bg: '#080f28', c2: '#4888c8', c3: '#0a2050', fg: '#508ac8',
+        lbg: '#e8f0f8', lc2: '#3060b8', lc3: '#c0d8f0', lfg: '#0a2868',
+        amazon: 'https://www.amazon.com/dp/1982141066',
+      },
+      {
+        title: 'Fourth Wing', author: 'Rebecca Yarros', series: 'The Empyrean · I',
+        desc: 'Violet Sorrengail is forced into the most brutal division of war college — Riders Quadrant — where dragons choose their riders or let them die trying.',
+        rating: 4, bg: '#100408', c2: '#9a1818', c3: '#2a0a18', fg: '#a82020',
+        lbg: '#f8e8e5', lc2: '#a81818', lc3: '#f0c8c0', lfg: '#6a1010',
+        amazon: 'https://www.amazon.com/dp/1649374178',
+      },
+      {
+        title: "Harry Potter and the Philosopher's Stone", author: 'J.K. Rowling', series: 'Harry Potter · I',
+        desc: 'An orphaned boy discovers he\'s the son of two powerful wizards and is famous in a world he never knew existed — an invitation to Hogwarts changes everything.',
+        rating: 0, bg: '#200608', c2: '#d4980a', c3: '#102828', fg: '#c89028',
+        lbg: '#f8f0e0', lc2: '#c08010', lc3: '#e8f0d8', lfg: '#6a3808',
+        amazon: 'https://www.amazon.com/dp/059035342X',
+      },
+      {
+        title: "Harry Potter and the Chamber of Secrets", author: 'J.K. Rowling', series: 'Harry Potter · II',
+        desc: 'A hidden chamber beneath Hogwarts has been opened and something is petrifying students — Harry, Ron, and Hermione must uncover the monster before the school is closed forever.',
+        rating: 0, bg: '#030a04', c2: '#2a9830', c3: '#081808', fg: '#3aaa40',
+        lbg: '#e2f5e4', lc2: '#188020', lc3: '#b0e8b8', lfg: '#0c4010',
+        amazon: 'https://www.amazon.com/dp/0439064872',
+      },
+      {
+        title: "Harry Potter and the Prisoner of Azkaban", author: 'J.K. Rowling', series: 'Harry Potter · III',
+        desc: 'A dangerous prisoner has escaped from Azkaban and seems to be hunting Harry — but Sirius Black\'s true connection to Harry\'s past holds a secret that will change everything.',
+        rating: 0, bg: '#060a12', c2: '#6070a8', c3: '#101828', fg: '#7080b8',
+        lbg: '#e8eaf5', lc2: '#4058a0', lc3: '#c0c8ec', lfg: '#1a3070',
+        amazon: 'https://www.amazon.com/dp/0439136369',
+      },
+      {
+        title: "Harry Potter and the Goblet of Fire", author: 'J.K. Rowling', series: 'Harry Potter · IV',
+        desc: 'Harry is mysteriously entered into a deadly magical tournament between three schools — but the real danger has nothing to do with the competition and everything to do with Voldemort\'s return.',
+        rating: 0, bg: '#140600', c2: '#e07010', c3: '#301400', fg: '#f08020',
+        lbg: '#fef0e0', lc2: '#c86000', lc3: '#f8d0a0', lfg: '#702800',
+        amazon: 'https://www.amazon.com/dp/0439139600',
+      },
+      {
+        title: "Harry Potter and the Order of the Phoenix", author: 'J.K. Rowling', series: 'Harry Potter · V',
+        desc: 'The wizarding world refuses to believe Voldemort has returned — Harry must form a secret student army while battling a prophecy that places him at the center of the coming war.',
+        rating: 0, bg: '#060810', c2: '#4860b0', c3: '#0e1428', fg: '#5870c0',
+        lbg: '#e5eaf5', lc2: '#2848a0', lc3: '#b8c8ec', lfg: '#0c1878',
+        amazon: 'https://www.amazon.com/dp/0439358078',
+      },
+      {
+        title: "Harry Potter and the Half-Blood Prince", author: 'J.K. Rowling', series: 'Harry Potter · VI',
+        desc: 'Dumbledore takes Harry on a private mission to discover Voldemort\'s greatest secret — and Harry inherits a mysterious annotated potions textbook that changes his sixth year completely.',
+        rating: 0, bg: '#0c0800', c2: '#b07020', c3: '#201400', fg: '#c08030',
+        lbg: '#f5f0e0', lc2: '#9c6010', lc3: '#e8d8a8', lfg: '#5a3008',
+        amazon: 'https://www.amazon.com/dp/0439784549',
+      },
+      {
+        title: "Harry Potter and the Deathly Hallows", author: 'J.K. Rowling', series: 'Harry Potter · VII',
+        desc: 'Harry, Ron, and Hermione abandon Hogwarts to hunt down and destroy Voldemort\'s Horcruxes — a final hunt that leads back to the school and the greatest battle the wizarding world has ever seen.',
+        rating: 0, bg: '#060608', c2: '#9890a0', c3: '#101018', fg: '#a8a0b0',
+        lbg: '#f0eff2', lc2: '#686080', lc3: '#d8d4e0', lfg: '#282038',
+        amazon: 'https://www.amazon.com/dp/0545010225',
+      },
+      {
+        title: 'Artificial Condition', author: 'Martha Wells', series: 'Murderbot Diaries · II',
+        desc: 'Murderbot hitches a ride on a research A.I. to investigate a massacre in its past — a past it only partially remembers and suspects it caused.',
+        rating: 4, bg: '#040e12', c2: '#18a898', c3: '#083030', fg: '#20a898',
+        lbg: '#e0f5f2', lc2: '#189080', lc3: '#b0e8e0', lfg: '#0a5850',
+        amazon: 'https://www.amazon.com/dp/1250186927',
+      },
+      {
+        title: 'All Systems Red', author: 'Martha Wells', series: 'Murderbot Diaries · I',
+        desc: 'A part-human, part-robot security unit has secretly hacked its own governor module — now it just wants to watch TV shows and avoid talking to the humans it keeps saving.',
+        rating: 4, bg: '#060c16', c2: '#2888b0', c3: '#0a2040', fg: '#3090b8',
+        lbg: '#e0ecf5', lc2: '#1868a0', lc3: '#b8d4e8', lfg: '#0a4070',
+        amazon: 'https://www.amazon.com/dp/1250185440',
+      },
+      {
+        title: 'Recursion', author: 'Blake Crouch', series: null,
+        desc: 'A neuroscientist\'s memory-preservation technology seems to give people back their lost loved ones — until it begins rewriting reality and trapping the world in recursive timelines.',
+        rating: 5, bg: '#030814', c2: '#3870d0', c3: '#0a1840', fg: '#4880d8',
+        lbg: '#e5ecf8', lc2: '#2858c0', lc3: '#c0d0f0', lfg: '#102868',
+        amazon: 'https://www.amazon.com/dp/1984820613',
+      },
+      {
+        title: 'Creativity, Inc.', author: 'Ed Catmull', series: null,
+        desc: 'The inside story of how Pixar built a culture of creative excellence — a blueprint for leading teams through fear, failure, and the relentless pursuit of originality.',
+        rating: 5, bg: '#1a0828', c2: '#d870f8', c3: '#4a0870', fg: '#d880f8',
+        lbg: '#f8e8ff', lc2: '#b040e0', lc3: '#e8c8f8', lfg: '#5a1080',
+        amazon: 'https://www.amazon.com/dp/0812998960',
+      },
+      {
+        title: 'The Chalice of the Gods', author: 'Rick Riordan', series: 'Percy Jackson: Senior Year · I',
+        desc: 'Percy Jackson needs three impossible letters of recommendation from the gods to get into college — and of course each one requires a perilous new quest.',
+        rating: 3, bg: '#061820', c2: '#20a0c0', c3: '#0a3848', fg: '#28a8c0',
+        lbg: '#e0f0f8', lc2: '#1880a0', lc3: '#b0d8e8', lfg: '#0a5070',
+        amazon: 'https://www.amazon.com/dp/1368078796',
+      },
+      {
+        title: 'The Last Olympian', author: 'Rick Riordan', series: 'Percy Jackson · V',
+        desc: 'The ultimate battle for Olympus has arrived — Percy leads his friends to defend New York City as the Titan lord Kronos and his army launch their final assault.',
+        rating: 4, bg: '#0a0c08', c2: '#d0b818', c3: '#2a2808', fg: '#c8b020',
+        lbg: '#f5f2d5', lc2: '#c0a010', lc3: '#e8e0b0', lfg: '#6a5808',
+        amazon: 'https://www.amazon.com/dp/1423101480',
+      },
+      {
+        title: 'The Battle of the Labyrinth', author: 'Rick Riordan', series: 'Percy Jackson · IV',
+        desc: 'Percy and his friends must navigate Daedalus\'s infinite labyrinth before Luke\'s army can use it to invade the last safe haven for half-bloods.',
+        rating: 4, bg: '#160e04', c2: '#c87820', c3: '#3a2008', fg: '#c07828',
+        lbg: '#f8edd8', lc2: '#c06818', lc3: '#f0d8b0', lfg: '#5a3008',
+        amazon: 'https://www.amazon.com/dp/1423101472',
+      },
+      {
+        title: 'Feel-Good Productivity', author: 'Ali Abdaal', series: null,
+        desc: 'Forget hustle culture — discover how joy, play, and positive energy make you not just happier but genuinely more productive, creative, and effective.',
+        rating: 4, bg: '#061808', c2: '#28c060', c3: '#0a3818', fg: '#30c068',
+        lbg: '#e5f5ec', lc2: '#1a9840', lc3: '#b8e8cc', lfg: '#0a5028',
+        amazon: 'https://www.amazon.com/dp/0063349336',
+      },
+      {
+        title: "The Titan's Curse", author: 'Rick Riordan', series: 'Percy Jackson · III',
+        desc: 'Percy must rescue Annabeth and the goddess Artemis with the help of the Hunters — but an ancient monster and a chilling prophecy stand in the way.',
+        rating: 4, bg: '#0e0618', c2: '#8848c8', c3: '#240a48', fg: '#8848c8',
+        lbg: '#f0e8fc', lc2: '#6830b0', lc3: '#dcc0f0', lfg: '#3a0a90',
+        amazon: 'https://www.amazon.com/dp/1423101456',
+      },
+      {
+        title: 'The Sea of Monsters', author: 'Rick Riordan', series: 'Percy Jackson · II',
+        desc: 'Percy races to the Sea of Monsters — the Bermuda Triangle — to rescue his best friend Grover from the cyclops Polyphemus and restore the magical borders of Camp Half-Blood.',
+        rating: 3, bg: '#060c18', c2: '#1080b0', c3: '#082838', fg: '#1890c0',
+        lbg: '#ddf0f8', lc2: '#1070a0', lc3: '#b0d8e8', lfg: '#0a4870',
+        amazon: 'https://www.amazon.com/dp/1423103349',
+      },
+      {
+        title: 'Building a Second Brain', author: 'Tiago Forte', series: null,
+        desc: 'A method for externalizing your thinking and organizing information so your past learning is available whenever you need it — a trusted system that never forgets.',
+        rating: 5, bg: '#100620', c2: '#9840e0', c3: '#2e0860', fg: '#8840d8',
+        lbg: '#f0e8ff', lc2: '#7820c8', lc3: '#d8b8f8', lfg: '#4808a0',
+        amazon: 'https://www.amazon.com/dp/1982167386',
+      },
+      {
+        title: 'The Lightning Thief', author: 'Rick Riordan', series: 'Percy Jackson · I',
+        desc: 'A troubled twelve-year-old discovers he\'s the son of a Greek god, is accused of stealing Zeus\'s master lightning bolt, and must journey across America to prevent an Olympian war.',
+        rating: 4, bg: '#060c20', c2: '#4878e0', c3: '#0a1840', fg: '#5088e8',
+        lbg: '#e8eef8', lc2: '#3060d0', lc3: '#c0d0f0', lfg: '#0a2888',
+        amazon: 'https://www.amazon.com/dp/0786838655',
+      },
     ];
 
-    function buildCoverHTML(book, large) {
-      const size = large ? 'large' : '';
+    function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    const COVER_GLOW_POS = [
+      ['80% 20%', '20% 75%'], ['15% 20%', '85% 80%'],
+      ['75% 15%', '25% 80%'], ['90% 40%', '15% 65%'],
+      ['50% 10%', '55% 90%'], ['25% 25%', '75% 75%'],
+    ];
+    function coverGradient(book, idx, mode) {
+      const [p1, p2] = COVER_GLOW_POS[idx % COVER_GLOW_POS.length];
+      const bg = mode === 'light' ? book.lbg : book.bg;
+      const c2 = mode === 'light' ? book.lc2 : book.c2;
+      const c3 = mode === 'light' ? book.lc3 : book.c3;
+      return [
+        `radial-gradient(ellipse at ${p1}, ${hexToRgba(c2, 0.38)} 0%, transparent 58%)`,
+        `radial-gradient(ellipse at ${p2}, ${hexToRgba(c3, 0.22)} 0%, transparent 55%)`,
+        bg
+      ].join(', ');
+    }
+    function buildCoverHTML(book) {
       return `
         <div class="book-cover-author">${book.author}</div>
-        <div class="book-cover-deco">
-          <div class="book-cover-deco-line"></div>
-          <div class="book-cover-deco-line" style="width:60%;opacity:0.2"></div>
+        <div class="book-cover-title-wrap">
+          <div class="book-cover-title">${book.title}</div>
         </div>
-        <div class="book-cover-title">${book.title}</div>
+        <div class="book-cover-series">${book.series || ''}</div>
       `;
     }
 
@@ -472,10 +804,10 @@
         btn.dataset.bookIdx = i;
         const cover = document.createElement('div');
         cover.className = 'book-cover';
-        cover.style.setProperty('--bc-dark', book.bg);
+        cover.style.setProperty('--book-bg-dark', coverGradient(book, i, 'dark'));
+        cover.style.setProperty('--book-bg-light', coverGradient(book, i, 'light'));
         cover.style.setProperty('--ba-dark', book.fg);
-        cover.style.setProperty('--bc-light', book.lightBg);
-        cover.style.setProperty('--ba-light', book.lightFg);
+        cover.style.setProperty('--ba-light', book.lfg);
         cover.innerHTML = buildCoverHTML(book);
         btn.appendChild(cover);
         btn.addEventListener('click', () => openBookModal(i));
@@ -989,7 +1321,6 @@
     const bookModal = document.getElementById('bookModal');
     const bookModalClose = document.getElementById('bookModalClose');
     const bookModalCover = document.getElementById('bookModalCover');
-    const bookModalStars = document.getElementById('bookModalStars');
     const bookModalTitle = document.getElementById('bookModalTitle');
     const bookModalDesc  = document.getElementById('bookModalDesc');
     const bookModalActions = document.getElementById('bookModalActions');
@@ -1001,12 +1332,11 @@
       if (bookModalOpen) return;
       bookModalOpen = true;
       const book = BOOKS[idx];
-      bookModalCover.style.setProperty('--bc-dark', book.bg);
+      bookModalCover.style.setProperty('--book-bg-dark', coverGradient(book, idx, 'dark'));
+      bookModalCover.style.setProperty('--book-bg-light', coverGradient(book, idx, 'light'));
       bookModalCover.style.setProperty('--ba-dark', book.fg);
-      bookModalCover.style.setProperty('--bc-light', book.lightBg);
-      bookModalCover.style.setProperty('--ba-light', book.lightFg);
-      bookModalCover.innerHTML = buildCoverHTML(book, true);
-      bookModalStars.innerHTML = starsHTML(book.rating);
+      bookModalCover.style.setProperty('--ba-light', book.lfg);
+      bookModalCover.innerHTML = buildCoverHTML(book);
       bookModalTitle.textContent = book.title;
       bookModalDesc.textContent  = book.desc;
       if (bookModalAmazon) bookModalAmazon.href = book.amazon || '#';
@@ -1048,7 +1378,7 @@
       if (!slug) return;
       closeBookModal();
       setMode('life');
-      location.hash = `#garden/${slug}`;
+      location.hash = `#writing/${slug}`;
     });
 
     function setMode(mode) {
@@ -1077,8 +1407,9 @@
       const isGear      = mode === 'gear';
       const isAppStack  = mode === 'appstack';
       const isPlaces    = mode === 'places';
+      const isChat      = mode === 'chat';
       const isSpecial   = isBookshelf || isGear || isAppStack || isPlaces;
-      const urlSuffix   = isWork ? '?work' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : location.pathname;
+      const urlSuffix   = isWork ? '?work' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : isChat ? '?chat' : location.pathname;
       history.pushState(null, '', urlSuffix);
       // Defer work-mode removal when transitioning work→life to avoid a layout
       // jump: removing it early changes body from padding-top centering to
@@ -1092,9 +1423,12 @@
       if (!isWork && !isSpecial) window.scrollTo({ top: 0 });
 
       const prevIsSpecial = prevMode === 'bookshelf' || prevMode === 'gear' || prevMode === 'appstack' || prevMode === 'places';
+      const prevIsChat = prevMode === 'chat';
+      // Headline/avatar should only animate when the work/non-work status actually changes
+      const workStatusChanged = isWork !== (prevMode === 'work');
 
       // Headshot + headline only swap between life ↔ work
-      if (!isSpecial && !prevIsSpecial) {
+      if (!isSpecial && !prevIsSpecial && workStatusChanged) {
         if (avatarImg) {
           avatarImg.src = isWork ? '/src/img/headshot-work.jpg' : '/src/img/headshot-personal.jpg';
         }
@@ -1116,7 +1450,15 @@
 
       // Show/hide now strip
       const nowStripEl = document.getElementById('nowStrip');
-      if (nowStripEl) nowStripEl.style.display = (isWork || isSpecial) ? 'none' : '';
+      if (nowStripEl) nowStripEl.style.display = (isWork || isSpecial || isChat) ? 'none' : '';
+
+      // Show/hide cert badges strip (work page only)
+      const certBadgesEl = document.getElementById('certBadgesRow');
+      if (certBadgesEl) certBadgesEl.style.display = isWork ? '' : 'none';
+
+      // Show/hide chat input bar; toggle a body class for theming hooks
+      if (chatInputBar) chatInputBar.style.display = isChat ? 'flex' : 'none';
+      document.body.classList.toggle('chat-mode', isChat);
 
       // Helper: get the currently-visible special view element
       function prevSpecialView() {
@@ -1141,6 +1483,7 @@
         if (except !== gearView)      gearView.style.display = 'none';
         if (except !== appStackView)  appStackView.style.display = 'none';
         if (except !== placesView)    placesView.style.display = 'none';
+        if (chatView && except !== chatView) chatView.style.display = 'none';
         if (introEl && except !== introEl) introEl.style.display = 'none';
       }
 
@@ -1207,7 +1550,23 @@
             anime({ targets: placesView, opacity: [0, 1], duration: 300, easing: 'easeOutQuad' });
           }
         });
+      } else if (isChat) {
+        const prevView = prevIsSpecial ? prevSpecialView() : (prevMode === 'work' ? portfolioGrid : launchpad);
+        anime({
+          targets: [prevView, introEl].filter(Boolean),
+          opacity: 0, scale: 0.97,
+          duration: 220, easing: 'easeInQuad',
+          complete: () => {
+            hideAllViews(chatView);
+            chatView.style.opacity = '0';
+            chatView.style.display = 'flex';
+            anime({ targets: chatView, opacity: [0, 1], duration: 300, easing: 'easeOutQuad' });
+            if (window.chat && typeof window.chat.init === 'function') window.chat.init();
+            if (window.chat && typeof window.chat.focus === 'function') window.chat.focus();
+          }
+        });
       } else if (isWork) {
+        if (prevIsChat && chatView) chatView.style.display = 'none';
         if (prevIsSpecial) {
           const prevSpecial = prevSpecialView();
           if (avatarImg) avatarImg.src = '/src/img/headshot-work.jpg';
@@ -1218,9 +1577,16 @@
             portfolioGrid.style.opacity = '';
             portfolioGrid.style.transform = '';
             portfolioGrid.style.display = 'grid';
-            anime({ targets: '.study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
+            anime({ targets: '.work-launchpad .app, .study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
               easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(40) });
           });
+        } else if (prevIsChat) {
+          if (introEl) { introEl.style.removeProperty('display'); introEl.style.opacity = ''; introEl.style.transform = ''; }
+          portfolioGrid.style.opacity = '';
+          portfolioGrid.style.transform = '';
+          portfolioGrid.style.display = 'grid';
+          anime({ targets: '.work-launchpad .app, .study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
+            easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(40) });
         } else {
           anime({
             targets: launchpad,
@@ -1231,13 +1597,14 @@
               portfolioGrid.style.opacity = '';
               portfolioGrid.style.transform = '';
               portfolioGrid.style.display = 'grid';
-              anime({ targets: '.study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
+              anime({ targets: '.work-launchpad .app, .study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
                 easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(40) });
             }
           });
         }
       } else {
         // life mode
+        if (prevIsChat && chatView) chatView.style.display = 'none';
         if (prevIsSpecial) {
           const prevSpecial = prevSpecialView();
           if (avatarImg) avatarImg.src = '/src/img/headshot-personal.jpg';
@@ -1251,6 +1618,13 @@
             anime({ targets: '.app', opacity: [0, 1], translateY: [14, 0], duration: 600,
               easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(55) });
           });
+        } else if (prevIsChat) {
+          if (introEl) { introEl.style.removeProperty('display'); introEl.style.opacity = ''; introEl.style.transform = ''; }
+          launchpad.style.opacity = '';
+          launchpad.style.transform = '';
+          launchpad.style.display = 'flex';
+          anime({ targets: '.app', opacity: [0, 1], translateY: [14, 0], duration: 600,
+            easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(55) });
         } else {
           anime({
             targets: portfolioGrid,
@@ -1332,6 +1706,99 @@
       tmBg.appendChild(s);
     }
 
+    // ── Version screen state ──
+    let vCurrentIdx = 0; // 0 = v2 (present) front, 1 = v1 (past) front
+    let vScrollLocked = false;
+    const vCard1 = versionScreen.querySelector('.tm-card.v1');
+    const vCard2 = versionScreen.querySelector('.tm-card.v2');
+    const tmVersionsPanel = document.getElementById('tmVersionsPanel');
+    const tmCreditsPanel  = document.getElementById('tmCreditsPanel');
+    const tmReturnBtn     = document.getElementById('tmReturnBtn');
+
+    function resetVersionCards() {
+      vCurrentIdx = 0;
+      vScrollLocked = false;
+      anime.remove([vCard1, vCard2]);
+      ['left','opacity','transform','zIndex'].forEach(p => {
+        vCard1.style[p] = '';
+        vCard2.style[p] = '';
+      });
+    }
+
+    function setVersionFront(idx) {
+      if (vScrollLocked || idx === vCurrentIdx) return;
+      vScrollLocked = true;
+      vCurrentIdx = idx;
+      const front = idx === 0 ? vCard2 : vCard1;
+      const back  = idx === 0 ? vCard1 : vCard2;
+      front.style.zIndex = '2';
+      back.style.zIndex  = '1';
+      anime({ targets: front, left: '0px', scale: 1, translateY: 0, opacity: 1,
+        duration: 850, easing: 'cubicBezier(0.16,1,0.3,1)' });
+      anime({ targets: back,  left: '36px', scale: 0.82, translateY: -48, opacity: 0.45,
+        duration: 850, easing: 'cubicBezier(0.16,1,0.3,1)',
+        complete: () => { vScrollLocked = false; } });
+    }
+
+    // Wheel scroll between versions (versions panel only)
+    tmVersionsPanel.addEventListener('wheel', e => {
+      e.preventDefault();
+      if (e.deltaY > 20 && vCurrentIdx === 0) setVersionFront(1);
+      else if (e.deltaY < -20 && vCurrentIdx === 1) setVersionFront(0);
+    }, { passive: false });
+
+    // Tab switching
+    const tmTabBtns = versionScreen.querySelectorAll('.tm-tab');
+    tmTabBtns.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tmTabBtns.forEach(t => { t.classList.remove('is-active'); t.setAttribute('aria-selected', 'false'); });
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        const isVersions = tab.dataset.tab === 'versions';
+        tmVersionsPanel.hidden = !isVersions;
+        tmCreditsPanel.hidden  = isVersions;
+      });
+    });
+
+    function closeVersionScreen() {
+      if (!versionScreen.classList.contains('visible')) return;
+      powerFade.style.pointerEvents = 'all';
+      anime({
+        targets: powerFade,
+        opacity: [0, 1],
+        duration: 600,
+        easing: 'easeInQuad',
+        complete: () => {
+          versionScreen.classList.remove('visible');
+          history.replaceState(null, '', location.pathname + location.search);
+          const content = versionScreen.querySelector('.tm-content');
+          if (content) { content.style.opacity = ''; content.style.transform = ''; }
+          tmTabBtns.forEach((t, i) => {
+            t.classList.toggle('is-active', i === 0);
+            t.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+          });
+          tmVersionsPanel.hidden = false;
+          tmCreditsPanel.hidden  = true;
+          resetVersionCards();
+          anime({
+            targets: powerFade,
+            opacity: 0,
+            duration: 700,
+            easing: 'easeOutQuad',
+            complete: () => { powerFade.style.pointerEvents = 'none'; }
+          });
+        }
+      });
+    }
+
+    // Return button
+    tmReturnBtn.addEventListener('click', closeVersionScreen);
+
+    // Click dark background to close
+    versionScreen.addEventListener('click', e => {
+      if (e.target === versionScreen || e.target.classList.contains('tm-bg')) closeVersionScreen();
+    });
+
     powerBtn.addEventListener('click', () => {
       powerFade.style.pointerEvents = 'all';
       anime({
@@ -1340,10 +1807,11 @@
         duration: 900,
         easing: 'easeInQuad',
         complete: () => {
+          resetVersionCards();
           versionScreen.classList.add('visible');
-          // Fade in the version screen content over the black
+          history.replaceState(null, '', '#versions');
           anime({
-            targets: '.tm-stack',
+            targets: '.tm-content',
             opacity: [0, 1],
             translateY: [16, 0],
             duration: 700,
@@ -1569,13 +2037,15 @@
       }
     } catch (err) { /* ignore */ }
 
-    /** Time Machine (#versionScreen) — open without power animation (e.g. link from /v1/) */
+    /** Time Machine (#versionScreen) — open without power animation (e.g. direct link to #versions) */
     function showVersionScreenFromHash() {
       if (!versionScreen) return;
+      if (versionScreen.classList.contains('visible')) return;
+      resetVersionCards();
       versionScreen.classList.add('visible');
-      anime.remove('.tm-stack');
+      anime.remove('.tm-content');
       anime({
-        targets: '.tm-stack',
+        targets: '.tm-content',
         opacity: [0, 1],
         translateY: [16, 0],
         duration: 500,
@@ -1589,21 +2059,23 @@
 
     function hideVersionScreenIfNeeded() {
       if (!versionScreen || !versionScreen.classList.contains('visible')) return;
-      anime.remove('.tm-stack');
+      anime.remove('.tm-content');
       versionScreen.classList.remove('visible');
-      const stack = document.querySelector('#versionScreen .tm-stack');
-      if (stack) {
-        stack.style.opacity = '';
-        stack.style.transform = '';
-      }
+      const content = versionScreen.querySelector('.tm-content');
+      if (content) { content.style.opacity = ''; content.style.transform = ''; }
+      resetVersionCards();
     }
 
     // ── Icon stroke-draw on hover (accent swatches) ──
     const appColors = {
-      'Studio':      '#E6007F', /* Hot Magenta */
-      'Field Notes': '#00BFD9', /* Neon Cyan */
-      'Garden':      '#FFE100', /* Digital Yellow */
-      'Northstar':   '#FF8C00'  /* Solar Orange */
+      'Videos':       '#00BFD9', /* Neon Cyan */
+      'Photos':       '#FFE100', /* Digital Yellow */
+      'Writing':      '#E6007F', /* Hot Magenta */
+      'Labs':         '#FF8C00', /* Solar Orange */
+      'Portfolio':    '#7B61FF',
+      'Case Studies': '#00C896',
+      'Career':       '#FF7043',
+      'Resume':       '#42A5F5'
     };
 
     document.querySelectorAll('.app').forEach(btn => {
@@ -1657,24 +2129,36 @@
     }
 
     const SECTION_SLUGS = {
-      'Studio':      'studio',
-      'Field Notes': 'field-notes',
-      'Garden':      'garden',
-      'Northstar':   'northstar'
+      'Videos':       'videos',
+      'Photos':       'photos',
+      'Writing':      'writing',
+      'Labs':         'labs',
+      'Portfolio':    'portfolio',
+      'Case Studies': 'case-studies',
+      'Career':       'career',
+      'Resume':       'resume'
     };
 
     const SECTIONS = {
-      'studio':      { label: 'Studio' },
-      'field-notes': { label: 'Field Notes' },
-      'garden':      { label: 'Garden' },
-      'northstar':   { label: 'Northstar' }
+      'videos':       { label: 'Videos' },
+      'photos':       { label: 'Photos' },
+      'writing':      { label: 'Writing' },
+      'labs':         { label: 'Labs' },
+      'portfolio':    { label: 'Portfolio' },
+      'case-studies': { label: 'Case Studies' },
+      'career':       { label: 'Career' },
+      'resume':       { label: 'Resume' }
     };
 
     const SECTION_APP_BY_SLUG = {
-      studio: 'Studio',
-      'field-notes': 'Field Notes',
-      garden: 'Garden',
-      northstar: 'Northstar'
+      videos:          'Videos',
+      photos:          'Photos',
+      writing:         'Writing',
+      labs:            'Labs',
+      portfolio:       'Portfolio',
+      'case-studies':  'Case Studies',
+      career:          'Career',
+      resume:          'Resume'
     };
 
     /** Same artwork as launchpad icons, without the hover stroke-trace (.outline-path). */
@@ -1744,7 +2228,7 @@
     let gardenSlugSetPromise = null;
     function ensureGardenSlugSet() {
       if (!gardenSlugSetPromise) {
-        gardenSlugSetPromise = fetch('/api/content/list?category=garden')
+        gardenSlugSetPromise = fetch('/api/content/list?category=writing')
           .then(r => r.json())
           .then(({ items, files }) => {
             const list = items || (files || []).map(file => ({ file }));
@@ -1785,11 +2269,21 @@
     let modalIsOpen = false;
     const videoCache = {};
 
-    // YouTube handle per section
+    // YouTube handle(s) per section. Videos combines both channels.
     const SECTION_YT_HANDLES = {
-      'field-notes': 'lukevanzylofficial',
-      'studio': 'uxwithluke'
+      'videos': ['lukevanzylofficial', 'uxwithluke']
     };
+
+    function sectionHandles(section) {
+      const h = SECTION_YT_HANDLES[section];
+      return Array.isArray(h) ? h : (h ? [h] : []);
+    }
+
+    // Experimental projects shown in the Labs section (thumbnails from v1).
+    const LABS = [
+      { title: 'GymBud',          desc: 'Simple interval timer for strength training',                   thumb: '/v1/labs/images/gymbud.png',         url: 'https://gym.lukevanzyl.com' },
+      { title: 'Research Garden', desc: 'Document your rabbit-hole research sessions for all your interests', thumb: '/v1/labs/images/research garden.png', url: 'https://research-garden.vercel.app/' }
+    ];
 
     function fetchSectionMarkdownItems(section) {
       return fetch(`/api/content/list?category=${section}`)
@@ -1806,6 +2300,13 @@
         .catch(() => []);
     }
 
+    // Fetch and merge videos across all handles for a section.
+    function fetchSectionVideos(section) {
+      const handles = sectionHandles(section);
+      if (!handles.length) return Promise.resolve([]);
+      return Promise.all(handles.map(fetchChannelVideos)).then(lists => lists.flat());
+    }
+
     function setSectionCount(appName, count, label) {
       const btn = document.querySelector(`.app[data-app="${appName}"]`);
       if (!btn) return;
@@ -1816,9 +2317,21 @@
 
     function populateSectionCounts() {
       Object.entries(SECTION_SLUGS).forEach(([appName, slug]) => {
-        const ytHandle = SECTION_YT_HANDLES[slug];
+        if (slug === 'photos') {
+          fetch('/api/content/list?category=photos')
+            .then(r => r.json())
+            .then(({ images }) => setSectionCount(appName, (images || []).length, 'photo'))
+            .catch(() => {});
+          return;
+        }
+        if (slug === 'labs') {
+          setSectionCount(appName, LABS.length, 'project');
+          return;
+        }
+
+        const handles = sectionHandles(slug);
         const mdFetch = fetchSectionMarkdownItems(slug);
-        const videosFetch = ytHandle ? fetchChannelVideos(ytHandle) : Promise.resolve([]);
+        const videosFetch = fetchSectionVideos(slug);
 
         Promise.allSettled([mdFetch, videosFetch]).then(([mdResult, videosResult]) => {
           const hasData = mdResult.status === 'fulfilled' || videosResult.status === 'fulfilled';
@@ -1827,7 +2340,7 @@
           const mdCount = mdResult.status === 'fulfilled' ? mdResult.value.length : 0;
           const videoCount = videosResult.status === 'fulfilled' ? videosResult.value.length : 0;
           const total = mdCount + videoCount;
-          const label = ytHandle ? 'item' : 'post';
+          const label = handles.length ? 'item' : 'post';
 
           setSectionCount(appName, total, label);
         });
@@ -1849,10 +2362,9 @@
     }
 
     function renderMixedIndex(section) {
-      const ytHandle = SECTION_YT_HANDLES[section];
       fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
 
-      const videosFetch = ytHandle ? fetchChannelVideos(ytHandle) : Promise.resolve([]);
+      const videosFetch = fetchSectionVideos(section);
       const mdFetch = fetch(`/api/content/list?category=${section}`)
         .then(r => r.json())
         .then(({ items, files }) => items || (files || []).map(f => ({ file: f, date: '1970-01-01' })))
@@ -1903,9 +2415,8 @@
     }
 
     function renderVideoItem(section, videoId) {
-      const handle = SECTION_YT_HANDLES[section];
       fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-size:0.85rem">Loading…</p></div>`);
-      fetchChannelVideos(handle).then(videos => {
+      fetchSectionVideos(section).then(videos => {
         const video = videos.find(v => v.videoId === videoId);
         if (!video) {
           fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Video not found.</p></div>`);
@@ -1991,6 +2502,215 @@
       setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
     }
 
+    function renderPortfolioGrid() {
+      sModalTitle.textContent = 'Portfolio';
+      showModalSectionIconFromSlug('portfolio');
+      sModalBack.style.display = 'none';
+      fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
+      fetch('/api/content/list?category=portfolio')
+        .then(r => r.json())
+        .then(({ images }) => {
+          if (!images || !images.length) {
+            fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic;margin-top:8px">No images yet — drop files into /content/portfolio/ to get started.</p></div>`);
+            return;
+          }
+          const items = images.map(({ file, link }) => {
+            const src = `/content/portfolio/${encodeURIComponent(file)}`;
+            const safeAlt = file.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+            if (link) {
+              return `<a href="${link}" target="_blank" rel="noopener noreferrer" class="portfolio-img-item"><img src="${src}" alt="${safeAlt}" loading="lazy"></a>`;
+            }
+            return `<div class="portfolio-img-item"><img src="${src}" alt="${safeAlt}" loading="lazy"></div>`;
+          }).join('');
+          const portfolioTagsHtml = `<div class="portfolio-meta-tags cs-tags" role="group" aria-label="Practice areas"><span class="portfolio-meta-tag-wrap"><button type="button" class="cs-tag-chip portfolio-meta-tag-btn" aria-describedby="pmt-tip-ds"><svg class="cs-tag-chip__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg><span class="cs-tag-chip__text">Design systems</span></button><span id="pmt-tip-ds" class="portfolio-meta-tag-tip" role="tooltip">I’ve built and evolved design systems end to end: libraries, tokens, and how we document them, and I’ve stayed paired with engineering until those patterns were really living in the product—not just living in a file.</span></span><span class="portfolio-meta-tag-wrap"><button type="button" class="cs-tag-chip portfolio-meta-tag-btn" aria-describedby="pmt-tip-figma"><svg class="cs-tag-chip__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg><span class="cs-tag-chip__text">Figma</span></button><span id="pmt-tip-figma" class="portfolio-meta-tag-tip" role="tooltip">I’ve built three entire design systems from scratch in Figma and I’ve helped two organizations migrate onto it. I wrote curriculum and documentation for designers, engineers, and product managers on how to work in the tool, hand off cleanly, archive work, and keep docs useful so people actually felt confident using it.</span></span><span class="portfolio-meta-tag-wrap"><button type="button" class="cs-tag-chip portfolio-meta-tag-btn" aria-describedby="pmt-tip-a11y"><svg class="cs-tag-chip__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg><span class="cs-tag-chip__text">Accessibility</span></button><span id="pmt-tip-a11y" class="portfolio-meta-tag-tip" role="tooltip">In the systems and products I’ve touched, I’ve treated accessibility as part of the design spec: I’ve defined keyboard flows, contrast, and motion in components so teams weren’t scrambling to retrofit accessibility only when something broke in QA.</span></span><span class="portfolio-meta-tag-wrap"><button type="button" class="cs-tag-chip portfolio-meta-tag-btn" aria-describedby="pmt-tip-mentor"><svg class="cs-tag-chip__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg><span class="cs-tag-chip__text">Mentoring</span></button><span id="pmt-tip-mentor" class="portfolio-meta-tag-tip" role="tooltip">I’ve mentored three designers for multiple years through ongoing 1:1s: craft, how they tell the story of their work, and how they steer through messy product and stakeholder situations.</span></span><span class="portfolio-meta-tag-wrap"><button type="button" class="cs-tag-chip portfolio-meta-tag-btn" aria-describedby="pmt-tip-workshops"><svg class="cs-tag-chip__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg><span class="cs-tag-chip__text">Workshops</span></button><span id="pmt-tip-workshops" class="portfolio-meta-tag-tip" role="tooltip">At PwC I led the effort that upskilled 120+ designers in Figma: I built the curriculum and the roadmap that moved our whole design department from Sketch to Figma in nine months.</span></span></div>`;
+          fadeSwap(`<div class="sm-fade">${portfolioTagsHtml}<div class="portfolio-masonry">${items}</div></div>`);
+        })
+        .catch(() => {
+          fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Couldn't load portfolio images.</p></div>`);
+        });
+    }
+
+    // ── Photos: immersive curated grid with lightbox ──
+    let photoLightbox = null;
+    function ensurePhotoLightbox() {
+      if (photoLightbox) return photoLightbox;
+      const ov = document.createElement('div');
+      ov.className = 'photo-lightbox';
+      ov.innerHTML =
+        '<button class="photo-lb-btn photo-lb-close" aria-label="Close">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>' +
+        '</button>' +
+        '<button class="photo-lb-btn photo-lb-prev" aria-label="Previous">' +
+          '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>' +
+        '</button>' +
+        '<img class="photo-lb-img" alt="">' +
+        '<button class="photo-lb-btn photo-lb-next" aria-label="Next">' +
+          '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>' +
+        '</button>';
+      document.body.appendChild(ov);
+      const state = { el: ov, img: ov.querySelector('.photo-lb-img'), list: [], idx: 0 };
+      photoLightbox = state;
+
+      const show = (i) => {
+        if (!state.list.length) return;
+        state.idx = (i + state.list.length) % state.list.length;
+        state.img.src = state.list[state.idx];
+      };
+      const close = () => { ov.classList.remove('is-open'); state.img.src = ''; };
+      state.open = (list, i) => { state.list = list; ov.classList.add('is-open'); show(i); };
+
+      ov.querySelector('.photo-lb-close').addEventListener('click', close);
+      ov.querySelector('.photo-lb-prev').addEventListener('click', (e) => { e.stopPropagation(); show(state.idx - 1); });
+      ov.querySelector('.photo-lb-next').addEventListener('click', (e) => { e.stopPropagation(); show(state.idx + 1); });
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.addEventListener('keydown', (e) => {
+        if (!ov.classList.contains('is-open')) return;
+        if (e.key === 'Escape') close();
+        else if (e.key === 'ArrowLeft') show(state.idx - 1);
+        else if (e.key === 'ArrowRight') show(state.idx + 1);
+      });
+      return state;
+    }
+
+    function renderPhotosGrid() {
+      sModalTitle.textContent = 'Photos';
+      showModalSectionIconFromSlug('photos');
+      sModalBack.style.display = 'none';
+      fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
+      fetch('/api/content/list?category=photos')
+        .then(r => r.json())
+        .then(({ images }) => {
+          if (!images || !images.length) {
+            fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic;margin-top:8px">No photos yet.</p></div>`);
+            return;
+          }
+          const items = images.map((img, i) =>
+            `<button class="photo-item" data-idx="${i}"><img src="${escHtml(img.thumb || img.src)}" alt="" loading="lazy"></button>`
+          ).join('');
+          fadeSwap(`<div class="sm-fade"><div class="photos-masonry">${items}</div></div>`);
+          setTimeout(() => {
+            sModalBody.scrollTop = 0;
+            const fulls = images.map(img => img.src);
+            sModalBody.querySelectorAll('.photo-item').forEach(btn => {
+              btn.addEventListener('click', () => ensurePhotoLightbox().open(fulls, +btn.dataset.idx));
+            });
+          }, 140);
+        })
+        .catch(() => {
+          fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Couldn't load photos.</p></div>`);
+        });
+    }
+
+    function renderLabsGrid() {
+      sModalTitle.textContent = 'Labs';
+      showModalSectionIconFromSlug('labs');
+      sModalBack.style.display = 'none';
+      const arrow = '<svg class="lab-card-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>';
+      const cards = LABS.map(l => `
+        <a class="lab-card" href="${escHtml(l.url)}" target="_blank" rel="noopener noreferrer">
+          <div class="lab-card-thumb"><img src="${encodeURI(l.thumb)}" alt="${escHtml(l.title)}" loading="lazy"></div>
+          <div class="lab-card-info">
+            <span class="lab-card-title">${escHtml(l.title)}${arrow}</span>
+            <span class="lab-card-desc">${escHtml(l.desc)}</span>
+          </div>
+        </a>`).join('');
+      fadeSwap(`<div class="sm-fade"><div class="labs-grid">${cards}</div></div>`);
+      setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
+    }
+
+    function parseCareerMd(md) {
+      const body = md.replace(/^---[\s\S]*?---\n?/, '');
+      const sections = body.split(/^## /m).filter(s => s.trim());
+      if (!sections.length) return mdToHTML(body);
+
+      return sections.map(section => {
+        const lines = section.split('\n');
+        const titleLine = lines[0].trim();
+
+        const meta = {};
+        const bullets = [];
+        const bodyLines = [];
+
+        lines.slice(1).forEach(line => {
+          const metaM = line.match(/^\*\*([^*]+):\*\*\s*(.+)/);
+          if (metaM) {
+            meta[metaM[1].trim()] = metaM[2].trim();
+          } else if (line.startsWith('- ')) {
+            bullets.push(line.slice(2));
+          } else if (line.startsWith('---') || line.startsWith('___')) {
+            // skip horizontal rules
+          } else if (line.trim()) {
+            bodyLines.push(line.trim());
+          }
+        });
+
+        const metaParts = [meta['Company'], meta['Period'], meta['Location']]
+          .filter(Boolean)
+          .map(s => escHtml(s));
+        const metaHtml = metaParts.length ? `<div class="career-meta">${metaParts.join(' · ')}</div>` : '';
+
+        const bodyText = bodyLines.filter(l => !l.startsWith('#')).join(' ').trim();
+        const bodyHtml = bodyText ? `<p class="career-body">${escHtml(bodyText)}</p>` : '';
+
+        const bulletsHtml = bullets.length
+          ? `<ul class="career-bullets">${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
+          : '';
+
+        const focus = meta['Focus areas'];
+        const tagsHtml = focus
+          ? `<div class="career-tags">${focus.split(/\s*[·•]\s*/).map(t => `<span class="cs-tag-chip"><span class="cs-tag-chip__text">${escHtml(t.trim())}</span></span>`).join('')}</div>`
+          : '';
+
+        return `<div class="career-entry">
+          <div class="career-dot"></div>
+          <div class="career-content">
+            <div class="career-title">${escHtml(titleLine)}</div>
+            ${metaHtml}${bodyHtml}${bulletsHtml}${tagsHtml}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderCareerTimeline() {
+      sModalTitle.textContent = 'Career';
+      showModalSectionIconFromSlug('career');
+      sModalBack.style.display = 'none';
+      fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
+      fetch('/content/career.md')
+        .then(r => {
+          if (!r.ok) throw new Error('not found');
+          return r.text();
+        })
+        .then(md => {
+          const html = parseCareerMd(md);
+          fadeSwap(`<div class="career-timeline sm-fade">${html}</div>`);
+          setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
+        })
+        .catch(() => {
+          fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Couldn't load career timeline.</p></div>`);
+        });
+    }
+
+    function renderResumeEmbed() {
+      sModalTitle.textContent = 'Resume';
+      showModalSectionIconFromSlug('resume');
+      sModalBack.style.display = 'none';
+      const fileId = '12z8vaL3zClS4kFtPt13BdA91uxpIo91H';
+      const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+      const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      fadeSwap(`<div class="resume-embed-wrap sm-fade">
+        <div class="resume-pdf-clip">
+          <iframe class="resume-pdf-frame" src="${previewUrl}" title="Resume PDF" allow="autoplay" loading="lazy"></iframe>
+        </div>
+        <div class="resume-actions">
+          <a class="resume-download-btn" href="${downloadUrl}" target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PDF
+          </a>
+        </div>
+      </div>`);
+    }
+
     const prevBtn = document.getElementById('prevBtn');
     if (prevBtn) {
       prevBtn.addEventListener('click', () => {
@@ -2007,7 +2727,13 @@
       showModalSectionIconFromSlug(section);
       sModalBack.style.display = 'none';
 
-      if (section === 'field-notes' || section === 'studio') {
+      if (section === 'portfolio') { renderPortfolioGrid(); return; }
+      if (section === 'career')    { renderCareerTimeline(); return; }
+      if (section === 'resume')    { renderResumeEmbed(); return; }
+      if (section === 'photos')    { renderPhotosGrid(); return; }
+      if (section === 'labs')      { renderLabsGrid(); return; }
+
+      if (section === 'videos') {
         renderMixedIndex(section);
         return;
       }
@@ -2054,7 +2780,7 @@
       clearModalSectionIcon();
       sModalBack.style.display = 'flex';
 
-      if (section === 'field-notes' || section === 'studio') {
+      if (section === 'videos') {
         // YouTube video IDs are 11 chars of base64url
         if (/^[A-Za-z0-9_-]{11}$/.test(slug)) {
           renderVideoItem(section, slug);
@@ -2347,6 +3073,9 @@
     sModalClose.addEventListener('click', doClose);
     sModal.addEventListener('click', e => { if (e.target === sModal) doClose(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalIsOpen) doClose(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && versionScreen && versionScreen.classList.contains('visible')) closeVersionScreen();
+    });
 
     window.addEventListener('hashchange', handleHash);
 
@@ -2356,6 +3085,7 @@
     else if (location.search === '?gear') setMode('gear');
     else if (location.search === '?appstack') setMode('appstack');
     else if (location.search === '?places') setMode('places');
+    else if (location.search === '?chat') setMode('chat');
 
     // Deep link on load
     handleHash();
@@ -2366,3 +3096,5 @@
       ? cb => window.requestIdleCallback(cb, { timeout: 3000 })
       : cb => setTimeout(cb, 1500);
     schedulePreload(() => { try { preloadPlaces(); } catch (_) {} });
+
+    window.setMode = setMode;

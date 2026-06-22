@@ -45,10 +45,50 @@ export default function handler(req, res) {
     return;
   }
 
+  // Photos: curated favorites pulled from the v1 gallery albums (referenced in place).
+  if (category === 'photos') {
+    const ALBUMS = ['2025 Snaps', '2024 Snaps', '2023 Snaps'];
+    const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif']);
+    const galleryRoot = join(rootDir, 'v1', 'gallery');
+    const images = [];
+    for (const album of ALBUMS) {
+      const albumDir = join(galleryRoot, album);
+      if (!existsSync(albumDir)) continue;
+      const base = `/v1/gallery/${encodeURIComponent(album)}/`;
+      readdirSync(albumDir)
+        .filter(f => IMAGE_EXTS.has(('.' + f.split('.').pop()).toLowerCase()))
+        .forEach(f => {
+          const hasThumb = existsSync(join(albumDir, 'thumbs', f));
+          images.push({
+            src: base + encodeURIComponent(f),
+            thumb: hasThumb ? base + 'thumbs/' + encodeURIComponent(f) : base + encodeURIComponent(f)
+          });
+        });
+    }
+    res.writeHead(200, { ...corsHeaders, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ images, items: [], files: [] }));
+    return;
+  }
+
   const dir = join(rootDir, 'content', category);
   if (!existsSync(dir)) {
     res.writeHead(200, { ...corsHeaders, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ files: [] }));
+    return;
+  }
+
+  if (category === 'portfolio') {
+    const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg']);
+    let links = {};
+    try {
+      const linksPath = join(dir, 'links.json');
+      if (existsSync(linksPath)) links = JSON.parse(readFileSync(linksPath, 'utf8'));
+    } catch (e) { /* ignore */ }
+    const images = readdirSync(dir)
+      .filter(f => IMAGE_EXTS.has(('.' + f.split('.').pop()).toLowerCase()))
+      .map(f => ({ file: f, link: links[f] || null }));
+    res.writeHead(200, { ...corsHeaders, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ images, items: [], files: [] }));
     return;
   }
 

@@ -133,7 +133,8 @@
       // Only show on the Life tab (may have loaded after setMode ran)
       const search = location.search;
       const isLife = !search.includes('work') && !search.includes('bookshelf')
-        && !search.includes('gear') && !search.includes('appstack') && !search.includes('places');
+        && !search.includes('gear') && !search.includes('appstack') && !search.includes('places')
+        && !search.includes('chat');
       if (isLife) {
         strip.style.display = 'inline-flex';
       }
