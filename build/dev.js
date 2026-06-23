@@ -13,6 +13,7 @@ import { extname } from 'path';
 import { URL } from 'url';
 import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest } from '../v1/js/build/manifest-builder.js';
 import chatHandler from '../api/chat.js';
+import chatInsightsHandler from '../api/chat-insights.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -407,6 +408,22 @@ async function handleAPIProxy(req, res) {
       await chatHandler(req, res);
     } catch (err) {
       console.error('chat handler error:', err);
+      if (!res.headersSent) {
+        res.writeHead(500, { ...corsHeaders, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      } else {
+        try { res.end(); } catch (_) {}
+      }
+    }
+    return true;
+  }
+
+  // Chat insights (private) — delegates to the Vercel handler so dev and prod stay in sync
+  if (path === '/api/chat-insights') {
+    try {
+      await chatInsightsHandler(req, res);
+    } catch (err) {
+      console.error('chat-insights handler error:', err);
       if (!res.headersSent) {
         res.writeHead(500, { ...corsHeaders, 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
