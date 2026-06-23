@@ -290,6 +290,14 @@ The chat tab answers in Luke's voice, grounded in `/content/about/*.md` (see `lo
 
 **Reviewing captured data:** `GET /api/chat-insights?key=SECRET[&limit=N]` returns the recent questions and the gap to-do list as JSON. Requires env var `CHAT_INSIGHTS_KEY`; wrong/absent key returns 401/500. Uses the same Vercel KV database as the guestbook.
 
+**Resolving gaps:** `POST /api/chat-insights?key=SECRET` with body `{ "resolve": ["<gap key>", ...] }` (or `{ "resolveAll": true }`) removes answered gaps from the to-do list. Same key auth.
+
+**Daily automation (GitHub Actions):**
+- `.github/workflows/kb-gaps-digest.yml` (daily cron + manual `workflow_dispatch`) runs `.github/scripts/kb-gaps.mjs`, which fetches the gap list and upserts ONE GitHub issue labeled `kb-gaps` with a checklist. When no gaps remain, the issue is closed. Answer the gaps from Claude Code mobile: open the repo, say "answer these KB gaps", Claude branches → edits `content/about/*.md` → opens a PR.
+- `.github/workflows/kb-gaps-resolve.yml` (on PR merge) runs `.github/scripts/kb-resolve.mjs`, which reads `Resolves-KB-Gap: <key>` lines from the merged PR's title/body and POSTs them to the resolve endpoint, so answered gaps drop off the list. The secret lives only in GitHub Actions, never in a chat session.
+- Required GitHub repo secret: `CHAT_INSIGHTS_KEY` (Settings → Secrets and variables → Actions). Optional repo variable: `CHAT_INSIGHTS_URL` (defaults to `https://lukevz.com`).
+
+**Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` / `GEMINI_CLASSIFY_MODEL` (optional overrides), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
 **Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` (answer model, default `gemini-2.5-flash`) / `GEMINI_CLASSIFY_MODEL` (classifier model, default `gemini-2.5-flash-lite` so it doesn't share the answer model's quota), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
 
 ## Content Sources
