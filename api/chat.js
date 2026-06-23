@@ -17,10 +17,14 @@ const nowJsonPath = join(rootDir, 'src', 'data', 'now.json');
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || MODEL;
+// Classify on a lighter, cheaper model by default so it doesn't compete with the
+// answer call's per-model quota and adds minimal latency/cost. Override with
+// GEMINI_CLASSIFY_MODEL if needed.
+const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || 'gemini-2.5-flash-lite';
 const TEMPERATURE = 0.4;
 const MAX_TURNS = 20;
-const RETRY_WAIT_MS = 1500;
+// Exponential backoff for transient upstream throttling (429) / unavailability (503).
+const RETRY_DELAYS_MS = [800, 1600, 3200];
 
 // KV keys — see api/chat-insights.js for the read side.
 const Q_LOG_KEY = 'chat:questions'; // capped list of every visitor question
@@ -37,6 +41,29 @@ async function callGemini(apiKey, payload) {
     },
     body: JSON.stringify(payload)
   });
+}
+
+// Call Gemini, retrying on transient throttling (429) / unavailability (503)
+// with exponential backoff. Returns the last response so the caller can inspect
+// its status. Network errors bubble up after exhausting retries.
+async function callGeminiWithRetry(apiKey, payload) {
+  let lastErr;
+  let res;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
+    }
+    try {
+      res = await callGemini(apiKey, payload);
+    } catch (e) {
+      lastErr = e;
+      continue; // network blip — back off and retry
+    }
+    if (res.status !== 429 && res.status !== 503) return res;
+    // throttled / unavailable — back off and retry unless this was the last attempt
+  }
+  if (res) return res;
+  throw lastErr || new Error('upstream fetch failed');
 }
 
 // Render /src/data/now.json — the single source of truth for the now strip —
@@ -286,22 +313,11 @@ export default async function handler(req, res) {
 
   let upstream;
   try {
-    upstream = await callGemini(apiKey, payload);
+    upstream = await callGeminiWithRetry(apiKey, payload);
   } catch (e) {
     res.writeHead(502, { ...corsHeaders, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'upstream fetch failed', detail: e.message }));
     return;
-  }
-
-  if (upstream.status === 429) {
-    await new Promise(r => setTimeout(r, RETRY_WAIT_MS));
-    try {
-      upstream = await callGemini(apiKey, payload);
-    } catch (e) {
-      res.writeHead(502, { ...corsHeaders, 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'upstream fetch failed', detail: e.message }));
-      return;
-    }
   }
 
   if (!upstream.ok || !upstream.body) {
