@@ -275,6 +275,23 @@ Supported audio formats: `.m4a`, `.mp3`, `.wav`, `.ogg`, `.aac`, `.flac`, `.webm
 4. First H1 in markdown becomes the note title (if no frontmatter)
 5. Hashtags are automatically stripped from displayed content
 
+## Chat Assistant (api/chat.js)
+
+The chat tab answers in Luke's voice, grounded in `/content/about/*.md` (see `loadKnowledgeBase()`), streaming from Gemini.
+
+**Two kinds of questions (handled in `buildSystemPrompt()`):**
+- **About Luke** (life, work, opinions, biography): answered only if covered by the knowledge base; otherwise it redirects to DM rather than guessing. Out-of-scope topics (`out-of-scope.md`) are politely declined.
+- **General questions** (math, facts, definitions, coding help, small talk — e.g. "what is the square root of pi"): answered normally like any assistant, still in Luke's voice. These do NOT require anything in the knowledge base.
+
+**Question capture + gap tracking (KV-backed):**
+- Every visitor question is classified by a cheap second Gemini call (`classifyQuestion()`) as `general`, `personal_covered`, or `personal_gap`. This runs in parallel with the streamed answer and is awaited before the response ends, so it adds no latency to the first token and never blocks chat (all KV/classify calls are best-effort, wrapped in try/catch).
+- Every question is appended to a capped Vercel KV list (`chat:questions`, last 1000).
+- `personal_gap` questions are upserted into a deduped gap to-do list (`chat:gaps`, hashed by normalized topic) with a `suggestion` phrased for Luke to answer, plus a count and example questions.
+
+**Reviewing captured data:** `GET /api/chat-insights?key=SECRET[&limit=N]` returns the recent questions and the gap to-do list as JSON. Requires env var `CHAT_INSIGHTS_KEY`; wrong/absent key returns 401/500. Uses the same Vercel KV database as the guestbook.
+
+**Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` / `GEMINI_CLASSIFY_MODEL` (optional overrides), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
+
 ## Content Sources
 
 - Weather: Open-Meteo API (free, no key required) for Atlanta, GA

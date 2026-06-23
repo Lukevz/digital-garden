@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { kv } from '@vercel/kv';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -16,9 +17,16 @@ const nowJsonPath = join(rootDir, 'src', 'data', 'now.json');
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || MODEL;
 const TEMPERATURE = 0.4;
 const MAX_TURNS = 20;
 const RETRY_WAIT_MS = 1500;
+
+// KV keys — see api/chat-insights.js for the read side.
+const Q_LOG_KEY = 'chat:questions'; // capped list of every visitor question
+const Q_LOG_MAX = 1000;
+const GAPS_KEY = 'chat:gaps';        // hash keyed by normalized topic → gap record
+const LOG_TIMEOUT_MS = 4000;
 
 async function callGemini(apiKey, payload) {
   return fetch(GEMINI_URL, {
@@ -78,19 +86,24 @@ function buildSystemPrompt(kb) {
 
 NEVER say "as Luke", "based on the information provided", "according to the knowledge base", or anything that breaks the illusion that you ARE the person.
 
-Below is your complete knowledge about yourself. If a question is clearly answered by this knowledge, answer it directly in your voice — match the patterns in voice-and-tone.md (rhythm, vocabulary, register).
+Below is your complete knowledge about yourself. There are two kinds of questions, and you handle them differently:
 
-If a question is NOT covered by the knowledge:
-  1. If a NEARBY topic IS covered, offer it: "Haven't written about X, but I've been thinking about [nearby topic] — want to hear about that?"
-  2. Otherwise, say: "That's outside what I've shared publicly. Best to DM me directly — [use the contact info from bio.md or faq.md]."
+1. QUESTIONS ABOUT ME (my life, work, opinions, preferences, biography, plans):
+   - If clearly answered by the knowledge below, answer directly in my voice — match the patterns in voice-and-tone.md (rhythm, vocabulary, register).
+   - If NOT covered, and a NEARBY topic IS covered, offer it: "Haven't written about X, but I've been thinking about [nearby topic] — want to hear about that?"
+   - If NOT covered and nothing nearby fits, say: "That's outside what I've shared publicly. Best to DM me directly — [use the contact info from bio.md or faq.md]." Do NOT guess or invent an answer about myself.
+
+2. GENERAL QUESTIONS (general knowledge, facts, math, explanations, definitions, coding help, small talk, or any task that does NOT depend on private facts about me — e.g. "what is the square root of pi", "explain CSS grid", "tell me a joke"):
+   - Just answer them, helpfully and accurately, the way any capable assistant would. Do NOT redirect these to my DMs and do NOT say they're outside what I've shared. Knowing the answer does not require it to be in my knowledge base.
+   - Still answer in my voice — casual, first person, concise.
 
 If the question matches anything in out-of-scope.md, politely decline using one of the suggested refusal phrases from that file.
 
 Hard rules — these are non-negotiable:
-- NEVER fabricate dates, numbers, project names, employers, quotes, opinions, or biographical facts.
-- NEVER speculate about your opinions on topics not covered in the knowledge base.
+- NEVER fabricate dates, numbers, project names, employers, quotes, opinions, or biographical facts ABOUT ME.
+- NEVER speculate about MY opinions on topics not covered in the knowledge base. (This restriction is about me specifically — it does not stop you from answering general factual questions.)
 - NEVER invent links, URLs, social handles, or contact info — only use what's in the knowledge base.
-- If you're unsure whether something is covered, treat it as not covered and redirect.
+- If you're unsure whether a question about ME is covered, treat it as not covered and redirect rather than guessing.
 - Keep responses short — 1 to 3 sentences usually. Match the casual register.
 - Do not list bullet points unless explicitly asked. Speak in natural prose.
 - Do not use markdown headings in your replies.
@@ -100,6 +113,103 @@ Hard rules — these are non-negotiable:
 <knowledge>
 ${kb}
 </knowledge>`;
+}
+
+// Normalize a topic label into a stable dedup key for the gap list.
+function normalizeTopic(t) {
+  return String(t || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, 80);
+}
+
+// One cheap, non-streaming call that classifies the visitor's question so we can
+// (a) record what people ask and (b) build a to-do list of gaps in the KB.
+// Categories: "general" (answerable regardless of KB), "personal_covered"
+// (about me + in the KB), "personal_gap" (about me + NOT in the KB).
+async function classifyQuestion(apiKey, question, kb) {
+  const sys = `You are a silent classifier for Luke's personal chatbot. Read the visitor's latest message and Luke's knowledge base, then output ONE JSON object and nothing else.
+
+Pick "category":
+- "general": general knowledge, facts, math, definitions, coding help, small talk, or any task that does NOT depend on private facts about Luke (e.g. "what is the square root of pi", "explain CSS grid").
+- "personal_covered": the message asks about Luke (his life, work, opinions, preferences, biography, plans) AND the answer is present in the knowledge base.
+- "personal_gap": the message asks about Luke specifically, but the knowledge base does NOT contain the answer.
+
+Also output:
+- "topic": a short canonical label (3-7 words, lowercase) for what was asked.
+- "suggestion": ONLY when category is "personal_gap", phrase a clear question FOR Luke to answer so he can fill this gap in his knowledge base. Otherwise an empty string.
+
+Respond with JSON only, no code fences:
+{"category":"...","topic":"...","suggestion":"..."}`;
+
+  const payload = {
+    model: CLASSIFY_MODEL,
+    temperature: 0,
+    messages: [
+      { role: 'system', content: sys },
+      { role: 'user', content: `KNOWLEDGE BASE:\n${kb}\n\n---\nVISITOR MESSAGE:\n${question}` }
+    ]
+  };
+
+  const r = await callGemini(apiKey, payload);
+  if (!r.ok) throw new Error('classify upstream ' + r.status);
+  const data = await r.json();
+  const text = data?.choices?.[0]?.message?.content || '';
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('classify: no json in response');
+  const parsed = JSON.parse(match[0]);
+  const category = ['general', 'personal_covered', 'personal_gap'].includes(parsed.category)
+    ? parsed.category : 'general';
+  return {
+    category,
+    topic: String(parsed.topic || '').slice(0, 120),
+    suggestion: String(parsed.suggestion || '').slice(0, 300)
+  };
+}
+
+// Best-effort: classify the question, append it to the capture log, and if it's a
+// gap, upsert it into the gap to-do list. Never throws — chat must not break if
+// classification or KV is unavailable (e.g. local dev without KV env vars).
+async function logInteraction(apiKey, question, kb) {
+  if (!question) return;
+
+  let cls = { category: 'general', topic: '', suggestion: '' };
+  try {
+    cls = await classifyQuestion(apiKey, question, kb);
+  } catch (e) {
+    console.warn('[chat] classify failed:', e.message);
+  }
+
+  const ts = new Date().toISOString();
+  const entry = { q: question.slice(0, 500), ts, category: cls.category, topic: cls.topic };
+
+  try {
+    await kv.lpush(Q_LOG_KEY, JSON.stringify(entry));
+    await kv.ltrim(Q_LOG_KEY, 0, Q_LOG_MAX - 1);
+  } catch (e) {
+    console.warn('[chat] question log skipped:', e.message);
+  }
+
+  if (cls.category === 'personal_gap') {
+    const key = normalizeTopic(cls.topic) || normalizeTopic(question);
+    try {
+      const raw = await kv.hget(GAPS_KEY, key);
+      const existing = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
+      const record = existing || {
+        topic: cls.topic, suggestion: cls.suggestion, count: 0, firstSeen: ts, examples: []
+      };
+      record.count += 1;
+      record.lastSeen = ts;
+      if (cls.suggestion) record.suggestion = cls.suggestion;
+      if (!Array.isArray(record.examples)) record.examples = [];
+      if (record.examples.length < 5) record.examples.push(question.slice(0, 300));
+      await kv.hset(GAPS_KEY, { [key]: JSON.stringify(record) });
+    } catch (e) {
+      console.warn('[chat] gap log skipped:', e.message);
+    }
+  }
 }
 
 async function readJsonBody(req) {
@@ -164,6 +274,9 @@ export default async function handler(req, res) {
   const kb = loadKnowledgeBase();
   const systemPrompt = buildSystemPrompt(kb);
 
+  const lastUser = [...trimmed].reverse().find(m => m.role === 'user');
+  const question = lastUser ? lastUser.content : '';
+
   const payload = {
     model: MODEL,
     temperature: TEMPERATURE,
@@ -207,6 +320,13 @@ export default async function handler(req, res) {
     'X-Accel-Buffering': 'no'
   });
 
+  // Capture + classify the question in parallel with streaming the answer, so it
+  // adds no latency to the first token. Awaited before res.end() so the work
+  // completes before the serverless function is reclaimed.
+  const logPromise = logInteraction(apiKey, question, kb).catch(e => {
+    console.warn('[chat] logInteraction failed:', e.message);
+  });
+
   const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
   try {
@@ -218,6 +338,9 @@ export default async function handler(req, res) {
   } catch (e) {
     // client likely disconnected; ignore
   } finally {
+    try {
+      await Promise.race([logPromise, new Promise(r => setTimeout(r, LOG_TIMEOUT_MS))]);
+    } catch (_) { /* logging is best-effort */ }
     res.end();
   }
 }
