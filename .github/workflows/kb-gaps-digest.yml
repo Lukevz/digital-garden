@@ -1,0 +1,29 @@
+name: KB gaps digest
+
+# Daily: pull the chat gap to-do list from /api/chat-insights and surface it as a
+# single auto-updating GitHub Issue you can answer from Claude Code mobile.
+on:
+  schedule:
+    - cron: '0 13 * * *' # 13:00 UTC daily (~9am ET)
+  workflow_dispatch: {}   # manual "Run workflow" button
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Surface gaps as a GitHub issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CHAT_INSIGHTS_KEY: ${{ secrets.CHAT_INSIGHTS_KEY }}
+          # Optional override; defaults to https://lukevz.com
+          CHAT_INSIGHTS_URL: ${{ vars.CHAT_INSIGHTS_URL }}
+        run: node .github/scripts/kb-gaps.mjs

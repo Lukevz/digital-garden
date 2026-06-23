@@ -1,0 +1,29 @@
+name: KB gaps resolve
+
+# When a PR that answers gaps merges, clear those gaps from the to-do list.
+# Claude adds `Resolves-KB-Gap: <key>` lines to the PR description; this reads
+# them and calls /api/chat-insights to remove the answered gaps from KV.
+# The secret stays in GitHub Actions and never touches a chat session.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Clear answered gaps
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          CHAT_INSIGHTS_KEY: ${{ secrets.CHAT_INSIGHTS_KEY }}
+          CHAT_INSIGHTS_URL: ${{ vars.CHAT_INSIGHTS_URL }}
+        run: node .github/scripts/kb-resolve.mjs

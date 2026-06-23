@@ -1,14 +1,17 @@
 /**
  * Vercel Serverless Function: Chat Insights (private)
- * Read side of the chat capture pipeline written by api/chat.js.
- * Returns the recent visitor questions and the gap to-do list (questions the
- * bot couldn't answer about Luke) so the knowledge base can be improved.
+ * Read + maintenance side of the chat capture pipeline written by api/chat.js.
  *
- * Route: GET /api/chat-insights?key=SECRET[&limit=200]
- * Auth:  query param `key` must equal env var CHAT_INSIGHTS_KEY.
+ * GET  /api/chat-insights?key=SECRET[&limit=N]
+ *   → recent visitor questions + the gap to-do list as JSON.
  *
- * Setup: set CHAT_INSIGHTS_KEY in the environment. Storage uses the same
- * Vercel KV database as the guestbook (env auto-configured by Vercel).
+ * POST /api/chat-insights?key=SECRET
+ *   body { "resolve": ["<gap key>", ...] }  → remove those gaps from the to-do list
+ *   body { "resolveAll": true }             → clear the entire gap list
+ *   (used by the kb-gaps-resolve GitHub Action when a gap-answering PR merges)
+ *
+ * Auth: query param `key` must equal env var CHAT_INSIGHTS_KEY.
+ * Storage: same Vercel KV database as the guestbook.
  */
 import { kv } from '@vercel/kv';
 
@@ -30,9 +33,24 @@ function getQueryParam(req, name) {
   }
 }
 
+function readJsonBody(req) {
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', chunk => { raw += chunk; });
+    req.on('end', () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch { resolve({}); } });
+    req.on('error', () => resolve({}));
+  });
+}
+
+function send(res, status, obj) {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(obj, null, 2));
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -41,29 +59,51 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method !== 'GET') {
-    res.statusCode = 405;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'method not allowed' }));
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    send(res, 405, { error: 'method not allowed' });
     return;
   }
 
   const secret = process.env.CHAT_INSIGHTS_KEY;
   if (!secret) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'CHAT_INSIGHTS_KEY not configured' }));
+    send(res, 500, { error: 'CHAT_INSIGHTS_KEY not configured' });
+    return;
+  }
+  if (getQueryParam(req, 'key') !== secret) {
+    send(res, 401, { error: 'unauthorized' });
     return;
   }
 
-  const key = getQueryParam(req, 'key');
-  if (!key || key !== secret) {
-    res.statusCode = 401;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'unauthorized' }));
+  // POST — resolve (clear) gaps that have been answered.
+  if (req.method === 'POST') {
+    let body = {};
+    try {
+      body = req.body && typeof req.body === 'object' ? req.body : await readJsonBody(req);
+    } catch { body = {}; }
+
+    try {
+      if (body.resolveAll === true) {
+        await kv.del(GAPS_KEY);
+        send(res, 200, { resolved: 'all', remaining: 0 });
+        return;
+      }
+      const keys = Array.isArray(body.resolve)
+        ? body.resolve.map(k => String(k).trim()).filter(Boolean).slice(0, 200)
+        : [];
+      if (!keys.length) {
+        send(res, 400, { error: 'provide { resolve: [keys] } or { resolveAll: true }' });
+        return;
+      }
+      const removed = await kv.hdel(GAPS_KEY, ...keys);
+      const remaining = (await kv.hlen(GAPS_KEY)) || 0;
+      send(res, 200, { requested: keys, removed, remaining });
+    } catch (e) {
+      send(res, 500, { error: 'failed to resolve gaps', detail: e.message });
+    }
     return;
   }
 
+  // GET — read questions + gap to-do list.
   try {
     const limitRaw = parseInt(getQueryParam(req, 'limit') || '200', 10);
     const limit = Math.min(Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 200, 1000);
@@ -80,18 +120,14 @@ export default async function handler(req, res) {
       .filter(Boolean)
       .sort((a, b) => (b.count || 0) - (a.count || 0));
 
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
+    send(res, 200, {
       generatedAt: new Date().toISOString(),
       totalGaps: gaps.length,
       gaps,
       questionCount: questions.length,
       questions
-    }, null, 2));
+    });
   } catch (e) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'failed to load insights', detail: e.message }));
+    send(res, 500, { error: 'failed to load insights', detail: e.message });
   }
 }
