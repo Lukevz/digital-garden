@@ -88,26 +88,95 @@
     const RPDUR = 1800, RPSPD = 180, RPAMP = 1.8;
     let ripples = [], lastRp = 0;
 
-    /* ── Hole (content clearing) ── */
-    // Ellipse semi-axes of the fully-clear zone, plus transition width
-    const HOLE_RX   = 240;  // horizontal half-width of the clear zone (px)
-    const HOLE_RY   = 160;  // vertical half-height of the clear zone (px)
-    const HOLE_FADE = 0.7;  // transition width as a fraction of the hole radius
+    /* ── Hole (content clearing) ──────────────────────────────────────
+       The pattern fades out around the on-screen content so the text and
+       icons stay legible, then returns to full strength in the surrounding
+       field. Rather than stamp one big ellipse over the whole center — which
+       left a dead "solid" oval spanning the empty gap between the hero and
+       the row beneath it — we trace the actual content blocks. Each visible
+       cluster gets a soft rounded-rect clear zone, so the pattern flows
+       around the content silhouette and survives in the gaps between blocks. */
+    const HOLE_PAD  = 10;   // px around each block kept fully clear
+    const HOLE_FADE = 32;   // px transition from clear → full pattern (short = tight halo)
+    // The content atoms the pattern should flow around. We clear two kinds of
+    // shape, and the distinction is what keeps the field from reading as boxes:
+    //   • TEXT atoms — we trace the actual rendered *lines* of text (one clear
+    //     rect per line, via Range), not the element's bounding box. A heading
+    //     like "Hi, I'm Luke" or a short last line ("balanced.") only clears the
+    //     glyphs it occupies, so the pattern flows back in to the right of short
+    //     lines and along the ragged edge instead of inside a big dead rectangle.
+    //   • BOX atoms — opaque blocks (avatar, icon clusters, case-study cards) get
+    //     a tight rounded-rect halo around their bounding box.
+    // The nearest atom always wins (min in holeFade), so texture survives in the
+    // gaps between atoms (hero ↔ icon row, between icons). Adapts across modes
+    // (life launchpad vs work portfolio) since both reuse these atoms.
+    const TEXT_HOLE_SELECTORS = ['.intro-text'];
+    const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-card-left', '.cs-card'];
 
-    function holeFade(x, y, cx, cy) {
-      const ex = (x - cx) / HOLE_RX;
-      const ey = (y - cy) / HOLE_RY;
-      const ed = Math.sqrt(ex * ex + ey * ey);
-      if (ed < 1) return 0;
-      if (ed > 1 + HOLE_FADE) return 1;
-      const t = (ed - 1) / HOLE_FADE;
-      return t * t * (3 - 2 * t); // smoothstep
+    let holeRects = [];
+
+    function pushRect(out, r) {
+      if (r.width < 1 || r.height < 1) return; // hidden / collapsed / empty line
+      out.push({
+        cx: r.left + r.width / 2,
+        cy: r.top + r.height / 2,
+        hw: r.width / 2,
+        hh: r.height / 2,
+      });
+    }
+
+    // Trace each rendered line of text in `el` as its own clear rect. Range
+    // client rects hug the glyph run per line (including the line-box height),
+    // so the clear zone follows the text silhouette rather than the block box.
+    const lineRange = typeof document.createRange === 'function' ? document.createRange() : null;
+    function pushTextLineRects(out, el) {
+      if (!lineRange) { pushRect(out, el.getBoundingClientRect()); return; }
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+      let node, any = false;
+      while ((node = walker.nextNode())) {
+        if (!node.nodeValue || !node.nodeValue.trim()) continue;
+        lineRange.selectNodeContents(node);
+        for (const r of lineRange.getClientRects()) { pushRect(out, r); any = true; }
+      }
+      if (!any) pushRect(out, el.getBoundingClientRect()); // fallback (e.g. no text node yet)
+    }
+
+    function updateHoleRects() {
+      const next = [];
+      for (const sel of TEXT_HOLE_SELECTORS) {
+        for (const el of document.querySelectorAll(sel)) pushTextLineRects(next, el);
+      }
+      for (const sel of BOX_HOLE_SELECTORS) {
+        for (const el of document.querySelectorAll(sel)) pushRect(next, el.getBoundingClientRect());
+      }
+      holeRects = next;
+    }
+
+    // Each content atom gets its own tight halo: a rounded-rect exterior
+    // distance with a short smoothstep falloff. The nearest atom wins (min),
+    // so the clear zone hugs each element's own shape — avatar, text, every
+    // icon — and the pattern recovers in the gaps between them, rather than
+    // one big blob swallowing the whole cluster. 0 = clear, 1 = full pattern.
+    function holeFade(x, y) {
+      if (!holeRects.length) return 1;
+      let min = 1;
+      for (const r of holeRects) {
+        const dx = Math.max(Math.abs(x - r.cx) - (r.hw + HOLE_PAD), 0);
+        const dy = Math.max(Math.abs(y - r.cy) - (r.hh + HOLE_PAD), 0);
+        if (dx === 0 && dy === 0) return 0; // inside a padded block
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < HOLE_FADE) {
+          const t = d / HOLE_FADE;
+          const f = t * t * (3 - 2 * t); // smoothstep
+          if (f < min) min = f;
+        }
+      }
+      return min;
     }
 
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2;
       for (const cl of cells) {
         if (cl.bx > w + SP || cl.by > h + SP) continue;
         let x = cl.bx, y = cl.by;
@@ -129,7 +198,7 @@
           const u = ((performance.now() + phase) % period) / period;
           breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
-        const alpha = cl.al * breathMult * holeFade(x, y, cx, cy);
+        const alpha = cl.al * breathMult * holeFade(x, y);
         if (alpha < 0.004) continue;
         c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
         if (cl.tp === 0) {
@@ -200,14 +269,21 @@
     const CSVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path d="M12 19.5C12.5522 19.5001 13 19.9478 13 20.5V23C13 23.5522 12.5522 23.9999 12 24C11.4477 24 11 23.5523 11 23V20.5C11 19.9477 11.4477 19.5 12 19.5ZM12 6.5C15.0376 6.5 17.5 8.96243 17.5 12C17.5 15.0375 15.0375 17.5 12 17.5C8.96245 17.5 6.50003 15.0375 6.5 12C6.5 8.96243 8.96243 6.5 12 6.5ZM3.60742 11C4.11155 11.0513 4.50488 11.4774 4.50488 11.9951C4.50482 12.5127 4.11152 12.9389 3.60742 12.9902L3.50488 12.9951H1.00488C0.452639 12.9951 0.00494878 12.5473 0.00488281 11.9951C0.00488281 11.4428 0.452598 10.9951 1.00488 10.9951H3.50488L3.60742 11ZM23.1074 11C23.6115 11.0513 24.0049 11.4774 24.0049 11.9951C24.0048 12.5127 23.6115 12.9389 23.1074 12.9902L23.0049 12.9951H20.5049C19.9526 12.9951 19.5049 12.5473 19.5049 11.9951C19.5049 11.4428 19.9526 10.9951 20.5049 10.9951H23.0049L23.1074 11ZM12 0C12.5522 6.59659e-05 13 0.447756 13 1V3.5C13 4.05224 12.5522 4.49993 12 4.5C11.4477 4.5 11 4.05228 11 3.5V1C11 0.447715 11.4477 0 12 0Z" fill="url(#csvg_parts)" mask="url(#csvg_mask)"></path><path d="M12 19.5C12.5522 19.5001 13 19.9478 13 20.5V23C13 23.5522 12.5522 23.9999 12 24C11.4477 24 11 23.5523 11 23V20.5C11 19.9477 11.4477 19.5 12 19.5ZM12 6.5C15.0376 6.5 17.5 8.96243 17.5 12C17.5 15.0375 15.0375 17.5 12 17.5C8.96245 17.5 6.50003 15.0375 6.5 12C6.5 8.96243 8.96243 6.5 12 6.5ZM3.60742 11C4.11155 11.0513 4.50488 11.4774 4.50488 11.9951C4.50482 12.5127 4.11152 12.9389 3.60742 12.9902L3.50488 12.9951H1.00488C0.452639 12.9951 0.00494878 12.5473 0.00488281 11.9951C0.00488281 11.4428 0.452598 10.9951 1.00488 10.9951H3.50488L3.60742 11ZM23.1074 11C23.6115 11.0513 24.0049 11.4774 24.0049 11.9951C24.0048 12.5127 23.6115 12.9389 23.1074 12.9902L23.0049 12.9951H20.5049C19.9526 12.9951 19.5049 12.5473 19.5049 11.9951C19.5049 11.4428 19.9526 10.9951 20.5049 10.9951H23.0049L23.1074 11ZM12 0C12.5522 6.59659e-05 13 0.447756 13 1V3.5C13 4.05224 12.5522 4.49993 12 4.5C11.4477 4.5 11 4.05228 11 3.5V1C11 0.447715 11.4477 0 12 0Z" fill="url(#csvg_parts)" filter="url(#csvg_blur)" clip-path="url(#csvg_cp)"></path><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8Z" fill="url(#csvg_glass)"></path><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 2.75C6.89137 2.75 2.75 6.89137 2.75 12C2.75 17.1086 6.89137 21.25 12 21.25C17.1086 21.25 21.25 17.1086 21.25 12C21.25 6.89137 17.1086 2.75 12 2.75Z" fill="url(#csvg_shine)"></path><defs><linearGradient id="csvg_parts" x1="12.005" y1="0" x2="12.005" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87,87,87,1)"></stop><stop offset="1" stop-color="rgba(21,21,21,1)"></stop></linearGradient><linearGradient id="csvg_glass" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227,227,229,0.6)"></stop><stop offset="1" stop-color="rgba(187,187,192,0.6)"></stop></linearGradient><linearGradient id="csvg_shine" x1="12" y1="2" x2="12" y2="13.582" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255,255,255,1)"></stop><stop offset="1" stop-color="rgba(255,255,255,0)"></stop></linearGradient><filter id="csvg_blur" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" in="SourceGraphic" edgeMode="none"></feGaussianBlur></filter><clipPath id="csvg_cp"><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8Z"></path></clipPath><mask id="csvg_mask"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8Z" fill="#000"></path></mask></defs></g></svg>`;
 
     let cMode = '';
+    // Icon offset baked into the position transform so movement stays on the
+    // compositor (GPU) instead of triggering layout via left/top.
+    let curOffX = -8, curOffY = -9;
     function setCursor(mode) {
       if (!useFinePointer || !cursorEl) return;
       if (mode === cMode) return;
       cMode = mode;
       cursorEl.innerHTML = mode === 'cross' ? CSVG : PSVG;
-      cursorEl.style.transform = mode === 'cross' ? 'translate(-12px,-12px)' : 'translate(-8px,-9px)';
+      curOffX = mode === 'cross' ? -12 : -8;
+      curOffY = mode === 'cross' ? -12 : -9;
     }
-    if (useFinePointer) setCursor('pointer');
+    if (useFinePointer) {
+      setCursor('pointer');
+      cursorEl.style.transform = 'translate3d(-100px,-100px,0)';
+    }
 
     /* ── State ── */
     let mx = -300, my = -300, animating = false;
@@ -227,21 +303,40 @@
 
     /* ── Mouse (custom cursor follows pointer on fine-pointer devices only) ── */
     if (useFinePointer && cursorEl) {
+      // Coalesce rapid mousemove events into a single transform write per frame.
+      // mousemove can fire faster than the display refreshes, so doing the DOM
+      // write + closest() lookup once per frame avoids redundant work and keeps
+      // the cursor on the compositor.
+      let curTarget = null, curRaf = false;
+      function flushCursor() {
+        curRaf = false;
+        if (curTarget) {
+          const inter = curTarget.closest('button,a,input,select,[role=button]');
+          setCursor(inter ? 'cross' : 'pointer');
+        }
+        cursorEl.style.transform =
+          'translate3d(' + (mx + curOffX) + 'px,' + (my + curOffY) + 'px,0)';
+        cursorEl.style.opacity = '1';
+      }
       document.addEventListener('mousemove', e => {
         mx = e.clientX; my = e.clientY;
-        cursorEl.style.left = mx + 'px';
-        cursorEl.style.top  = my + 'px';
-        cursorEl.style.opacity = '1';
-
-        const inter = e.target.closest('button,a,input,select,[role=button]');
-        setCursor(inter ? 'cross' : 'pointer');
-      });
+        curTarget = e.target;
+        if (!curRaf) { curRaf = true; requestAnimationFrame(flushCursor); }
+      }, { passive: true });
 
       document.addEventListener('mouseleave', () => { cursorEl.style.opacity = '0'; });
       document.addEventListener('mouseenter', () => { cursorEl.style.opacity = '1'; });
     }
 
     /* ── Animation loop ── */
+    // The ambient "breathing"/rotation drift runs on multi-second periods, so
+    // redrawing the whole grid at the full refresh rate is wasted work. Cap the
+    // ambient-only loop to ~30fps (imperceptible at these speeds) but keep
+    // ripples — which move fast — at the full frame rate. This roughly halves
+    // the steady-state main-thread + paint cost behind the glass UI.
+    const AMBIENT_FRAME_MS = 1000 / 30;
+    let lastDrawTs = 0;
+
     function startAnim() {
       if (animating) return;
       animating = true;
@@ -250,8 +345,12 @@
 
     function tick(ts) {
       ripples = ripples.filter(r => ts - r.t0 < RPDUR);
-      drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
-      if (ripples.length || ambientAnim) {
+      const ripplesActive = ripples.length > 0;
+      if (ripplesActive || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
+        lastDrawTs = ts;
+        drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
+      }
+      if (ripplesActive || ambientAnim) {
         requestAnimationFrame(tick);
       } else {
         animating = false;
@@ -273,9 +372,30 @@
       if (typeof ctx.imageSmoothingQuality === 'string') ctx.imageSmoothingQuality = 'high';
       readGridDotRgb();
       buildCells(gridLogicalW, gridLogicalH);
+      updateHoleRects();
       if (ambientAnim) startAnim();
       else if (!animating) drawGrid(ctx, gridLogicalW, gridLogicalH, 0);
     }
+
+    /* Keep the clear zones tracking the content as it moves: mode switches
+       (life/work/chat) swap which blocks are visible, and work mode scrolls.
+       Recompute the rects then redraw if the ambient loop isn't already. */
+    function refreshHoles() {
+      updateHoleRects();
+      if (!animating && gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
+    }
+    let holeRaf = 0;
+    function scheduleHoleRefresh() {
+      if (holeRaf) return;
+      holeRaf = requestAnimationFrame(() => { holeRaf = 0; refreshHoles(); });
+    }
+    window.addEventListener('scroll', scheduleHoleRefresh, { passive: true });
+    // Mode switches toggle classes on <body>; re-measure when they do.
+    new MutationObserver(scheduleHoleRefresh)
+      .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    // Re-measure once fonts/async content (e.g. post counts) settle.
+    window.addEventListener('load', refreshHoles);
+    setTimeout(refreshHoles, 600);
 
     /* ── Slash flipper ── */
     function flipSlashes() {
