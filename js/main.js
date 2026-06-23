@@ -2118,6 +2118,7 @@
     const sModalBack  = document.getElementById('sModalBack');
     const sModalClose = document.getElementById('sModalClose');
     const sModalBody  = document.getElementById('sModalBody');
+    const sModalBg    = document.getElementById('sModalBg');
     const nowStrip    = document.getElementById('nowStrip');
 
     // Capture strip rect for expansion animation
@@ -2419,6 +2420,7 @@
     }
 
     function renderVideoItem(section, videoId) {
+      setModalLarge(true);
       fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-size:0.85rem">Loading…</p></div>`);
       fetchSectionVideos(section).then(videos => {
         const video = videos.find(v => v.videoId === videoId);
@@ -2445,6 +2447,12 @@
       sModal.classList.add('sm-open');
     }
 
+    // Toggle the roomy "detail" modal size (used for video/writing/case-study
+    // detail views and the photos grid). Animates between small and large.
+    function setModalLarge(large) {
+      sModal.classList.toggle('sm-large', !!large);
+    }
+
     let prevNavMode = false;
 
     function closeSModal() {
@@ -2452,13 +2460,18 @@
       prevNavMode = false;
       sModalBack.onclick = null;
       modalIsOpen = false;
+      photoDetailNav = null;
       clearModalSectionIcon();
-      sModal.classList.remove('sm-open', 'sm-now');
+      if (sModalBg) { sModalBg.classList.remove('is-visible'); sModalBg.style.backgroundImage = ''; }
+      sModal.classList.remove('sm-open', 'sm-now', 'sm-large', 'sm-photo');
       sModal.style.pointerEvents = 'none';
       history.pushState(null, '', location.pathname + location.search);
     }
 
     function fadeSwap(newHTML) {
+      // Any content swap drops the photo backdrop; renderPhotoDetail re-applies it.
+      sModal.classList.remove('sm-photo');
+      if (sModalBg) { sModalBg.classList.remove('is-visible'); sModalBg.style.backgroundImage = ''; }
       const current = sModalBody.firstElementChild;
       if (current && modalIsOpen) {
         current.style.transition = 'opacity 0.12s ease';
@@ -2472,6 +2485,7 @@
     // ── Previously button — opens case studies in sModal ──
     function renderPrevList() {
       prevNavMode = true;
+      setModalLarge(false);
       sModalTitle.textContent = 'Previously';
       showModalPreviouslyIcon();
       sModalBack.style.display = 'none';
@@ -2491,6 +2505,7 @@
 
     function renderPrevDetail(idx) {
       const { meta, body } = loadedStudies[idx];
+      setModalLarge(true);
       sModalTitle.textContent = meta.title || '';
       clearModalSectionIcon();
       sModalBack.style.display = 'flex';
@@ -2534,52 +2549,16 @@
         });
     }
 
-    // ── Photos: immersive curated grid with lightbox ──
-    let photoLightbox = null;
-    function ensurePhotoLightbox() {
-      if (photoLightbox) return photoLightbox;
-      const ov = document.createElement('div');
-      ov.className = 'photo-lightbox';
-      ov.innerHTML =
-        '<button class="photo-lb-btn photo-lb-close" aria-label="Close">' +
-          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>' +
-        '</button>' +
-        '<button class="photo-lb-btn photo-lb-prev" aria-label="Previous">' +
-          '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>' +
-        '</button>' +
-        '<img class="photo-lb-img" alt="">' +
-        '<button class="photo-lb-btn photo-lb-next" aria-label="Next">' +
-          '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>' +
-        '</button>';
-      document.body.appendChild(ov);
-      const state = { el: ov, img: ov.querySelector('.photo-lb-img'), list: [], idx: 0 };
-      photoLightbox = state;
-
-      const show = (i) => {
-        if (!state.list.length) return;
-        state.idx = (i + state.list.length) % state.list.length;
-        state.img.src = state.list[state.idx];
-      };
-      const close = () => { ov.classList.remove('is-open'); state.img.src = ''; };
-      state.open = (list, i) => { state.list = list; ov.classList.add('is-open'); show(i); };
-
-      ov.querySelector('.photo-lb-close').addEventListener('click', close);
-      ov.querySelector('.photo-lb-prev').addEventListener('click', (e) => { e.stopPropagation(); show(state.idx - 1); });
-      ov.querySelector('.photo-lb-next').addEventListener('click', (e) => { e.stopPropagation(); show(state.idx + 1); });
-      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
-      document.addEventListener('keydown', (e) => {
-        if (!ov.classList.contains('is-open')) return;
-        if (e.key === 'Escape') close();
-        else if (e.key === 'ArrowLeft') show(state.idx - 1);
-        else if (e.key === 'ArrowRight') show(state.idx + 1);
-      });
-      return state;
-    }
+    // ── Photos: small grid → click grows into the large in-modal detail ──
+    let photoDetailNav = null; // { prev, next } while a single photo is open
 
     function renderPhotosGrid() {
+      photoDetailNav = null;
+      setModalLarge(false);
       sModalTitle.textContent = 'Photos';
       showModalSectionIconFromSlug('photos');
       sModalBack.style.display = 'none';
+      sModalBack.onclick = null;
       fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
       fetch('/api/content/list?category=photos')
         .then(r => r.json())
@@ -2589,20 +2568,74 @@
             return;
           }
           const items = images.map((img, i) =>
-            `<button class="photo-item" data-idx="${i}"><img src="${escHtml(img.thumb || img.src)}" alt="" loading="lazy"></button>`
+            `<button class="photo-item" data-idx="${i}"><img src="${escHtml(img.thumb || img.src)}" alt="" loading="lazy" decoding="async"></button>`
           ).join('');
           fadeSwap(`<div class="sm-fade"><div class="photos-masonry">${items}</div></div>`);
           setTimeout(() => {
             sModalBody.scrollTop = 0;
             const fulls = images.map(img => img.src);
+            const thumbs = images.map(img => img.thumb || img.src);
             sModalBody.querySelectorAll('.photo-item').forEach(btn => {
-              btn.addEventListener('click', () => ensurePhotoLightbox().open(fulls, +btn.dataset.idx));
+              btn.addEventListener('click', () => renderPhotoDetail(fulls, thumbs, +btn.dataset.idx));
             });
           }, 140);
         })
         .catch(() => {
           fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Couldn't load photos.</p></div>`);
         });
+    }
+
+    // Single photo shown inside the modal, grown to the large size, over a
+    // blurred + darkened version of its own thumbnail.
+    function renderPhotoDetail(list, thumbs, startIdx) {
+      setModalLarge(true);
+      sModalTitle.textContent = 'Photos';
+      clearModalSectionIcon();
+      sModalBack.style.display = 'flex';
+      sModalBack.onclick = () => renderPhotosGrid();
+
+      const navSvg = (d) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+      fadeSwap(`<div class="sm-fade photo-detail">
+        <div class="photo-detail-stage">
+          <button class="photo-detail-nav photo-detail-prev" aria-label="Previous photo">${navSvg('m15 18-6-6 6-6')}</button>
+          <img class="photo-detail-img" alt="" decoding="async">
+          <button class="photo-detail-nav photo-detail-next" aria-label="Next photo">${navSvg('m9 18 6-6-6-6')}</button>
+        </div>
+        <div class="photo-detail-count"></div>
+      </div>`);
+      sModal.classList.add('sm-photo');
+
+      setTimeout(() => {
+        sModalBody.scrollTop = 0;
+        const img = sModalBody.querySelector('.photo-detail-img');
+        const count = sModalBody.querySelector('.photo-detail-count');
+        const prevBtn = sModalBody.querySelector('.photo-detail-prev');
+        const nextBtn = sModalBody.querySelector('.photo-detail-next');
+        if (!img) return;
+        let idx = startIdx;
+        const single = list.length <= 1;
+        if (single) { if (prevBtn) prevBtn.style.display = 'none'; if (nextBtn) nextBtn.style.display = 'none'; }
+        const setBg = (src) => {
+          if (!sModalBg) return;
+          sModalBg.style.backgroundImage =
+            `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("${src.replace(/"/g, '%22')}")`;
+          sModalBg.classList.add('is-visible');
+        };
+        const show = (i) => {
+          idx = (i + list.length) % list.length;
+          img.classList.remove('is-loaded');
+          img.src = list[idx];
+          setBg((thumbs && thumbs[idx]) || list[idx]);
+          if (count) count.textContent = `${idx + 1} / ${list.length}`;
+        };
+        img.addEventListener('load', () => img.classList.add('is-loaded'));
+        const prev = () => show(idx - 1);
+        const next = () => show(idx + 1);
+        if (prevBtn) prevBtn.addEventListener('click', prev);
+        if (nextBtn) nextBtn.addEventListener('click', next);
+        photoDetailNav = single ? null : { prev, next };
+        show(idx);
+      }, 140);
     }
 
     function renderLabsGrid() {
@@ -2727,6 +2760,7 @@
     function renderIndex(section) {
       const data = SECTIONS[section];
       if (!data) return;
+      setModalLarge(false);
       sModalTitle.textContent = data.label;
       showModalSectionIconFromSlug(section);
       sModalBack.style.display = 'none';
@@ -2780,6 +2814,7 @@
     function renderItem(section, slug) {
       const data = SECTIONS[section];
       if (!data) return;
+      setModalLarge(true);
       sModalTitle.textContent = data.label;
       clearModalSectionIcon();
       sModalBack.style.display = 'flex';
@@ -2829,6 +2864,7 @@
     }
 
     function renderNowBoard() {
+      setModalLarge(false);
       sModal.classList.add('sm-now');
       sModalTitle.textContent = 'Now';
       clearModalSectionIcon();
@@ -3084,6 +3120,13 @@
     sModalClose.addEventListener('click', doClose);
     sModal.addEventListener('click', e => { if (e.target === sModal) doClose(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalIsOpen) doClose(); });
+    // Arrow keys page through the open photo detail.
+    document.addEventListener('keydown', e => {
+      if (!modalIsOpen || !photoDetailNav) return;
+      if (!sModalBody.querySelector('.photo-detail')) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); photoDetailNav.prev(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); photoDetailNav.next(); }
+    });
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && versionScreen && versionScreen.classList.contains('visible')) closeVersionScreen();
     });
