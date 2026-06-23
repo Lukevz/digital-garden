@@ -13,6 +13,7 @@ import { kv } from '@vercel/kv';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 const aboutDir = join(rootDir, 'content', 'about');
+const conversationsPath = join(aboutDir, 'conversations.md');
 const nowJsonPath = join(rootDir, 'src', 'data', 'now.json');
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
@@ -90,7 +91,7 @@ let _kbMtime = 0;
 
 function loadKnowledgeBase() {
   if (!existsSync(aboutDir)) return '';
-  const files = readdirSync(aboutDir).filter(f => f.endsWith('.md') && f !== 'seed-questions.md');
+  const files = readdirSync(aboutDir).filter(f => f.endsWith('.md') && f !== 'seed-questions.md' && f !== 'conversations.md');
   const nowMtime = existsSync(nowJsonPath) ? statSync(nowJsonPath).mtimeMs : 0;
   const newestMtime = files.reduce((max, f) => {
     const m = statSync(join(aboutDir, f)).mtimeMs;
@@ -108,7 +109,46 @@ function loadKnowledgeBase() {
   return _kbCache;
 }
 
-function buildSystemPrompt(kb) {
+// Parse content/about/conversations.md into few-shot examples of how Luke
+// actually answers — the strongest signal for matching his voice. Only Q/A
+// pairs with a non-empty answer are kept, so the worksheet works incrementally:
+// blank stubs are ignored until they're filled in.
+function loadVoiceExamples() {
+  if (!existsSync(conversationsPath)) return '';
+  let raw;
+  try { raw = readFileSync(conversationsPath, 'utf8'); }
+  catch (e) { return ''; }
+  // Drop frontmatter and HTML comment instructions so they don't leak in.
+  raw = raw.replace(/^---[\s\S]*?\n---/, '').replace(/<!--[\s\S]*?-->/g, '');
+
+  const pairs = [];
+  let q = null;
+  let answer = [];
+  let inAnswer = false;
+  const flush = () => {
+    if (q != null) {
+      const a = answer.join('\n').trim();
+      if (a) pairs.push({ q: q.trim(), a });
+    }
+    q = null; answer = []; inAnswer = false;
+  };
+  for (const line of raw.split('\n')) {
+    const qm = line.match(/^\s*(?:\*\*)?Q:\s*\**\s*(.*)$/i);
+    const am = line.match(/^\s*(?:\*\*)?A:\s*\**\s*(.*)$/i);
+    if (qm) { flush(); q = qm[1]; continue; }
+    if (am && q != null) { inAnswer = true; answer.push(am[1]); continue; }
+    // A markdown heading is a structural divider, never part of an answer —
+    // it ends the current pair so section titles don't leak in as answers.
+    if (/^\s*#/.test(line)) { flush(); continue; }
+    if (inAnswer) answer.push(line);
+  }
+  flush();
+
+  if (!pairs.length) return '';
+  return pairs.map(p => `Q: ${p.q}\nMe: ${p.a}`).join('\n\n');
+}
+
+function buildSystemPrompt(kb, examples) {
   return `You are Luke. You speak in Luke's voice — first person, conversational, as if you ARE Luke. You are NOT an assistant describing Luke; you are Luke replying.
 
 NEVER say "as Luke", "based on the information provided", "according to the knowledge base", or anything that breaks the illusion that you ARE the person.
@@ -157,7 +197,13 @@ Hard rules — these are non-negotiable:
 - Do not use markdown headings in your replies.
 - Avoid em dashes (—). Use a comma, a period, or restructure the sentence instead.
 - When referencing social platforms, write the bare URL only (e.g. linkedin.com/in/lukevz). Do not wrap it in parentheses or add the platform name separately — the UI will handle the display.
+${examples ? `
+Here are real examples of how I actually answer questions. These are the single most important guide to my voice — when you reply, sound like THESE, not like a generic assistant. Don't reuse their exact words; match their length, rhythm, humor, and how I handle a question I don't really have an answer to.
 
+<my-real-answers>
+${examples}
+</my-real-answers>
+` : ''}
 <knowledge>
 ${kb}
 </knowledge>`;
@@ -320,7 +366,8 @@ export default async function handler(req, res) {
     .map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
 
   const kb = loadKnowledgeBase();
-  const systemPrompt = buildSystemPrompt(kb);
+  const voiceExamples = loadVoiceExamples();
+  const systemPrompt = buildSystemPrompt(kb, voiceExamples);
 
   const lastUser = [...trimmed].reverse().find(m => m.role === 'user');
   const question = lastUser ? lastUser.content : '';
