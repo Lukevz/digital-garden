@@ -12,10 +12,12 @@ const text = `${process.env.PR_TITLE || ''}\n${process.env.PR_BODY || ''}`;
 
 if (!KEY) { console.error('CHAT_INSIGHTS_KEY missing'); process.exit(1); }
 
-// One key per line, rest-of-line captured (gap keys are space-separated topics).
-const keys = [...text.matchAll(/Resolves-KB-Gap:\s*(.+)/gi)]
+// Trailer lines only — line-anchored so prose mentioning the trailer (e.g. PR
+// descriptions documenting this very format) don't match. Optional leading list
+// markers / blockquote are tolerated. The `<key>` placeholder is skipped.
+const keys = [...text.matchAll(/^[ \t>*-]*Resolves-KB-Gap:[ \t]*(.+?)[ \t]*$/gim)]
   .map(m => m[1].trim().replace(/[`"']/g, ''))
-  .filter(Boolean);
+  .filter(k => k && !k.startsWith('<'));
 
 if (!keys.length) {
   console.log('No Resolves-KB-Gap trailers found. Nothing to clear.');
