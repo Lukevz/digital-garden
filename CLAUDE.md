@@ -298,6 +298,7 @@ The chat tab answers in Luke's voice, grounded in `/content/about/*.md` (see `lo
 - Required GitHub repo secret: `CHAT_INSIGHTS_KEY` (Settings → Secrets and variables → Actions). Optional repo variable: `CHAT_INSIGHTS_URL` (defaults to `https://lukevz.com`).
 
 **Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` / `GEMINI_CLASSIFY_MODEL` (optional overrides), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
+**Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` (answer model, default `gemini-2.5-flash`) / `GEMINI_CLASSIFY_MODEL` (classifier model, default `gemini-2.5-flash-lite` so it doesn't share the answer model's quota), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
 
 ## Content Sources
 
