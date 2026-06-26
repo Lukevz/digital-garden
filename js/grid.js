@@ -82,23 +82,57 @@
     let digitBoxes = [];   // {x,y,w,h} for the 4 digits, set on resize
     let colon = null;      // {cx, y1, y2, r}
 
+    // Per-digit width = WIDTH_RATIO × height, before any width condensing.
+    const WIDTH_RATIO = 0.50;
+    // Layout span as multiples of DW: 4 digits + two inter-digit gaps + colon.
+    const GAP_RATIO = 0.30, COLON_RATIO = 0.46;
+    const SPAN_RATIO = 4 + 2 * GAP_RATIO + COLON_RATIO; // total width / DW
+    const GUTTER = 22; // px kept clear of the nav / now-bar (never touching)
+
+    // The clock is a full-height "shadow" behind the content, so the digits are
+    // as tall as the gap between the top chrome (mode tab + corner widget) and
+    // the bottom now-bar allows, then condensed in width to fit the viewport.
     function layoutDigits(w, h) {
-      const DH = Math.min(h * 0.46, 380);
-      const DW = DH * 0.50;
-      const gap = DW * 0.30;
-      const colonW = DW * 0.46;
-      const totalW = 4 * DW + 2 * gap + colonW;
+      // Top bound: below the mode tab and the corner time/weather widget.
+      let top = 0;
+      for (const sel of ['#modeTab', '.corner-status']) {
+        for (const el of document.querySelectorAll(sel)) {
+          const r = el.getBoundingClientRect();
+          if (r.height >= 1 && r.bottom > top) top = r.bottom;
+        }
+      }
+      // Bottom bound: above the now-bar (only shown/visible on the Life tab).
+      let bottom = h;
+      for (const el of document.querySelectorAll('#nowStrip')) {
+        const r = el.getBoundingClientRect();
+        if (r.height < 1) continue;
+        const st = getComputedStyle(el);
+        if (st.display === 'none' || st.visibility === 'hidden') continue;
+        if (r.top < bottom) bottom = r.top;
+      }
+      const yTop = top + GUTTER;
+      let DH = bottom - GUTTER - yTop;
+      if (!(DH > 40)) DH = h * 0.8; // safety fallback
+
+      // Width: natural from height, but condensed so the whole HH:MM always
+      // fits the viewport width — narrow screens squeeze it, it never clips.
+      const sideMargin = Math.min(48, w * 0.05);
+      const maxDW = (w - 2 * sideMargin) / SPAN_RATIO;
+      const DW = Math.min(DH * WIDTH_RATIO, maxDW);
+
+      const gap = DW * GAP_RATIO;
+      const colonW = DW * COLON_RATIO;
+      const totalW = DW * SPAN_RATIO;
       const x0 = (w - totalW) / 2;
-      const y0 = (h - DH) / 2;
       const xs = [
         x0,
         x0 + DW + gap,
         x0 + 2 * DW + gap + colonW,
         x0 + 3 * DW + 2 * gap + colonW,
       ];
-      digitBoxes = xs.map(x => ({ x, y: y0, w: DW, h: DH }));
+      digitBoxes = xs.map(x => ({ x, y: yTop, w: DW, h: DH }));
       const colonCx = x0 + 2 * DW + gap + colonW / 2;
-      colon = { cx: colonCx, y1: y0 + DH * 0.37, y2: y0 + DH * 0.63, r: Math.max(1.8, DW * 0.022) };
+      colon = { cx: colonCx, y1: yTop + DH * 0.37, y2: yTop + DH * 0.63, r: Math.max(1.8, DW * 0.022) };
     }
 
     // Distance from point (px,py) to a segment bar (absolute px coords).
@@ -116,7 +150,10 @@
     // digit boxes) within tolerance. Time-independent, so compute once per
     // layout; only which segments are *lit* changes per minute.
     function assignClockTargets() {
-      const tol = Math.max(SP * 0.62, digitBoxes.length ? digitBoxes[0].w * 0.135 : SP);
+      // Roughly one hand-spacing thick so bars stay crisp, but allowed to grow
+      // a little (≈2 hands) on big digits and capped so huge ones don't blob.
+      const dw = digitBoxes.length ? digitBoxes[0].w : SP * 4;
+      const tol = Math.max(SP * 0.55, Math.min(dw * 0.13, SP * 0.92));
       for (const cl of cells) {
         if (cl.tp !== 2) continue;
         cl.clk = null;
@@ -165,13 +202,45 @@
       }
     }
 
-    let curMinute = null;
+    // Horizontal shift (px) that centers the *lit ink* of a given minute in the
+    // viewport. The nominal digit cells are symmetric, but a digit like "1" only
+    // lights one side of its cell, so a fixed-cell layout looks off-centre. We
+    // measure the lit segments' bounding box and slide the whole clock so that
+    // box is centred — clamped to keep the ink on-screen. Computed per minute
+    // and eased between minutes (with the hand morph) so it never jumps.
+    function clockShiftFor(ms) {
+      const digits = digitsForMs(ms);
+      let minX = Infinity, maxX = -Infinity;
+      for (let di = 0; di < digitBoxes.length; di++) {
+        const dv = digits[di];
+        if (dv < 0) continue;
+        const box = digitBoxes[di];
+        const segs = DIGIT_SEGS[dv];
+        for (let k = 0; k < segs.length; k++) {
+          const s = SEGMENTS[segs[k]];
+          const lx = box.x + Math.min(s.x1, s.x2) * box.w;
+          const rx = box.x + Math.max(s.x1, s.x2) * box.w;
+          if (lx < minX) minX = lx;
+          if (rx > maxX) maxX = rx;
+        }
+      }
+      if (!isFinite(minX)) return 0;
+      const pad = 8;
+      let dx = gridLogicalW / 2 - (minX + maxX) / 2;
+      const lo = pad - minX, hi = (gridLogicalW - pad) - maxX;
+      if (lo <= hi) dx = Math.max(lo, Math.min(hi, dx)); // keep ink on-screen
+      return dx;
+    }
+
+    let curMinute = null, dxM = 0, dxM1 = 0;
     function refreshMinute(now) {
       const idx = Math.floor(now / MIN_MS);
       if (idx === curMinute) return;
       curMinute = idx;
       computeArrangement(idx * MIN_MS, 'M');
       computeArrangement((idx + 1) * MIN_MS, 'M1');
+      dxM = clockShiftFor(idx * MIN_MS);
+      dxM1 = clockShiftFor((idx + 1) * MIN_MS);
     }
 
     // Hold at the current minute for HOLD_MS, then smoothstep to the next.
@@ -211,10 +280,10 @@
           // lengthen, so the number pops out of the diagonal field when landed.
           const cell = {
             bx, by, tp: 2,
-            h: 8.5 + r() * 2.2,
+            h: 9.5 + r() * 3,
             rest: REST_ANGLE + (r() - 0.5) * 0.18,    // gentle organic jitter at rest
             restAlpha: 0.06 + r() * 0.05,
-            activeAlpha: 0.34 + r() * 0.13,
+            activeAlpha: 0.46 + r() * 0.18,
             clk: null,
             aM: REST_ANGLE, aM1: REST_ANGLE, oM: 0.09, oM1: 0.09,
           };
@@ -315,6 +384,7 @@
       c.clearRect(0, 0, w, h);
       const now = Date.now();
       const eased = minuteEase(now);
+      const shiftX = dxM + (dxM1 - dxM) * eased; // centre the lit ink horizontally
       c.lineWidth = 1.25;
       c.lineCap = 'round';
       for (const cl of cells) {
@@ -339,28 +409,39 @@
         }
 
         // Clock hand: interpolate angle + alpha between this minute and next.
+        // The hands that belong to a digit slide as one block by shiftX so the
+        // lit time reads centred; the resting field stays put.
         const angle = lerpLine(cl.aM, cl.aM1, eased);
-        const alpha = (cl.oM + (cl.oM1 - cl.oM) * eased) * holeFade(x, y);
+        const hx = cl.clk ? x + shiftX : x;
+        // Lit digit segments keep a faint floor *through* the content so the
+        // big clock reads as a continuous shadow/watermark behind it; the
+        // resting field still clears fully so text stays clean.
+        const lit = cl.oM > cl.restAlpha * 1.5 || cl.oM1 > cl.restAlpha * 1.5;
+        const hf = holeFade(hx, y);
+        const eff = lit ? 0.30 + 0.70 * hf : hf;
+        const alpha = (cl.oM + (cl.oM1 - cl.oM) * eased) * eff;
         if (alpha < 0.004) continue;
         const dx = Math.cos(angle) * cl.h;
         const dy = Math.sin(angle) * cl.h;
         c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
         c.beginPath();
-        c.moveTo(x - dx, y - dy);
-        c.lineTo(x + dx, y + dy);
+        c.moveTo(hx - dx, y - dy);
+        c.lineTo(hx + dx, y + dy);
         c.stroke();
       }
 
-      // Colon between HH and MM — two softly pulsing dots.
+      // Colon between HH and MM — two softly pulsing dots, riding along with
+      // the digits' horizontal shift so it stays between the hours and minutes.
       if (colon) {
         const pulse = 0.14 + 0.12 * (0.5 + 0.5 * Math.cos(now / 900));
+        const ccx = colon.cx + shiftX;
         c.fillStyle = `rgba(${gridDotRgb},${pulse})`;
         for (const cy of [colon.y1, colon.y2]) {
-          const f = holeFade(colon.cx, cy);
+          const f = holeFade(ccx, cy);
           if (f < 0.004) continue;
           c.globalAlpha = f;
           c.beginPath();
-          c.arc(colon.cx, cy, colon.r, 0, 6.2832);
+          c.arc(ccx, cy, colon.r, 0, 6.2832);
           c.fill();
         }
         c.globalAlpha = 1;
@@ -502,11 +583,28 @@
       if (holeRaf) return;
       holeRaf = requestAnimationFrame(() => { holeRaf = 0; refreshHoles(); });
     }
+    // Structural changes (mode switch shows/hides the now-bar, async now-bar
+    // load, font settling) move the chrome the digits size themselves against —
+    // re-measure the digit band, then refresh the holes.
+    function refreshStructure() {
+      if (!gridLogicalW) return;
+      layoutDigits(gridLogicalW, gridLogicalH);
+      assignClockTargets();
+      curMinute = null;
+      refreshMinute(Date.now());
+      refreshHoles();
+    }
+    let structRaf = 0;
+    function scheduleStructureRefresh() {
+      if (structRaf) return;
+      structRaf = requestAnimationFrame(() => { structRaf = 0; refreshStructure(); });
+    }
     window.addEventListener('scroll', scheduleHoleRefresh, { passive: true });
-    new MutationObserver(scheduleHoleRefresh)
+    new MutationObserver(scheduleStructureRefresh)
       .observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    window.addEventListener('load', refreshHoles);
-    setTimeout(refreshHoles, 600);
+    window.addEventListener('load', refreshStructure);
+    setTimeout(refreshStructure, 600);
+    setTimeout(refreshStructure, 1800); // after the now-bar's split-flap load settles
 
     resize();
     window.addEventListener('resize', () => { clearTimeout(canvas._rt); canvas._rt = setTimeout(resize, 100); });
