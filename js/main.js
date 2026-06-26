@@ -3152,3 +3152,29 @@
     schedulePreload(() => { try { preloadPlaces(); } catch (_) {} });
 
     window.setMode = setMode;
+
+    // ── Live clock: always Atlanta / Eastern time ──
+    (function startClock() {
+      const timeEl = document.querySelector('.corner-status__time');
+      if (!timeEl) return;
+      const tz = 'America/New_York';
+      const timeFmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hour: 'numeric', minute: '2-digit', hourCycle: 'h23',
+      });
+      function tick() {
+        const now = new Date();
+        timeEl.textContent = timeFmt.format(now);
+        // Keep the machine-readable datetime in sync (YYYY-MM-DDTHH:MM in ET).
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        }).formatToParts(now).reduce((acc, p) => (acc[p.type] = p.value, acc), {});
+        timeEl.setAttribute('datetime', `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`);
+      }
+      tick();
+      // Align the next tick to the top of the minute, then update every minute.
+      setTimeout(function align() {
+        tick();
+        setInterval(tick, 60 * 1000);
+      }, (60 - new Date().getSeconds()) * 1000);
+    })();
