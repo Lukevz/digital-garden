@@ -46,42 +46,85 @@
        a stop — exactly as the clock rolls over. So the time is legible nearly
        all the time, with one graceful synchronised sweep per minute. */
     const REST_ANGLE = -Math.PI / 4;   // diagonal resting field ('/')
-    const HOUR_12 = false;             // false = 24h HH:MM, true = 12h (no leading zero)
-    const SWEEP_MS = 12000;            // length of the end-of-minute sweep to the next time
+    const HOUR_12 = true;              // true = 12h (no leading zero), false = 24h HH:MM
+    const HOLD_MS = 15000;             // readable hold at the top of each minute, then the rest is the moving sweep
+    const SPIN_TURNS = 3;              // extra synchronised half-turns during the move (odd → always visibly turning)
     const MIN_MS = 60000;
+    const GUTTER = 22;                 // px kept clear of the nav / now-bar (never touching)
+    const SEG_H = 0, SEG_V = Math.PI / 2;
 
-    // 7-segment geometry, normalised inside a digit box (x→right, y→down).
-    // Each segment is a bar with an orientation: 0 = horizontal, PI/2 = vertical.
-    const SEGMENTS = {
-      a: { x1: 0.18, y1: 0.07, x2: 0.82, y2: 0.07, o: 0 },
-      g: { x1: 0.18, y1: 0.50, x2: 0.82, y2: 0.50, o: 0 },
-      d: { x1: 0.18, y1: 0.93, x2: 0.82, y2: 0.93, o: 0 },
-      f: { x1: 0.12, y1: 0.10, x2: 0.12, y2: 0.46, o: Math.PI / 2 },
-      b: { x1: 0.88, y1: 0.10, x2: 0.88, y2: 0.46, o: Math.PI / 2 },
-      e: { x1: 0.12, y1: 0.54, x2: 0.12, y2: 0.90, o: Math.PI / 2 },
-      c: { x1: 0.88, y1: 0.54, x2: 0.88, y2: 0.90, o: Math.PI / 2 },
-    };
-    // Which segments are lit for each digit 0–9.
+    // Which 7-segment segments are lit for each digit 0–9.
+    //   aaa
+    //  f   b
+    //  f   b
+    //   ggg
+    //  e   c
+    //  e   c
+    //   ddd
     const DIGIT_SEGS = {
       0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc',
       5: 'afgcd', 6: 'afgecd', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg',
     };
 
-    let digitBoxes = [];   // {x,y,w,h} for the 4 digits, set on resize
-    let colon = null;      // {cx, y1, y2, r}
+    const HAND = SP * 0.36;          // hand half-length (full ≈ 20px on a 28px grid)
+    const REST_ALPHA = 0.075;        // faint uniform resting field
+    const ACTIVE_ALPHA = 0.50;       // lit digit segment
 
-    // Per-digit width = WIDTH_RATIO × height, before any width condensing.
-    const WIDTH_RATIO = 0.50;
-    // Layout span as multiples of DW: 4 digits + two inter-digit gaps + colon.
-    const GAP_RATIO = 0.30, COLON_RATIO = 0.46;
-    const SPAN_RATIO = 4 + 2 * GAP_RATIO + COLON_RATIO; // total width / DW
-    const GUTTER = 22; // px kept clear of the nav / now-bar (never touching)
+    /* ── Uniform grid of hands, addressable by integer (col,row) ──────────
+       One identical hand at every grid point, like ClockClock 24 — hands only
+       rotate in place. Each digit is a fixed template of grid CELLS (not a
+       free-floating box), and digits are placed at integer column/row offsets,
+       so every "1" is pixel-identical, every digit is fully drawn with the same
+       hands, and neighbours line up perfectly on the grid. */
+    let NX = 0, NY = 0;
+    let cellGrid = [];               // cellGrid[col][row] -> hand
+    function buildCells(w, h) {
+      NX = Math.ceil((w + SP) / SP);
+      NY = Math.ceil((h + SP) / SP);
+      cells = [];
+      cellGrid = [];
+      for (let i = 0; i < NX; i++) {
+        cellGrid[i] = [];
+        for (let j = 0; j < NY; j++) {
+          const cell = {
+            bx: SP / 2 + i * SP, by: SP / 2 + j * SP,
+            h: HAND, restAlpha: REST_ALPHA, activeAlpha: ACTIVE_ALPHA,
+            clk: null,
+            aM: REST_ANGLE, aM1: REST_ANGLE, oM: REST_ALPHA, oM1: REST_ALPHA,
+          };
+          cellGrid[i][j] = cell;
+          cells.push(cell);
+        }
+      }
+    }
 
-    // The clock is a full-height "shadow" behind the content, so the digits are
-    // as tall as the gap between the top chrome (mode tab + corner widget) and
-    // the bottom now-bar allows, then condensed in width to fit the viewport.
-    function layoutDigits(w, h) {
-      // Top bound: below the mode tab and the corner time/weather widget.
+    // ── Digit template — which (col,row) cells of a DCOLS×DROWS digit form
+    //    each 7-segment, and the hand orientation there. Rebuilt per layout.
+    let DCOLS = 0, DROWS = 0;
+    let segCells = {};
+    function buildDigitTemplate(cols, rows) {
+      DCOLS = cols; DROWS = rows;
+      const mid = (rows - 1) >> 1;
+      const hCols = [], topRows = [], botRows = [];
+      for (let c = 1; c <= cols - 2; c++) hCols.push(c);
+      for (let r = 1; r <= mid - 1; r++) topRows.push(r);
+      for (let r = mid + 1; r <= rows - 2; r++) botRows.push(r);
+      segCells = {
+        a: hCols.map(c => ({ col: c, row: 0,        orient: SEG_H })),
+        g: hCols.map(c => ({ col: c, row: mid,      orient: SEG_H })),
+        d: hCols.map(c => ({ col: c, row: rows - 1, orient: SEG_H })),
+        f: topRows.map(r => ({ col: 0,        row: r, orient: SEG_V })),
+        b: topRows.map(r => ({ col: cols - 1, row: r, orient: SEG_V })),
+        e: botRows.map(r => ({ col: 0,        row: r, orient: SEG_V })),
+        c: botRows.map(r => ({ col: cols - 1, row: r, orient: SEG_V })),
+      };
+    }
+
+    function colonCols() { return Math.max(2, Math.round(DCOLS * 0.5)); }
+    const GAP_COLS = 2;              // grid columns between adjacent digits
+
+    // Measure the gap between the top chrome and the bottom now-bar (px).
+    function measureBand(w, h) {
       let top = 0;
       for (const sel of ['#modeTab', '.corner-status']) {
         for (const el of document.querySelectorAll(sel)) {
@@ -89,7 +132,6 @@
           if (r.height >= 1 && r.bottom > top) top = r.bottom;
         }
       }
-      // Bottom bound: above the now-bar (only shown/visible on the Life tab).
       let bottom = h;
       for (const el of document.querySelectorAll('#nowStrip')) {
         const r = el.getBoundingClientRect();
@@ -98,115 +140,128 @@
         if (st.display === 'none' || st.visibility === 'hidden') continue;
         if (r.top < bottom) bottom = r.top;
       }
-      const yTop = top + GUTTER;
-      let DH = bottom - GUTTER - yTop;
-      if (!(DH > 40)) DH = h * 0.8; // safety fallback
-
-      // Width: natural from height, but condensed so the whole HH:MM always
-      // fits the viewport width — narrow screens squeeze it, it never clips.
-      const sideMargin = Math.min(48, w * 0.05);
-      const maxDW = (w - 2 * sideMargin) / SPAN_RATIO;
-      const DW = Math.min(DH * WIDTH_RATIO, maxDW);
-
-      const gap = DW * GAP_RATIO;
-      const colonW = DW * COLON_RATIO;
-      const totalW = DW * SPAN_RATIO;
-      const x0 = (w - totalW) / 2;
-      const xs = [
-        x0,
-        x0 + DW + gap,
-        x0 + 2 * DW + gap + colonW,
-        x0 + 3 * DW + 2 * gap + colonW,
-      ];
-      digitBoxes = xs.map(x => ({ x, y: yTop, w: DW, h: DH }));
-      const colonCx = x0 + 2 * DW + gap + colonW / 2;
-      colon = { cx: colonCx, y1: yTop + DH * 0.37, y2: yTop + DH * 0.63, r: Math.max(1.8, DW * 0.022) };
+      return { top: top + GUTTER, bottom: bottom - GUTTER };
     }
 
-    // Distance from point (px,py) to a segment bar (absolute px coords).
-    function distToBar(px, py, ax, ay, bx, by) {
-      const vx = bx - ax, vy = by - ay;
-      const wx = px - ax, wy = py - ay;
-      const len2 = vx * vx + vy * vy || 1;
-      let t = (wx * vx + wy * vy) / len2;
-      t = t < 0 ? 0 : t > 1 ? 1 : t;
-      const dx = px - (ax + t * vx), dy = py - (ay + t * vy);
-      return Math.sqrt(dx * dx + dy * dy);
+    // Size the digit template (rows from the band height, cols condensed to fit
+    // the viewport width) and find the row the digits start on. Independent of
+    // how many digits show, so the size stays constant when 9 → 10 etc.
+    let rowOffset = 0;
+    function sizeTemplate(w, h) {
+      const band = measureBand(w, h);
+      const firstRow = Math.max(0, Math.ceil((band.top - SP / 2) / SP));
+      const lastRow = Math.min(NY - 1, Math.floor((band.bottom - SP / 2) / SP));
+      let availRows = lastRow - firstRow + 1;
+      if (availRows < 7) availRows = 7;
+      const rows = availRows % 2 ? availRows : availRows - 1; // odd → centred middle bar
+
+      const sideCols = Math.max(1, Math.round(Math.min(48, w * 0.05) / SP));
+      const availCols = NX - 2 * sideCols;
+      let cols = Math.max(3, Math.round(rows * 0.46));
+      // Always size for the widest case (4 digits) so digits don't resize when
+      // the hour crosses 9→10; condense cols until HH:MM fits the width.
+      while (cols > 3) {
+        const cc = Math.max(2, Math.round(cols * 0.5));
+        if (4 * cols + 2 * GAP_COLS + cc <= availCols) break;
+        cols--;
+      }
+      buildDigitTemplate(cols, rows);
+      rowOffset = firstRow + Math.floor((availRows - rows) / 2);
     }
 
-    // For each line cell, find the nearest 7-segment bar (across all four
-    // digit boxes) within tolerance. Time-independent, so compute once per
-    // layout; only which segments are *lit* changes per minute.
+    // Place N grid-aligned digits (+ colon) centred horizontally.
+    let digitCols = [];
+    let colon = null;
+    function placeDigits(n) {
+      const cc = colonCols();
+      const totalCols = n * DCOLS + (n - 2) * GAP_COLS + cc;
+      let col = Math.round((NX - totalCols) / 2);
+      digitCols = [];
+      const hourCount = n - 2;       // digits before the colon
+      let colonCenterCol = 0;
+      for (let d = 0; d < n; d++) {
+        digitCols.push(col);
+        col += DCOLS;
+        if (d === hourCount - 1) { colonCenterCol = col + cc / 2; col += cc; }
+        else if (d < n - 1) { col += GAP_COLS; }
+      }
+      const r1 = rowOffset + Math.round(DROWS * 0.34);
+      const r2 = rowOffset + Math.round(DROWS * 0.66);
+      colon = {
+        cx: SP / 2 + colonCenterCol * SP,
+        y1: SP / 2 + r1 * SP, y2: SP / 2 + r2 * SP,
+        r: Math.max(1.8, SP * 0.1),
+      };
+    }
+
+    // Stamp the current digit layout onto the grid: every segment cell of every
+    // placed digit claims its hand. Cleared first, so unused hands rest.
     function assignClockTargets() {
-      // Roughly one hand-spacing thick so bars stay crisp, but allowed to grow
-      // a little (≈2 hands) on big digits and capped so huge ones don't blob.
-      const dw = digitBoxes.length ? digitBoxes[0].w : SP * 4;
-      const tol = Math.max(SP * 0.55, Math.min(dw * 0.13, SP * 0.92));
-      for (const cl of cells) {
-        if (cl.tp !== 2) continue;
-        cl.clk = null;
-        let best = tol;
-        for (let di = 0; di < digitBoxes.length; di++) {
-          const box = digitBoxes[di];
-          for (const seg in SEGMENTS) {
-            const s = SEGMENTS[seg];
-            const d = distToBar(
-              cl.bx, cl.by,
-              box.x + s.x1 * box.w, box.y + s.y1 * box.h,
-              box.x + s.x2 * box.w, box.y + s.y2 * box.h,
-            );
-            if (d < best) { best = d; cl.clk = { digit: di, seg, orient: s.o }; }
+      for (const cl of cells) cl.clk = null;
+      for (let d = 0; d < digitCols.length; d++) {
+        const c0 = digitCols[d];
+        for (const seg in segCells) {
+          for (const sc of segCells[seg]) {
+            const gi = c0 + sc.col, gj = rowOffset + sc.row;
+            if (gi >= 0 && gi < NX && gj >= 0 && gj < NY) {
+              cellGrid[gi][gj].clk = { digit: d, seg, orient: sc.orient };
+            }
           }
         }
       }
     }
 
-    function digitsForMs(ms) {
+    // The digits to display: 3 cells (H:MM) for a single-digit 12h hour, else 4.
+    function displayDigits(ms) {
       const d = new Date(ms);
       let h = d.getHours();
-      if (HOUR_12) { h = h % 12; if (h === 0) h = 12; }
       const m = d.getMinutes();
-      return [
-        HOUR_12 && h < 10 ? -1 : Math.floor(h / 10), // -1 → blank tens digit in 12h
-        h % 10,
-        Math.floor(m / 10),
-        m % 10,
-      ];
+      const mt = Math.floor(m / 10), mu = m % 10;
+      if (HOUR_12) {
+        h = h % 12; if (h === 0) h = 12;
+        return h < 10 ? [h, mt, mu] : [1, h % 10, mt, mu];
+      }
+      return [Math.floor(h / 10), h % 10, mt, mu];
     }
 
-    // Compute every line cell's resting/active angle + alpha for a given minute
-    // and stash it on `key` ('M' = current minute, 'M1' = next minute).
+    // Compute every hand's target angle + alpha for a given minute, stashed on
+    // `key` ('M' = current minute, 'M1' = next minute).
     function computeArrangement(ms, key) {
-      const digits = digitsForMs(ms);
+      const digits = displayDigits(ms);
       for (const cl of cells) {
-        if (cl.tp !== 2) continue;
-        let active = false;
+        let active = false, orient = REST_ANGLE;
         if (cl.clk) {
           const dv = digits[cl.clk.digit];
-          active = dv >= 0 && DIGIT_SEGS[dv].indexOf(cl.clk.seg) !== -1;
+          if (dv != null && DIGIT_SEGS[dv].indexOf(cl.clk.seg) !== -1) {
+            active = true; orient = cl.clk.orient;
+          }
         }
-        cl['a' + key] = active ? cl.clk.orient : cl.rest;
+        cl['a' + key] = orient;
         cl['o' + key] = active ? cl.activeAlpha : cl.restAlpha;
       }
     }
 
-    let curMinute = null;
+    let curMinute = null, laidOutN = 0;
     function refreshMinute(now) {
       const idx = Math.floor(now / MIN_MS);
       if (idx === curMinute) return;
       curMinute = idx;
+      const nCur = displayDigits(idx * MIN_MS).length;
+      if (nCur !== laidOutN) { placeDigits(nCur); assignClockTargets(); laidOutN = nCur; }
       computeArrangement(idx * MIN_MS, 'M');
-      computeArrangement((idx + 1) * MIN_MS, 'M1');
+      const nNext = displayDigits((idx + 1) * MIN_MS).length;
+      if (nNext === nCur) computeArrangement((idx + 1) * MIN_MS, 'M1');
+      // Count change (9→10, 12→1) twice a day: just snap at the rollover.
+      else for (const cl of cells) { cl.aM1 = cl.aM; cl.oM1 = cl.oM; }
     }
 
-    // Like ClockClock 24: hold the readable time for most of the minute, then in
-    // the final SWEEP_MS glide the hands to the next minute's arrangement,
-    // arriving (and easing to a stop) exactly as the clock rolls over.
+    // Hold the readable time briefly at the top of the minute, then glide to the
+    // next minute's arrangement over the rest of it — slow, continuous, always
+    // visibly moving, easing to a stop right as the clock rolls over.
     function minuteEase(now) {
       const into = now % MIN_MS;
-      const holdUntil = MIN_MS - SWEEP_MS;
-      if (into <= holdUntil) return 0;
-      const t = (into - holdUntil) / SWEEP_MS;
+      if (into <= HOLD_MS) return 0;
+      const t = (into - HOLD_MS) / (MIN_MS - HOLD_MS);
       return t * t * (3 - 2 * t); // smoothstep — eases out into the next hold
     }
 
@@ -214,30 +269,6 @@
     function lerpLine(a, b, t) {
       let d = ((b - a + Math.PI * 2.5) % Math.PI) - Math.PI / 2;
       return a + d * t;
-    }
-
-    // A perfectly uniform grid — one identical hand at every grid point, like
-    // ClockClock 24. No skips, no dots, no jitter: the hands only ever rotate
-    // in place (and brighten when they form a digit), so there are never gaps
-    // or overlaps in the field.
-    const HAND = SP * 0.36;          // hand half-length (full ≈ 20px on a 28px grid)
-    const REST_ALPHA = 0.075;        // faint uniform resting field
-    const ACTIVE_ALPHA = 0.50;       // lit digit segment
-    function buildCells(w, h) {
-      cells = [];
-      for (let bx = SP / 2; bx < w + SP; bx += SP) {
-        for (let by = SP / 2; by < h + SP; by += SP) {
-          cells.push({
-            bx, by, tp: 2,
-            h: HAND,
-            rest: REST_ANGLE,
-            restAlpha: REST_ALPHA,
-            activeAlpha: ACTIVE_ALPHA,
-            clk: null,
-            aM: REST_ANGLE, aM1: REST_ANGLE, oM: REST_ALPHA, oM1: REST_ALPHA,
-          });
-        }
-      }
     }
 
     /* ── Ripples ── */
@@ -335,15 +366,19 @@
       c.clearRect(0, 0, w, h);
       const now = Date.now();
       const eased = minuteEase(now);
+      // Synchronised extra rotation during the move: every hand sweeps through
+      // SPIN_TURNS half-turns and lands exactly back on its target (period = PI),
+      // so the whole field is visibly turning, ClockClock-style, between holds.
+      const spin = SPIN_TURNS * Math.PI * eased;
       c.lineWidth = 1.25;
       c.lineCap = 'round';
       for (const cl of cells) {
         if (cl.bx > w + SP || cl.by > h + SP) continue;
         const [x, y] = applyRipples(cl.bx, cl.by, ts);
 
-        // Each hand rotates in place — interpolate its angle + alpha between
-        // this minute's arrangement and the next.
-        const angle = lerpLine(cl.aM, cl.aM1, eased);
+        // Each hand rotates in place — interpolate its angle between this
+        // minute's arrangement and the next, plus the synchronised spin.
+        const angle = lerpLine(cl.aM, cl.aM1, eased) + spin;
         // Lit digit segments keep a faint floor *through* the content so the
         // big clock reads as a continuous shadow/watermark behind it; the
         // resting field still clears fully so text stays clean.
@@ -494,12 +529,19 @@
       if (typeof ctx.imageSmoothingQuality === 'string') ctx.imageSmoothingQuality = 'high';
       readGridDotRgb();
       buildCells(gridLogicalW, gridLogicalH);
-      layoutDigits(gridLogicalW, gridLogicalH);
-      assignClockTargets();
-      curMinute = null;
-      refreshMinute(Date.now());
+      relayoutClock();
       updateHoleRects();
       startAnim();
+    }
+
+    // Re-measure the chrome band, re-size the digit template, and re-stamp the
+    // current time onto the grid. Used on resize and on structural changes.
+    function relayoutClock() {
+      if (!gridLogicalW) return;
+      sizeTemplate(gridLogicalW, gridLogicalH);
+      laidOutN = 0;       // force placeDigits + assignClockTargets on refresh
+      curMinute = null;   // force re-stamp of the current minute
+      refreshMinute(Date.now());
     }
 
     /* Keep the clear zones tracking the content as it moves. */
@@ -517,10 +559,7 @@
     // re-measure the digit band, then refresh the holes.
     function refreshStructure() {
       if (!gridLogicalW) return;
-      layoutDigits(gridLogicalW, gridLogicalH);
-      assignClockTargets();
-      curMinute = null;
-      refreshMinute(Date.now());
+      relayoutClock();
       refreshHoles();
     }
     let structRaf = 0;
