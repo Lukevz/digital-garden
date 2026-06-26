@@ -1,15 +1,5 @@
 (function () {
 
-    /* ── PRNG ── */
-    function prng(seed) {
-      let s = seed >>> 0;
-      return () => {
-        s = Math.imul(s ^ s >>> 15, s | 1);
-        s ^= s + Math.imul(s ^ s >>> 7, s | 61);
-        return ((s ^ s >>> 14) >>> 0) / 4294967296;
-      };
-    }
-
     /* ── Grid canvas ── */
     const canvas = document.getElementById('dotGrid');
     const ctx    = canvas.getContext('2d');
@@ -50,16 +40,14 @@
        that digit's lit segments — horizontal bars lie flat, vertical bars
        stand up — while the rest of the field rests on a uniform diagonal.
 
-       Motion is choreographed against the wall clock: at the top of each
-       minute the hands HOLD the freshly-formed time for a few seconds (the
-       "landing"), then spend the remainder of the minute easing toward the
-       NEXT minute's arrangement, arriving — and slowing to a near-stop —
-       exactly as the clock rolls over. So the time is most legible right at
-       each minute boundary and dissolves into abstraction in between, which
-       is the intent: lean abstract, not a literal readout. */
+       Motion is choreographed against the wall clock, ClockClock-style: the
+       hands HOLD the readable time for most of the minute, then in the final
+       stretch glide to the next minute's arrangement, arriving — and easing to
+       a stop — exactly as the clock rolls over. So the time is legible nearly
+       all the time, with one graceful synchronised sweep per minute. */
     const REST_ANGLE = -Math.PI / 4;   // diagonal resting field ('/')
     const HOUR_12 = false;             // false = 24h HH:MM, true = 12h (no leading zero)
-    const HOLD_MS = 7000;              // hold the landed time at the top of each minute
+    const SWEEP_MS = 12000;            // length of the end-of-minute sweep to the next time
     const MIN_MS = 60000;
 
     // 7-segment geometry, normalised inside a digit box (x→right, y→down).
@@ -202,53 +190,24 @@
       }
     }
 
-    // Horizontal shift (px) that centers the *lit ink* of a given minute in the
-    // viewport. The nominal digit cells are symmetric, but a digit like "1" only
-    // lights one side of its cell, so a fixed-cell layout looks off-centre. We
-    // measure the lit segments' bounding box and slide the whole clock so that
-    // box is centred — clamped to keep the ink on-screen. Computed per minute
-    // and eased between minutes (with the hand morph) so it never jumps.
-    function clockShiftFor(ms) {
-      const digits = digitsForMs(ms);
-      let minX = Infinity, maxX = -Infinity;
-      for (let di = 0; di < digitBoxes.length; di++) {
-        const dv = digits[di];
-        if (dv < 0) continue;
-        const box = digitBoxes[di];
-        const segs = DIGIT_SEGS[dv];
-        for (let k = 0; k < segs.length; k++) {
-          const s = SEGMENTS[segs[k]];
-          const lx = box.x + Math.min(s.x1, s.x2) * box.w;
-          const rx = box.x + Math.max(s.x1, s.x2) * box.w;
-          if (lx < minX) minX = lx;
-          if (rx > maxX) maxX = rx;
-        }
-      }
-      if (!isFinite(minX)) return 0;
-      const pad = 8;
-      let dx = gridLogicalW / 2 - (minX + maxX) / 2;
-      const lo = pad - minX, hi = (gridLogicalW - pad) - maxX;
-      if (lo <= hi) dx = Math.max(lo, Math.min(hi, dx)); // keep ink on-screen
-      return dx;
-    }
-
-    let curMinute = null, dxM = 0, dxM1 = 0;
+    let curMinute = null;
     function refreshMinute(now) {
       const idx = Math.floor(now / MIN_MS);
       if (idx === curMinute) return;
       curMinute = idx;
       computeArrangement(idx * MIN_MS, 'M');
       computeArrangement((idx + 1) * MIN_MS, 'M1');
-      dxM = clockShiftFor(idx * MIN_MS);
-      dxM1 = clockShiftFor((idx + 1) * MIN_MS);
     }
 
-    // Hold at the current minute for HOLD_MS, then smoothstep to the next.
+    // Like ClockClock 24: hold the readable time for most of the minute, then in
+    // the final SWEEP_MS glide the hands to the next minute's arrangement,
+    // arriving (and easing to a stop) exactly as the clock rolls over.
     function minuteEase(now) {
       const into = now % MIN_MS;
-      if (into <= HOLD_MS) return 0;
-      const t = (into - HOLD_MS) / (MIN_MS - HOLD_MS);
-      return t * t * (3 - 2 * t);
+      const holdUntil = MIN_MS - SWEEP_MS;
+      if (into <= holdUntil) return 0;
+      const t = (into - holdUntil) / SWEEP_MS;
+      return t * t * (3 - 2 * t); // smoothstep — eases out into the next hold
     }
 
     // Shortest-path interpolation for *undirected* lines (period = PI).
@@ -257,37 +216,26 @@
       return a + d * t;
     }
 
+    // A perfectly uniform grid — one identical hand at every grid point, like
+    // ClockClock 24. No skips, no dots, no jitter: the hands only ever rotate
+    // in place (and brighten when they form a digit), so there are never gaps
+    // or overlaps in the field.
+    const HAND = SP * 0.36;          // hand half-length (full ≈ 20px on a 28px grid)
+    const REST_ALPHA = 0.075;        // faint uniform resting field
+    const ACTIVE_ALPHA = 0.50;       // lit digit segment
     function buildCells(w, h) {
-      const r = prng(8675309);
       cells = [];
       for (let bx = SP / 2; bx < w + SP; bx += SP) {
         for (let by = SP / 2; by < h + SP; by += SP) {
-          const roll = r();
-          // Mostly identical hands (the clock), a sparse scatter of dots for
-          // texture, and a little empty space for breathing room.
-          if (roll < 0.07) continue;                    // whitespace
-          if (roll < 0.18) {                            // sparse dot
-            const al = (0.18 + r() * 0.12) * 0.9;
-            const cell = { bx, by, tp: 0, al, sz: 0.8 + r() * 0.7 };
-            if (r() < 0.10) {
-              cell.fadeBreath = { phase: r() * 90000, period: 22000 + r() * 34000, peak: 0.35 + r() * 0.45 };
-            }
-            cells.push(cell);
-            continue;
-          }
-          // Line / clock hand. Resting hands stay faint (so the field reads as
-          // airy whitespace); hands that form a lit digit segment darken and
-          // lengthen, so the number pops out of the diagonal field when landed.
-          const cell = {
+          cells.push({
             bx, by, tp: 2,
-            h: 9.5 + r() * 3,
-            rest: REST_ANGLE + (r() - 0.5) * 0.18,    // gentle organic jitter at rest
-            restAlpha: 0.06 + r() * 0.05,
-            activeAlpha: 0.46 + r() * 0.18,
+            h: HAND,
+            rest: REST_ANGLE,
+            restAlpha: REST_ALPHA,
+            activeAlpha: ACTIVE_ALPHA,
             clk: null,
-            aM: REST_ANGLE, aM1: REST_ANGLE, oM: 0.09, oM1: 0.09,
-          };
-          cells.push(cell);
+            aM: REST_ANGLE, aM1: REST_ANGLE, oM: REST_ALPHA, oM1: REST_ALPHA,
+          });
         }
       }
     }
@@ -335,6 +283,9 @@
     }
 
     function updateHoleRects() {
+      // Pattern-preview mode hides the content, so don't punch any holes —
+      // show the field unobstructed.
+      if (document.body.classList.contains('pattern-preview')) { holeRects = []; return; }
       const next = [];
       for (const sel of TEXT_HOLE_SELECTORS) {
         for (const el of document.querySelectorAll(sel)) pushTextLineRects(next, el);
@@ -384,40 +335,20 @@
       c.clearRect(0, 0, w, h);
       const now = Date.now();
       const eased = minuteEase(now);
-      const shiftX = dxM + (dxM1 - dxM) * eased; // centre the lit ink horizontally
       c.lineWidth = 1.25;
       c.lineCap = 'round';
       for (const cl of cells) {
         if (cl.bx > w + SP || cl.by > h + SP) continue;
-        let [x, y] = applyRipples(cl.bx, cl.by, ts);
+        const [x, y] = applyRipples(cl.bx, cl.by, ts);
 
-        if (cl.tp === 0) {
-          // Sparse ambient dot
-          let breathMult = 1;
-          if (cl.fadeBreath) {
-            const { phase, period, peak } = cl.fadeBreath;
-            const u = ((now + phase) % period) / period;
-            breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
-          }
-          const alpha = cl.al * breathMult * holeFade(x, y);
-          if (alpha < 0.004) continue;
-          c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
-          c.beginPath();
-          c.arc(x, y, cl.sz, 0, 6.2832);
-          c.fill();
-          continue;
-        }
-
-        // Clock hand: interpolate angle + alpha between this minute and next.
-        // The hands that belong to a digit slide as one block by shiftX so the
-        // lit time reads centred; the resting field stays put.
+        // Each hand rotates in place — interpolate its angle + alpha between
+        // this minute's arrangement and the next.
         const angle = lerpLine(cl.aM, cl.aM1, eased);
-        const hx = cl.clk ? x + shiftX : x;
         // Lit digit segments keep a faint floor *through* the content so the
         // big clock reads as a continuous shadow/watermark behind it; the
         // resting field still clears fully so text stays clean.
         const lit = cl.oM > cl.restAlpha * 1.5 || cl.oM1 > cl.restAlpha * 1.5;
-        const hf = holeFade(hx, y);
+        const hf = holeFade(x, y);
         const eff = lit ? 0.30 + 0.70 * hf : hf;
         const alpha = (cl.oM + (cl.oM1 - cl.oM) * eased) * eff;
         if (alpha < 0.004) continue;
@@ -425,23 +356,21 @@
         const dy = Math.sin(angle) * cl.h;
         c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
         c.beginPath();
-        c.moveTo(hx - dx, y - dy);
-        c.lineTo(hx + dx, y + dy);
+        c.moveTo(x - dx, y - dy);
+        c.lineTo(x + dx, y + dy);
         c.stroke();
       }
 
-      // Colon between HH and MM — two softly pulsing dots, riding along with
-      // the digits' horizontal shift so it stays between the hours and minutes.
+      // Colon between HH and MM — two softly pulsing dots.
       if (colon) {
         const pulse = 0.14 + 0.12 * (0.5 + 0.5 * Math.cos(now / 900));
-        const ccx = colon.cx + shiftX;
         c.fillStyle = `rgba(${gridDotRgb},${pulse})`;
         for (const cy of [colon.y1, colon.y2]) {
-          const f = holeFade(ccx, cy);
+          const f = holeFade(colon.cx, cy);
           if (f < 0.004) continue;
           c.globalAlpha = f;
           c.beginPath();
-          c.arc(ccx, cy, colon.r, 0, 6.2832);
+          c.arc(colon.cx, cy, colon.r, 0, 6.2832);
           c.fill();
         }
         c.globalAlpha = 1;
@@ -605,6 +534,19 @@
     window.addEventListener('load', refreshStructure);
     setTimeout(refreshStructure, 600);
     setTimeout(refreshStructure, 1800); // after the now-bar's split-flap load settles
+
+    /* ── Pattern-preview toggle ──────────────────────────────────────
+       Hides the body content and drops the hole-punch so the bare clock
+       field can be inspected. The body-class observer above re-runs the
+       hole + layout refresh automatically when the class flips. */
+    const peekBtn = document.getElementById('patternPeek');
+    if (peekBtn) {
+      peekBtn.addEventListener('click', () => {
+        const on = document.body.classList.toggle('pattern-preview');
+        peekBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        peekBtn.title = on ? 'Show content' : 'Preview pattern (hide content)';
+      });
+    }
 
     resize();
     window.addEventListener('resize', () => { clearTimeout(canvas._rt); canvas._rt = setTimeout(resize, 100); });

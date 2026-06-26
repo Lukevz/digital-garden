@@ -519,6 +519,37 @@
     #themeToggle .theme-icon { display: block; }
     #themeToggle .theme-icon[hidden] { display: none !important; }
 
+    /* Right-side top-bar cluster (pattern preview + theme toggle) */
+    .topbar-right {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* Pattern-preview toggle — hides content to reveal the background clock */
+    #patternPeek {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      opacity: 0.35;
+      transition: opacity 0.2s ease;
+      color: var(--text-primary);
+    }
+    #patternPeek:hover { opacity: 0.7; }
+    #patternPeek[aria-pressed="true"] { opacity: 0.85; }
+    #patternPeek svg { display: block; }
+
+    /* Pattern-preview mode: fade out the body content so the field shows bare.
+       (grid.js drops the hole-punch while this class is set.) Chrome stays. */
+    body.pattern-preview .intro,
+    body.pattern-preview #mainPanel {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
     /* Theme transition — 180° arc along bottom (pivot bottom-center), sun path BL → BR */
     .theme-transition {
       position: fixed;
