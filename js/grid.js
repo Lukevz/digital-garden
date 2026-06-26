@@ -43,45 +43,184 @@
     }
     readGridDotRgb();
 
-    let ambientAnim = false;
+    /* ── Clock field ──────────────────────────────────────────────────
+       The pattern is a field of identical short "hands" (line segments),
+       à la ClockClock 24. Every minute the hands that fall inside the
+       footprint of the four big 7-segment digits (HH:MM) rotate to trace
+       that digit's lit segments — horizontal bars lie flat, vertical bars
+       stand up — while the rest of the field rests on a uniform diagonal.
+
+       Motion is choreographed against the wall clock: at the top of each
+       minute the hands HOLD the freshly-formed time for a few seconds (the
+       "landing"), then spend the remainder of the minute easing toward the
+       NEXT minute's arrangement, arriving — and slowing to a near-stop —
+       exactly as the clock rolls over. So the time is most legible right at
+       each minute boundary and dissolves into abstraction in between, which
+       is the intent: lean abstract, not a literal readout. */
+    const REST_ANGLE = -Math.PI / 4;   // diagonal resting field ('/')
+    const HOUR_12 = false;             // false = 24h HH:MM, true = 12h (no leading zero)
+    const HOLD_MS = 7000;              // hold the landed time at the top of each minute
+    const MIN_MS = 60000;
+
+    // 7-segment geometry, normalised inside a digit box (x→right, y→down).
+    // Each segment is a bar with an orientation: 0 = horizontal, PI/2 = vertical.
+    const SEGMENTS = {
+      a: { x1: 0.18, y1: 0.07, x2: 0.82, y2: 0.07, o: 0 },
+      g: { x1: 0.18, y1: 0.50, x2: 0.82, y2: 0.50, o: 0 },
+      d: { x1: 0.18, y1: 0.93, x2: 0.82, y2: 0.93, o: 0 },
+      f: { x1: 0.12, y1: 0.10, x2: 0.12, y2: 0.46, o: Math.PI / 2 },
+      b: { x1: 0.88, y1: 0.10, x2: 0.88, y2: 0.46, o: Math.PI / 2 },
+      e: { x1: 0.12, y1: 0.54, x2: 0.12, y2: 0.90, o: Math.PI / 2 },
+      c: { x1: 0.88, y1: 0.54, x2: 0.88, y2: 0.90, o: Math.PI / 2 },
+    };
+    // Which segments are lit for each digit 0–9.
+    const DIGIT_SEGS = {
+      0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc',
+      5: 'afgcd', 6: 'afgecd', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg',
+    };
+
+    let digitBoxes = [];   // {x,y,w,h} for the 4 digits, set on resize
+    let colon = null;      // {cx, y1, y2, r}
+
+    function layoutDigits(w, h) {
+      const DH = Math.min(h * 0.46, 380);
+      const DW = DH * 0.50;
+      const gap = DW * 0.30;
+      const colonW = DW * 0.46;
+      const totalW = 4 * DW + 2 * gap + colonW;
+      const x0 = (w - totalW) / 2;
+      const y0 = (h - DH) / 2;
+      const xs = [
+        x0,
+        x0 + DW + gap,
+        x0 + 2 * DW + gap + colonW,
+        x0 + 3 * DW + 2 * gap + colonW,
+      ];
+      digitBoxes = xs.map(x => ({ x, y: y0, w: DW, h: DH }));
+      const colonCx = x0 + 2 * DW + gap + colonW / 2;
+      colon = { cx: colonCx, y1: y0 + DH * 0.37, y2: y0 + DH * 0.63, r: Math.max(1.8, DW * 0.022) };
+    }
+
+    // Distance from point (px,py) to a segment bar (absolute px coords).
+    function distToBar(px, py, ax, ay, bx, by) {
+      const vx = bx - ax, vy = by - ay;
+      const wx = px - ax, wy = py - ay;
+      const len2 = vx * vx + vy * vy || 1;
+      let t = (wx * vx + wy * vy) / len2;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const dx = px - (ax + t * vx), dy = py - (ay + t * vy);
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // For each line cell, find the nearest 7-segment bar (across all four
+    // digit boxes) within tolerance. Time-independent, so compute once per
+    // layout; only which segments are *lit* changes per minute.
+    function assignClockTargets() {
+      const tol = Math.max(SP * 0.62, digitBoxes.length ? digitBoxes[0].w * 0.135 : SP);
+      for (const cl of cells) {
+        if (cl.tp !== 2) continue;
+        cl.clk = null;
+        let best = tol;
+        for (let di = 0; di < digitBoxes.length; di++) {
+          const box = digitBoxes[di];
+          for (const seg in SEGMENTS) {
+            const s = SEGMENTS[seg];
+            const d = distToBar(
+              cl.bx, cl.by,
+              box.x + s.x1 * box.w, box.y + s.y1 * box.h,
+              box.x + s.x2 * box.w, box.y + s.y2 * box.h,
+            );
+            if (d < best) { best = d; cl.clk = { digit: di, seg, orient: s.o }; }
+          }
+        }
+      }
+    }
+
+    function digitsForMs(ms) {
+      const d = new Date(ms);
+      let h = d.getHours();
+      if (HOUR_12) { h = h % 12; if (h === 0) h = 12; }
+      const m = d.getMinutes();
+      return [
+        HOUR_12 && h < 10 ? -1 : Math.floor(h / 10), // -1 → blank tens digit in 12h
+        h % 10,
+        Math.floor(m / 10),
+        m % 10,
+      ];
+    }
+
+    // Compute every line cell's resting/active angle + alpha for a given minute
+    // and stash it on `key` ('M' = current minute, 'M1' = next minute).
+    function computeArrangement(ms, key) {
+      const digits = digitsForMs(ms);
+      for (const cl of cells) {
+        if (cl.tp !== 2) continue;
+        let active = false;
+        if (cl.clk) {
+          const dv = digits[cl.clk.digit];
+          active = dv >= 0 && DIGIT_SEGS[dv].indexOf(cl.clk.seg) !== -1;
+        }
+        cl['a' + key] = active ? cl.clk.orient : cl.rest;
+        cl['o' + key] = active ? cl.activeAlpha : cl.restAlpha;
+      }
+    }
+
+    let curMinute = null;
+    function refreshMinute(now) {
+      const idx = Math.floor(now / MIN_MS);
+      if (idx === curMinute) return;
+      curMinute = idx;
+      computeArrangement(idx * MIN_MS, 'M');
+      computeArrangement((idx + 1) * MIN_MS, 'M1');
+    }
+
+    // Hold at the current minute for HOLD_MS, then smoothstep to the next.
+    function minuteEase(now) {
+      const into = now % MIN_MS;
+      if (into <= HOLD_MS) return 0;
+      const t = (into - HOLD_MS) / (MIN_MS - HOLD_MS);
+      return t * t * (3 - 2 * t);
+    }
+
+    // Shortest-path interpolation for *undirected* lines (period = PI).
+    function lerpLine(a, b, t) {
+      let d = ((b - a + Math.PI * 2.5) % Math.PI) - Math.PI / 2;
+      return a + d * t;
+    }
 
     function buildCells(w, h) {
       const r = prng(8675309);
       cells = [];
       for (let bx = SP / 2; bx < w + SP; bx += SP) {
         for (let by = SP / 2; by < h + SP; by += SP) {
-          const rv = r(), al = (0.20 + r() * 0.12) * 0.9;
-          const tp = rv < 0.50 ? 0 : rv < 0.78 ? 1 : 2; // 0=dot 1=sq 2=slash
-          const cell = { bx, by, tp, al, sz: tp === 0 ? 0.8 + r() * 0.7 : 1.6 + r() * 1.0, slash: '/' };
-          if (tp === 2) cell.slashHalf = 3.6 + r() * 3.2;
-          // Slow opacity drift on a few slashes — 0 → up to (peak × base alpha)
-          if (tp === 2 && r() < 0.16) {
-            cell.fadeBreath = {
-              phase: r() * 90000,
-              period: 16000 + r() * 22000,
-              peak: 0.5 + r() * 0.5
-            };
+          const roll = r();
+          // Mostly identical hands (the clock), a sparse scatter of dots for
+          // texture, and a little empty space for breathing room.
+          if (roll < 0.07) continue;                    // whitespace
+          if (roll < 0.18) {                            // sparse dot
+            const al = (0.18 + r() * 0.12) * 0.9;
+            const cell = { bx, by, tp: 0, al, sz: 0.8 + r() * 0.7 };
+            if (r() < 0.10) {
+              cell.fadeBreath = { phase: r() * 90000, period: 22000 + r() * 34000, peak: 0.35 + r() * 0.45 };
+            }
+            cells.push(cell);
+            continue;
           }
-          // Gentle opacity drift on a small fraction of dots and squares
-          if ((tp === 0 || tp === 1) && r() < 0.065) {
-            cell.fadeBreath = {
-              phase: r() * 90000,
-              period: 22000 + r() * 34000,
-              peak: 0.35 + r() * 0.45
-            };
-          }
-          // Slow pendulum rotation on a few slashes — like leaves swaying in wind
-          if (tp === 2 && r() < 0.12) {
-            cell.rotateDrift = {
-              phase: r() * 90000,
-              period: 19000 + r() * 26000,
-              range: 0.28 + r() * 0.22
-            };
-          }
+          // Line / clock hand. Resting hands stay faint (so the field reads as
+          // airy whitespace); hands that form a lit digit segment darken and
+          // lengthen, so the number pops out of the diagonal field when landed.
+          const cell = {
+            bx, by, tp: 2,
+            h: 8.5 + r() * 2.2,
+            rest: REST_ANGLE + (r() - 0.5) * 0.18,    // gentle organic jitter at rest
+            restAlpha: 0.06 + r() * 0.05,
+            activeAlpha: 0.34 + r() * 0.13,
+            clk: null,
+            aM: REST_ANGLE, aM1: REST_ANGLE, oM: 0.09, oM1: 0.09,
+          };
           cells.push(cell);
         }
       }
-      ambientAnim = cells.some(c => c.fadeBreath || c.rotateDrift);
     }
 
     /* ── Ripples ── */
@@ -98,18 +237,6 @@
        around the content silhouette and survives in the gaps between blocks. */
     const HOLE_PAD  = 10;   // px around each block kept fully clear
     const HOLE_FADE = 32;   // px transition from clear → full pattern (short = tight halo)
-    // The content atoms the pattern should flow around. We clear two kinds of
-    // shape, and the distinction is what keeps the field from reading as boxes:
-    //   • TEXT atoms — we trace the actual rendered *lines* of text (one clear
-    //     rect per line, via Range), not the element's bounding box. A heading
-    //     like "Hi, I'm Luke" or a short last line ("balanced.") only clears the
-    //     glyphs it occupies, so the pattern flows back in to the right of short
-    //     lines and along the ragged edge instead of inside a big dead rectangle.
-    //   • BOX atoms — opaque blocks (avatar, icon clusters, case-study cards) get
-    //     a tight rounded-rect halo around their bounding box.
-    // The nearest atom always wins (min in holeFade), so texture survives in the
-    // gaps between atoms (hero ↔ icon row, between icons). Adapts across modes
-    // (life launchpad vs work portfolio) since both reuse these atoms.
     const TEXT_HOLE_SELECTORS = ['.intro-text'];
     const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-card-left', '.cs-card'];
 
@@ -125,9 +252,6 @@
       });
     }
 
-    // Trace each rendered line of text in `el` as its own clear rect. Range
-    // client rects hug the glyph run per line (including the line-box height),
-    // so the clear zone follows the text silhouette rather than the block box.
     const lineRange = typeof document.createRange === 'function' ? document.createRange() : null;
     function pushTextLineRects(out, el) {
       if (!lineRange) { pushRect(out, el.getBoundingClientRect()); return; }
@@ -152,11 +276,6 @@
       holeRects = next;
     }
 
-    // Each content atom gets its own tight halo: a rounded-rect exterior
-    // distance with a short smoothstep falloff. The nearest atom wins (min),
-    // so the clear zone hugs each element's own shape — avatar, text, every
-    // icon — and the pattern recovers in the gaps between them, rather than
-    // one big blob swallowing the whole cluster. 0 = clear, 1 = full pattern.
     function holeFade(x, y) {
       if (!holeRects.length) return 1;
       let min = 1;
@@ -174,74 +293,77 @@
       return min;
     }
 
+    // Ripple displacement applied to a cell centre (interaction effect).
+    function applyRipples(x, y, ts) {
+      for (const rp of ripples) {
+        const dt = (ts - rp.t0) / 1000;
+        const d  = Math.hypot(x - rp.x, y - rp.y);
+        const dW = d - dt * RPSPD;
+        const dc = Math.max(0, 1 - (ts - rp.t0) / RPDUR);
+        if (Math.abs(dW) < 36 && dc > 0) {
+          const str = Math.sin(dW * 0.13) * RPAMP * dc;
+          const ang = Math.atan2(y - rp.y, x - rp.x);
+          x += Math.cos(ang) * str;
+          y += Math.sin(ang) * str;
+        }
+      }
+      return [x, y];
+    }
+
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
+      const now = Date.now();
+      const eased = minuteEase(now);
+      c.lineWidth = 1.25;
+      c.lineCap = 'round';
       for (const cl of cells) {
         if (cl.bx > w + SP || cl.by > h + SP) continue;
-        let x = cl.bx, y = cl.by;
-        for (const rp of ripples) {
-          const dt = (ts - rp.t0) / 1000;
-          const d  = Math.hypot(x - rp.x, y - rp.y);
-          const dW = d - dt * RPSPD;
-          const dc = Math.max(0, 1 - (ts - rp.t0) / RPDUR);
-          if (Math.abs(dW) < 36 && dc > 0) {
-            const str = Math.sin(dW * 0.13) * RPAMP * dc;
-            const ang = Math.atan2(y - rp.y, x - rp.x);
-            x += Math.cos(ang) * str;
-            y += Math.sin(ang) * str;
-          }
-        }
-        let breathMult = 1;
-        if (cl.fadeBreath) {
-          const { phase, period, peak } = cl.fadeBreath;
-          const u = ((performance.now() + phase) % period) / period;
-          breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
-        }
-        const alpha = cl.al * breathMult * holeFade(x, y);
-        if (alpha < 0.004) continue;
-        c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
+        let [x, y] = applyRipples(cl.bx, cl.by, ts);
+
         if (cl.tp === 0) {
+          // Sparse ambient dot
+          let breathMult = 1;
+          if (cl.fadeBreath) {
+            const { phase, period, peak } = cl.fadeBreath;
+            const u = ((now + phase) % period) / period;
+            breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
+          }
+          const alpha = cl.al * breathMult * holeFade(x, y);
+          if (alpha < 0.004) continue;
+          c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
           c.beginPath();
           c.arc(x, y, cl.sz, 0, 6.2832);
           c.fill();
-        } else if (cl.tp === 1) {
-          c.fillRect(x - cl.sz / 2, y - cl.sz / 2, cl.sz, cl.sz);
-        } else {
-          const h = cl.slashHalf;
-          const k = 0.72;
-          c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
-          c.lineWidth = 1.25;
-          c.lineCap = 'round';
-          if (cl.rotateDrift) {
-            const { phase, period, range } = cl.rotateDrift;
-            const u = ((performance.now() + phase) % period) / period;
-            const dAngle = range * Math.sin(u * 2 * Math.PI);
-            c.save();
-            c.translate(x, y);
-            c.rotate(dAngle);
-            c.beginPath();
-            if (cl.slash === '/') {
-              c.moveTo(-h * k, h * k);
-              c.lineTo(h * k, -h * k);
-            } else {
-              c.moveTo(-h * k, -h * k);
-              c.lineTo(h * k, h * k);
-            }
-            c.stroke();
-            c.restore();
-          } else {
-            c.beginPath();
-            if (cl.slash === '/') {
-              c.moveTo(x - h * k, y + h * k);
-              c.lineTo(x + h * k, y - h * k);
-            } else {
-              c.moveTo(x - h * k, y - h * k);
-              c.lineTo(x + h * k, y + h * k);
-            }
-            c.stroke();
-          }
+          continue;
         }
+
+        // Clock hand: interpolate angle + alpha between this minute and next.
+        const angle = lerpLine(cl.aM, cl.aM1, eased);
+        const alpha = (cl.oM + (cl.oM1 - cl.oM) * eased) * holeFade(x, y);
+        if (alpha < 0.004) continue;
+        const dx = Math.cos(angle) * cl.h;
+        const dy = Math.sin(angle) * cl.h;
+        c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
+        c.beginPath();
+        c.moveTo(x - dx, y - dy);
+        c.lineTo(x + dx, y + dy);
+        c.stroke();
+      }
+
+      // Colon between HH and MM — two softly pulsing dots.
+      if (colon) {
+        const pulse = 0.14 + 0.12 * (0.5 + 0.5 * Math.cos(now / 900));
+        c.fillStyle = `rgba(${gridDotRgb},${pulse})`;
+        for (const cy of [colon.y1, colon.y2]) {
+          const f = holeFade(colon.cx, cy);
+          if (f < 0.004) continue;
+          c.globalAlpha = f;
+          c.beginPath();
+          c.arc(colon.cx, cy, colon.r, 0, 6.2832);
+          c.fill();
+        }
+        c.globalAlpha = 1;
       }
     }
 
@@ -303,10 +425,6 @@
 
     /* ── Mouse (custom cursor follows pointer on fine-pointer devices only) ── */
     if (useFinePointer && cursorEl) {
-      // Coalesce rapid mousemove events into a single transform write per frame.
-      // mousemove can fire faster than the display refreshes, so doing the DOM
-      // write + closest() lookup once per frame avoids redundant work and keeps
-      // the cursor on the compositor.
       let curTarget = null, curRaf = false;
       function flushCursor() {
         curRaf = false;
@@ -329,11 +447,9 @@
     }
 
     /* ── Animation loop ── */
-    // The ambient "breathing"/rotation drift runs on multi-second periods, so
-    // redrawing the whole grid at the full refresh rate is wasted work. Cap the
-    // ambient-only loop to ~30fps (imperceptible at these speeds) but keep
-    // ripples — which move fast — at the full frame rate. This roughly halves
-    // the steady-state main-thread + paint cost behind the glass UI.
+    // The clock hands ease across the whole minute, so the field is always
+    // (slowly) in motion. Cap to ~30fps — imperceptible at these speeds — and
+    // keep ripples, which move fast, at the full frame rate.
     const AMBIENT_FRAME_MS = 1000 / 30;
     let lastDrawTs = 0;
 
@@ -346,16 +462,12 @@
     function tick(ts) {
       ripples = ripples.filter(r => ts - r.t0 < RPDUR);
       const ripplesActive = ripples.length > 0;
+      refreshMinute(Date.now());
       if (ripplesActive || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
         lastDrawTs = ts;
         drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
       }
-      if (ripplesActive || ambientAnim) {
-        requestAnimationFrame(tick);
-      } else {
-        animating = false;
-        drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
-      }
+      requestAnimationFrame(tick);
     }
 
     /* ── Resize ── */
@@ -372,14 +484,15 @@
       if (typeof ctx.imageSmoothingQuality === 'string') ctx.imageSmoothingQuality = 'high';
       readGridDotRgb();
       buildCells(gridLogicalW, gridLogicalH);
+      layoutDigits(gridLogicalW, gridLogicalH);
+      assignClockTargets();
+      curMinute = null;
+      refreshMinute(Date.now());
       updateHoleRects();
-      if (ambientAnim) startAnim();
-      else if (!animating) drawGrid(ctx, gridLogicalW, gridLogicalH, 0);
+      startAnim();
     }
 
-    /* Keep the clear zones tracking the content as it moves: mode switches
-       (life/work/chat) swap which blocks are visible, and work mode scrolls.
-       Recompute the rects then redraw if the ambient loop isn't already. */
+    /* Keep the clear zones tracking the content as it moves. */
     function refreshHoles() {
       updateHoleRects();
       if (!animating && gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
@@ -390,26 +503,10 @@
       holeRaf = requestAnimationFrame(() => { holeRaf = 0; refreshHoles(); });
     }
     window.addEventListener('scroll', scheduleHoleRefresh, { passive: true });
-    // Mode switches toggle classes on <body>; re-measure when they do.
     new MutationObserver(scheduleHoleRefresh)
       .observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    // Re-measure once fonts/async content (e.g. post counts) settle.
     window.addEventListener('load', refreshHoles);
     setTimeout(refreshHoles, 600);
-
-    /* ── Slash flipper ── */
-    function flipSlashes() {
-      const slashCells = cells.filter(c => c.tp === 2 && !c.rotateDrift);
-      if (!slashCells.length) return;
-      const count = 1 + Math.floor(Math.random() * 2); // flip 1–2 at a time
-      for (let i = 0; i < count; i++) {
-        const cell = slashCells[Math.floor(Math.random() * slashCells.length)];
-        cell.slash = cell.slash === '/' ? '\\' : '/';
-      }
-      if (gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
-      setTimeout(flipSlashes, 18000 + Math.random() * 8000); // every 18–26s
-    }
-    setTimeout(flipSlashes, 18000 + Math.random() * 8000);
 
     resize();
     window.addEventListener('resize', () => { clearTimeout(canvas._rt); canvas._rt = setTimeout(resize, 100); });
