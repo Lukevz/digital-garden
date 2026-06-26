@@ -47,8 +47,7 @@
        all the time, with one graceful synchronised sweep per minute. */
     const REST_ANGLE = -Math.PI / 4;   // diagonal resting field ('/')
     const HOUR_12 = true;              // true = 12h (no leading zero), false = 24h HH:MM
-    const HOLD_MS = 15000;             // readable hold at the top of each minute, then the rest is the moving sweep
-    const SPIN_TURNS = 3;              // extra synchronised half-turns during the move (odd → always visibly turning)
+    const HOLD_MS = 6000;              // brief readable hold at the top of each minute
     const MIN_MS = 60000;
     const GUTTER = 22;                 // px kept clear of the nav / now-bar (never touching)
     const SEG_H = 0, SEG_V = Math.PI / 2;
@@ -66,18 +65,20 @@
       5: 'afgcd', 6: 'afgecd', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg',
     };
 
-    const HAND = SP * 0.36;          // hand half-length (full ≈ 20px on a 28px grid)
-    const REST_ALPHA = 0.075;        // faint uniform resting field
+    const HAND_LEN = SP * 0.44;      // length of one clock hand (full segment line ≈ 2× this)
+    const REST_ALPHA = 0.075;        // faint resting field
     const ACTIVE_ALPHA = 0.50;       // lit digit segment
 
-    /* ── Uniform grid of hands, addressable by integer (col,row) ──────────
-       One identical hand at every grid point, like ClockClock 24 — hands only
-       rotate in place. Each digit is a fixed template of grid CELLS (not a
-       free-floating box), and digits are placed at integer column/row offsets,
-       so every "1" is pixel-identical, every digit is fully drawn with the same
-       hands, and neighbours line up perfectly on the grid. */
+    /* ── Grid of mini two-hand clocks, addressable by integer (col,row) ───
+       Like ClockClock 24: every grid point is a little clock with TWO hands
+       pivoting from a shared centre. A straight segment is drawn by the two
+       hands pointing opposite (a full line through the centre); a resting clock
+       overlaps both hands on the diagonal (a short idle tick). The two hands
+       slowly rotate, splitting apart and closing, to arrange into each digit.
+       Each digit is a fixed template of grid CELLS placed at integer column/row
+       offsets, so every "1" is pixel-identical and neighbours line up. */
     let NX = 0, NY = 0;
-    let cellGrid = [];               // cellGrid[col][row] -> hand
+    let cellGrid = [];               // cellGrid[col][row] -> clock
     function buildCells(w, h) {
       NX = Math.ceil((w + SP) / SP);
       NY = Math.ceil((h + SP) / SP);
@@ -88,9 +89,12 @@
         for (let j = 0; j < NY; j++) {
           const cell = {
             bx: SP / 2 + i * SP, by: SP / 2 + j * SP,
-            h: HAND, restAlpha: REST_ALPHA, activeAlpha: ACTIVE_ALPHA,
+            restAlpha: REST_ALPHA, activeAlpha: ACTIVE_ALPHA,
             clk: null,
-            aM: REST_ANGLE, aM1: REST_ANGLE, oM: REST_ALPHA, oM1: REST_ALPHA,
+            // two hands: A and B, each with this-minute (M) / next-minute (M1) target
+            aAM: REST_ANGLE, aAM1: REST_ANGLE,
+            aBM: REST_ANGLE, aBM1: REST_ANGLE,
+            oM: REST_ALPHA, oM1: REST_ALPHA,
           };
           cellGrid[i][j] = cell;
           cells.push(cell);
@@ -224,19 +228,24 @@
       return [Math.floor(h / 10), h % 10, mt, mu];
     }
 
-    // Compute every hand's target angle + alpha for a given minute, stashed on
-    // `key` ('M' = current minute, 'M1' = next minute).
+    // Compute both hands' target angles + alpha for a given minute, stashed on
+    // `key` ('M' = current minute, 'M1' = next minute). A lit horizontal segment
+    // points the hands left/right, a vertical one up/down (a full line through
+    // the centre); a resting clock overlaps both hands on the diagonal.
     function computeArrangement(ms, key) {
       const digits = displayDigits(ms);
       for (const cl of cells) {
-        let active = false, orient = REST_ANGLE;
+        let aA = REST_ANGLE, aB = REST_ANGLE, active = false;
         if (cl.clk) {
           const dv = digits[cl.clk.digit];
           if (dv != null && DIGIT_SEGS[dv].indexOf(cl.clk.seg) !== -1) {
-            active = true; orient = cl.clk.orient;
+            active = true;
+            if (cl.clk.orient === SEG_H) { aA = 0; aB = Math.PI; }            // ← →
+            else { aA = Math.PI / 2; aB = -Math.PI / 2; }                     // ↑ ↓
           }
         }
-        cl['a' + key] = orient;
+        cl['aA' + key] = aA;
+        cl['aB' + key] = aB;
         cl['o' + key] = active ? cl.activeAlpha : cl.restAlpha;
       }
     }
@@ -252,12 +261,12 @@
       const nNext = displayDigits((idx + 1) * MIN_MS).length;
       if (nNext === nCur) computeArrangement((idx + 1) * MIN_MS, 'M1');
       // Count change (9→10, 12→1) twice a day: just snap at the rollover.
-      else for (const cl of cells) { cl.aM1 = cl.aM; cl.oM1 = cl.oM; }
+      else for (const cl of cells) { cl.aAM1 = cl.aAM; cl.aBM1 = cl.aBM; cl.oM1 = cl.oM; }
     }
 
-    // Hold the readable time briefly at the top of the minute, then glide to the
-    // next minute's arrangement over the rest of it — slow, continuous, always
-    // visibly moving, easing to a stop right as the clock rolls over.
+    // Hold the readable time briefly at the top of the minute, then move slowly
+    // and directly toward the next minute's arrangement over the rest of it,
+    // easing to a stop exactly as the clock rolls over — never past the target.
     function minuteEase(now) {
       const into = now % MIN_MS;
       if (into <= HOLD_MS) return 0;
@@ -265,9 +274,11 @@
       return t * t * (3 - 2 * t); // smoothstep — eases out into the next hold
     }
 
-    // Shortest-path interpolation for *undirected* lines (period = PI).
-    function lerpLine(a, b, t) {
-      let d = ((b - a + Math.PI * 2.5) % Math.PI) - Math.PI / 2;
+    // Shortest-path interpolation for a directed hand (period = 2*PI).
+    function lerpHand(a, b, t) {
+      let d = (b - a) % (2 * Math.PI);
+      if (d > Math.PI) d -= 2 * Math.PI;
+      else if (d < -Math.PI) d += 2 * Math.PI;
       return a + d * t;
     }
 
@@ -366,19 +377,13 @@
       c.clearRect(0, 0, w, h);
       const now = Date.now();
       const eased = minuteEase(now);
-      // Synchronised extra rotation during the move: every hand sweeps through
-      // SPIN_TURNS half-turns and lands exactly back on its target (period = PI),
-      // so the whole field is visibly turning, ClockClock-style, between holds.
-      const spin = SPIN_TURNS * Math.PI * eased;
-      c.lineWidth = 1.25;
+      c.lineWidth = 1.4;
       c.lineCap = 'round';
+      c.lineJoin = 'round';
       for (const cl of cells) {
         if (cl.bx > w + SP || cl.by > h + SP) continue;
         const [x, y] = applyRipples(cl.bx, cl.by, ts);
 
-        // Each hand rotates in place — interpolate its angle between this
-        // minute's arrangement and the next, plus the synchronised spin.
-        const angle = lerpLine(cl.aM, cl.aM1, eased) + spin;
         // Lit digit segments keep a faint floor *through* the content so the
         // big clock reads as a continuous shadow/watermark behind it; the
         // resting field still clears fully so text stays clean.
@@ -387,12 +392,17 @@
         const eff = lit ? 0.30 + 0.70 * hf : hf;
         const alpha = (cl.oM + (cl.oM1 - cl.oM) * eased) * eff;
         if (alpha < 0.004) continue;
-        const dx = Math.cos(angle) * cl.h;
-        const dy = Math.sin(angle) * cl.h;
+
+        // The two hands each rotate the short way toward their target — so the
+        // clock arranges into the digit and stops there, never spinning past.
+        const aA = lerpHand(cl.aAM, cl.aAM1, eased);
+        const aB = lerpHand(cl.aBM, cl.aBM1, eased);
         c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
+        // Both hands in one stroke so an overlapping (resting) clock doesn't
+        // double its alpha.
         c.beginPath();
-        c.moveTo(x - dx, y - dy);
-        c.lineTo(x + dx, y + dy);
+        c.moveTo(x, y); c.lineTo(x + Math.cos(aA) * HAND_LEN, y + Math.sin(aA) * HAND_LEN);
+        c.moveTo(x, y); c.lineTo(x + Math.cos(aB) * HAND_LEN, y + Math.sin(aB) * HAND_LEN);
         c.stroke();
       }
 
