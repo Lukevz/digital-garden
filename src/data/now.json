@@ -1,8 +1,8 @@
 {
   "updatedAt": "2026-05-18",
   "items": [
-    { "label": "READING",   "value": "Thrawn: Heir to the Empire", "note": "Timothy Zahn" },
     { "label": "LISTENING", "value": "Baby Do You Know?", "note": "Fulton Lee" },
+    { "label": "READING",   "value": "Thrawn: Heir to the Empire", "note": "Timothy Zahn" },
     { "label": "BUILDING",  "value": "52: One work week at a time"},
     { "label": "WRITING",   "value": "WFH systems" },
     { "label": "WATCHING",  "value": "For All Mankind S5" },

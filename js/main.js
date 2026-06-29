@@ -131,12 +131,13 @@
         logo.style.opacity = '0';
       }
       chars.forEach(c => { c.style.opacity = '0'; c.style.transform = 'translateY(22px)'; });
-      function fadeInInstinctLogo() {
+      function fadeInInstinctLogo(delay = 0) {
         if (!logo || !el.contains(logo) || reducedMotion) return;
         anime({
           targets: logo,
           opacity: 1,
           duration: 420,
+          delay,
           easing: 'cubicBezier(0.16,1,0.3,1)'
         });
       }
@@ -150,9 +151,11 @@
         translateY: 0,
         duration: 700,
         easing: 'cubicBezier(0.16,1,0.3,1)',
-        delay: anime.stagger(22, { start: startDelay }),
-        complete: fadeInInstinctLogo
+        delay: anime.stagger(22, { start: startDelay })
       });
+      // Fade the logo in as the character wave reaches it, rather than waiting for the
+      // whole line to finish settling (which left the logo arriving noticeably late).
+      fadeInInstinctLogo(startDelay + Math.max(0, chars.length - 6) * 22);
     }
 
     function animateHeadingOut(el, cb) {
@@ -176,6 +179,8 @@
       const icon  = btn.querySelector('.app-icon');
       const right = btn.querySelector('.app-card-right');
       const appName = btn.dataset.app;
+      // The visible label and icon are aria-hidden, so name the button explicitly.
+      if (appName) btn.setAttribute('aria-label', appName);
 
       const left = document.createElement('div');
       left.className = 'app-card-left';
@@ -218,6 +223,44 @@
     const panelBack  = document.getElementById('panelBack');
     let panelOpen = false;
 
+    // ── Accessible modal focus management (shared by panel / sModal / bookModal) ──
+    // Moves focus into a dialog on open, restores it to the trigger on close, and
+    // keeps Tab within the dialog while open (WCAG 2.1.2, 2.4.3, 2.4.11).
+    const A11Y_FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const _modalReturnFocus = new WeakMap();
+    function getModalFocusable(container) {
+      return Array.from(container.querySelectorAll(A11Y_FOCUSABLE))
+        .filter(el => el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+    }
+    function activateModalFocus(container, initialEl) {
+      _modalReturnFocus.set(container, document.activeElement);
+      // Defer so the dialog is laid out / animating in before focus moves.
+      setTimeout(() => {
+        const target = (initialEl && initialEl.offsetParent !== null)
+          ? initialEl
+          : (getModalFocusable(container)[0] || container);
+        try { target.focus({ preventScroll: true }); } catch (_) {}
+      }, 60);
+    }
+    function restoreModalFocus(container) {
+      const prev = _modalReturnFocus.get(container);
+      _modalReturnFocus.delete(container);
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+        try { prev.focus({ preventScroll: true }); } catch (_) {}
+      }
+    }
+    function trapModalTab(container, e) {
+      if (e.key !== 'Tab') return;
+      const f = getModalFocusable(container);
+      if (!f.length) return;
+      const first = f[0];
+      const last  = f[f.length - 1];
+      const active = document.activeElement;
+      if (!container.contains(active)) { e.preventDefault(); first.focus(); return; }
+      if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    }
+
     function openPanel(btn, originEl) {
       if (panelOpen) return;
       panelOpen = true;
@@ -233,6 +276,8 @@
       anime.remove([backdrop, panel]);
       anime({ targets: backdrop, opacity: [0, 1], duration: 550, easing: 'easeOutQuad' });
       anime({ targets: panel, scale: [0.04, 1], opacity: [0, 1], duration: 700, easing: 'cubicBezier(0.16,1,0.3,1)' });
+
+      activateModalFocus(panel, panelBack);
     }
 
     // App buttons handled by hash router below
@@ -373,6 +418,7 @@
     function closePanel() {
       if (!panelOpen) return;
       panelOpen = false;
+      restoreModalFocus(panel);
       backdrop.style.pointerEvents = 'none';
 
       anime.remove([backdrop, panel]);
@@ -1015,7 +1061,7 @@
               const photos = JSON.parse(props.photos || '[]');
               if (photos.length) {
                 photosHTML = `<div class="places-popup__photos">${photos.map(src =>
-                  `<img class="places-popup__photo" src="${src}" alt="" loading="lazy">`
+                  `<img class="places-popup__photo" src="${src}" alt="Photo of ${escHtml(props.name || 'this place')}" loading="lazy">`
                 ).join('')}</div>`;
               }
             } catch (_) {}
@@ -1347,6 +1393,7 @@
       if (bookModalActions) bookModalActions.classList.add('book-modal-actions--solo');
       bookModal.style.pointerEvents = 'all';
       bookModal.classList.add('bm-open');
+      activateModalFocus(bookModal, bookModalClose);
 
       try {
         const slugSet = await ensureGardenSlugSet();
@@ -1366,6 +1413,7 @@
       bookModalOpen = false;
       bookModal.classList.remove('bm-open');
       bookModal.style.pointerEvents = 'none';
+      restoreModalFocus(bookModal);
     }
 
     bookModalClose.addEventListener('click', closeBookModal);
@@ -1399,6 +1447,7 @@
       tabOpts.forEach(btn => {
         const active = btn.dataset.mode === mode;
         btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         if (active) positionTabPill(btn);
       });
 
@@ -2445,6 +2494,7 @@
       modalIsOpen = true;
       sModal.style.pointerEvents = 'all';
       sModal.classList.add('sm-open');
+      activateModalFocus(sModal, sModalClose);
     }
 
     // Toggle the roomy "detail" modal size (used for video/writing/case-study
@@ -2465,8 +2515,17 @@
       if (sModalBg) { sModalBg.classList.remove('is-visible'); sModalBg.style.backgroundImage = ''; }
       sModal.classList.remove('sm-open', 'sm-now', 'sm-large', 'sm-photo');
       sModal.style.pointerEvents = 'none';
+      restoreModalFocus(sModal);
       history.pushState(null, '', location.pathname + location.search);
     }
+
+    // Keep keyboard focus inside whichever dialog is currently open.
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return;
+      if (modalIsOpen) trapModalTab(sModal, e);
+      else if (bookModalOpen) trapModalTab(bookModal, e);
+      else if (panelOpen) trapModalTab(panel, e);
+    });
 
     function fadeSwap(newHTML) {
       // Any content swap drops the photo backdrop; renderPhotoDetail re-applies it.
@@ -2568,7 +2627,7 @@
             return;
           }
           const items = images.map((img, i) =>
-            `<button class="photo-item" data-idx="${i}"><img src="${escHtml(img.thumb || img.src)}" alt="" loading="lazy" decoding="async"></button>`
+            `<button class="photo-item" data-idx="${i}" aria-label="View photo ${i + 1}"><img src="${escHtml(img.thumb || img.src)}" alt="" loading="lazy" decoding="async"></button>`
           ).join('');
           fadeSwap(`<div class="sm-fade"><div class="photos-masonry">${items}</div></div>`);
           setTimeout(() => {
@@ -2625,6 +2684,7 @@
           idx = (i + list.length) % list.length;
           img.classList.remove('is-loaded');
           img.src = list[idx];
+          img.alt = `Photo ${idx + 1} of ${list.length}`;
           setBg((thumbs && thumbs[idx]) || list[idx]);
           if (count) count.textContent = `${idx + 1} / ${list.length}`;
         };
@@ -3159,7 +3219,7 @@
       if (!timeEl) return;
       const tz = 'America/New_York';
       const timeFmt = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz, hour: 'numeric', minute: '2-digit', hourCycle: 'h23',
+        timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
       });
       function tick() {
         const now = new Date();

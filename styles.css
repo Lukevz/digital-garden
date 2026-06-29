@@ -686,10 +686,7 @@
       object-fit: cover;
       object-position: center top;
       display: block;
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.22)),
-        0 2px 6px rgba(0, 0, 0, calc(0.04 + var(--theme-blend) * 0.10)),
-        inset 0 0 0 1px var(--glass-border);
+      box-shadow: inset 0 0 0 1px var(--glass-border);
     }
 
     /* Intro text column */
@@ -940,8 +937,6 @@
       align-items: center;
       justify-content: center;
       box-shadow:
-        0 4px 16px rgba(0, 0, 0, calc(0.05 + var(--theme-blend) * 0.18)),
-        0 1px 2px rgba(0, 0, 0, calc(0.03 + var(--theme-blend) * 0.08)),
         inset 0 1.5px 0 var(--glass-highlight),
         inset 0 0 0 1px var(--glass-border);
       backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -951,14 +946,11 @@
     .app:hover .app-icon,
     .app:focus-visible .app-icon {
       box-shadow:
-        0 12px 40px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.28)),
-        0 4px 12px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.14)),
         inset 0 1.5px 0 var(--glass-highlight),
         inset 0 0 0 1px var(--glass-border);
     }
     .app:active .app-icon {
       box-shadow:
-        0 2px 6px rgba(0, 0, 0, calc(0.05 + var(--theme-blend) * 0.15)),
         inset 0 1px 0 var(--glass-highlight),
         inset 0 0 0 1px var(--glass-border);
     }
@@ -1133,6 +1125,14 @@
         inset 0 0 0 1px var(--glass-border-medium);
       backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
       -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+
+      /* Split-flap palette — warm tan in light mode, navy in dark mode,
+         matched to the site's surface tokens. Text flips so it stays
+         legible: charcoal on tan, near-white on navy. */
+      --flap-top:  color-mix(in oklab, #f2ede3 calc((1 - var(--theme-blend)) * 100%), #2e3441 calc(var(--theme-blend) * 100%));
+      --flap-bot:  color-mix(in oklab, #e9e3d6 calc((1 - var(--theme-blend)) * 100%), #252b38 calc(var(--theme-blend) * 100%));
+      --flap-seam: color-mix(in oklab, #cfc7b6 calc((1 - var(--theme-blend)) * 100%), #14171f calc(var(--theme-blend) * 100%));
+      --flap-text: color-mix(in oklab, #3a3d45 calc((1 - var(--theme-blend)) * 100%), #eef0f4 calc(var(--theme-blend) * 100%));
     }
     .now-strip:hover { opacity: 0.82; }
 
@@ -1166,7 +1166,7 @@
     .ns-cell {
       width: 14px;
       height: 23px;
-      background: #3d3b38;
+      background: var(--flap-bot);
       border-radius: 2px;
       position: relative;
       flex-shrink: 0;
@@ -1179,7 +1179,7 @@
       top: calc(50% - 0.5px);
       left: 0; right: 0;
       height: 0.5px;
-      background: #2a2825;
+      background: var(--flap-seam);
       z-index: 10;
       pointer-events: none;
     }
@@ -1192,8 +1192,8 @@
       height: 50%;
       overflow: hidden;
     }
-    .ns-cell .ct, .ns-cell .ft { top: 0;   background: #4a4744; }
-    .ns-cell .cb, .ns-cell .fb { top: 50%; background: #3d3b38; }
+    .ns-cell .ct, .ns-cell .ft { top: 0;   background: var(--flap-top); }
+    .ns-cell .cb, .ns-cell .fb { top: 50%; background: var(--flap-bot); }
     .ns-cell .ct { z-index: 1; }
     .ns-cell .cb { z-index: 1; }
     .ns-cell .ft { z-index: 3; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-origin: center bottom; }
@@ -1207,7 +1207,7 @@
       font-family: 'Geist Mono', 'Courier New', monospace;
       font-size: 11px;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--flap-text);
       text-align: center;
       user-select: none;
     }
@@ -1223,6 +1223,51 @@
       font-size: 12px;
       color: var(--text-muted);
       flex-shrink: 0;
+    }
+
+    /* ── Now strip: "dock" variant ──
+       Alternative to the glass pill: dark, translucent, flat. Reads as
+       system chrome rather than a floating body-level card. The three
+       items (listening / reading / building) sit in their own compartments
+       inside one anchored bar — closer to a macOS dock / control-center
+       module than a glass card. Add `now-strip--dock` to opt in; remove it
+       to fall back to the glass look. */
+    .now-strip--dock {
+      bottom: 16px;
+      gap: 0;
+      padding: 6px;
+      border-radius: 16px;
+      /* Dark + translucent, independent of the page's light/dark theme. */
+      background: rgba(17, 18, 22, 0.64);
+      /* Flat: hairline edge + restrained contact shadow, no glass gloss. */
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 8px 28px -14px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(22px) saturate(1.4);
+      -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    }
+    .now-strip--dock:hover { opacity: 1; }
+
+    .now-strip--dock .ns-items {
+      gap: 4px;
+    }
+
+    /* Each section becomes its own compartment / tile within the dock. */
+    .now-strip--dock .ns-item {
+      gap: 9px;
+      padding: 7px 14px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.035);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
+      transition: background 0.2s;
+    }
+    .now-strip--dock:hover .ns-item {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .now-strip--dock .ns-lbl {
+      color: rgba(232, 234, 240, 0.5);
     }
 
     /* ── Custom cursor (desktop / fine pointer only) ── */
@@ -1335,8 +1380,6 @@
       border-radius: 18px;
       padding: 20px 22px;
       box-shadow:
-        0 4px 16px rgba(0, 0, 0, calc(0.04 + var(--theme-blend) * 0.16)),
-        0 1px 2px rgba(0, 0, 0, calc(0.02 + var(--theme-blend) * 0.06)),
         inset 0 1px 0 var(--glass-highlight),
         inset 0 0 0 1px var(--glass-border);
       backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -1352,8 +1395,6 @@
     .study:hover .study-card {
       transform: scale(1.04);
       box-shadow:
-        0 12px 40px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.28)),
-        0 4px 12px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.12)),
         inset 0 1.5px 0 var(--glass-highlight),
         inset 0 0 0 1px var(--glass-border);
     }
@@ -3748,7 +3789,6 @@
     .intro-skip:hover,
     .intro-skip:focus-visible {
       opacity: 1;
-      outline: none;
     }
 
     /* ── Stage (centered text block) ─────────────────────── */
@@ -3913,7 +3953,6 @@
     .dpad-btn:focus-visible:not(:disabled) {
       background: var(--hover-fill);
       color: var(--text-primary);
-      outline: none;
     }
 
     .dpad-btn:active:not(:disabled) {
@@ -3955,7 +3994,6 @@
     .intro-enter-btn:focus-visible {
       background: var(--hover-fill);
       color: var(--text-primary);
-      outline: none;
     }
 
     /* ── Final headline ───────────────────────────────────── */
@@ -4590,3 +4628,86 @@ body.places-mode #themeToggle,
    from what's behind. */
 .photo-detail-nav   { background: rgba(20, 20, 24, 0.72) !important; }
 .mapboxgl-ctrl-group { background: rgba(30, 30, 30, 0.78) !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   Accessibility — keyboard focus, skip link, screen-reader helpers,
+   reduced motion. WCAG 2.2: 2.4.7 Focus Visible, 2.4.11 Focus Not
+   Obscured / 2.4.13 Focus Appearance, 2.4.1 Bypass Blocks, 2.3.3
+   Animation from Interactions.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Baseline keyboard focus ring for every interactive element.
+   :where() keeps specificity at 0, so any component that defines its
+   own :focus / :focus-visible style still wins and this only fills the
+   gaps. The blue --link adapts to the active light/dark theme. */
+:where(a[href], button, input, textarea, select, summary,
+       [tabindex]:not([tabindex="-1"]), [role="button"], [role="tab"],
+       [role="menuitem"], [contenteditable="true"]):focus-visible {
+  outline: 2px solid var(--link, #4a7ab5);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Launchpad cards already have a bespoke focus treatment (focused card
+   glows, siblings dim), so suppress the generic ring to avoid doubling. */
+.app:focus-visible { outline: none; }
+
+/* The chat field is a borderless input inside a pill; ring the whole
+   bar when it holds keyboard focus instead of the bare input. */
+#chatInputBar:focus-within {
+  outline: 2px solid var(--link, #4a7ab5);
+  outline-offset: 2px;
+}
+
+/* Visually hidden but available to assistive tech. */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip-to-content link: off-screen until it receives keyboard focus. */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100000;
+  margin: 10px;
+  padding: 10px 16px;
+  background: var(--panel-bg, #fff);
+  color: var(--text-primary, #111);
+  border: 1px solid var(--link, #4a7ab5);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-150%);
+  transition: transform 0.18s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--link, #4a7ab5);
+  outline-offset: 2px;
+}
+
+/* Honor an explicit reduced-motion preference site-wide. CSS
+   transitions/animations (including inline ones, via !important) are
+   neutralized; JS-driven anime.js sequences still complete instantly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

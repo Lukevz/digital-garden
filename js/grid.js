@@ -19,6 +19,10 @@
     const SP = 28;
     const useFinePointer = typeof matchMedia !== 'undefined' &&
       matchMedia('(hover: hover) and (pointer: fine)').matches;
+    // Respect the user's reduced-motion preference: keep the dot grid static
+    // (no ambient breathing/rotation) for those who ask for less motion.
+    const prefersReducedMotion = typeof matchMedia !== 'undefined' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
     let cells = [];
 
     const GRID_RGB_LIGHT = [58, 61, 69];
@@ -55,7 +59,7 @@
           const cell = { bx, by, tp, al, sz: tp === 0 ? 0.8 + r() * 0.7 : 1.6 + r() * 1.0, slash: '/' };
           if (tp === 2) cell.slashHalf = 3.6 + r() * 3.2;
           // Slow opacity drift on a few slashes — 0 → up to (peak × base alpha)
-          if (tp === 2 && r() < 0.16) {
+          if (tp === 2 && r() < 0.16 && !prefersReducedMotion) {
             cell.fadeBreath = {
               phase: r() * 90000,
               period: 16000 + r() * 22000,
@@ -63,7 +67,7 @@
             };
           }
           // Gentle opacity drift on a small fraction of dots and squares
-          if ((tp === 0 || tp === 1) && r() < 0.065) {
+          if ((tp === 0 || tp === 1) && r() < 0.065 && !prefersReducedMotion) {
             cell.fadeBreath = {
               phase: r() * 90000,
               period: 22000 + r() * 34000,
@@ -71,7 +75,7 @@
             };
           }
           // Slow pendulum rotation on a few slashes — like leaves swaying in wind
-          if (tp === 2 && r() < 0.12) {
+          if (tp === 2 && r() < 0.12 && !prefersReducedMotion) {
             cell.rotateDrift = {
               phase: r() * 90000,
               period: 19000 + r() * 26000,
@@ -89,29 +93,27 @@
     let ripples = [], lastRp = 0;
 
     /* ── Hole (content clearing) ──────────────────────────────────────
-       The pattern fades out around the on-screen content so the text and
-       icons stay legible, then returns to full strength in the surrounding
-       field. Rather than stamp one big ellipse over the whole center — which
-       left a dead "solid" oval spanning the empty gap between the hero and
-       the row beneath it — we trace the actual content blocks. Each visible
-       cluster gets a soft rounded-rect clear zone, so the pattern flows
-       around the content silhouette and survives in the gaps between blocks. */
-    const HOLE_PAD  = 10;   // px around each block kept fully clear
-    const HOLE_FADE = 32;   // px transition from clear → full pattern (short = tight halo)
-    // The content atoms the pattern should flow around. We clear two kinds of
-    // shape, and the distinction is what keeps the field from reading as boxes:
-    //   • TEXT atoms — we trace the actual rendered *lines* of text (one clear
-    //     rect per line, via Range), not the element's bounding box. A heading
-    //     like "Hi, I'm Luke" or a short last line ("balanced.") only clears the
-    //     glyphs it occupies, so the pattern flows back in to the right of short
-    //     lines and along the ragged edge instead of inside a big dead rectangle.
-    //   • BOX atoms — opaque blocks (avatar, icon clusters, case-study cards) get
-    //     a tight rounded-rect halo around their bounding box.
-    // The nearest atom always wins (min in holeFade), so texture survives in the
-    // gaps between atoms (hero ↔ icon row, between icons). Adapts across modes
-    // (life launchpad vs work portfolio) since both reuse these atoms.
+       The pattern is cleared around the on-screen content so the text and
+       icons stay clean. The clearing is QUANTIZED TO THE GRID and BINARY:
+       every 28px cell is either fully drawn or fully hidden — never faded.
+       A cell is hidden when its 28px square overlaps any content atom (plus
+       a small pad); otherwise it draws at full strength. Because whole cells
+       switch off, the cleared negative space always has hard edges that run
+       exactly along grid lines, and no drawn mark can overlap the body — a
+       shown cell's square never touches content, and its mark stays inside
+       its own square. Texture still survives in the gaps between atoms (hero
+       ↔ icon row, between icons), and it adapts across modes (life launchpad
+       vs work portfolio) since both reuse these atoms. */
+    const HOLE_PAD = 6;   // px of breathing room added around each content atom
+    // The content atoms the pattern clears around. We clear two kinds of shape:
+    //   • TEXT atoms — we trace the actual rendered *lines* of text (one rect
+    //     per line, via Range), not the element's bounding box, so the cleared
+    //     cells follow the text silhouette and texture flows back in to the
+    //     right of short lines instead of a big dead rectangle.
+    //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
+    //     cards, each cleared by its bounding box.
     const TEXT_HOLE_SELECTORS = ['.intro-text'];
-    const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-card-left', '.cs-card'];
+    const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-icon', '.study-card'];
 
     let holeRects = [];
 
@@ -150,34 +152,35 @@
         for (const el of document.querySelectorAll(sel)) pushRect(next, el.getBoundingClientRect());
       }
       holeRects = next;
+      computeCellMask();
     }
 
-    // Each content atom gets its own tight halo: a rounded-rect exterior
-    // distance with a short smoothstep falloff. The nearest atom wins (min),
-    // so the clear zone hugs each element's own shape — avatar, text, every
-    // icon — and the pattern recovers in the gaps between them, rather than
-    // one big blob swallowing the whole cluster. 0 = clear, 1 = full pattern.
-    function holeFade(x, y) {
-      if (!holeRects.length) return 1;
-      let min = 1;
-      for (const r of holeRects) {
-        const dx = Math.max(Math.abs(x - r.cx) - (r.hw + HOLE_PAD), 0);
-        const dy = Math.max(Math.abs(y - r.cy) - (r.hh + HOLE_PAD), 0);
-        if (dx === 0 && dy === 0) return 0; // inside a padded block
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < HOLE_FADE) {
-          const t = d / HOLE_FADE;
-          const f = t * t * (3 - 2 * t); // smoothstep
-          if (f < min) min = f;
+    // Binary per-cell mask. A cell is hidden when its 28px square overlaps any
+    // content atom (padded); otherwise it draws at full strength — no fade.
+    // Recomputed only when the content rects change (resize / scroll / mode
+    // switch) and cached on each cell as `hidden`, so the draw loop is a single
+    // boolean check. SP/2 is added to each content half-extent because the test
+    // is the cell's *square* against the content rect (AABB overlap).
+    function computeCellMask() {
+      const reach = SP / 2 + HOLE_PAD;
+      for (const cl of cells) {
+        let hidden = false;
+        for (const r of holeRects) {
+          if (Math.abs(cl.bx - r.cx) <= r.hw + reach &&
+              Math.abs(cl.by - r.cy) <= r.hh + reach) {
+            hidden = true;
+            break;
+          }
         }
+        cl.hidden = hidden;
       }
-      return min;
     }
 
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
       for (const cl of cells) {
+        if (cl.hidden) continue; // grid-snapped binary hole — cell fully off
         if (cl.bx > w + SP || cl.by > h + SP) continue;
         let x = cl.bx, y = cl.by;
         for (const rp of ripples) {
@@ -198,7 +201,7 @@
           const u = ((performance.now() + phase) % period) / period;
           breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
-        const alpha = cl.al * breathMult * holeFade(x, y);
+        const alpha = cl.al * breathMult;
         if (alpha < 0.004) continue;
         c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
         if (cl.tp === 0) {
