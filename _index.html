@@ -392,7 +392,6 @@
     }
     .fd-msg--in  { align-self: flex-start; }
     .fd-msg--out { align-self: flex-end; }
-    .fd-msg--session { align-self: flex-end; }
 
     .fd-bubble {
       padding: 10px 14px;
@@ -408,7 +407,7 @@
       border-bottom-left-radius: 4px;
     }
     .fd-msg--out .fd-bubble,
-    .fd-msg--session .fd-bubble {
+    .fd-msg--out.fd-msg--session .fd-bubble {
       background: var(--link);
       color: #fff;
       border-bottom-right-radius: 4px;

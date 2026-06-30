@@ -19,8 +19,9 @@
   const state = {
     mode: 'life',
     topic: 'about',
-    session: [],
-    sessionNoteShown: false,
+    histories: new Map(),
+    notesShown: new Set(),
+    streaming: false,
   };
 
   /* ── DOM refs ──────────────────────────────────────────────────────── */
@@ -124,9 +125,6 @@
   /* ── Topic switching ──────────────────────────────────────────────── */
 
   function switchTopic(mode, topic, pushUrl = true) {
-    if (mode !== state.mode || topic !== state.topic) {
-      clearSessionMessages();
-    }
     state.mode  = mode;
     state.topic = topic;
 
@@ -162,10 +160,13 @@
 
   /* ── Session messages ─────────────────────────────────────────────── */
 
-  function clearSessionMessages() {
-    state.session = [];
-    state.sessionNoteShown = false;
-    document.querySelectorAll('.fd-msg--session, .fd-session-note, .fd-work-msg--out, .fd-work-msg--concierge').forEach(el => el.remove());
+  function currentFeedKey() {
+    return `${state.mode}/${state.topic}`;
+  }
+
+  function getHistory(feedKey) {
+    if (!state.histories.has(feedKey)) state.histories.set(feedKey, []);
+    return state.histories.get(feedKey);
   }
 
   function appendOutgoing(text, feedEl) {
@@ -192,30 +193,32 @@
         </div>`;
       feedEl.appendChild(msg);
     }
-    if (!state.sessionNoteShown) {
+    const feedKey = feedEl.dataset.feed || currentFeedKey();
+    if (!state.notesShown.has(feedKey)) {
       const note = document.createElement('p');
       note.className = 'fd-session-note';
       note.setAttribute('aria-live', 'polite');
       note.textContent = 'Session only — not saved or transmitted';
       feedEl.appendChild(note);
-      state.sessionNoteShown = true;
+      state.notesShown.add(feedKey);
     }
-    state.session.push({ role: 'user', text });
     scrollFeedToBottom();
   }
 
-  function appendConcierge(text, feedEl) {
+  function appendAssistantMessage(feedEl) {
     if (!feedEl) return;
     if (state.mode === 'life') {
       const msg = document.createElement('article');
-      msg.className = 'fd-msg fd-msg--in fd-msg--session';
-      msg.setAttribute('aria-label', `Luke: ${text}`);
-      msg.innerHTML = `<div class="fd-bubble">${escapeHtml(text)}</div>`;
+      msg.className = 'fd-msg fd-msg--in fd-msg--assistant';
+      msg.setAttribute('aria-label', 'Luke response');
+      msg.innerHTML = '<div class="fd-bubble fd-bubble--stream">Luke is typing…</div>';
       feedEl.appendChild(msg);
+      scrollFeedToBottom();
+      return msg.querySelector('.fd-bubble');
     } else {
       const msg = document.createElement('div');
-      msg.className = 'fd-work-msg fd-work-msg--concierge';
-      msg.setAttribute('aria-label', `Luke: ${text}`);
+      msg.className = 'fd-work-msg fd-work-msg--assistant';
+      msg.setAttribute('aria-label', 'Luke response');
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       msg.innerHTML = `
         <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
@@ -224,12 +227,12 @@
             <span class="fd-work-sender">Luke</span>
             <time class="fd-work-time">${escapeHtml(timeStr)}</time>
           </div>
-          <div class="fd-work-text">${escapeHtml(text)}</div>
+          <div class="fd-work-text fd-bubble--stream">Luke is typing…</div>
         </div>`;
       feedEl.appendChild(msg);
+      scrollFeedToBottom();
+      return msg.querySelector('.fd-work-text');
     }
-    state.session.push({ role: 'concierge', text });
-    scrollFeedToBottom();
   }
 
   function scrollFeedToBottom() {
@@ -257,10 +260,85 @@
   function routeFromText(text) {
     for (const rule of TOPIC_ROUTES) {
       if (rule.rx.test(text)) {
-        return { mode: rule.mode, topic: rule.topic, reply: rule.reply };
+    return { mode: rule.mode, topic: rule.topic };
       }
     }
     return null;
+  }
+
+  function topicInstruction(mode, topic) {
+    const topicData = DATA[mode]?.topics?.find(t => t.id === topic);
+    const label = mode === 'work' ? `#${topic}` : (topicData?.label || topic);
+    return [
+      `Context: the visitor is currently in the ${mode} section, topic "${label}".`,
+      'Answer normally in Luke\'s voice, but keep the answer scoped to this topic when that makes sense.',
+      'If the question belongs somewhere else, briefly answer and mention the better topic.',
+      'Visitor message:',
+    ].join('\n');
+  }
+
+  function messagesForApi(feedKey, userText) {
+    const [mode, topic] = feedKey.split('/');
+    const history = getHistory(feedKey).slice(-12);
+    return [
+      ...history,
+      { role: 'user', content: `${topicInstruction(mode, topic)}\n${userText}` }
+    ];
+  }
+
+  async function streamChat(messages, onToken) {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    });
+
+    if (!res.ok || !res.body) {
+      let detail = '';
+      try {
+        const data = await res.json();
+        detail = data?.error || data?.detail || '';
+      } catch (_) {}
+      throw new Error(detail || `Chat failed (${res.status})`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const json = JSON.parse(payload);
+          const token = json?.choices?.[0]?.delta?.content || '';
+          if (token) onToken(token);
+        } catch (_) {
+          // Ignore partial/non-JSON event lines.
+        }
+      }
+    }
+  }
+
+  function setComposerBusy(isBusy) {
+    state.streaming = isBusy;
+    if (input) {
+      input.disabled = isBusy;
+      input.placeholder = isBusy ? 'Luke is typing…' : 'Ask me anything…';
+    }
+    if (sendBtn) {
+      sendBtn.disabled = isBusy || !(input?.value || '').trim();
+      sendBtn.classList.toggle('fd-send--ready', !sendBtn.disabled);
+    }
   }
 
   /* ── Chip handler ─────────────────────────────────────────────────── */
@@ -273,47 +351,60 @@
     }
     const [targetMode, targetTopic] = mapping.goto.split('/');
     switchTopic(targetMode, targetTopic);
-    setTimeout(() => {
-      const feedEl = document.querySelector(`.fd-feed[data-feed="${mapping.goto}"]`);
-      if (!feedEl) return;
-      appendOutgoing(chipText, feedEl);
-      if (mapping.reply) {
-        setTimeout(() => appendConcierge(mapping.reply, feedEl), 400);
-      }
-    }, 50);
+    if (input) {
+      input.value = chipText.replace(/\s*→\s*$/, '');
+      input.dispatchEvent(new Event('input'));
+      input.focus();
+    }
   }
 
   /* ── Submit handler ───────────────────────────────────────────────── */
 
-  function handleSubmit(text) {
+  async function handleSubmit(text) {
     const trimmed = text.trim();
     if (!trimmed) return;
 
     const route = routeFromText(trimmed);
+    const targetMode = route?.mode || state.mode;
+    const targetTopic = route?.topic || state.topic;
+    const feedKey = `${targetMode}/${targetTopic}`;
 
-    if (route) {
-      // Navigate to matched topic, then append message + reply there
+    if (route && (route.mode !== state.mode || route.topic !== state.topic)) {
       switchTopic(route.mode, route.topic);
-      setTimeout(() => {
-        const feedEl = document.querySelector(`.fd-feed[data-feed="${route.mode}/${route.topic}"]`);
-        appendOutgoing(trimmed, feedEl);
-        if (route.reply) setTimeout(() => appendConcierge(route.reply, feedEl), 400);
-      }, 50);
-    } else {
-      // No topic match — stay in current feed, show outgoing + generic reply
-      const feedKey = `${state.mode}/${state.topic}`;
-      const feedEl  = document.querySelector(`.fd-feed[data-feed="${feedKey}"]`);
-      appendOutgoing(trimmed, feedEl);
-      setTimeout(() => {
-        const generic = "I'm a lightweight concierge — I work best with topic-specific questions. Try a chip below, or ask about photos, writing, case studies, or how to reach Luke.";
-        appendConcierge(generic, feedEl);
-      }, 400);
+    }
+
+    const feedEl = document.querySelector(`.fd-feed[data-feed="${feedKey}"]`);
+    appendOutgoing(trimmed, feedEl);
+    const history = getHistory(feedKey);
+    const apiMessages = messagesForApi(feedKey, trimmed);
+    history.push({ role: 'user', content: trimmed });
+
+    const assistantEl = appendAssistantMessage(feedEl);
+    if (!assistantEl) return;
+
+    let answer = '';
+    setComposerBusy(true);
+    try {
+      await streamChat(apiMessages, token => {
+        answer += token;
+        assistantEl.textContent = answer;
+        scrollFeedToBottom();
+      });
+      const finalAnswer = answer.trim() || "I don't have a good answer for that yet.";
+      assistantEl.textContent = finalAnswer;
+      history.push({ role: 'assistant', content: finalAnswer });
+    } catch (err) {
+      const fallback = 'Something broke on my end. Try that again in a second.';
+      assistantEl.textContent = fallback;
+      console.warn('[front-door] chat failed:', err);
+    } finally {
+      setComposerBusy(false);
     }
   }
 
   function sendMessage(text) {
     const trimmed = (text || '').trim();
-    if (!trimmed) return;
+    if (!trimmed || state.streaming) return;
     handleSubmit(trimmed);
     if (input) {
       input.value = '';
@@ -356,9 +447,9 @@
   if (input && sendBtn) {
     input.addEventListener('input', () => {
       const hasText = input.value.trim().length > 0;
-      sendBtn.disabled = !hasText;
-      sendBtn.classList.toggle('fd-send--ready', hasText);
-      sendBtn.setAttribute('aria-disabled', String(!hasText));
+      sendBtn.disabled = state.streaming || !hasText;
+      sendBtn.classList.toggle('fd-send--ready', !sendBtn.disabled);
+      sendBtn.setAttribute('aria-disabled', String(sendBtn.disabled));
     });
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input.value); }
