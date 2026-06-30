@@ -6,7 +6,10 @@
     { "source": "/work", "destination": "/work.html" },
     { "source": "/about", "destination": "/about.html" },
     { "source": "/v1", "destination": "/v1/index.html" },
-    { "source": "/v1/", "destination": "/v1/index.html" }
+    { "source": "/v1/", "destination": "/v1/index.html" },
+    { "source": "/life", "destination": "/api/home" },
+    { "source": "/life/:path*", "destination": "/api/home" },
+    { "source": "/work/:path*", "destination": "/api/home" }
   ],
   "functions": {
     "api/chat.js": {
