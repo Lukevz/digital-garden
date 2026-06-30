@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-fd-mode="life" data-fd-topic="about">
 <head>
-  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
@@ -67,9 +66,9 @@
       display: flex;
       flex-direction: column;
       width: min(1100px, 100%);
-      height: min(720px, calc(100dvh - 68px));
+      height: min(740px, calc(100dvh - 68px));
       background: var(--panel-bg);
-      border-radius: 12px;
+      border-radius: 14px;
       box-shadow:
         var(--shadow-panel),
         0 0 0 1px var(--border-subtle);
@@ -82,8 +81,8 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      height: 44px;
-      padding: 0 16px;
+      height: 56px;
+      padding: 0 20px;
       background: var(--surface-raised);
       border-bottom: 1px solid var(--border-subtle);
       position: relative;
@@ -111,34 +110,36 @@
       display: flex;
       align-items: center;
       background: var(--thumb-bg);
-      border-radius: 20px;
-      padding: 3px;
+      border-radius: 24px;
+      padding: 4px;
       gap: 0;
     }
     .fd-mode-track {
       position: absolute;
-      top: 3px;
-      left: 3px;
-      height: calc(100% - 6px);
+      top: 4px;
+      left: 4px;
+      height: calc(100% - 8px);
       background: var(--tab-pill-bg);
-      border-radius: 14px;
-      transition: transform 0.2s cubic-bezier(.4,0,.2,1), width 0.2s cubic-bezier(.4,0,.2,1);
+      border-radius: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1), width 0.22s cubic-bezier(.4,0,.2,1);
       pointer-events: none;
     }
     .fd-mode-btn {
       position: relative;
       z-index: 1;
-      padding: 4px 14px;
+      padding: 7px 22px;
       border: none;
       background: transparent;
       color: var(--tab-inactive);
       font-family: 'Satoshi', system-ui, sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 18px;
       transition: color 0.2s;
       white-space: nowrap;
       cursor: pointer;
+      letter-spacing: -0.01em;
     }
     .fd-mode-btn:focus-visible {
       outline: 2px solid var(--link);
@@ -148,10 +149,10 @@
 
     .fd-workspace-label {
       margin-left: auto;
-      font-size: 11px;
-      font-family: 'Geist Mono', monospace;
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-weight: 600;
       color: var(--text-muted);
-      letter-spacing: 0.04em;
       opacity: 0;
       transition: opacity 0.2s;
     }
@@ -171,13 +172,13 @@
       scrollbar-width: thin;
     }
     [data-fd-mode="life"] .fd-rail {
-      width: 260px;
+      width: 280px;
       background: var(--surface-raised);
       border-right: 1px solid var(--border-subtle);
     }
     [data-fd-mode="work"] .fd-rail {
-      width: 220px;
-      background: #1e2130;
+      width: 240px;
+      background: #1a1d2e;
       border-right: none;
     }
     [data-fd-mode="life"] .fd-channels { display: none; }
@@ -186,40 +187,37 @@
     /* ── Life conversations ── */
     .fd-convos { padding: 8px 0; }
     .fd-rail-search {
-      padding: 8px 12px 4px;
+      padding: 14px 16px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: 'Satoshi', system-ui, sans-serif;
       position: sticky;
       top: 0;
       background: var(--surface-raised);
       z-index: 1;
     }
-    .fd-rail-search input {
-      width: 100%;
-      padding: 6px 10px;
-      border: 1px solid var(--border-medium);
-      border-radius: 8px;
-      background: var(--bg);
-      color: var(--text-primary);
-      font-size: 13px;
-      font-family: 'Satoshi', system-ui, sans-serif;
-    }
-    .fd-rail-search input:focus { outline: none; border-color: var(--link); }
 
     .fd-convo {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
+      gap: 12px;
+      padding: 11px 16px;
       cursor: pointer;
       transition: background 0.15s;
+      border-bottom: 1px solid var(--border-subtle);
     }
+    .fd-convo:last-child { border-bottom: none; }
     .fd-convo:hover { background: var(--hover-fill); }
     .fd-convo[aria-selected="true"] { background: var(--hover-fill-soft); }
     .fd-convo:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
 
     .fd-convo-avatar {
       flex-shrink: 0;
-      width: 42px;
-      height: 42px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
       background: var(--av-color, var(--link));
       color: #fff;
@@ -227,72 +225,108 @@
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 18px;
       font-family: 'Satoshi', system-ui, sans-serif;
     }
     .fd-convo-body { flex: 1; min-width: 0; }
+    .fd-convo-meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+    }
     .fd-convo-name {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-convo-time {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      font-family: 'Satoshi', system-ui, sans-serif;
     }
     .fd-convo-preview {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       margin-top: 2px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-weight: 400;
     }
     .fd-convo--soon .fd-convo-name,
     .fd-convo--soon .fd-convo-preview { opacity: 0.45; }
+    .fd-convo[aria-selected="true"] .fd-convo-name { color: var(--link); }
 
     /* ── Work channels ── */
-    .fd-channels { padding: 0 0 8px; }
+    .fd-channels { padding: 0 0 16px; }
     .fd-ws-header {
-      padding: 14px 14px 8px;
+      padding: 16px 16px 12px;
       display: flex;
       align-items: center;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       margin-bottom: 4px;
     }
     .fd-ws-name {
-      font-size: 15px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.92);
+      font-size: 16px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.95);
       font-family: 'Satoshi', system-ui, sans-serif;
+      letter-spacing: -0.02em;
     }
     .fd-ch-section {
-      padding: 10px 14px 4px;
+      padding: 14px 16px 4px;
       font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.35);
-      font-family: 'Geist Mono', monospace;
+      color: rgba(255,255,255,0.38);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: default;
+    }
+    .fd-ch-section::after {
+      content: '›';
+      font-size: 10px;
+      opacity: 0.5;
     }
     .fd-ch {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 14px;
+      padding: 5px 8px 5px 14px;
       cursor: pointer;
-      color: rgba(255,255,255,0.62);
-      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      font-size: 15px;
+      font-weight: 400;
       font-family: 'Satoshi', system-ui, sans-serif;
       border-radius: 4px;
-      margin: 0 6px;
-      transition: background 0.15s, color 0.15s;
+      margin: 1px 8px;
+      transition: background 0.12s, color 0.12s;
     }
-    .fd-ch:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
-    .fd-ch[aria-selected="true"] { background: rgba(255,255,255,0.12); color: #fff; font-weight: 500; }
+    .fd-ch:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.88); }
+    .fd-ch[aria-selected="true"] {
+      background: rgba(99,140,200,0.25);
+      color: #fff;
+      font-weight: 700;
+    }
     .fd-ch:focus-visible { outline: 2px solid rgba(157,191,232,0.7); }
-    .fd-ch--soon { opacity: 0.38; }
-    .fd-ch-hash { color: rgba(255,255,255,0.35); font-size: 13px; }
-    .fd-ch[aria-selected="true"] .fd-ch-hash { color: rgba(255,255,255,0.55); }
+    .fd-ch--soon { opacity: 0.35; }
+    .fd-ch-hash {
+      color: rgba(255,255,255,0.3);
+      font-size: 14px;
+      font-weight: 400;
+    }
+    .fd-ch[aria-selected="true"] .fd-ch-hash { color: rgba(255,255,255,0.5); }
 
     /* ── Main pane ── */
     .fd-pane {
@@ -306,26 +340,29 @@
     /* ── Feed header ── */
     .fd-feed-header {
       flex-shrink: 0;
-      padding: 12px 20px;
+      padding: 14px 20px;
       border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       gap: 10px;
     }
     .fd-feed-title {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       color: var(--text-primary);
       font-family: 'Satoshi', system-ui, sans-serif;
+      letter-spacing: -0.01em;
     }
     .fd-feed-sub {
       font-size: 13px;
       color: var(--text-muted);
+      font-family: 'Satoshi', system-ui, sans-serif;
     }
     [data-fd-mode="work"] .fd-feed-title::before {
       content: '#';
       color: var(--text-muted);
-      margin-right: 2px;
+      margin-right: 1px;
+      font-weight: 400;
     }
 
     /* ── Feeds container ── */
@@ -379,7 +416,7 @@
     .fd-msg-time {
       font-size: 11px;
       color: var(--text-muted);
-      font-family: 'Geist Mono', monospace;
+      font-family: 'Satoshi', system-ui, sans-serif;
       padding: 2px 4px;
     }
     .fd-msg--in  .fd-msg-time { align-self: flex-start; }
@@ -393,7 +430,8 @@
     .fd-msg-group-time {
       font-size: 12px;
       color: var(--text-muted);
-      font-family: 'Geist Mono', monospace;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-weight: 500;
       text-align: center;
       width: 100%;
     }
@@ -403,7 +441,7 @@
       align-self: center;
       font-size: 11px;
       color: var(--text-muted);
-      font-family: 'Geist Mono', monospace;
+      font-family: 'Satoshi', system-ui, sans-serif;
       text-align: center;
       padding: 4px 12px;
       margin: 6px auto;
@@ -559,7 +597,7 @@
       font-family: 'Satoshi', system-ui, sans-serif;
     }
     .fd-work-sender--you { color: var(--link); }
-    .fd-work-time { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; }
+    .fd-work-time { font-size: 12px; color: var(--text-muted); font-family: 'Satoshi', system-ui, sans-serif; font-weight: 400; }
     .fd-work-text {
       font-size: 14px;
       color: var(--text-body);
@@ -573,10 +611,12 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px 20px 4px;
-      font-size: 11px;
+      padding: 16px 20px 6px;
+      font-size: 12px;
+      font-weight: 600;
       color: var(--text-muted);
-      font-family: 'Geist Mono', monospace;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      letter-spacing: 0.02em;
     }
     .fd-work-divider::before,
     .fd-work-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
@@ -666,50 +706,70 @@
     /* ── Chips ── */
     .fd-chips-wrap {
       flex-shrink: 0;
-      padding: 8px 16px 4px;
+      padding: 10px 16px 6px;
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
     .fd-chip {
-      padding: 6px 12px;
+      padding: 7px 14px;
       border: 1px solid var(--border-medium);
       border-radius: 20px;
       background: var(--surface-raised);
       color: var(--text-secondary);
       font-size: 13px;
+      font-weight: 500;
       font-family: 'Satoshi', system-ui, sans-serif;
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
       white-space: nowrap;
     }
-    .fd-chip:hover { background: var(--hover-fill); border-color: var(--border-strong); color: var(--text-primary); }
+    .fd-chip:hover {
+      background: var(--hover-fill);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
     .fd-chip:focus-visible { outline: 2px solid var(--link); }
-    [data-fd-mode="work"] .fd-chip { background: var(--thumb-bg); }
+    [data-fd-mode="work"] .fd-chip { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); }
+    [data-fd-mode="work"] .fd-chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
     /* ── Composer ── */
     .fd-composer {
       flex-shrink: 0;
-      padding: 8px 16px 14px;
+      padding: 10px 16px 16px;
       display: flex;
       align-items: flex-end;
       gap: 10px;
       border-top: 1px solid var(--border-subtle);
     }
-    [data-fd-mode="work"] .fd-composer { padding: 8px 20px 16px; }
+    [data-fd-mode="work"] .fd-composer { padding: 10px 20px 18px; }
 
     .fd-input-wrap {
       flex: 1;
       display: flex;
       align-items: center;
-      border: 1px solid var(--border-medium);
+      border: 1.5px solid var(--border-medium);
       background: var(--bg);
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    [data-fd-mode="life"] .fd-input-wrap { border-radius: 22px; padding: 8px 16px; }
-    [data-fd-mode="life"] .fd-input-wrap:focus-within { border-color: var(--link); }
-    [data-fd-mode="work"] .fd-input-wrap { border-radius: 8px; padding: 10px 14px; }
-    [data-fd-mode="work"] .fd-input-wrap:focus-within { border-color: var(--link); box-shadow: 0 0 0 1px var(--link); }
+    [data-fd-mode="life"] .fd-input-wrap {
+      border-radius: 26px;
+      padding: 12px 20px;
+      min-height: 52px;
+    }
+    [data-fd-mode="life"] .fd-input-wrap:focus-within {
+      border-color: var(--link);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--link) 15%, transparent);
+    }
+    [data-fd-mode="work"] .fd-input-wrap {
+      border-radius: 8px;
+      padding: 12px 16px;
+      min-height: 52px;
+    }
+    [data-fd-mode="work"] .fd-input-wrap:focus-within {
+      border-color: var(--link);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 20%, transparent);
+    }
 
     .fd-input {
       flex: 1;
@@ -718,15 +778,16 @@
       color: var(--text-primary);
       font-family: 'Satoshi', system-ui, sans-serif;
       outline: none;
+      line-height: 1.5;
     }
-    [data-fd-mode="life"] .fd-input { font-size: 15px; }
-    [data-fd-mode="work"] .fd-input { font-size: 14px; }
+    [data-fd-mode="life"] .fd-input { font-size: 16px; }
+    [data-fd-mode="work"] .fd-input { font-size: 15px; }
     .fd-input::placeholder { color: var(--text-muted); }
 
     .fd-send {
       flex-shrink: 0;
-      width: 34px;
-      height: 34px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: var(--link);
       border: none;
@@ -735,11 +796,12 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
-      opacity: 0.4;
+      transition: opacity 0.15s, transform 0.1s, background 0.15s;
+      opacity: 0.35;
     }
     .fd-send.fd-send--ready { opacity: 1; }
-    .fd-send:active { transform: scale(0.92); }
+    .fd-send.fd-send--ready:hover { background: color-mix(in srgb, var(--link) 85%, #000); }
+    .fd-send:active { transform: scale(0.9); }
     .fd-send:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 
     /* ── Responsive ── */
@@ -782,14 +844,18 @@
         gap: 2px;
         padding: 8px 14px;
         min-width: max-content;
+        border-bottom: none;
       }
       .fd-convo-avatar { display: none; }
       .fd-convo-preview { display: none; }
-      .fd-convo-name { font-size: 13px; }
+      .fd-convo-meta { flex-direction: column; align-items: flex-start; }
+      .fd-convo-time { display: none; }
+      .fd-convo-name { font-size: 14px; }
       .fd-ws-header { display: none; }
       .fd-ch-section { display: none; }
       .fd-ch { margin: 0; border-radius: 0; padding: 12px 14px; }
       .fd-rail-search { display: none; }
+      .fd-composer { padding: 8px 12px 12px; }
       .fd-msg { max-width: 85%; }
       .fd-case-card { max-width: 100%; }
       #fdTopBar .corner-status { display: none; }
@@ -882,14 +948,15 @@
 
         <!-- Life: conversation list -->
         <div class="fd-convos" id="fdConvos">
-          <div class="fd-rail-search" aria-hidden="true">
-            <input type="search" placeholder="Search" aria-label="Search conversations">
-          </div>
+          <div class="fd-rail-search" role="heading" aria-level="2">Messages</div>
 
           <div class="fd-convo" role="button" tabindex="0" data-topic="about" aria-selected="true" aria-label="about — Designer, tinkerer, note-taker">
             <div class="fd-convo-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
             <div class="fd-convo-body">
-              <div class="fd-convo-name">about</div>
+              <div class="fd-convo-meta">
+                <span class="fd-convo-name">about</span>
+                <span class="fd-convo-time">now</span>
+              </div>
               <div class="fd-convo-preview">Designer, tinkerer, note-taker</div>
             </div>
           </div>
@@ -897,15 +964,21 @@
           <div class="fd-convo" role="button" tabindex="0" data-topic="photos" aria-selected="false" aria-label="Photos — Fujifilm frames from Atlanta and beyond">
             <div class="fd-convo-avatar" style="--av-color:#5a7a6b" aria-hidden="true">📷</div>
             <div class="fd-convo-body">
-              <div class="fd-convo-name">Photos</div>
-              <div class="fd-convo-preview">Fujifilm frames from Atlanta and beyond</div>
+              <div class="fd-convo-meta">
+                <span class="fd-convo-name">Photos</span>
+                <span class="fd-convo-time">Jun 22</span>
+              </div>
+              <div class="fd-convo-preview">Fujifilm frames from Atlanta</div>
             </div>
           </div>
 
           <div class="fd-convo" role="button" tabindex="0" data-topic="writing" aria-selected="false" aria-label="Writing — Notes, book takeaways, essays">
             <div class="fd-convo-avatar" style="--av-color:#8a6a4b" aria-hidden="true">✍️</div>
             <div class="fd-convo-body">
-              <div class="fd-convo-name">Writing</div>
+              <div class="fd-convo-meta">
+                <span class="fd-convo-name">Writing</span>
+                <span class="fd-convo-time">Dec 25</span>
+              </div>
               <div class="fd-convo-preview">Notes, book takeaways, essays</div>
             </div>
           </div>
@@ -913,15 +986,21 @@
           <div class="fd-convo" role="button" tabindex="0" data-topic="videos" aria-selected="false" aria-label="Videos — YouTube: personal channel + UX with Luke">
             <div class="fd-convo-avatar" style="--av-color:#9a3a3a" aria-hidden="true">▶</div>
             <div class="fd-convo-body">
-              <div class="fd-convo-name">Videos</div>
+              <div class="fd-convo-meta">
+                <span class="fd-convo-name">Videos</span>
+                <span class="fd-convo-time">2024</span>
+              </div>
               <div class="fd-convo-preview">YouTube: personal + UX with Luke</div>
             </div>
           </div>
 
           <div class="fd-convo fd-convo--soon" role="button" tabindex="0" data-topic="labs" aria-selected="false" aria-label="Labs — Coming soon">
-            <div class="fd-convo-avatar" style="--av-color:#666" aria-hidden="true">⚗</div>
+            <div class="fd-convo-avatar" style="--av-color:#555" aria-hidden="true">⚗</div>
             <div class="fd-convo-body">
-              <div class="fd-convo-name">Labs</div>
+              <div class="fd-convo-meta">
+                <span class="fd-convo-name">Labs</span>
+                <span class="fd-convo-time">soon</span>
+              </div>
               <div class="fd-convo-preview">Coming soon</div>
             </div>
           </div>
@@ -932,8 +1011,8 @@
           <div class="fd-ws-header">
             <span class="fd-ws-name">Instinct</span>
           </div>
-          <div class="fd-ch-section">Channels</div>
 
+          <div class="fd-ch-section">Work</div>
           <div class="fd-ch" role="button" tabindex="0" data-topic="case-studies" aria-selected="true" aria-label="#case-studies">
             <span class="fd-ch-hash" aria-hidden="true">#</span>case-studies
           </div>
@@ -943,6 +1022,8 @@
           <div class="fd-ch" role="button" tabindex="0" data-topic="vetguide" aria-selected="false" aria-label="#vetguide">
             <span class="fd-ch-hash" aria-hidden="true">#</span>vetguide
           </div>
+
+          <div class="fd-ch-section">About me</div>
           <div class="fd-ch" role="button" tabindex="0" data-topic="career" aria-selected="false" aria-label="#career">
             <span class="fd-ch-hash" aria-hidden="true">#</span>career
           </div>
@@ -1342,10 +1423,10 @@
         <!-- Composer -->
         <form class="fd-composer" id="fdComposer" aria-label="Send a message" onsubmit="return false;">
           <div class="fd-input-wrap">
-            <label for="fdInput" class="fd-sr-only">Message Luke</label>
-            <input type="text" id="fdInput" class="fd-input" placeholder="Message…" autocomplete="off" maxlength="500" aria-label="Type a message">
+            <label for="fdInput" class="fd-sr-only">Ask me anything</label>
+            <input type="text" id="fdInput" class="fd-input" placeholder="Ask me anything…" autocomplete="off" maxlength="500" aria-label="Ask me anything">
           </div>
-          <button type="submit" class="fd-send" id="fdSend" aria-label="Send message" disabled>
+          <button type="button" class="fd-send" id="fdSend" aria-label="Send message" disabled>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 13V3M3 8l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
