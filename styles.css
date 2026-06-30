@@ -3684,55 +3684,275 @@
       flex: 1;
     }
 
+    /* ── Travel itinerary: day-grouped scrapbook layout ── */
+
     .travel-itinerary {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 0;
     }
 
-    .travel-itinerary__item {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
+    /* Highlight quote card */
+    .travel-highlight {
+      --stamp-color: #5c5c5c;
+      margin: 0 0 28px;
+      padding: 22px 24px 22px 28px;
+      border-left: 3px solid var(--stamp-color);
+      background: color-mix(in oklab, var(--stamp-color) 8%, transparent);
+      border-radius: 0 12px 12px 0;
+      position: relative;
     }
 
-    .travel-itinerary__marker {
-      flex-shrink: 0;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: var(--glass-bg-subtle);
-      box-shadow: inset 0 0 0 1px var(--glass-border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
+    .travel-highlight__mark {
+      position: absolute;
+      top: 6px;
+      left: 16px;
+      font-family: Georgia, serif;
+      font-size: 3.5rem;
+      line-height: 1;
+      color: var(--stamp-color);
+      opacity: 0.35;
+      pointer-events: none;
+      user-select: none;
     }
 
-    .travel-itinerary__text {
-      margin: 2px 0 0;
-      font-size: 0.92rem;
-      line-height: 1.55;
+    .travel-highlight__text {
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.02rem;
+      font-style: italic;
+      line-height: 1.65;
       color: var(--text-primary);
+      padding-left: 10px;
     }
 
+    /* Day cards */
+    .travel-day-card {
+      --stamp-color: #5c5c5c;
+      position: relative;
+      padding: 0 0 0 20px;
+      margin-bottom: 32px;
+    }
+
+    /* Continuous vertical spine */
+    .travel-day-card::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 0;
+      bottom: -32px;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        var(--stamp-color) 0%,
+        color-mix(in oklab, var(--stamp-color) 30%, transparent) 100%
+      );
+    }
+
+    .travel-day-card:last-of-type::before {
+      bottom: 0;
+    }
+
+    /* Spine dot at top of each day */
+    .travel-day-card::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 6px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--stamp-color);
+      box-shadow: 0 0 0 2px var(--glass-bg);
+    }
+
+    .travel-day-card__header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .travel-day-card__day {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--stamp-color);
+    }
+
+    .travel-day-card__location {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    /* Two-column: stops left, photos right (flips on odd) */
+    .travel-day-card__content {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .travel-day-card--odd .travel-day-card__content {
+      grid-template-columns: auto 1fr;
+    }
+
+    .travel-day-card--odd .travel-day-card__stops {
+      order: 2;
+    }
+
+    .travel-day-card--odd .travel-day-card__photos {
+      order: 1;
+    }
+
+    .travel-day-card__stops {
+      min-width: 0;
+    }
+
+    .travel-day-card__spine {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .travel-day-card__stop {
+      position: relative;
+      padding: 7px 0 7px 18px;
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      border-left: none;
+    }
+
+    /* Bullet dot for each stop */
+    .travel-day-card__stop::before {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 14px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: color-mix(in oklab, var(--stamp-color) 60%, transparent);
+    }
+
+    /* Connecting line between stop dots */
+    .travel-day-card__stop::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 19px;
+      width: 1px;
+      bottom: -7px;
+      background: color-mix(in oklab, var(--stamp-color) 20%, transparent);
+    }
+
+    .travel-day-card__stop:last-child::after { display: none; }
+
+    .travel-day-card__photos {
+      flex-shrink: 0;
+      width: 140px;
+    }
+
+    .travel-day-card__empty {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 16px 0;
+    }
+
+    /* Photo clusters */
+    .travel-photo-cluster {
+      display: flex;
+      position: relative;
+    }
+
+    /* Solo: centred, slightly large */
+    .travel-photo-cluster--solo {
+      justify-content: center;
+      width: 130px;
+    }
+
+    /* Duo: overlap pair */
+    .travel-photo-cluster--duo {
+      width: 140px;
+      height: 140px;
+      position: relative;
+    }
+
+    .travel-photo-cluster--duo .travel-polaroid:nth-child(1) {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    .travel-photo-cluster--duo .travel-polaroid:nth-child(2) {
+      position: absolute;
+      top: 12px;
+      left: 28px;
+      z-index: 2;
+    }
+
+    /* Trio: fanned stack */
+    .travel-photo-cluster--trio {
+      width: 140px;
+      height: 148px;
+      position: relative;
+    }
+
+    .travel-photo-cluster--trio .travel-polaroid:nth-child(1) {
+      position: absolute;
+      top: 8px;
+      left: 0;
+      z-index: 1;
+    }
+
+    .travel-photo-cluster--trio .travel-polaroid:nth-child(2) {
+      position: absolute;
+      top: 0;
+      left: 22px;
+      z-index: 3;
+    }
+
+    .travel-photo-cluster--trio .travel-polaroid:nth-child(3) {
+      position: absolute;
+      top: 10px;
+      left: 44px;
+      z-index: 2;
+    }
+
+    /* Polaroid base */
     .travel-polaroid {
       --polaroid-rotate: 0deg;
-      align-self: center;
-      width: min(220px, 70%);
-      margin: 4px 0;
       background: #faf9f6;
-      padding: 10px 10px 42px;
-      border-radius: 2px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, calc(0.14 + var(--theme-blend) * 0.2));
+      padding: 7px 7px 30px;
+      border-radius: 1px;
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, calc(0.12 + var(--theme-blend) * 0.22)),
+        0 1px 3px rgba(0, 0, 0, 0.08);
       transform: rotate(var(--polaroid-rotate));
-      transition: transform 0.2s ease;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, z-index 0s;
+      cursor: default;
+      width: 90px;
     }
 
+    .travel-polaroid--lg { width: 108px; padding-bottom: 36px; }
+    .travel-polaroid--md { width: 82px; }
+    .travel-polaroid--sm { width: 70px; padding-bottom: 26px; }
+
     .travel-polaroid:hover {
-      transform: rotate(0deg) scale(1.02);
+      transform: rotate(0deg) scale(1.06);
+      box-shadow:
+        0 10px 28px rgba(0, 0, 0, calc(0.18 + var(--theme-blend) * 0.28)),
+        0 2px 6px rgba(0, 0, 0, 0.1);
+      z-index: 10;
     }
 
     [data-theme="dark"] .travel-polaroid {
@@ -3748,7 +3968,7 @@
     .travel-polaroid__photo {
       aspect-ratio: 1;
       overflow: hidden;
-      background: #e8e6e1;
+      background: #e0deda;
     }
 
     .travel-polaroid__photo img {
@@ -3759,28 +3979,64 @@
     }
 
     .travel-polaroid__caption {
-      margin: 10px 0 0;
-      font-size: 11px;
+      margin: 6px 0 0;
+      font-size: 9px;
       text-align: center;
-      color: #555;
+      color: #666;
       font-family: 'Courier New', Courier, monospace;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     [data-theme="dark"] .travel-polaroid__caption {
-      color: rgba(255, 255, 255, 0.65);
+      color: rgba(255, 255, 255, 0.5);
     }
 
-    .travel-modal__notes {
-      margin-top: 28px;
-      padding-top: 20px;
-      border-top: 1px solid var(--glass-border-subtle);
+    /* Divider between timeline and journal notes */
+    .travel-itinerary__divider {
+      border: none;
+      margin: 8px 0 24px;
+      height: 1px;
+      background: linear-gradient(
+        to right,
+        transparent,
+        var(--glass-border-subtle) 20%,
+        var(--glass-border-subtle) 80%,
+        transparent
+      );
     }
 
-    .travel-modal__notes p {
-      margin: 0 0 12px;
+    /* Journal body */
+    .travel-modal__journal {
+      padding: 0 0 8px;
+    }
+
+    .travel-modal__journal p {
+      margin: 0 0 14px;
       font-size: 0.9rem;
-      line-height: 1.6;
+      line-height: 1.7;
       color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* Responsive: stack to single column on narrow modals */
+    @media (max-width: 500px) {
+      .travel-day-card__content,
+      .travel-day-card--odd .travel-day-card__content {
+        grid-template-columns: 1fr;
+      }
+
+      .travel-day-card--odd .travel-day-card__stops,
+      .travel-day-card--odd .travel-day-card__photos {
+        order: unset;
+      }
+
+      .travel-day-card__photos {
+        width: auto;
+        overflow-x: auto;
+      }
     }
 
     @media (max-width: 640px) {

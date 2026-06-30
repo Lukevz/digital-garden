@@ -60,20 +60,20 @@ async function main() {
   await page.waitForSelector('#travelModal.tm-open', { timeout: 10000 });
   await sleep(1200);
 
-  console.log('6. Scroll itinerary…');
+  console.log('6. Scroll itinerary — day cards and polaroid clusters…');
   await page.evaluate(() => {
     const body = document.getElementById('travelModalBody');
     if (body) body.scrollTo({ top: 0, behavior: 'instant' });
   });
-  await sleep(600);
-  for (let i = 0; i < 4; i++) {
+  await sleep(700);
+  for (let i = 0; i < 5; i++) {
     await page.evaluate(() => {
       const body = document.getElementById('travelModalBody');
-      if (body) body.scrollBy({ top: 280, behavior: 'smooth' });
+      if (body) body.scrollBy({ top: 250, behavior: 'smooth' });
     });
-    await sleep(1100);
+    await sleep(1200);
   }
-  await sleep(800);
+  await sleep(900);
 
   console.log('7. Close modal…');
   await page.click('#travelModalClose');

@@ -123,21 +123,58 @@ function createStampCard(trip) {
   return btn;
 }
 
-function renderMarkdownBody(text) {
-  const wrap = document.createElement('div');
-  wrap.className = 'travel-modal__notes';
-  text.split(/\n\n+/).forEach(para => {
-    if (!para.trim()) return;
-    const p = document.createElement('p');
-    p.textContent = para.trim();
-    wrap.appendChild(p);
-  });
-  return wrap;
+/**
+ * Parse a route string like "Dec 20 — Gibsons: Arrived by ferry"
+ * into { day, location, note }.
+ */
+function parseRouteEntry(str) {
+  const m = str.match(/^([^—–]+)\s*[—–]\s*([^:]+):\s*(.*)$/);
+  if (m) return { day: m[1].trim(), location: m[2].trim(), note: m[3].trim() };
+  return { day: null, location: null, note: str };
 }
 
-function createPolaroid(src, caption, rotation) {
+/**
+ * Group flat route[] entries into day objects:
+ * [{ day, location, stops: [note, ...] }, ...]
+ */
+function groupRouteByDay(route) {
+  const days = [];
+  let current = null;
+  for (const entry of route) {
+    const parsed = parseRouteEntry(entry);
+    if (parsed.day && current && current.day === parsed.day) {
+      current.stops.push(parsed.note);
+    } else {
+      current = {
+        day: parsed.day || '',
+        location: parsed.location || '',
+        stops: [parsed.note],
+      };
+      days.push(current);
+    }
+  }
+  return days;
+}
+
+/**
+ * Distribute photos evenly across N day groups.
+ * Returns an array of photo-path arrays, one per day.
+ */
+function distributePhotos(photos, dayCount, perDay = 3) {
+  const result = Array.from({ length: dayCount }, () => []);
+  let cursor = 0;
+  for (let d = 0; d < dayCount; d++) {
+    const count = Math.min(perDay, Math.max(1, Math.floor(photos.length / dayCount)));
+    for (let p = 0; p < count && cursor < photos.length; p++, cursor++) {
+      result[d].push(photos[cursor]);
+    }
+  }
+  return result;
+}
+
+function createPolaroid(src, caption, rotation, size = 'md') {
   const figure = document.createElement('figure');
-  figure.className = 'travel-polaroid';
+  figure.className = `travel-polaroid travel-polaroid--${size}`;
   figure.style.setProperty('--polaroid-rotate', `${rotation}deg`);
 
   const photo = document.createElement('div');
@@ -156,39 +193,146 @@ function createPolaroid(src, caption, rotation) {
   return figure;
 }
 
+function createPhotoCluster(photos, dayIndex) {
+  if (!photos.length) return null;
+  const cluster = document.createElement('div');
+  const count = photos.length;
+
+  if (count === 1) {
+    cluster.className = 'travel-photo-cluster travel-photo-cluster--solo';
+    const rot = dayIndex % 2 === 0 ? -2.8 : 2.2;
+    cluster.appendChild(createPolaroid(photos[0], filenameToCaption(photos[0]), rot, 'lg'));
+  } else if (count === 2) {
+    cluster.className = 'travel-photo-cluster travel-photo-cluster--duo';
+    const rots = [-4, 3.5];
+    photos.forEach((src, i) => {
+      cluster.appendChild(createPolaroid(src, filenameToCaption(src), rots[i], 'md'));
+    });
+  } else {
+    cluster.className = 'travel-photo-cluster travel-photo-cluster--trio';
+    const rots = [-5, 0, 4];
+    photos.slice(0, 3).forEach((src, i) => {
+      cluster.appendChild(createPolaroid(src, filenameToCaption(src), rots[i], 'sm'));
+    });
+  }
+
+  return cluster;
+}
+
+function createHighlightCard(text, stampColor) {
+  const card = document.createElement('blockquote');
+  card.className = 'travel-highlight';
+  card.style.setProperty('--stamp-color', stampColor);
+  card.innerHTML = `
+    <span class="travel-highlight__mark" aria-hidden="true">"</span>
+    <p class="travel-highlight__text">${escapeHtml(text)}</p>
+  `;
+  return card;
+}
+
+function createDayCard(dayGroup, photos, dayIndex, stampColor) {
+  const card = document.createElement('div');
+  card.className = `travel-day-card ${dayIndex % 2 === 0 ? 'travel-day-card--even' : 'travel-day-card--odd'}`;
+  card.style.setProperty('--stamp-color', stampColor);
+
+  // Day header
+  const header = document.createElement('div');
+  header.className = 'travel-day-card__header';
+  if (dayGroup.day) {
+    const dayLabel = document.createElement('span');
+    dayLabel.className = 'travel-day-card__day';
+    dayLabel.textContent = dayGroup.day;
+    header.appendChild(dayLabel);
+  }
+  if (dayGroup.location) {
+    const loc = document.createElement('span');
+    loc.className = 'travel-day-card__location';
+    loc.textContent = dayGroup.location;
+    header.appendChild(loc);
+  }
+  card.appendChild(header);
+
+  // Content area: stops + photos side by side
+  const content = document.createElement('div');
+  content.className = 'travel-day-card__content';
+
+  // Stops column
+  const stopsCol = document.createElement('div');
+  stopsCol.className = 'travel-day-card__stops';
+  const spine = document.createElement('ol');
+  spine.className = 'travel-day-card__spine';
+  dayGroup.stops.forEach(note => {
+    const li = document.createElement('li');
+    li.className = 'travel-day-card__stop';
+    li.textContent = note;
+    spine.appendChild(li);
+  });
+  stopsCol.appendChild(spine);
+  content.appendChild(stopsCol);
+
+  // Photo cluster column
+  if (photos.length) {
+    const cluster = createPhotoCluster(photos, dayIndex);
+    if (cluster) {
+      const photosCol = document.createElement('div');
+      photosCol.className = 'travel-day-card__photos';
+      photosCol.appendChild(cluster);
+      content.appendChild(photosCol);
+    }
+  }
+
+  card.appendChild(content);
+  return card;
+}
+
+function renderMarkdownBody(text, stampColor) {
+  const wrap = document.createElement('div');
+  wrap.className = 'travel-modal__journal';
+  text.split(/\n\n+/).forEach(para => {
+    if (!para.trim()) return;
+    const p = document.createElement('p');
+    p.textContent = para.trim();
+    wrap.appendChild(p);
+  });
+  return wrap;
+}
+
 function buildItinerary(trip) {
   const container = document.createElement('div');
   container.className = 'travel-itinerary';
 
   const photos = getAlbumPhotos(trip);
-  const route = trip.route.length ? trip.route : ['No itinerary notes yet.'];
-  const rotations = [-2.5, 1.8, -1.2, 2.4, -1.8, 0.6];
+  const route = trip.route.length ? trip.route : [];
+  const stampColor = trip.stampColor || '#5c5c5c';
 
-  route.forEach((stop, i) => {
-    const item = document.createElement('div');
-    item.className = 'travel-itinerary__item';
+  // Highlight quote card at top
+  if (trip.highlight) {
+    container.appendChild(createHighlightCard(trip.highlight, stampColor));
+  }
 
-    const marker = document.createElement('span');
-    marker.className = 'travel-itinerary__marker';
-    marker.textContent = String(i + 1);
+  if (!route.length) {
+    const empty = document.createElement('p');
+    empty.className = 'travel-day-card__empty';
+    empty.textContent = 'No itinerary notes yet.';
+    container.appendChild(empty);
+    return container;
+  }
 
-    const text = document.createElement('p');
-    text.className = 'travel-itinerary__text';
-    text.textContent = stop;
+  const days = groupRouteByDay(route);
+  const photoSlots = distributePhotos(photos, days.length, 3);
 
-    item.append(marker, text);
-    container.appendChild(item);
-
-    if (photos.length) {
-      const photoSrc = photos[i % photos.length];
-      const polaroid = createPolaroid(
-        photoSrc,
-        filenameToCaption(photoSrc),
-        rotations[i % rotations.length]
-      );
-      container.appendChild(polaroid);
-    }
+  days.forEach((day, i) => {
+    container.appendChild(createDayCard(day, photoSlots[i] || [], i, stampColor));
   });
+
+  // Remaining journal notes below timeline
+  if (trip.body) {
+    const divider = document.createElement('div');
+    divider.className = 'travel-itinerary__divider';
+    divider.setAttribute('aria-hidden', 'true');
+    container.appendChild(divider);
+    container.appendChild(renderMarkdownBody(trip.body, stampColor));
+  }
 
   return container;
 }

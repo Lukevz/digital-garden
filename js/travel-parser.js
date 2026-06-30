@@ -94,6 +94,7 @@ export function parseTravel(content, filename) {
     miles: Number(frontmatter.miles) || 0,
     daysAbroad: Number(frontmatter.daysAbroad) || 0,
     galleryAlbum: frontmatter.galleryAlbum || '',
+    highlight: frontmatter.highlight || '',
     route: Array.isArray(frontmatter.route) ? frontmatter.route : [],
     body: body.trim(),
     filename,
