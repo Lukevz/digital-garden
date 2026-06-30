@@ -21,6 +21,8 @@ function galleryUrl(path) {
   if (path.startsWith('/')) return path;
   return `/v1/${path}`;
 }
+
+function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
