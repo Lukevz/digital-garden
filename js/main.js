@@ -475,6 +475,8 @@
     const gearView       = document.getElementById('gearView');
     const appStackView   = document.getElementById('appStackView');
     const placesView     = document.getElementById('placesView');
+    const travelLogView  = document.getElementById('travelLogView');
+    const travelModal    = document.getElementById('travelModal');
     const chatView       = document.getElementById('chatView');
     const chatInputBar   = document.getElementById('chatInputBar');
     const introEl = document.querySelector('.intro');
@@ -1363,6 +1365,23 @@
 
     }
 
+    // ── Travel Log ──
+    let travelLogRendered = false;
+    async function renderTravelLog() {
+      const params = new URLSearchParams(location.search);
+      const tripSlug = params.get('trip') || null;
+      const mod = await import('/js/travel-log.js');
+      await mod.renderTravelLog({
+        view: travelLogView,
+        travelModal,
+        activateModalFocus,
+        restoreModalFocus,
+        trapModalTab,
+        tripSlug,
+      });
+      travelLogRendered = true;
+    }
+
     // Book modal
     const bookModal = document.getElementById('bookModal');
     const bookModalClose = document.getElementById('bookModalClose');
@@ -1432,13 +1451,17 @@
     function setMode(mode) {
       if (mode === currentMode) return;
       const prevMode = currentMode;
+      if (prevMode === 'travellog' && mode !== 'travellog') {
+        import('/js/travel-log.js').then(m => { if (m.closeTravelModal) m.closeTravelModal(); }).catch(() => {});
+      }
       currentMode = mode;
 
       const isBookshelfMode  = mode === 'bookshelf';
       const isGearMode       = mode === 'gear';
       const isAppStackMode   = mode === 'appstack';
       const isPlacesMode     = mode === 'places';
-      const isSpecialMode    = isBookshelfMode || isGearMode || isAppStackMode || isPlacesMode;
+      const isTravelLogMode  = mode === 'travellog';
+      const isSpecialMode    = isBookshelfMode || isGearMode || isAppStackMode || isPlacesMode || isTravelLogMode;
       tabPill.style.opacity = isSpecialMode ? '0' : '1';
       overflowBtn.classList.toggle('active', isSpecialMode);
       overflowItems.forEach(item => item.classList.toggle('active', item.dataset.mode === mode));
@@ -1456,9 +1479,14 @@
       const isGear      = mode === 'gear';
       const isAppStack  = mode === 'appstack';
       const isPlaces    = mode === 'places';
+      const isTravelLog = mode === 'travellog';
       const isChat      = mode === 'chat';
-      const isSpecial   = isBookshelf || isGear || isAppStack || isPlaces;
-      const urlSuffix   = isWork ? '?work' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : isChat ? '?chat' : location.pathname;
+      const isSpecial   = isBookshelf || isGear || isAppStack || isPlaces || isTravelLog;
+      let urlSuffix   = isWork ? '?work' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : isTravelLog ? '?travellog' : isChat ? '?chat' : location.pathname;
+      if (isTravelLog) {
+        const trip = new URLSearchParams(location.search).get('trip');
+        if (trip) urlSuffix = `?travellog&trip=${encodeURIComponent(trip)}`;
+      }
       history.pushState(null, '', urlSuffix);
       // Defer work-mode removal when transitioning work→life to avoid a layout
       // jump: removing it early changes body from padding-top centering to
@@ -1471,7 +1499,7 @@
       document.body.classList.toggle('places-mode', isPlaces);
       if (!isWork && !isSpecial) window.scrollTo({ top: 0 });
 
-      const prevIsSpecial = prevMode === 'bookshelf' || prevMode === 'gear' || prevMode === 'appstack' || prevMode === 'places';
+      const prevIsSpecial = prevMode === 'bookshelf' || prevMode === 'gear' || prevMode === 'appstack' || prevMode === 'places' || prevMode === 'travellog';
       const prevIsChat = prevMode === 'chat';
       // Headline/avatar should only animate when the work/non-work status actually changes
       const workStatusChanged = isWork !== (prevMode === 'work');
@@ -1515,6 +1543,7 @@
         if (prevMode === 'gear')      return gearView;
         if (prevMode === 'appstack')  return appStackView;
         if (prevMode === 'places')    return placesView;
+        if (prevMode === 'travellog') return travelLogView;
         return null;
       }
 
@@ -1532,6 +1561,7 @@
         if (except !== gearView)      gearView.style.display = 'none';
         if (except !== appStackView)  appStackView.style.display = 'none';
         if (except !== placesView)    placesView.style.display = 'none';
+        if (except !== travelLogView) travelLogView.style.display = 'none';
         if (chatView && except !== chatView) chatView.style.display = 'none';
         if (introEl && except !== introEl) introEl.style.display = 'none';
       }
@@ -1597,6 +1627,23 @@
             placesView.style.display = 'flex';
             renderPlaces();
             anime({ targets: placesView, opacity: [0, 1], duration: 300, easing: 'easeOutQuad' });
+          }
+        });
+      } else if (isTravelLog) {
+        const prevView = prevIsSpecial ? prevSpecialView() : (prevMode === 'work' ? portfolioGrid : launchpad);
+        anime({
+          targets: [prevView, introEl].filter(Boolean),
+          opacity: 0, scale: 0.97,
+          duration: 220, easing: 'easeInQuad',
+          complete: () => {
+            hideAllViews(travelLogView);
+            travelLogView.style.opacity = '0';
+            travelLogView.style.display = 'flex';
+            renderTravelLog().then(() => {
+              anime({ targets: '.travel-stamp', opacity: [0, 1], translateY: [14, 0], duration: 500,
+                easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(40) });
+              anime({ targets: travelLogView, opacity: [0, 1], duration: 300, easing: 'easeOutQuad' });
+            });
           }
         });
       } else if (isChat) {
@@ -3199,6 +3246,7 @@
     else if (location.search === '?gear') setMode('gear');
     else if (location.search === '?appstack') setMode('appstack');
     else if (location.search === '?places') setMode('places');
+    else if (location.search === '?travellog' || location.search.startsWith('?travellog&')) setMode('travellog');
     else if (location.search === '?chat') setMode('chat');
 
     // Deep link on load

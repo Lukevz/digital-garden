@@ -46,6 +46,7 @@
     '/chat': 'chat',
     '/gear': 'gear',
     '/places': 'places',
+    '/travellog': 'travellog',
   };
 
   const SOCIAL_LABELS = {
@@ -75,7 +76,7 @@
   function renderInline(text) {
     const frag = document.createDocumentFragment();
     // Token regex: **bold**, *italic*, `code`, [label](url), http(s) URL, bare domain URL, /site-path
-    const re = /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"']+)|([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|net|org|io|co|vet|dev|app|ai|me)(?:\/[^\s<>"'()]*[^\s<>"'().,;:!?])?(?=[^a-zA-Z0-9]|$))|(\/(?:bookshelf|work|life|chat|gear|places))(?=[^a-zA-Z0-9_-]|$)/g;
+    const re = /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"']+)|([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|net|org|io|co|vet|dev|app|ai|me)(?:\/[^\s<>"'()]*[^\s<>"'().,;:!?])?(?=[^a-zA-Z0-9]|$))|(\/(?:bookshelf|work|life|chat|gear|places|travellog))(?=[^a-zA-Z0-9_-]|$)/g;
     let last = 0, m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
