@@ -1129,10 +1129,9 @@ const DEV_REWRITES = [
   { pattern: /^\/$/, dest: '_index.html' },
   { pattern: /^\/work$/, dest: 'work.html' },
   { pattern: /^\/about$/, dest: 'about.html' },
-  { pattern: /^\/front-door(\/.*)?$/, dest: 'luke-chat-frontdoor.html' },
-  { pattern: /^\/life(\/.*)?$/, dest: 'luke-chat-frontdoor.html' },
-  // /work/:path* handled below only if not matched by /work exact above
-  { pattern: /^\/work\/.+$/, dest: 'luke-chat-frontdoor.html' },
+  // Deep-link topic routes → serve the new homepage (_index.html)
+  { pattern: /^\/life(\/.*)?$/, dest: '_index.html' },
+  { pattern: /^\/work\/.+$/, dest: '_index.html' },
 ];
 
 // Simple static server

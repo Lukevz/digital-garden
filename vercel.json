@@ -7,11 +7,9 @@
     { "source": "/about", "destination": "/about.html" },
     { "source": "/v1", "destination": "/v1/index.html" },
     { "source": "/v1/", "destination": "/v1/index.html" },
-    { "source": "/front-door", "destination": "/luke-chat-frontdoor.html" },
-    { "source": "/front-door/:path*", "destination": "/luke-chat-frontdoor.html" },
-    { "source": "/life", "destination": "/luke-chat-frontdoor.html" },
-    { "source": "/life/:path*", "destination": "/luke-chat-frontdoor.html" },
-    { "source": "/work/:path*", "destination": "/luke-chat-frontdoor.html" }
+    { "source": "/life", "destination": "/api/home" },
+    { "source": "/life/:path*", "destination": "/api/home" },
+    { "source": "/work/:path*", "destination": "/api/home" }
   ],
   "functions": {
     "api/chat.js": {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-fd-mode="life" data-fd-topic="about">
 <head>
   <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
   <meta charset="UTF-8">
@@ -10,712 +10,1523 @@
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Luke">
-  <meta property="og:description" content="Designer, tinkerer, and passionate note-taker.">
+  <meta property="og:title" content="Luke — Designer, tinkerer, note-taker">
+  <meta property="og:description" content="Software designer, design systems specialist, and compulsive note-taker living in Atlanta.">
   <meta property="og:image" content="https://lukevz.com/images/og_light.png">
   <meta property="og:url" content="https://lukevz.com">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Luke">
-  <meta name="twitter:description" content="Designer, tinkerer, and passionate note-taker.">
+  <meta name="twitter:title" content="Luke — Designer, tinkerer, note-taker">
+  <meta name="twitter:description" content="Software designer, design systems specialist, and compulsive note-taker living in Atlanta.">
   <meta name="twitter:image" content="https://lukevz.com/images/og_light.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://api.mapbox.com" crossorigin>
-  <link rel="dns-prefetch" href="https://events.mapbox.com">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script defer src="https://va.vercel-scripts.com/v1/script.js"></script>
+
+  <style>
+    /* ── Page shell ── */
+    body.fd-home {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 52px 16px 16px; /* top clearance for floating bar */
+      overflow: hidden;
+    }
+
+    /* ── Floating top bar (corner status + theme toggle) ── */
+    #fdTopBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      pointer-events: none;
+    }
+    #fdTopBar > * { pointer-events: auto; }
+
+    /* Keep existing corner-status and themeToggle styles from styles.css.
+       They only need z-index/pointer-events coordination here. */
+
+    /* ── macOS window ── */
+    .fd-window {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      width: min(1100px, 100%);
+      height: min(720px, calc(100dvh - 68px));
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow:
+        var(--shadow-panel),
+        0 0 0 1px var(--border-subtle);
+      overflow: hidden;
+    }
+
+    /* ── Title bar ── */
+    .fd-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 44px;
+      padding: 0 16px;
+      background: var(--surface-raised);
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .fd-traffic {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .fd-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .fd-dot--r { background: #ff5f57; }
+    .fd-dot--y { background: #ffbd2e; }
+    .fd-dot--g { background: #28c840; }
+
+    /* Mode switch pill */
+    .fd-mode-switch {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      background: var(--thumb-bg);
+      border-radius: 20px;
+      padding: 3px;
+      gap: 0;
+    }
+    .fd-mode-track {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      height: calc(100% - 6px);
+      background: var(--tab-pill-bg);
+      border-radius: 14px;
+      transition: transform 0.2s cubic-bezier(.4,0,.2,1), width 0.2s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+    .fd-mode-btn {
+      position: relative;
+      z-index: 1;
+      padding: 4px 14px;
+      border: none;
+      background: transparent;
+      color: var(--tab-inactive);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 16px;
+      transition: color 0.2s;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .fd-mode-btn:focus-visible {
+      outline: 2px solid var(--link);
+      outline-offset: 2px;
+    }
+    .fd-mode-btn[aria-pressed="true"] { color: var(--tab-active-fg); }
+
+    .fd-workspace-label {
+      margin-left: auto;
+      font-size: 11px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    [data-fd-mode="work"] .fd-workspace-label { opacity: 1; }
+
+    /* ── App layout ── */
+    .fd-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Left rail ── */
+    .fd-rail {
+      flex-shrink: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    [data-fd-mode="life"] .fd-rail {
+      width: 260px;
+      background: var(--surface-raised);
+      border-right: 1px solid var(--border-subtle);
+    }
+    [data-fd-mode="work"] .fd-rail {
+      width: 220px;
+      background: #1e2130;
+      border-right: none;
+    }
+    [data-fd-mode="life"] .fd-channels { display: none; }
+    [data-fd-mode="work"] .fd-convos  { display: none; }
+
+    /* ── Life conversations ── */
+    .fd-convos { padding: 8px 0; }
+    .fd-rail-search {
+      padding: 8px 12px 4px;
+      position: sticky;
+      top: 0;
+      background: var(--surface-raised);
+      z-index: 1;
+    }
+    .fd-rail-search input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-rail-search input:focus { outline: none; border-color: var(--link); }
+
+    .fd-convo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .fd-convo:hover { background: var(--hover-fill); }
+    .fd-convo[aria-selected="true"] { background: var(--hover-fill-soft); }
+    .fd-convo:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+
+    .fd-convo-avatar {
+      flex-shrink: 0;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--av-color, var(--link));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-convo-body { flex: 1; min-width: 0; }
+    .fd-convo-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fd-convo-preview {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .fd-convo--soon .fd-convo-name,
+    .fd-convo--soon .fd-convo-preview { opacity: 0.45; }
+
+    /* ── Work channels ── */
+    .fd-channels { padding: 0 0 8px; }
+    .fd-ws-header {
+      padding: 14px 14px 8px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 4px;
+    }
+    .fd-ws-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-ch-section {
+      padding: 10px 14px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-ch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      cursor: pointer;
+      color: rgba(255,255,255,0.62);
+      font-size: 14px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      border-radius: 4px;
+      margin: 0 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .fd-ch:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+    .fd-ch[aria-selected="true"] { background: rgba(255,255,255,0.12); color: #fff; font-weight: 500; }
+    .fd-ch:focus-visible { outline: 2px solid rgba(157,191,232,0.7); }
+    .fd-ch--soon { opacity: 0.38; }
+    .fd-ch-hash { color: rgba(255,255,255,0.35); font-size: 13px; }
+    .fd-ch[aria-selected="true"] .fd-ch-hash { color: rgba(255,255,255,0.55); }
+
+    /* ── Main pane ── */
+    .fd-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── Feed header ── */
+    .fd-feed-header {
+      flex-shrink: 0;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .fd-feed-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-feed-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    [data-fd-mode="work"] .fd-feed-title::before {
+      content: '#';
+      color: var(--text-muted);
+      margin-right: 2px;
+    }
+
+    /* ── Feeds container ── */
+    .fd-feeds {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scroll-behavior: smooth;
+    }
+    .fd-feed {
+      display: none;
+      flex-direction: column;
+      padding-bottom: 8px;
+    }
+    .fd-feed.fd-feed--active { display: flex; }
+
+    /* ── Life message bubbles ── */
+    [data-fd-mode="life"] .fd-feed {
+      padding: 16px 16px 8px;
+      gap: 2px;
+    }
+    .fd-msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 72%;
+      margin-bottom: 6px;
+    }
+    .fd-msg--in  { align-self: flex-start; }
+    .fd-msg--out { align-self: flex-end; }
+    .fd-msg--session { align-self: flex-end; }
+
+    .fd-bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      color: var(--text-primary);
+    }
+    .fd-msg--in .fd-bubble {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-bottom-left-radius: 4px;
+    }
+    .fd-msg--out .fd-bubble,
+    .fd-msg--session .fd-bubble {
+      background: var(--link);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .fd-msg-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      padding: 2px 4px;
+    }
+    .fd-msg--in  .fd-msg-time { align-self: flex-start; }
+    .fd-msg--out .fd-msg-time { align-self: flex-end; }
+
+    .fd-msg-group {
+      display: flex;
+      align-items: center;
+      margin: 10px 0 4px;
+    }
+    .fd-msg-group-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* ── Session note (one-time) ── */
+    .fd-session-note {
+      align-self: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      text-align: center;
+      padding: 4px 12px;
+      margin: 6px auto;
+    }
+
+    /* ── Now card ── */
+    .fd-now-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 300px;
+    }
+    .fd-now-card-head {
+      padding: 10px 14px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .fd-now-row {
+      display: flex;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 13px;
+    }
+    .fd-now-row:last-child { border-bottom: none; }
+    .fd-now-label {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      min-width: 70px;
+      margin-top: 1px;
+    }
+    .fd-now-value { color: var(--text-primary); line-height: 1.4; font-family: 'Satoshi', system-ui, sans-serif; }
+
+    /* ── Photo card ── */
+    .fd-photo-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 280px;
+    }
+    .fd-photo-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      background: var(--thumb-bg);
+    }
+    .fd-photo-meta { padding: 8px 12px 10px; }
+    .fd-photo-caption { font-size: 13px; color: var(--text-primary); font-family: 'Satoshi', system-ui, sans-serif; }
+    .fd-photo-recipe { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; margin-top: 4px; }
+
+    /* ── Video card ── */
+    .fd-video-card {
+      background: var(--cs-video-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 280px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    .fd-video-card:hover { background: var(--cs-video-hover); }
+    .fd-video-thumb-wrap { position: relative; }
+    .fd-video-thumb {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: var(--thumb-bg);
+    }
+    .fd-video-info { padding: 8px 12px 10px; }
+    .fd-video-title { font-size: 13px; font-weight: 600; color: var(--text-primary); font-family: 'Satoshi', system-ui, sans-serif; line-height: 1.3; }
+    .fd-video-channel { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; margin-top: 4px; }
+
+    /* ── Note card ── */
+    .fd-note-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 14px;
+      max-width: 300px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    .fd-note-card:hover { background: var(--hover-fill); }
+    .fd-note-week { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-muted); margin-bottom: 4px; }
+    .fd-note-title { font-size: 14px; font-weight: 600; color: var(--text-primary); line-height: 1.3; font-family: 'Satoshi', system-ui, sans-serif; }
+    .fd-note-excerpt { font-size: 12px; color: var(--text-body); margin-top: 4px; line-height: 1.5; font-family: 'Satoshi', system-ui, sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ── Soon card ── */
+    .fd-soon {
+      background: var(--thumb-bg);
+      border-radius: 12px;
+      padding: 14px 18px;
+      max-width: 200px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      border: 1px dashed var(--border-medium);
+    }
+
+    /* ── Work message rows ── */
+    [data-fd-mode="work"] .fd-feed {
+      padding: 16px 0 8px;
+      gap: 0;
+    }
+    .fd-work-msg {
+      display: flex;
+      gap: 12px;
+      padding: 6px 20px;
+      transition: background 0.12s;
+    }
+    .fd-work-msg:hover { background: var(--hover-fill-faint); }
+    .fd-work-avatar {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      background: var(--av-color, var(--link));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      margin-top: 2px;
+    }
+    .fd-work-body { flex: 1; min-width: 0; }
+    .fd-work-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .fd-work-sender {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-work-sender--you { color: var(--link); }
+    .fd-work-time { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; }
+    .fd-work-text {
+      font-size: 14px;
+      color: var(--text-body);
+      line-height: 1.55;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-work-text a { color: var(--link); text-decoration: none; }
+    .fd-work-text a:hover { text-decoration: underline; }
+    .fd-work-text strong { color: var(--text-primary); }
+    .fd-work-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-work-divider::before,
+    .fd-work-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+
+    /* ── Case study card ── */
+    .fd-case-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 420px;
+      margin-top: 8px;
+      text-decoration: none;
+      display: block;
+      transition: box-shadow 0.15s;
+    }
+    .fd-case-card:hover { box-shadow: var(--shadow-hover-card); }
+    .fd-case-thumb { width: 100%; height: 160px; object-fit: cover; display: block; background: var(--thumb-bg); }
+    .fd-case-body { padding: 12px 16px 14px; }
+    .fd-case-tag { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-muted); margin-bottom: 6px; }
+    .fd-case-title { font-size: 15px; font-weight: 700; color: var(--text-primary); font-family: 'Satoshi', system-ui, sans-serif; line-height: 1.3; }
+    .fd-case-sub { font-size: 13px; color: var(--text-body); margin-top: 4px; line-height: 1.4; font-family: 'Satoshi', system-ui, sans-serif; }
+
+    /* ── UI preview card ── */
+    .fd-ui-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 380px;
+      margin-top: 8px;
+      text-decoration: none;
+      display: block;
+    }
+    .fd-ui-img { width: 100%; display: block; background: var(--thumb-bg); }
+    .fd-ui-caption { padding: 8px 12px; font-size: 12px; color: var(--text-muted); font-family: 'Geist Mono', monospace; }
+
+    /* ── Doc card ── */
+    .fd-doc-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 12px 16px;
+      max-width: 280px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .fd-doc-card:hover { background: var(--hover-fill); }
+    .fd-doc-icon { flex-shrink: 0; width: 36px; height: 36px; background: var(--link); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; font-family: 'Geist Mono', monospace; }
+    .fd-doc-name { font-size: 14px; font-weight: 600; color: var(--text-primary); font-family: 'Satoshi', system-ui, sans-serif; }
+    .fd-doc-meta { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; margin-top: 2px; }
+
+    /* ── Link unfurl card ── */
+    .fd-link-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--link);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      max-width: 300px;
+      margin-top: 6px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    .fd-link-card:hover { background: var(--hover-fill); }
+    .fd-link-domain { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-muted); margin-bottom: 4px; }
+    .fd-link-title { font-size: 13px; font-weight: 600; color: var(--text-primary); font-family: 'Satoshi', system-ui, sans-serif; }
+    .fd-link-desc { font-size: 12px; color: var(--text-body); margin-top: 3px; line-height: 1.4; }
+
+    /* ── Pinned badge ── */
+    .fd-pinned-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      border: 1px solid var(--border-medium);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 6px;
+    }
+
+    /* ── Chips ── */
+    .fd-chips-wrap {
+      flex-shrink: 0;
+      padding: 8px 16px 4px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .fd-chip {
+      padding: 6px 12px;
+      border: 1px solid var(--border-medium);
+      border-radius: 20px;
+      background: var(--surface-raised);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .fd-chip:hover { background: var(--hover-fill); border-color: var(--border-strong); color: var(--text-primary); }
+    .fd-chip:focus-visible { outline: 2px solid var(--link); }
+    [data-fd-mode="work"] .fd-chip { background: var(--thumb-bg); }
+
+    /* ── Composer ── */
+    .fd-composer {
+      flex-shrink: 0;
+      padding: 8px 16px 14px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    [data-fd-mode="work"] .fd-composer { padding: 8px 20px 16px; }
+
+    .fd-input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border-medium);
+      background: var(--bg);
+      transition: border-color 0.15s;
+    }
+    [data-fd-mode="life"] .fd-input-wrap { border-radius: 22px; padding: 8px 16px; }
+    [data-fd-mode="life"] .fd-input-wrap:focus-within { border-color: var(--link); }
+    [data-fd-mode="work"] .fd-input-wrap { border-radius: 8px; padding: 10px 14px; }
+    [data-fd-mode="work"] .fd-input-wrap:focus-within { border-color: var(--link); box-shadow: 0 0 0 1px var(--link); }
+
+    .fd-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      outline: none;
+    }
+    [data-fd-mode="life"] .fd-input { font-size: 15px; }
+    [data-fd-mode="work"] .fd-input { font-size: 14px; }
+    .fd-input::placeholder { color: var(--text-muted); }
+
+    .fd-send {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--link);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      opacity: 0.4;
+    }
+    .fd-send.fd-send--ready { opacity: 1; }
+    .fd-send:active { transform: scale(0.92); }
+    .fd-send:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 760px) {
+      body.fd-home {
+        padding: 0;
+        align-items: stretch;
+      }
+      .fd-window {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      [data-fd-mode="life"] .fd-rail,
+      [data-fd-mode="work"] .fd-rail {
+        width: 100%;
+        height: auto;
+        max-height: 48px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-direction: row;
+        display: flex;
+        align-items: center;
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 0;
+      }
+      [data-fd-mode="work"] .fd-rail {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      .fd-convos, .fd-channels {
+        display: flex;
+        flex-direction: row;
+        padding: 0;
+        width: max-content;
+      }
+      .fd-convo {
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 14px;
+        min-width: max-content;
+      }
+      .fd-convo-avatar { display: none; }
+      .fd-convo-preview { display: none; }
+      .fd-convo-name { font-size: 13px; }
+      .fd-ws-header { display: none; }
+      .fd-ch-section { display: none; }
+      .fd-ch { margin: 0; border-radius: 0; padding: 12px 14px; }
+      .fd-rail-search { display: none; }
+      .fd-msg { max-width: 85%; }
+      .fd-case-card { max-width: 100%; }
+      #fdTopBar .corner-status { display: none; }
+    }
+
+    @media (max-width: 400px) {
+      .fd-bubble { font-size: 14px; padding: 8px 12px; }
+      .fd-work-text { font-size: 13px; }
+      .fd-mode-btn { padding: 4px 10px; font-size: 12px; }
+    }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      .fd-mode-track, .fd-mode-btn, .fd-convo, .fd-ch, .fd-chip, .fd-send { transition: none; }
+    }
+
+    .fd-sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+  </style>
 </head>
-<body class="intro-done">
+<body class="intro-done fd-home">
 
-  <a class="skip-link" href="#mainPanel">Skip to content</a>
+  <a class="fd-sr-only" href="#fd-feeds">Skip to messages</a>
 
-  <canvas id="dotGrid"></canvas>
-  <!-- Theme cross-fade: conic arc pivots at bottom center, sweeps BL → BR (sun path) -->
+  <canvas id="dotGrid" aria-hidden="true"></canvas>
+
+  <!-- Theme cross-fade: conic arc pivots at bottom center, sweeps BL → BR -->
   <div id="themeTransition" class="theme-transition" aria-hidden="true">
     <div class="theme-transition__wipe" aria-hidden="true">
       <div class="theme-transition__arc" aria-hidden="true"></div>
     </div>
   </div>
+
   <div id="customCursor" aria-hidden="true"></div>
   <div id="lens" aria-hidden="true"><canvas id="lensCanvas" width="128" height="128"></canvas></div>
 
-  <!-- Top bar: local time & weather · mode tabs · theme -->
-  <div id="topBar" role="banner">
-
-  <div class="corner-status">
-    <time class="corner-status__time" datetime="2026-04-09T10:14">10:14</time>
-    <span class="corner-status__sep" aria-hidden="true">·</span>
-    <span class="corner-status__temp">72°F</span>
-  </div>
-
-  <!-- Mode tab group -->
-  <div id="modeTab" role="group" aria-label="View mode">
-    <div class="tab-pill"></div>
-    <button class="tab-opt active" data-mode="life" aria-pressed="true">Life</button>
-    <button class="tab-opt" data-mode="work" aria-pressed="false">Work</button>
-    <button class="tab-opt" data-mode="chat" aria-pressed="false">Chat</button>
-    <button id="overflowBtn" aria-label="More" aria-expanded="false" aria-haspopup="true" title="More">
-      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <g fill="none" class="overflow-glass-icon">
-          <path d="M17.2 2C18.8802 2 19.7202 2 20.362 2.32698C20.9265 2.6146 21.3854 3.07354 21.673 3.63803C22 4.27976 22 5.11984 22 6.8L22 9.2C22 10.8802 22 11.7202 21.673 12.362C21.3854 12.9265 20.9265 13.3854 20.362 13.673C19.7202 14 18.8802 14 17.2 14H14.8C13.1198 14 12.2798 14 11.638 13.673C11.0735 13.3854 10.6146 12.9265 10.327 12.362C10 11.7202 10 10.8802 10 9.2L10 6.8C10 5.11984 10 4.27976 10.327 3.63803C10.6146 3.07354 11.0735 2.6146 11.638 2.32698C12.2798 2 13.1198 2 14.8 2L17.2 2Z" fill="url(#overflow-glass-g0)" mask="url(#overflow-glass-mask)"/>
-          <path d="M17.2 2C18.8802 2 19.7202 2 20.362 2.32698C20.9265 2.6146 21.3854 3.07354 21.673 3.63803C22 4.27976 22 5.11984 22 6.8L22 9.2C22 10.8802 22 11.7202 21.673 12.362C21.3854 12.9265 20.9265 13.3854 20.362 13.673C19.7202 14 18.8802 14 17.2 14H14.8C13.1198 14 12.2798 14 11.638 13.673C11.0735 13.3854 10.6146 12.9265 10.327 12.362C10 11.7202 10 10.8802 10 9.2L10 6.8C10 5.11984 10 4.27976 10.327 3.63803C10.6146 3.07354 11.0735 2.6146 11.638 2.32698C12.2798 2 13.1198 2 14.8 2L17.2 2Z" fill="url(#overflow-glass-g0)" filter="url(#overflow-glass-filter)" clip-path="url(#overflow-glass-clip)"/>
-          <path d="M1 11.5C1 7.91015 3.91015 5 7.5 5C11.0898 5 14 7.91015 14 11.5C14 15.0899 11.0898 18 7.5 18C3.91015 18 1 15.0899 1 11.5Z" fill="url(#overflow-glass-g1)"/>
-          <path d="M13.25 11.5C13.25 8.32436 10.6756 5.75 7.5 5.75C4.32436 5.75 1.75 8.32436 1.75 11.5C1.75 14.6756 4.32436 17.25 7.5 17.25V18C3.91015 18 1 15.0899 1 11.5C1 7.91015 3.91015 5 7.5 5C11.0898 5 14 7.91015 14 11.5C14 15.0899 11.0898 18 7.5 18V17.25C10.6756 17.25 13.25 14.6756 13.25 11.5Z" fill="url(#overflow-glass-g2)"/>
-          <path d="M16.2096 10.8158C15.4308 9.53305 13.5692 9.53305 12.7904 10.8158L7.84447 18.962C7.03524 20.2949 7.99477 22 9.55404 22L14.5 22L19.4459 22C21.0052 22 21.9647 20.2949 21.1555 18.962L16.2096 10.8158Z" fill="url(#overflow-glass-g3)"/>
-          <defs>
-            <linearGradient id="overflow-glass-g0" x1="16" y1="-.048" x2="16" y2="9.8" gradientUnits="userSpaceOnUse">
-              <stop stop-color="rgba(87, 87, 87, 1)"/>
-              <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-            </linearGradient>
-            <linearGradient id="overflow-glass-g1" x1="7.5" y1="5" x2="7.5" y2="18" gradientUnits="userSpaceOnUse">
-              <stop stop-color="rgba(227, 227, 229, 0.6)"/>
-              <stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"/>
-            </linearGradient>
-            <linearGradient id="overflow-glass-g2" x1="7.5" y1="5" x2="7.5" y2="12.528" gradientUnits="userSpaceOnUse">
-              <stop stop-color="rgba(255, 255, 255, 1)"/>
-              <stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="overflow-glass-g3" x1="14.5" y1="8" x2="14.5" y2="22" gradientUnits="userSpaceOnUse">
-              <stop stop-color="rgba(87, 87, 87, 1)"/>
-              <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-            </linearGradient>
-            <filter id="overflow-glass-filter" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
-              <feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
-            </filter>
-            <clipPath id="overflow-glass-clip">
-              <path d="M1 11.5C1 7.91015 3.91015 5 7.5 5C11.0898 5 14 7.91015 14 11.5C14 15.0899 11.0898 18 7.5 18C3.91015 18 1 15.0899 1 11.5Z" fill="url(#overflow-glass-g1)"/>
-            </clipPath>
-            <mask id="overflow-glass-mask">
-              <rect width="100%" height="100%" fill="#FFF"/>
-              <path d="M1 11.5C1 7.91015 3.91015 5 7.5 5C11.0898 5 14 7.91015 14 11.5C14 15.0899 11.0898 18 7.5 18C3.91015 18 1 15.0899 1 11.5Z" fill="#000"/>
-            </mask>
-          </defs>
-        </g>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Theme toggle (top right): moon = switch to dark, sun = switch to light -->
-  <button id="themeToggle" type="button" title="Dark mode" aria-label="Switch to dark mode" aria-pressed="false">
-    <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-    <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-      <circle cx="12" cy="12" r="4"/>
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-    </svg>
-  </button>
-
-  </div><!-- /#topBar -->
-
-  <!-- Overflow panel (more options) -->
-  <div id="overflowPanel" aria-hidden="true">
-    <button class="overflow-item" data-mode="bookshelf">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
-        <g>
-          <path d="M19.8 7C20.9201 7 21.4802 7 21.908 7.21799C22.2843 7.40973 22.5903 7.7157 22.782 8.09202C23 8.51984 23 9.0799 23 10.2V14.6C23 16.8402 23 17.9603 22.564 18.816C22.1805 19.5686 21.5686 20.1805 20.816 20.564C19.9603 21 18.8402 21 16.6 21C16.0003 21 15.3477 20.9253 14.7546 21.031C14.3513 21.1029 14.0296 21.3136 13.6938 21.5374C13.4363 21.7091 13.1783 21.93 12.8727 21.9845C12.7857 22 12.6956 22 12.5156 22H11.4844C11.3044 22 11.2143 22 11.1273 21.9845C10.8217 21.93 10.5637 21.7091 10.3062 21.5374C9.97044 21.3136 9.64872 21.1029 9.24542 21.031C8.65232 20.9253 7.99966 21 7.4 21C5.15979 21 4.03968 21 3.18404 20.564C2.43139 20.1805 1.81947 19.5686 1.43597 18.816C1 17.9603 1 16.8402 1 14.6L1 10.2C1 9.07989 1 8.51984 1.21799 8.09202C1.40973 7.71569 1.7157 7.40973 2.09202 7.21799C2.51984 7 3.0799 7 4.2 7L19.8 7Z" fill="url(#om-bs-g0)" mask="url(#om-bs-m)"/>
-          <path d="M19.8 7C20.9201 7 21.4802 7 21.908 7.21799C22.2843 7.40973 22.5903 7.7157 22.782 8.09202C23 8.51984 23 9.0799 23 10.2V14.6C23 16.8402 23 17.9603 22.564 18.816C22.1805 19.5686 21.5686 20.1805 20.816 20.564C19.9603 21 18.8402 21 16.6 21C16.0003 21 15.3477 20.9253 14.7546 21.031C14.3513 21.1029 14.0296 21.3136 13.6938 21.5374C13.4363 21.7091 13.1783 21.93 12.8727 21.9845C12.7857 22 12.6956 22 12.5156 22H11.4844C11.3044 22 11.2143 22 11.1273 21.9845C10.8217 21.93 10.5637 21.7091 10.3062 21.5374C9.97044 21.3136 9.64872 21.1029 9.24542 21.031C8.65232 20.9253 7.99966 21 7.4 21C5.15979 21 4.03968 21 3.18404 20.564C2.43139 20.1805 1.81947 19.5686 1.43597 18.816C1 17.9603 1 16.8402 1 14.6L1 10.2C1 9.07989 1 8.51984 1.21799 8.09202C1.40973 7.71569 1.7157 7.40973 2.09202 7.21799C2.51984 7 3.0799 7 4.2 7L19.8 7Z" fill="url(#om-bs-g0)" filter="url(#om-bs-f)" clip-path="url(#om-bs-c)"/>
-          <path d="M17.1058 2.86537C18.4374 2.56947 19.1032 2.42152 19.6257 2.59361C20.0838 2.74451 20.472 3.05589 20.7187 3.47039C21 3.94312 21 4.62513 21 5.98917L21 14.4331C21 15.349 21 15.807 20.8377 16.1849C20.6945 16.5182 20.4634 16.8063 20.1691 17.0184C19.8354 17.2588 19.3883 17.3582 18.4942 17.5568L12.3471 18.9229C12.2176 18.9517 12.1528 18.966 12.0874 18.9718C12.0292 18.9769 11.9708 18.9769 11.9126 18.9718C11.8472 18.966 11.7824 18.9517 11.6529 18.9229L5.50582 17.5568C4.6117 17.3582 4.16464 17.2588 3.83093 17.0184C3.53658 16.8063 3.30545 16.5182 3.1623 16.1849C3 15.8069 3 15.349 3 14.4331L3 5.98917C3 4.62513 3 3.94312 3.28134 3.47039C3.52803 3.05589 3.9162 2.74451 4.37434 2.59361C4.89684 2.42152 5.56262 2.56947 6.89418 2.86537L11.6529 3.92287C11.7824 3.95165 11.8472 3.96604 11.9126 3.97178C11.9708 3.97688 12.0292 3.97688 12.0874 3.97178C12.1528 3.96604 12.2176 3.95165 12.3471 3.92287L17.1058 2.86537Z" fill="url(#om-bs-g1)"/>
-          <path d="M20.25 5.98921C20.25 5.29355 20.2494 4.82046 20.2178 4.46088C20.1867 4.10809 20.1309 3.94983 20.0742 3.85443C19.92 3.59536 19.677 3.3999 19.3906 3.3056C19.2852 3.27098 19.1185 3.25158 18.7676 3.29778C18.4097 3.34493 17.9476 3.44668 17.2686 3.59759L12.5098 4.65521C12.3988 4.67988 12.2789 4.70764 12.1533 4.71869C12.0516 4.72761 11.9484 4.72761 11.8467 4.71869C11.7211 4.70764 11.6012 4.67988 11.4902 4.65521L6.73145 3.59759C6.05237 3.44668 5.59029 3.34493 5.23242 3.29778C4.88146 3.25158 4.71479 3.27098 4.60938 3.3056C4.32304 3.3999 4.07996 3.59536 3.92578 3.85443C3.86911 3.94983 3.81326 4.10809 3.78223 4.46088C3.75062 4.82046 3.75 5.29355 3.75 5.98921V14.4336C3.75 14.9022 3.75076 15.2137 3.76855 15.4561C3.78565 15.6887 3.81605 15.8059 3.85156 15.8887C3.94103 16.097 4.08556 16.2776 4.26953 16.4102C4.34261 16.4628 4.45054 16.5178 4.67383 16.585C4.90661 16.6549 5.21124 16.7235 5.66895 16.8252L11.8154 18.1905C11.8836 18.2056 11.9214 18.2141 11.9502 18.2198C11.9732 18.2242 11.9794 18.2247 11.9785 18.2246C11.9928 18.2259 12.0072 18.2259 12.0215 18.2246C12.0206 18.2247 12.0268 18.2242 12.0498 18.2198C12.0786 18.2141 12.1164 18.2056 12.1846 18.1905L18.3311 16.8252C18.7888 16.7235 19.0934 16.6549 19.3262 16.585C19.5495 16.5178 19.6574 16.4628 19.7305 16.4102C19.9144 16.2776 20.059 16.097 20.1484 15.8887C20.1839 15.8059 20.2143 15.6887 20.2314 15.4561C20.2492 15.2137 20.25 14.9022 20.25 14.4336V5.98921ZM21 14.4336L20.9971 15.04C20.9895 15.5728 20.9595 15.9012 20.8379 16.1846L20.7803 16.3076C20.6361 16.5891 20.4266 16.833 20.1689 17.0186L20.0381 17.1026C19.7167 17.2854 19.2765 17.3828 18.4941 17.5567L12.3467 18.9229C12.2174 18.9516 12.1523 18.966 12.0869 18.9717C12.058 18.9742 12.029 18.9756 12 18.9756L11.9131 18.9717C11.8803 18.9688 11.8473 18.964 11.8066 18.9561L11.6533 18.9229L5.50586 17.5567C4.72347 17.3828 4.28327 17.2854 3.96191 17.1026L3.83105 17.0186C3.53671 16.8065 3.30526 16.5179 3.16211 16.1846C3.04052 15.9012 3.01053 15.5728 3.00293 15.04L3 14.4336V5.98921C3 4.71045 2.99965 4.0309 3.23145 3.56146L3.28125 3.47064C3.49715 3.10787 3.82136 2.82349 4.20605 2.65715L4.37402 2.59368C4.89653 2.42158 5.56298 2.56926 6.89453 2.86516L11.6533 3.92279C11.7826 3.95152 11.8477 3.96588 11.9131 3.97162C11.9709 3.97666 12.0291 3.97666 12.0869 3.97162C12.1523 3.96588 12.2174 3.95152 12.3467 3.92279L17.1055 2.86516C18.437 2.56926 19.1035 2.42158 19.626 2.59368C20.084 2.74461 20.4721 3.05623 20.7188 3.47064C21 3.94336 21 4.62538 21 5.98921V14.4336Z" fill="url(#om-bs-g2)"/>
-        </g>
-        <defs>
-          <linearGradient id="om-bs-g0" x1="12" y1="7" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(87, 87, 87, 1)"/>
-            <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-          </linearGradient>
-          <linearGradient id="om-bs-g1" x1="21" y1="10.5" x2="3" y2="10.5" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(227, 227, 229, 0.6)"/>
-            <stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"/>
-          </linearGradient>
-          <linearGradient id="om-bs-g2" x1="12" y1="2.52" x2="12" y2="12.05" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(255, 255, 255, 1)"/>
-            <stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"/>
-          </linearGradient>
-          <filter id="om-bs-f" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
-          </filter>
-          <clipPath id="om-bs-c">
-            <path d="M17.1058 2.86537C18.4374 2.56947 19.1032 2.42152 19.6257 2.59361C20.0838 2.74451 20.472 3.05589 20.7187 3.47039C21 3.94312 21 4.62513 21 5.98917L21 14.4331C21 15.349 21 15.807 20.8377 16.1849C20.6945 16.5182 20.4634 16.8063 20.1691 17.0184C19.8354 17.2588 19.3883 17.3582 18.4942 17.5568L12.3471 18.9229C12.2176 18.9517 12.1528 18.966 12.0874 18.9718C12.0292 18.9769 11.9708 18.9769 11.9126 18.9718C11.8472 18.966 11.7824 18.9517 11.6529 18.9229L5.50582 17.5568C4.6117 17.3582 4.16464 17.2588 3.83093 17.0184C3.53658 16.8063 3.30545 16.5182 3.1623 16.1849C3 15.8069 3 15.349 3 14.4331L3 5.98917C3 4.62513 3 3.94312 3.28134 3.47039C3.52803 3.05589 3.9162 2.74451 4.37434 2.59361C4.89684 2.42152 5.56262 2.56947 6.89418 2.86537L11.6529 3.92287C11.7824 3.95165 11.8472 3.96604 11.9126 3.97178C11.9708 3.97688 12.0292 3.97688 12.0874 3.97178C12.1528 3.96604 12.2176 3.95165 12.3471 3.92287L17.1058 2.86537Z" fill="url(#om-bs-g1)"/>
-          </clipPath>
-          <mask id="om-bs-m">
-            <rect width="100%" height="100%" fill="#FFF"/>
-            <path d="M17.1058 2.86537C18.4374 2.56947 19.1032 2.42152 19.6257 2.59361C20.0838 2.74451 20.472 3.05589 20.7187 3.47039C21 3.94312 21 4.62513 21 5.98917L21 14.4331C21 15.349 21 15.807 20.8377 16.1849C20.6945 16.5182 20.4634 16.8063 20.1691 17.0184C19.8354 17.2588 19.3883 17.3582 18.4942 17.5568L12.3471 18.9229C12.2176 18.9517 12.1528 18.966 12.0874 18.9718C12.0292 18.9769 11.9708 18.9769 11.9126 18.9718C11.8472 18.966 11.7824 18.9517 11.6529 18.9229L5.50582 17.5568C4.6117 17.3582 4.16464 17.2588 3.83093 17.0184C3.53658 16.8063 3.30545 16.5182 3.1623 16.1849C3 15.8069 3 15.349 3 14.4331L3 5.98917C3 4.62513 3 3.94312 3.28134 3.47039C3.52803 3.05589 3.9162 2.74451 4.37434 2.59361C4.89684 2.42152 5.56262 2.56947 6.89418 2.86537L11.6529 3.92287C11.7824 3.95165 11.8472 3.96604 11.9126 3.97178C11.9708 3.97688 12.0292 3.97688 12.0874 3.97178C12.1528 3.96604 12.2176 3.95165 12.3471 3.92287L17.1058 2.86537Z" fill="#000"/>
-          </mask>
-        </defs>
-      </svg>
-      Bookshelf
-    </button>
-    <button class="overflow-item" data-mode="gear">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
-        <g>
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12Z" fill="url(#om-gr-g0)" mask="url(#om-gr-m)"/>
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12Z" fill="url(#om-gr-g0)" filter="url(#om-gr-f)" clip-path="url(#om-gr-c)"/>
-          <path d="M11.5469 5.06433C12.27 4.96199 12.9923 4.98279 13.6953 5.11609C14.4005 5.25026 14.5631 6.11158 14.043 6.60633L11.7432 8.78992C11.3354 9.17715 11.3271 9.82485 11.7246 10.2225L13.7568 12.2548C14.1609 12.6586 14.8213 12.6419 15.2051 12.2186L17.3428 9.86219C17.8292 9.32637 18.7024 9.47533 18.8516 10.1835C19.0088 10.931 19.0415 11.6997 18.9277 12.4774C18.5408 15.1252 16.4821 17.3221 13.8594 17.8573C12.3852 18.1582 10.9728 17.9545 9.76172 17.3895L6.26302 21.381C5.19562 22.5987 3.36687 22.9201 2.22209 21.7748C1.07797 20.6302 1.39892 18.8026 2.61542 17.7352L6.60645 14.2333C6.0368 13.0111 5.83465 11.5841 6.14746 10.0956C6.69765 7.481 8.90125 5.43845 11.5469 5.06433Z" fill="url(#om-gr-g1)"/>
-          <path d="M11.5465 5.06486C12.2698 4.96245 12.9918 4.98329 13.6949 5.11662C14.4006 5.25065 14.5633 6.11212 14.0426 6.60687L11.7428 8.79049C11.335 9.17774 11.3266 9.82544 11.7242 10.2231L13.7564 12.2554C14.1353 12.634 14.7393 12.6435 15.1295 12.2944L15.2047 12.2193L17.3424 9.86277C17.8288 9.32638 18.7022 9.47545 18.8512 10.1841C19.0084 10.9318 19.0412 11.7001 18.9274 12.478C18.5404 15.126 16.4819 17.3229 13.859 17.858C9.3543 18.7773 5.42215 14.999 6.06989 10.5308L6.14704 10.0962C6.69704 7.48131 8.90067 5.43901 11.5465 5.06486ZM13.5553 5.85296C13.0093 5.74942 12.4518 5.72308 11.8922 5.77874L11.6519 5.80803C9.31522 6.13832 7.3648 7.94762 6.88044 10.2505C6.01352 14.3762 9.58734 17.9644 13.7086 17.1236L13.9244 17.0748C16.1319 16.5301 17.8541 14.6349 18.1852 12.3696L18.2164 12.1128C18.2766 11.5137 18.2402 10.9206 18.1178 10.3384C18.1139 10.32 18.1089 10.3105 18.107 10.3071C18.1052 10.3038 18.1044 10.3025 18.1041 10.3022C18.1036 10.3018 18.0965 10.2962 18.0777 10.2925C18.0368 10.2845 17.9636 10.2944 17.8981 10.3667L15.7594 12.7232C15.0877 13.4638 13.9333 13.4925 13.2262 12.7857L11.1939 10.7534C10.4981 10.0575 10.5125 8.92425 11.2262 8.24654L13.526 6.06292C13.5964 5.99593 13.6035 5.92307 13.5953 5.88518C13.5934 5.87662 13.5911 5.87065 13.5894 5.8676L13.5875 5.86468V5.8637L13.5553 5.85296Z" fill="url(#om-gr-g2)"/>
-        </g>
-        <defs>
-          <linearGradient id="om-gr-g0" x1="12" y1="1" x2="12" y2="23" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(87, 87, 87, 1)"/>
-            <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-          </linearGradient>
-          <linearGradient id="om-gr-g1" x1="9.757" y1="5" x2="9.757" y2="23.48" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(227, 227, 229, 0.6)"/>
-            <stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"/>
-          </linearGradient>
-          <linearGradient id="om-gr-g2" x1="12.497" y1="5" x2="12.497" y2="12.527" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(255, 255, 255, 1)"/>
-            <stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"/>
-          </linearGradient>
-          <filter id="om-gr-f" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
-          </filter>
-          <clipPath id="om-gr-c">
-            <path d="M11.5469 5.06433C12.27 4.96199 12.9923 4.98279 13.6953 5.11609C14.4005 5.25026 14.5631 6.11158 14.043 6.60633L11.7432 8.78992C11.3354 9.17715 11.3271 9.82485 11.7246 10.2225L13.7568 12.2548C14.1609 12.6586 14.8213 12.6419 15.2051 12.2186L17.3428 9.86219C17.8292 9.32637 18.7024 9.47533 18.8516 10.1835C19.0088 10.931 19.0415 11.6997 18.9277 12.4774C18.5408 15.1252 16.4821 17.3221 13.8594 17.8573C12.3852 18.1582 10.9728 17.9545 9.76172 17.3895L6.26302 21.381C5.19562 22.5987 3.36687 22.9201 2.22209 21.7748C1.07797 20.6302 1.39892 18.8026 2.61542 17.7352L6.60645 14.2333C6.0368 13.0111 5.83465 11.5841 6.14746 10.0956C6.69765 7.481 8.90125 5.43845 11.5469 5.06433Z" fill="url(#om-gr-g1)"/>
-          </clipPath>
-          <mask id="om-gr-m">
-            <rect width="100%" height="100%" fill="#FFF"/>
-            <path d="M11.5469 5.06433C12.27 4.96199 12.9923 4.98279 13.6953 5.11609C14.4005 5.25026 14.5631 6.11158 14.043 6.60633L11.7432 8.78992C11.3354 9.17715 11.3271 9.82485 11.7246 10.2225L13.7568 12.2548C14.1609 12.6586 14.8213 12.6419 15.2051 12.2186L17.3428 9.86219C17.8292 9.32637 18.7024 9.47533 18.8516 10.1835C19.0088 10.931 19.0415 11.6997 18.9277 12.4774C18.5408 15.1252 16.4821 17.3221 13.8594 17.8573C12.3852 18.1582 10.9728 17.9545 9.76172 17.3895L6.26302 21.381C5.19562 22.5987 3.36687 22.9201 2.22209 21.7748C1.07797 20.6302 1.39892 18.8026 2.61542 17.7352L6.60645 14.2333C6.0368 13.0111 5.83465 11.5841 6.14746 10.0956C6.69765 7.481 8.90125 5.43845 11.5469 5.06433Z" fill="#000"/>
-          </mask>
-        </defs>
-      </svg>
-      My Gear
-    </button>
-    <button class="overflow-item" data-mode="appstack">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
-        <g fill="none">
-          <path d="M1 8.34944C1 7.31285 1 6.79455 1.15365 6.33311C1.28957 5.92492 1.5117 5.55074 1.80496 5.23595C2.13648 4.8801 2.59149 4.63191 3.50151 4.13554L7.26767 2.08127C8.82638 1.23107 9.60573 0.805964 10.2428 0.883876C10.7987 0.951865 11.3007 1.24983 11.6265 1.70532C12 2.22728 12 3.11503 12 4.89053V12.6506C12 13.6872 12 14.2054 11.8463 14.6669C11.7104 15.0751 11.4883 15.4493 11.195 15.764C10.8635 16.1199 10.4085 16.3681 9.49849 16.8645L5.73233 18.9187C4.17362 19.7689 3.39427 20.194 2.75721 20.1161C2.20129 20.0481 1.69935 19.7502 1.37346 19.2947C1 18.7727 1 17.885 1 16.1095V8.34944Z" fill="url(#om-as-g0)" mask="url(#om-as-m)"/>
-          <path d="M1 8.34944C1 7.31285 1 6.79455 1.15365 6.33311C1.28957 5.92492 1.5117 5.55074 1.80496 5.23595C2.13648 4.8801 2.59149 4.63191 3.50151 4.13554L7.26767 2.08127C8.82638 1.23107 9.60573 0.805964 10.2428 0.883876C10.7987 0.951865 11.3007 1.24983 11.6265 1.70532C12 2.22728 12 3.11503 12 4.89053V12.6506C12 13.6872 12 14.2054 11.8463 14.6669C11.7104 15.0751 11.4883 15.4493 11.195 15.764C10.8635 16.1199 10.4085 16.3681 9.49849 16.8645L5.73233 18.9187C4.17362 19.7689 3.39427 20.194 2.75721 20.1161C2.20129 20.0481 1.69935 19.7502 1.37346 19.2947C1 18.7727 1 17.885 1 16.1095V8.34944Z" fill="url(#om-as-g0)" filter="url(#om-as-f)" clip-path="url(#om-as-c)"/>
-          <path d="M6.5 9.84944C6.5 8.81285 6.5 8.29455 6.65365 7.83311C6.78957 7.42492 7.0117 7.05074 7.30496 6.73595C7.63648 6.3801 8.09149 6.13191 9.00151 5.63554L12.7677 3.58127C14.3264 2.73107 15.1057 2.30596 15.7428 2.38388C16.2987 2.45187 16.8007 2.74983 17.1265 3.20532C17.5 3.72728 17.5 4.61503 17.5 6.39053V14.1506C17.5 15.1872 17.5 15.7054 17.3463 16.1669C17.2104 16.5751 16.9883 16.9493 16.695 17.264C16.3635 17.6199 15.9085 17.8681 14.9985 18.3645L11.2323 20.4187C9.67362 21.2689 8.89427 21.694 8.25721 21.6161C7.70129 21.5481 7.19935 21.2502 6.87346 20.7947C6.5 20.2727 6.5 19.385 6.5 17.6095V9.84944Z" fill="url(#om-as-g1)"/>
-          <path d="M15.7432 2.38348C16.2989 2.45155 16.8011 2.7495 17.127 3.20477C17.5004 3.72671 17.5 4.61505 17.5 6.39032V14.1501C17.5 15.1865 17.5002 15.7053 17.3467 16.1667L17.291 16.3181C17.1535 16.6672 16.9517 16.9881 16.6953 17.2634L16.5645 17.3932C16.3449 17.5931 16.0654 17.7693 15.6572 17.9997H14.1006L14.6396 17.7057C15.5951 17.1846 15.9176 16.9983 16.1465 16.7526C16.3663 16.5166 16.5329 16.2354 16.6348 15.9294C16.7407 15.6109 16.75 15.2382 16.75 14.1501V6.39032C16.75 5.48807 16.7488 4.86287 16.7061 4.39618C16.663 3.92695 16.5853 3.73729 16.5166 3.6413C16.3129 3.35677 15.9987 3.1701 15.6514 3.12762C15.5341 3.11341 15.3305 3.13621 14.8984 3.32294C14.4683 3.50884 13.919 3.80693 13.127 4.23895L9.36035 6.29364C8.40497 6.81476 8.08241 7.00114 7.85352 7.24677C7.63365 7.48278 7.46718 7.76398 7.36523 8.07001C7.25922 8.38856 7.25 8.7611 7.25 9.8493V17.6091C7.25 17.7997 7.25147 17.9782 7.25195 18.1452C6.96284 18.2619 6.70849 18.445 6.50488 18.6745C6.50072 18.36 6.5 18.0067 6.5 17.6091V9.8493C6.5 8.81291 6.49969 8.2941 6.65332 7.8327C6.77227 7.47559 6.95742 7.14418 7.19824 6.85614L7.30469 6.73602C7.55334 6.46917 7.87195 6.2624 8.39941 5.96649L9.00195 5.63544L12.7676 3.58075C14.3262 2.73061 15.1061 2.30559 15.7432 2.38348Z" fill="url(#om-as-g2)"/>
-          <path d="M12 11.3494C12 10.3128 12 9.79455 12.1537 9.33311C12.2896 8.92492 12.5117 8.55074 12.805 8.23595C13.1365 7.8801 13.5915 7.63191 14.5015 7.13554L18.2677 5.08127C19.8264 4.23107 20.6057 3.80596 21.2428 3.88388C21.7987 3.95187 22.3007 4.24983 22.6265 4.70532C23 5.22728 23 6.11503 23 7.89053V15.6506C23 16.6872 23 17.2054 22.8463 17.6669C22.7104 18.0751 22.4883 18.4493 22.195 18.764C21.8635 19.1199 21.4085 19.3681 20.4985 19.8645L16.7323 21.9187C15.1736 22.7689 14.3943 23.194 13.7572 23.1161C13.2013 23.0481 12.6993 22.7502 12.3735 22.2947C12 21.7727 12 20.885 12 19.1095V11.3494Z" fill="url(#om-as-g3)"/>
-        </g>
-        <defs>
-          <linearGradient id="om-as-g0" x1="6.5" y1="-.5" x2="6.5" y2="21.5" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(87, 87, 87, 1)"/>
-            <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-          </linearGradient>
-          <linearGradient id="om-as-g1" x1="12" y1="1" x2="12" y2="23" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(227, 227, 229, 0.6)"/>
-            <stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"/>
-          </linearGradient>
-          <linearGradient id="om-as-g2" x1="12" y1="2.375" x2="12" y2="17.5" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(255, 255, 255, 1)" stop-opacity="1"/>
-            <stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"/>
-          </linearGradient>
-          <linearGradient id="om-as-g3" x1="17.5" y1="2.5" x2="17.5" y2="24.5" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(87, 87, 87, 1)"/>
-            <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-          </linearGradient>
-          <filter id="om-as-f" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
-          </filter>
-          <clipPath id="om-as-c">
-            <path d="M6.5 9.84944C6.5 8.81285 6.5 8.29455 6.65365 7.83311C6.78957 7.42492 7.0117 7.05074 7.30496 6.73595C7.63648 6.3801 8.09149 6.13191 9.00151 5.63554L12.7677 3.58127C14.3264 2.73107 15.1057 2.30596 15.7428 2.38388C16.2987 2.45187 16.8007 2.74983 17.1265 3.20532C17.5 3.72728 17.5 4.61503 17.5 6.39053V14.1506C17.5 15.1872 17.5 15.7054 17.3463 16.1669C17.2104 16.5751 16.9883 16.9493 16.695 17.264C16.3635 17.6199 15.9085 17.8681 14.9985 18.3645L11.2323 20.4187C9.67362 21.2689 8.89427 21.694 8.25721 21.6161C7.70129 21.5481 7.19935 21.2502 6.87346 20.7947C6.5 20.2727 6.5 19.385 6.5 17.6095V9.84944Z" fill="url(#om-as-g1)"/>
-          </clipPath>
-          <mask id="om-as-m">
-            <rect width="100%" height="100%" fill="#FFF"/>
-            <path d="M6.5 9.84944C6.5 8.81285 6.5 8.29455 6.65365 7.83311C6.78957 7.42492 7.0117 7.05074 7.30496 6.73595C7.63648 6.3801 8.09149 6.13191 9.00151 5.63554L12.7677 3.58127C14.3264 2.73107 15.1057 2.30596 15.7428 2.38388C16.2987 2.45187 16.8007 2.74983 17.1265 3.20532C17.5 3.72728 17.5 4.61503 17.5 6.39053V14.1506C17.5 15.1872 17.5 15.7054 17.3463 16.1669C17.2104 16.5751 16.9883 16.9493 16.695 17.264C16.3635 17.6199 15.9085 17.8681 14.9985 18.3645L11.2323 20.4187C9.67362 21.2689 8.89427 21.694 8.25721 21.6161C7.70129 21.5481 7.19935 21.2502 6.87346 20.7947C6.5 20.2727 6.5 19.385 6.5 17.6095V9.84944Z" fill="#000"/>
-          </mask>
-        </defs>
-      </svg>
-      App Stack
-    </button>
-    <button class="overflow-item" data-mode="places">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
-        <g>
-          <path d="M12 17C14.5847 17 16.9636 17.2231 18.7285 17.6006C19.6067 17.7884 20.3823 18.0253 20.9561 18.3154C21.5239 18.6026 22 19 22 19.5C22 20 21.5239 20.3974 20.9561 20.6846C20.3823 20.9747 19.6067 21.2116 18.7285 21.3994C16.9636 21.7769 14.5847 22 12 22C9.41532 22 7.03636 21.7769 5.27148 21.3994C4.39327 21.2116 3.61767 20.9747 3.04395 20.6846C2.47608 20.3974 2 20 2 19.5C2 19 2.47608 18.6026 3.04395 18.3154C3.61767 18.0253 4.39327 17.7884 5.27148 17.6006C7.03636 17.2231 9.41532 17 12 17ZM12 4C14.7614 4 17 6.23858 17 9C17 11.7614 14.7614 14 12 14C9.23858 14 7 11.7614 7 9C7 6.23858 9.23858 4 12 4Z" fill="url(#om-pl-g0)" mask="url(#om-pl-m)"/>
-          <path d="M12 17C14.5847 17 16.9636 17.2231 18.7285 17.6006C19.6067 17.7884 20.3823 18.0253 20.9561 18.3154C21.5239 18.6026 22 19 22 19.5C22 20 21.5239 20.3974 20.9561 20.6846C20.3823 20.9747 19.6067 21.2116 18.7285 21.3994C16.9636 21.7769 14.5847 22 12 22C9.41532 22 7.03636 21.7769 5.27148 21.3994C4.39327 21.2116 3.61767 20.9747 3.04395 20.6846C2.47608 20.3974 2 20 2 19.5C2 19 2.47608 18.6026 3.04395 18.3154C3.61767 18.0253 4.39327 17.7884 5.27148 17.6006C7.03636 17.2231 9.41532 17 12 17ZM12 4C14.7614 4 17 6.23858 17 9C17 11.7614 14.7614 14 12 14C9.23858 14 7 11.7614 7 9C7 6.23858 9.23858 4 12 4Z" fill="url(#om-pl-g0)" filter="url(#om-pl-f)" clip-path="url(#om-pl-c)"/>
-          <path d="M12 1C15.8041 1 19.9998 3.68995 20 8.59375C20 11.8252 18.0301 14.6669 16.2344 16.6074C15.3187 17.5969 14.4053 18.3973 13.7227 18.9502C13.5202 19.1142 13.3124 19.2741 13.1016 19.4307C12.4477 19.9161 11.5522 19.9163 10.8984 19.4307C10.6887 19.2749 10.4813 19.1154 10.2773 18.9502C9.59466 18.3973 8.68128 17.5969 7.76562 16.6074C5.96987 14.6669 4 11.8252 4 8.59375C4.00016 3.68995 8.1959 1 12 1ZM12 5C9.79086 5 8 6.79086 8 9C8 11.2091 9.79086 13 12 13C14.2091 13 16 11.2091 16 9C16 6.79086 14.2091 5 12 5Z" fill="url(#om-pl-g1)"/>
-          <path d="M12 1C15.8041 1 19.9998 3.68995 20 8.59375C20 11.8252 18.0301 14.6669 16.2344 16.6074C15.3187 17.5969 14.4053 18.3973 13.7227 18.9502C13.5202 19.1142 13.3124 19.2741 13.1016 19.4307C12.4477 19.9161 11.5522 19.9163 10.8984 19.4307C10.6887 19.2749 10.4813 19.1154 10.2773 18.9502C9.59466 18.3973 8.68128 17.5969 7.76562 16.6074C5.96987 14.6669 4 11.8252 4 8.59375C4.00016 3.68995 8.1959 1 12 1ZM12 1.75C8.48519 1.75 4.75015 4.21892 4.75 8.59375C4.75 11.5329 6.55505 14.1943 8.31641 16.0977C9.20127 17.0538 10.086 17.8301 10.749 18.3672C10.9432 18.5245 11.1426 18.6773 11.3457 18.8281C11.7339 19.1164 12.2658 19.1166 12.6543 18.8281C12.8583 18.6767 13.0582 18.5234 13.251 18.3672C13.914 17.8301 14.7987 17.0538 15.6836 16.0977C17.4449 14.1943 19.25 11.5329 19.25 8.59375C19.2498 4.21892 15.5148 1.75 12 1.75Z" fill="url(#om-pl-g2)"/>
-        </g>
-        <defs>
-          <linearGradient id="om-pl-g0" x1="12" y1="0" x2="12" y2="25" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(87, 87, 87, 1)"/>
-            <stop offset="1" stop-color="rgba(21, 21, 21, 1)"/>
-          </linearGradient>
-          <linearGradient id="om-pl-g1" x1="12" y1="1" x2="12" y2="19.795" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(227, 227, 229, 0.6)"/>
-            <stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"/>
-          </linearGradient>
-          <linearGradient id="om-pl-g2" x1="12" y1="1" x2="12" y2="11.884" gradientUnits="userSpaceOnUse">
-            <stop stop-color="rgba(255, 255, 255, 1)"/>
-            <stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"/>
-          </linearGradient>
-          <filter id="om-pl-f" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
-          </filter>
-          <clipPath id="om-pl-c">
-            <path d="M12 1C15.8041 1 19.9998 3.68995 20 8.59375C20 11.8252 18.0301 14.6669 16.2344 16.6074C15.3187 17.5969 14.4053 18.3973 13.7227 18.9502C13.5202 19.1142 13.3124 19.2741 13.1016 19.4307C12.4477 19.9161 11.5522 19.9163 10.8984 19.4307C10.6887 19.2749 10.4813 19.1154 10.2773 18.9502C9.59466 18.3973 8.68128 17.5969 7.76562 16.6074C5.96987 14.6669 4 11.8252 4 8.59375C4.00016 3.68995 8.1959 1 12 1ZM12 5C9.79086 5 8 6.79086 8 9C8 11.2091 9.79086 13 12 13C14.2091 13 16 11.2091 16 9C16 6.79086 14.2091 5 12 5Z" fill="url(#om-pl-g1)"/>
-          </clipPath>
-          <mask id="om-pl-m">
-            <rect width="100%" height="100%" fill="#FFF"/>
-            <path d="M12 1C15.8041 1 19.9998 3.68995 20 8.59375C20 11.8252 18.0301 14.6669 16.2344 16.6074C15.3187 17.5969 14.4053 18.3973 13.7227 18.9502C13.5202 19.1142 13.3124 19.2741 13.1016 19.4307C12.4477 19.9161 11.5522 19.9163 10.8984 19.4307C10.6887 19.2749 10.4813 19.1154 10.2773 18.9502C9.59466 18.3973 8.68128 17.5969 7.76562 16.6074C5.96987 14.6669 4 11.8252 4 8.59375C4.00016 3.68995 8.1959 1 12 1ZM12 5C9.79086 5 8 6.79086 8 9C8 11.2091 9.79086 13 12 13C14.2091 13 16 11.2091 16 9C16 6.79086 14.2091 5 12 5Z" fill="#000"/>
-          </mask>
-        </defs>
-      </svg>
-      Places
-    </button>
-  </div>
-
-  <!-- Social links (@ menu, bottom left) -->
-  <button id="socialBtn" title="Social links" aria-label="Social links" aria-expanded="false">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="4"/>
-      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/>
-    </svg>
-  </button>
-
-  <div id="socialPanel" aria-hidden="true">
-    <a href="https://x.com/lukevz" target="_blank" rel="noopener" class="social-row">
-      <span class="social-name">X</span>
-      <span class="social-handle">@lukevz</span>
-    </a>
-    <a href="https://www.youtube.com/@lukevanzylofficial" target="_blank" rel="noopener" class="social-row">
-      <span class="social-name">YouTube</span>
-      <span class="social-handle">@lukevanzylofficial</span>
-    </a>
-    <a href="https://www.youtube.com/@uxwithluke" target="_blank" rel="noopener" class="social-row">
-      <span class="social-name">UX Channel</span>
-      <span class="social-handle">@uxwithluke</span>
-    </a>
-    <a href="https://www.instagram.com/lukevanzyl/" target="_blank" rel="noopener" class="social-row">
-      <span class="social-name">Instagram</span>
-      <span class="social-handle">@lukevanzyl</span>
-    </a>
-    <a href="https://www.threads.com/@lukevanzyl" target="_blank" rel="noopener" class="social-row">
-      <span class="social-name">Threads</span>
-      <span class="social-handle">@lukevanzyl</span>
-    </a>
-    <a href="https://www.linkedin.com/in/lukevz/" target="_blank" rel="noopener" class="social-row">
-      <span class="social-name">LinkedIn</span>
-      <span class="social-handle">lukevz</span>
-    </a>
-  </div>
-
-  <!-- Power button (bottom right) -->
-  <button id="powerBtn" title="Version selector" aria-label="Version selector">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-      <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-      <line x1="12" y1="2" x2="12" y2="12"/>
-    </svg>
-  </button>
-
-  <!-- Intro -->
-  <div class="intro">
-    <div class="avatar-col">
-      <img src="/src/img/headshot-personal.jpg" alt="Luke van Zyl" class="avatar" id="avatarImg">
-    </div>
-    <div class="intro-text">
-      <h1>Hi, I'm Luke</h1>
-      <p class="description">Designer, tinkerer, and passionate note-taker. Always chasing better WFH routines, mental wellness, and the systems that make everyday life feel a little more balanced.</p>
-    </div>
-  </div>
-
-  <div id="mainPanel" role="main" tabindex="-1">
-
-  <!-- App grid -->
-  <div class="launchpad">
-
-    <!-- Videos -->
-    <button class="app" data-app="Videos">
-      <div class="app-icon" aria-hidden="true">
-        <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g data-transform-wrapper="on" transform="rotate(5, 12, 12)"><g fill="none" class="nc-icon-wrapper"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.27314 1.65692C11.4366 1.07722 12.5185 0.786577 13.4577 0.986024C14.284 1.16165 15.0341 1.59461 15.5993 2.22235C16.2419 2.93601 16.5312 4.01844 17.111 6.18231L17.9392 9.27313C18.2604 10.4721 18.489 11.3394 18.5983 12.0339C18.8581 12.2109 19.0893 12.3735 19.281 12.528C19.5983 12.784 19.9222 13.1009 20.1052 13.5417C20.3594 14.1547 20.3593 14.8446 20.1052 15.4577C19.9222 15.8988 19.5984 16.2153 19.281 16.4714C18.965 16.7261 18.544 17.0056 18.0593 17.3288L15.7858 18.8444C15.1963 19.2374 14.6967 19.5713 14.281 19.7966C13.8742 20.017 13.3904 20.2243 12.8503 20.1921C12.1209 20.1483 11.4464 19.7875 11.0056 19.2048C10.6988 18.7988 10.5976 18.3168 10.5515 17.8776L10.3229 17.9391C8.15946 18.5189 7.07759 18.8095 6.13837 18.61C5.31212 18.4344 4.562 18.0015 3.99677 17.3737C3.35423 16.6601 3.06485 15.5776 2.48505 13.4138L1.65693 10.3229C1.07723 8.15947 0.786567 7.07758 0.986031 6.13837C1.16166 5.31211 1.59461 4.56199 2.22236 3.99677C2.93601 3.35421 4.01847 3.06485 6.18232 2.48505L9.27314 1.65692Z" fill="url(#sp_existing_0)" data-glass="origin" mask="url(#sp_mask)"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M9.27314 1.65692C11.4366 1.07722 12.5185 0.786577 13.4577 0.986024C14.284 1.16165 15.0341 1.59461 15.5993 2.22235C16.2419 2.93601 16.5312 4.01844 17.111 6.18231L17.9392 9.27313C18.2604 10.4721 18.489 11.3394 18.5983 12.0339C18.8581 12.2109 19.0893 12.3735 19.281 12.528C19.5983 12.784 19.9222 13.1009 20.1052 13.5417C20.3594 14.1547 20.3593 14.8446 20.1052 15.4577C19.9222 15.8988 19.5984 16.2153 19.281 16.4714C18.965 16.7261 18.544 17.0056 18.0593 17.3288L15.7858 18.8444C15.1963 19.2374 14.6967 19.5713 14.281 19.7966C13.8742 20.017 13.3904 20.2243 12.8503 20.1921C12.1209 20.1483 11.4464 19.7875 11.0056 19.2048C10.6988 18.7988 10.5976 18.3168 10.5515 17.8776L10.3229 17.9391C8.15946 18.5189 7.07759 18.8095 6.13837 18.61C5.31212 18.4344 4.562 18.0015 3.99677 17.3737C3.35423 16.6601 3.06485 15.5776 2.48505 13.4138L1.65693 10.3229C1.07723 8.15947 0.786567 7.07758 0.986031 6.13837C1.16166 5.31211 1.59461 4.56199 2.22236 3.99677C2.93601 3.35421 4.01847 3.06485 6.18232 2.48505L9.27314 1.65692Z" fill="url(#sp_existing_0)" data-glass="clone" filter="url(#sp_filter)" clip-path="url(#sp_clipPath)"></path><path d="M16.0996 6.5C18.3398 6.5 19.4608 6.49957 20.3164 6.93555C21.0689 7.31902 21.681 7.93109 22.0645 8.68359C22.5004 9.53924 22.5 10.6602 22.5 12.9004V16.0996C22.5 18.3398 22.5004 19.4608 22.0645 20.3164C21.681 21.0689 21.0689 21.681 20.3164 22.0645C19.4608 22.5004 18.3398 22.5 16.0996 22.5H12.9004C10.6602 22.5 9.53924 22.5004 8.68359 22.0645C7.93109 21.681 7.31902 21.0689 6.93555 20.3164C6.49957 19.4608 6.5 18.3398 6.5 16.0996V12.9004C6.5 10.6602 6.49957 9.53924 6.93555 8.68359C7.31902 7.93109 7.93109 7.31902 8.68359 6.93555C9.53924 6.49957 10.6602 6.5 12.9004 6.5H16.0996ZM12.8691 10.1807C12.4405 10.2182 12.0485 10.438 11.793 10.7842C11.5001 11.1814 11.5 11.8808 11.5 13.2793V15.7207C11.5 17.1192 11.5001 17.8186 11.793 18.2158C12.0485 18.562 12.4405 18.7818 12.8691 18.8193C13.3608 18.8623 13.9578 18.498 15.1514 17.7686L17.1494 16.5479C18.257 15.871 18.8111 15.5324 19 15.0967C19.1649 14.7162 19.1649 14.2838 19 13.9033C18.8111 13.4676 18.257 13.129 17.1494 12.4521L15.1514 11.2314C13.9578 10.502 13.3608 10.1377 12.8691 10.1807Z" fill="url(#sp_existing_1)" data-glass="blur"></path><path d="M16.0996 21.75V22.5H12.9004V21.75H16.0996ZM21.75 16.0996V12.9004C21.75 11.768 21.7497 10.9633 21.6982 10.334C21.6475 9.71336 21.5506 9.32889 21.3955 9.02441C21.0839 8.41304 20.587 7.91605 19.9756 7.60449C19.6711 7.44936 19.2866 7.35247 18.666 7.30176C18.0367 7.25035 17.232 7.25 16.0996 7.25H12.9004C11.768 7.25 10.9633 7.25035 10.334 7.30176C9.71336 7.35247 9.32889 7.44936 9.02441 7.60449C8.41304 7.91605 7.91605 8.41304 7.60449 9.02441C7.44936 9.32889 7.35247 9.71336 7.30176 10.334C7.25035 10.9633 7.25 11.768 7.25 12.9004V16.0996C7.25 17.232 7.25035 18.0367 7.30176 18.666C7.35247 19.2866 7.44936 19.6711 7.60449 19.9756C7.91605 20.587 8.41304 21.0839 9.02441 21.3955C9.32889 21.5506 9.71336 21.6475 10.334 21.6982C10.9633 21.7497 11.768 21.75 12.9004 21.75V22.5L11.416 22.4932C10.2243 22.4744 9.46088 22.4041 8.84766 22.1406L8.68359 22.0645C8.02512 21.7289 7.47413 21.2183 7.08984 20.5918L6.93555 20.3164C6.49957 19.4608 6.5 18.3398 6.5 16.0996V12.9004C6.5 10.6602 6.49957 9.53924 6.93555 8.68359C7.31902 7.93109 7.93109 7.31902 8.68359 6.93555C9.32525 6.60861 10.1161 6.52728 11.416 6.50684L12.9004 6.5H16.0996C18.3398 6.5 19.4608 6.49957 20.3164 6.93555C21.0689 7.31902 21.681 7.93109 22.0645 8.68359C22.5004 9.53924 22.5 10.6602 22.5 12.9004V16.0996C22.5 18.3398 22.5004 19.4608 22.0645 20.3164L21.9102 20.5918C21.5259 21.2183 20.9749 21.7289 20.3164 22.0645L20.1523 22.1406C19.316 22.4999 18.1999 22.5 16.0996 22.5V21.75C17.232 21.75 18.0367 21.7497 18.666 21.6982C19.2866 21.6475 19.6711 21.5506 19.9756 21.3955C20.587 21.0839 21.0839 20.587 21.3955 19.9756C21.5506 19.6711 21.6475 19.2866 21.6982 18.666C21.7497 18.0367 21.75 17.232 21.75 16.0996Z" fill="url(#sp_existing_2)"></path><defs><linearGradient id="sp_existing_0" x1="10.61" y1=".923" x2="10.61" y2="20.195" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)"></stop></linearGradient><linearGradient id="sp_existing_1" x1="14.5" y1="6.5" x2="14.5" y2="22.5" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227, 227, 229, 0.6)"></stop><stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"></stop></linearGradient><linearGradient id="sp_existing_2" x1="14.5" y1="6.5" x2="14.5" y2="15.766" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"></stop></linearGradient><filter id="sp_filter" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="sp_clipPath"><path d="M16.0996 6.5C18.3398 6.5 19.4608 6.49957 20.3164 6.93555C21.0689 7.31902 21.681 7.93109 22.0645 8.68359C22.5004 9.53924 22.5 10.6602 22.5 12.9004V16.0996C22.5 18.3398 22.5004 19.4608 22.0645 20.3164C21.681 21.0689 21.0689 21.681 20.3164 22.0645C19.4608 22.5004 18.3398 22.5 16.0996 22.5H12.9004C10.6602 22.5 9.53924 22.5004 8.68359 22.0645C7.93109 21.681 7.31902 21.0689 6.93555 20.3164C6.49957 19.4608 6.5 18.3398 6.5 16.0996V12.9004C6.5 10.6602 6.49957 9.53924 6.93555 8.68359C7.31902 7.93109 7.93109 7.31902 8.68359 6.93555C9.53924 6.49957 10.6602 6.5 12.9004 6.5H16.0996ZM12.8691 10.1807C12.4405 10.2182 12.0485 10.438 11.793 10.7842C11.5001 11.1814 11.5 11.8808 11.5 13.2793V15.7207C11.5 17.1192 11.5001 17.8186 11.793 18.2158C12.0485 18.562 12.4405 18.7818 12.8691 18.8193C13.3608 18.8623 13.9578 18.498 15.1514 17.7686L17.1494 16.5479C18.257 15.871 18.8111 15.5324 19 15.0967C19.1649 14.7162 19.1649 14.2838 19 13.9033C18.8111 13.4676 18.257 13.129 17.1494 12.4521L15.1514 11.2314C13.9578 10.502 13.3608 10.1377 12.8691 10.1807Z" fill="url(#sp_existing_1)"></path></clipPath><mask id="sp_mask"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M16.0996 6.5C18.3398 6.5 19.4608 6.49957 20.3164 6.93555C21.0689 7.31902 21.681 7.93109 22.0645 8.68359C22.5004 9.53924 22.5 10.6602 22.5 12.9004V16.0996C22.5 18.3398 22.5004 19.4608 22.0645 20.3164C21.681 21.0689 21.0689 21.681 20.3164 22.0645C19.4608 22.5004 18.3398 22.5 16.0996 22.5H12.9004C10.6602 22.5 9.53924 22.5004 8.68359 22.0645C7.93109 21.681 7.31902 21.0689 6.93555 20.3164C6.49957 19.4608 6.5 18.3398 6.5 16.0996V12.9004C6.5 10.6602 6.49957 9.53924 6.93555 8.68359C7.31902 7.93109 7.93109 7.31902 8.68359 6.93555C9.53924 6.49957 10.6602 6.5 12.9004 6.5H16.0996ZM12.8691 10.1807C12.4405 10.2182 12.0485 10.438 11.793 10.7842C11.5001 11.1814 11.5 11.8808 11.5 13.2793V15.7207C11.5 17.1192 11.5001 17.8186 11.793 18.2158C12.0485 18.562 12.4405 18.7818 12.8691 18.8193C13.3608 18.8623 13.9578 18.498 15.1514 17.7686L17.1494 16.5479C18.257 15.871 18.8111 15.5324 19 15.0967C19.1649 14.7162 19.1649 14.2838 19 13.9033C18.8111 13.4676 18.257 13.129 17.1494 12.4521L15.1514 11.2314C13.9578 10.502 13.3608 10.1377 12.8691 10.1807Z" fill="#000"></path></mask></defs></g></g></svg>
-      </div>
-      <div class="app-card-right">
-        <span class="app-desc">Vlogs, tutorials, and dispatches on design, slow living, and the creative life</span>
-        <span class="app-count"></span>
-      </div>
-    </button>
-
-    <!-- Photos -->
-    <button class="app" data-app="Photos">
-      <div class="app-icon" aria-hidden="true">
-        <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g data-transform-wrapper="on" transform="rotate(5, 12, 12)"><g fill="none" class="nc-icon-wrapper"><path d="M18 12.5C18 15.8137 15.3137 18.5 12 18.5C8.68629 18.5 6 15.8137 6 12.5C6 9.18629 8.68629 6.5 12 6.5C15.3137 6.5 18 9.18629 18 12.5Z" fill="url(#cam_existing_0)" data-glass="origin" mask="url(#cam_mask)"></path><path d="M18 12.5C18 15.8137 15.3137 18.5 12 18.5C8.68629 18.5 6 15.8137 6 12.5C6 9.18629 8.68629 6.5 12 6.5C15.3137 6.5 18 9.18629 18 12.5Z" fill="url(#cam_existing_0)" data-glass="clone" filter="url(#cam_filter)" clip-path="url(#cam_clipPath)"></path><path d="M14.4648 2C15.1335 2.00001 15.758 2.33423 16.1289 2.89062L17.5352 5H19C21.2091 5 23 6.79086 23 9V17C23 19.2091 21.2091 21 19 21H5C2.79086 21 1 19.2091 1 17V9C1 6.79086 2.79086 5 5 5H6.46484L7.87109 2.89062C8.24202 2.33424 8.86646 2.00001 9.53516 2H14.4648ZM12 8C9.51472 8 7.5 10.0147 7.5 12.5C7.5 14.9853 9.51472 17 12 17C14.4853 17 16.5 14.9853 16.5 12.5C16.5 10.0147 14.4853 8 12 8Z" fill="url(#cam_existing_1)" data-glass="blur"></path><path d="M19 20.25V21H5V20.25H19ZM22.25 17V9C22.25 7.20507 20.7949 5.75 19 5.75H17.1338L15.5049 3.30664C15.302 3.00238 14.9779 2.80454 14.6201 2.75977L14.4648 2.75H9.53516C9.11725 2.75001 8.72696 2.95888 8.49512 3.30664L6.86621 5.75H5C3.20508 5.75 1.75 7.20508 1.75 9V17C1.75 18.7949 3.20507 20.25 5 20.25V21C2.79086 21 1 19.2091 1 17V9C1 6.79086 2.79086 5 5 5H6.46484L7.87109 2.89062C8.24202 2.33424 8.86646 2.00001 9.53516 2H14.4648C15.1335 2.00001 15.758 2.33423 16.1289 2.89062L17.5352 5H19C21.2091 5 23 6.79086 23 9V17C23 19.2091 21.2091 21 19 21V20.25C20.7949 20.25 22.25 18.7949 22.25 17Z" fill="url(#cam_existing_2)"></path><defs><linearGradient id="cam_existing_0" x1="12" y1="6.5" x2="12" y2="18.5" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)"></stop></linearGradient><linearGradient id="cam_existing_1" x1="12" y1="2" x2="12" y2="21" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227, 227, 229, 0.6)"></stop><stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"></stop></linearGradient><linearGradient id="cam_existing_2" x1="12" y1="2" x2="12" y2="13.003" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"></stop></linearGradient><filter id="cam_filter" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="cam_clipPath"><path d="M14.4648 2C15.1335 2.00001 15.758 2.33423 16.1289 2.89062L17.5352 5H19C21.2091 5 23 6.79086 23 9V17C23 19.2091 21.2091 21 19 21H5C2.79086 21 1 19.2091 1 17V9C1 6.79086 2.79086 5 5 5H6.46484L7.87109 2.89062C8.24202 2.33424 8.86646 2.00001 9.53516 2H14.4648ZM12 8C9.51472 8 7.5 10.0147 7.5 12.5C7.5 14.9853 9.51472 17 12 17C14.4853 17 16.5 14.9853 16.5 12.5C16.5 10.0147 14.4853 8 12 8Z" fill="url(#cam_existing_1)"></path></clipPath><mask id="cam_mask"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M14.4648 2C15.1335 2.00001 15.758 2.33423 16.1289 2.89062L17.5352 5H19C21.2091 5 23 6.79086 23 9V17C23 19.2091 21.2091 21 19 21H5C2.79086 21 1 19.2091 1 17V9C1 6.79086 2.79086 5 5 5H6.46484L7.87109 2.89062C8.24202 2.33424 8.86646 2.00001 9.53516 2H14.4648ZM12 8C9.51472 8 7.5 10.0147 7.5 12.5C7.5 14.9853 9.51472 17 12 17C14.4853 17 16.5 14.9853 16.5 12.5C16.5 10.0147 14.4853 8 12 8Z" fill="#000"></path></mask></defs></g></g></svg>
-      </div>
-      <div class="app-card-right">
-        <span class="app-desc">A visual diary — favorite frames from trips, snaps, and everyday moments</span>
-        <span class="app-count"></span>
-      </div>
-    </button>
-
-    <!-- Writing -->
-    <button class="app" data-app="Writing">
-      <div class="app-icon" aria-hidden="true">
-        <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" class="nc-icon-wrapper"><path d="M13.5033 4.10546C13.9972 3.8588 14.5972 4.05905 14.8441 4.55272C15.091 5.04677 14.8909 5.64767 14.3969 5.89452C9.24346 8.46948 6.54931 13.3573 5.67226 15.3955C4.5161 18.0824 4.09554 20.3858 4.00429 21.1426C3.93821 21.6909 3.43932 22.0827 2.89101 22.0166C2.34291 21.9503 1.9519 21.4515 2.01796 20.9033C2.12901 19.9821 2.59392 17.4894 3.83534 14.6045C4.79115 12.3833 7.7347 6.98775 13.5033 4.10546Z" fill="url(#fn_bg)" mask="url(#fn_mask)"></path><path d="M13.5033 4.10546C13.9972 3.8588 14.5972 4.05905 14.8441 4.55272C15.091 5.04677 14.8909 5.64767 14.3969 5.89452C9.24346 8.46948 6.54931 13.3573 5.67226 15.3955C4.5161 18.0824 4.09554 20.3858 4.00429 21.1426C3.93821 21.6909 3.43932 22.0827 2.89101 22.0166C2.34291 21.9503 1.9519 21.4515 2.01796 20.9033C2.12901 19.9821 2.59392 17.4894 3.83534 14.6045C4.79115 12.3833 7.7347 6.98775 13.5033 4.10546Z" fill="url(#fn_bg)" filter="url(#fn_blur)" clip-path="url(#fn_cp)"></path><path d="M21.996 2.97831C21.9443 2.38904 21.4169 1.95015 20.8353 2.00456C10.3866 2.9187 5.66294 10.0172 3.57739 15.2239C3.38207 15.7115 3.61863 16.2586 4.09897 16.4711L5.18087 16.9499C6.32808 17.459 7.45527 17.6848 7.52185 17.6962C8.74173 17.919 9.86938 18.031 10.9036 18.031C13.0562 18.031 14.8029 17.5472 16.1171 16.5872C16.6465 16.2 17.5038 15.4252 18.1023 14.1039C14.0582 14.8651 13.0046 11.9807 13.0046 11.9807C16.1248 12.7703 19.6729 13.0131 20.6233 9.36491C20.8218 8.49059 20.9483 7.64435 21.0697 6.82729L21.0738 6.79966C21.2651 5.52313 21.4453 4.32071 21.8551 3.6047C21.961 3.42108 22.0159 3.20542 21.996 2.97831Z" fill="url(#fn_glass)" data-glass="blur"></path><path d="M20.835 2.00493C21.4166 1.95052 21.9444 2.38928 21.9961 2.97856C22.0159 3.20546 21.9612 3.42104 21.8555 3.60454C21.4456 4.32055 21.2655 5.52332 21.0742 6.79985L21.0693 6.82719C20.9479 7.64425 20.8216 8.49095 20.6231 9.36528L20.5264 9.69536C19.4514 12.9972 16.0276 12.7454 13.0049 11.9805C13.0049 11.9805 14.0585 14.8647 18.1025 14.1036C17.5041 15.4247 16.6466 16.1998 16.1172 16.587L15.8652 16.7618C14.5827 17.6058 12.9212 18.0312 10.9033 18.0313V17.2813C12.9478 17.2812 14.5249 16.8216 15.6748 15.9815C15.9473 15.7822 16.3245 15.4571 16.6992 14.9795C15.294 14.9566 14.2734 14.4872 13.5635 13.9092C13.1026 13.534 12.7926 13.1301 12.5967 12.8174C12.4986 12.6608 12.4276 12.5254 12.3799 12.4248C12.356 12.3745 12.3383 12.3324 12.3252 12.3008C12.3186 12.285 12.3127 12.2713 12.3086 12.2608C12.3066 12.2557 12.3051 12.2509 12.3037 12.2471C12.303 12.2453 12.3023 12.2437 12.3018 12.2422L12.3008 12.2403V12.2393C12.3006 12.2388 12.3004 12.2378 13.0049 11.9805L12.2998 12.2383L11.8135 10.9053L13.1885 11.254C14.728 11.6436 16.2534 11.8624 17.4717 11.6036C18.0657 11.4773 18.5647 11.2418 18.9609 10.8741C19.3536 10.5096 19.686 9.97643 19.8936 9.18657C20.0833 8.34819 20.2069 7.53284 20.3281 6.71684V6.71586L20.332 6.68852C20.4267 6.05665 20.5229 5.41077 20.6494 4.83208C20.7742 4.26136 20.9414 3.6915 21.2041 3.23247L21.2051 3.23051C21.2398 3.17032 21.2545 3.10688 21.249 3.04399C21.2335 2.86654 21.0702 2.73567 20.9053 2.75102L20.9004 2.752C10.8482 3.63158 6.30477 10.4317 4.27345 15.503C4.23519 15.5988 4.27466 15.7286 4.40235 15.7852L5.48438 16.2637L5.48536 16.2647C6.01592 16.5001 6.54812 16.672 6.95899 16.7872C7.16334 16.8444 7.33496 16.8876 7.45802 16.9161L7.64942 16.9571L7.65626 16.9581C8.8403 17.1743 9.92247 17.2813 10.9033 17.2813V18.0313L10.5117 18.0254C9.58628 18.001 8.58902 17.8913 7.52149 17.6963C7.46023 17.6857 6.59157 17.5116 5.60841 17.128L5.18067 16.9502L4.09864 16.4707C3.6186 16.2581 3.38191 15.7111 3.57716 15.2237C5.63015 10.0984 10.2396 3.13998 20.3496 2.0518L20.835 2.00493Z" fill="url(#fn_shine)"></path><defs><linearGradient id="fn_bg" x1="8.48" y1="4" x2="8.48" y2="22.024" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87,87,87,1)"></stop><stop offset="1" stop-color="rgba(21,21,21,1)"></stop></linearGradient><linearGradient id="fn_glass" x1="12.623" y1="2" x2="12.623" y2="18.031" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227,227,229,0.6)"></stop><stop offset="1" stop-color="rgba(187,187,192,0.6)"></stop></linearGradient><linearGradient id="fn_shine" x1="12.754" y1="2" x2="12.754" y2="11.284" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255,255,255,1)"></stop><stop offset="1" stop-color="rgba(255,255,255,0)"></stop></linearGradient><filter id="fn_blur" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" in="SourceGraphic" edgeMode="none"></feGaussianBlur></filter><clipPath id="fn_cp"><path d="M21.996 2.97831C21.9443 2.38904 21.4169 1.95015 20.8353 2.00456C10.3866 2.9187 5.66294 10.0172 3.57739 15.2239C3.38207 15.7115 3.61863 16.2586 4.09897 16.4711L5.18087 16.9499C6.32808 17.459 7.45527 17.6848 7.52185 17.6962C8.74173 17.919 9.86938 18.031 10.9036 18.031C13.0562 18.031 14.8029 17.5472 16.1171 16.5872C16.6465 16.2 17.5038 15.4252 18.1023 14.1039C14.0582 14.8651 13.0046 11.9807 13.0046 11.9807C16.1248 12.7703 19.6729 13.0131 20.6233 9.36491C20.8218 8.49059 20.9483 7.64435 21.0697 6.82729L21.0738 6.79966C21.2651 5.52313 21.4453 4.32071 21.8551 3.6047C21.961 3.42108 22.0159 3.20542 21.996 2.97831Z"></path></clipPath><mask id="fn_mask"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M21.996 2.97831C21.9443 2.38904 21.4169 1.95015 20.8353 2.00456C10.3866 2.9187 5.66294 10.0172 3.57739 15.2239C3.38207 15.7115 3.61863 16.2586 4.09897 16.4711L5.18087 16.9499C6.32808 17.459 7.45527 17.6848 7.52185 17.6962C8.74173 17.919 9.86938 18.031 10.9036 18.031C13.0562 18.031 14.8029 17.5472 16.1171 16.5872C16.6465 16.2 17.5038 15.4252 18.1023 14.1039C14.0582 14.8651 13.0046 11.9807 13.0046 11.9807C16.1248 12.7703 19.6729 13.0131 20.6233 9.36491C20.8218 8.49059 20.9483 7.64435 21.0697 6.82729L21.0738 6.79966C21.2651 5.52313 21.4453 4.32071 21.8551 3.6047C21.961 3.42108 22.0159 3.20542 21.996 2.97831Z" fill="#000"></path></mask></defs></g></svg>
-      </div>
-      <div class="app-card-right">
-        <span class="app-desc">Essays, notes, and half-formed ideas I've wrestled with enough to share</span>
-        <span class="app-count"></span>
-      </div>
-    </button>
-
-    <!-- Labs -->
-    <button class="app app--coming-soon" data-app="Labs" disabled>
-      <div class="app-icon" aria-hidden="true">
-        <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g data-transform-wrapper="on" transform="rotate(5, 12, 12)"><g fill="none" class="nc-icon-wrapper"><path d="M17.5715 18.9907L15.4578 21.1044C16.1167 21.7634 16.4462 22.0929 16.8138 22.2451C17.3038 22.4481 17.8544 22.4481 18.3445 22.2451C18.712 22.0929 19.0415 21.7634 19.7004 21.1044L20.9656 19.8392C21.7577 19.0472 22.1537 18.6512 22.3021 18.1945C22.4326 17.7928 22.4326 17.3602 22.3021 16.9585C22.1537 16.5018 21.7577 16.1058 20.9656 15.3138L8.68617 3.03429C7.89414 2.24226 7.49812 1.84624 7.04147 1.69786C6.63978 1.56735 6.20709 1.56735 5.8054 1.69786C5.34874 1.84624 4.95273 2.24226 4.16069 3.03429L2.88793 4.30705C2.23399 4.96099 1.90702 5.28796 1.75489 5.65182C1.54754 6.14773 1.54854 6.70624 1.75766 7.20141C1.91109 7.56471 2.23923 7.89051 2.89551 8.54211L5.00924 6.42838C5.39976 6.03786 6.03293 6.03786 6.42345 6.42838C6.81398 6.81891 6.81398 7.45207 6.42345 7.8426L4.30213 9.96392L14.036 19.6978L16.1573 17.5765C16.5478 17.186 17.181 17.186 17.5715 17.5765C17.9621 17.967 17.9621 18.6002 17.5715 18.9907Z" fill="url(#rp_existing_0)" data-glass="origin" mask="url(#rp_mask)"></path><path d="M17.5715 18.9907L15.4578 21.1044C16.1167 21.7634 16.4462 22.0929 16.8138 22.2451C17.3038 22.4481 17.8544 22.4481 18.3445 22.2451C18.712 22.0929 19.0415 21.7634 19.7004 21.1044L20.9656 19.8392C21.7577 19.0472 22.1537 18.6512 22.3021 18.1945C22.4326 17.7928 22.4326 17.3602 22.3021 16.9585C22.1537 16.5018 21.7577 16.1058 20.9656 15.3138L8.68617 3.03429C7.89414 2.24226 7.49812 1.84624 7.04147 1.69786C6.63978 1.56735 6.20709 1.56735 5.8054 1.69786C5.34874 1.84624 4.95273 2.24226 4.16069 3.03429L2.88793 4.30705C2.23399 4.96099 1.90702 5.28796 1.75489 5.65182C1.54754 6.14773 1.54854 6.70624 1.75766 7.20141C1.91109 7.56471 2.23923 7.89051 2.89551 8.54211L5.00924 6.42838C5.39976 6.03786 6.03293 6.03786 6.42345 6.42838C6.81398 6.81891 6.81398 7.45207 6.42345 7.8426L4.30213 9.96392L14.036 19.6978L16.1573 17.5765C16.5478 17.186 17.181 17.186 17.5715 17.5765C17.9621 17.967 17.9621 18.6002 17.5715 18.9907Z" fill="url(#rp_existing_0)" data-glass="clone" filter="url(#rp_filter)" clip-path="url(#rp_clipPath)"></path><path d="M16.0771 3.07477C17.4157 1.73621 19.5851 1.73739 20.9238 3.07574C22.2624 4.4144 22.2634 6.58376 20.9248 7.92242L9.27143 19.5757C8.65647 20.1907 7.34222 20.7042 5.99799 21.0992L5.99995 21.1011C5.12972 21.3568 4.24347 21.5669 3.35053 21.7496C2.68534 21.8856 2.11387 21.3141 2.24995 20.649C2.37524 20.0374 2.5473 19.2784 2.75874 18.5015L2.75678 18.4996C3.16721 16.9926 3.73276 15.4191 4.42378 14.7281L16.0771 3.07477Z" fill="url(#rp_existing_1)" data-glass="blur"></path><path d="M16.0771 3.07547C17.4157 1.73681 19.5851 1.73778 20.9237 3.07644C22.2623 4.41511 22.2633 6.58449 20.9247 7.92312L9.27139 19.5764L9.16788 19.6731C8.03362 20.6704 5.09211 21.3929 3.34952 21.7493L3.22647 21.7669C2.65678 21.8108 2.18858 21.3423 2.23233 20.7727L2.24991 20.6487C2.60682 18.9065 3.3298 15.9664 4.32706 14.8323L4.42374 14.7288L16.0771 3.07547ZM20.3935 3.60672C19.3474 2.56063 17.6528 2.5603 16.6073 3.60574L4.95401 15.2591C4.77846 15.4347 4.5779 15.7372 4.36905 16.1692C4.1646 16.5922 3.97183 17.097 3.79483 17.6399C3.44087 18.7257 3.16589 19.9126 2.98428 20.7991C2.96854 20.8759 2.99224 20.9319 3.0292 20.969C3.06628 21.0061 3.12226 21.0305 3.19913 21.0149C4.08593 20.8335 5.27399 20.5582 6.36026 20.2044C6.90337 20.0275 7.40791 19.8346 7.83096 19.6302C8.26301 19.4214 8.56551 19.2217 8.74112 19.0462L20.3944 7.39187C21.4398 6.34645 21.4395 4.65278 20.3935 3.60672Z" fill="url(#rp_existing_2)"></path><defs><linearGradient id="rp_existing_0" x1="12" y1="1.6" x2="12" y2="22.397" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)"></stop></linearGradient><linearGradient id="rp_existing_1" x1="12.079" y1="2.071" x2="12.079" y2="21.77" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227, 227, 229, 0.6)"></stop><stop offset="1" stop-color="rgba(187, 187, 192, 0.6)"></stop></linearGradient><linearGradient id="rp_existing_2" x1="12.079" y1="2.072" x2="12.079" y2="13.479" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0"></stop></linearGradient><filter id="rp_filter" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="rp_clipPath"><path d="M16.0771 3.07477C17.4157 1.73621 19.5851 1.73739 20.9238 3.07574C22.2624 4.4144 22.2634 6.58376 20.9248 7.92242L9.27143 19.5757C8.65647 20.1907 7.34222 20.7042 5.99799 21.0992L5.99995 21.1011C5.12972 21.3568 4.24347 21.5669 3.35053 21.7496C2.68534 21.8856 2.11387 21.3141 2.24995 20.649C2.37524 20.0374 2.5473 19.2784 2.75874 18.5015L2.75678 18.4996C3.16721 16.9926 3.73276 15.4191 4.42378 14.7281L16.0771 3.07477Z" fill="url(#rp_existing_1)"></path></clipPath><mask id="rp_mask"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M16.0771 3.07477C17.4157 1.73621 19.5851 1.73739 20.9238 3.07574C22.2624 4.4144 22.2634 6.58376 20.9248 7.92242L9.27143 19.5757C8.65647 20.1907 7.34222 20.7042 5.99799 21.0992L5.99995 21.1011C5.12972 21.3568 4.24347 21.5669 3.35053 21.7496C2.68534 21.8856 2.11387 21.3141 2.24995 20.649C2.37524 20.0374 2.5473 19.2784 2.75874 18.5015L2.75678 18.4996C3.16721 16.9926 3.73276 15.4191 4.42378 14.7281L16.0771 3.07477Z" fill="#000"></path></mask></defs></g></g></svg>
-      </div>
-      <div class="app-card-right">
-        <span class="app-desc">Experiments and side projects — small things I built for the fun of it</span>
-        <span class="app-count"></span>
-      </div>
-    </button>
-
-  </div>
-
-  <!-- Portfolio / case study cards (hidden until Work tab is active) -->
-  <div class="portfolio" id="portfolioGrid">
-
-    <div class="launchpad work-launchpad">
-      <button class="app app--coming-soon" data-app="Portfolio" disabled>
-        <span class="app-icon">
-          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" class="nc-icon-wrapper"><path d="M14.5 1C14.964 1 15.1961 1.00031 15.3916 1.01953C17.2907 1.20658 18.7934 2.70929 18.9805 4.6084C18.9997 4.80387 19 5.03601 19 5.5C19 5.96399 18.9997 6.19613 18.9805 6.3916C18.9584 6.61532 18.9174 6.83372 18.8604 7.04492C19.1139 7.0783 19.3764 7.14087 19.6348 7.27246C20.1052 7.51214 20.4879 7.89483 20.7275 8.36523C20.893 8.68996 20.9511 9.02119 20.9766 9.33301C21.0011 9.6333 21 9.99686 21 10.4004V17.5996C21 18.0031 21.0011 18.3667 20.9766 18.667C20.9511 18.9788 20.893 19.31 20.7275 19.6348C20.4879 20.1052 20.1052 20.4879 19.6348 20.7275C19.31 20.893 18.9788 20.9511 18.667 20.9766C18.3667 21.0011 18.0031 21 17.5996 21H16.9004C16.4969 21 16.1333 21.0011 15.833 20.9766C15.5212 20.9511 15.19 20.893 14.8652 20.7275C14.3948 20.4879 14.0121 20.1052 13.7725 19.6348C13.7644 19.619 13.7575 19.6027 13.75 19.5869C13.7425 19.6027 13.7356 19.619 13.7275 19.6348C13.4879 20.1052 13.1052 20.4879 12.6348 20.7275C12.31 20.893 11.9788 20.9511 11.667 20.9766C11.3667 21.0011 11.0031 21 10.5996 21H10.4004C9.99686 21 9.6333 21.0011 9.33301 20.9766C9.02119 20.9511 8.68996 20.893 8.36523 20.7275C7.89483 20.4879 7.51214 20.1052 7.27246 19.6348C7.14087 19.3764 7.0783 19.1139 7.04492 18.8604C6.83372 18.9174 6.61532 18.9584 6.3916 18.9805C6.19613 18.9997 5.96399 19 5.5 19C5.03601 19 4.80387 18.9997 4.6084 18.9805C2.70929 18.7934 1.20658 17.2907 1.01953 15.3916C1.00031 15.1961 1 14.964 1 14.5V7.40039C1 5.16018 0.999573 4.03924 1.43555 3.18359C1.81902 2.43109 2.43109 1.81902 3.18359 1.43555C4.03924 0.999573 5.16018 1 7.40039 1H14.5ZM13.5 12.9971C13.2719 13.3018 12.9772 13.5531 12.6348 13.7275C12.619 13.7356 12.6027 13.7425 12.5869 13.75C12.6027 13.7575 12.619 13.7644 12.6348 13.7725C12.977 13.9468 13.2719 14.1975 13.5 14.502V12.9971Z" fill="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_existing_0_iq5a0md0x)" data-glass="origin" mask="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_mask_iltfkn50i)"></path><path d="M14.5 1C14.964 1 15.1961 1.00031 15.3916 1.01953C17.2907 1.20658 18.7934 2.70929 18.9805 4.6084C18.9997 4.80387 19 5.03601 19 5.5C19 5.96399 18.9997 6.19613 18.9805 6.3916C18.9584 6.61532 18.9174 6.83372 18.8604 7.04492C19.1139 7.0783 19.3764 7.14087 19.6348 7.27246C20.1052 7.51214 20.4879 7.89483 20.7275 8.36523C20.893 8.68996 20.9511 9.02119 20.9766 9.33301C21.0011 9.6333 21 9.99686 21 10.4004V17.5996C21 18.0031 21.0011 18.3667 20.9766 18.667C20.9511 18.9788 20.893 19.31 20.7275 19.6348C20.4879 20.1052 20.1052 20.4879 19.6348 20.7275C19.31 20.893 18.9788 20.9511 18.667 20.9766C18.3667 21.0011 18.0031 21 17.5996 21H16.9004C16.4969 21 16.1333 21.0011 15.833 20.9766C15.5212 20.9511 15.19 20.893 14.8652 20.7275C14.3948 20.4879 14.0121 20.1052 13.7725 19.6348C13.7644 19.619 13.7575 19.6027 13.75 19.5869C13.7425 19.6027 13.7356 19.619 13.7275 19.6348C13.4879 20.1052 13.1052 20.4879 12.6348 20.7275C12.31 20.893 11.9788 20.9511 11.667 20.9766C11.3667 21.0011 11.0031 21 10.5996 21H10.4004C9.99686 21 9.6333 21.0011 9.33301 20.9766C9.02119 20.9511 8.68996 20.893 8.36523 20.7275C7.89483 20.4879 7.51214 20.1052 7.27246 19.6348C7.14087 19.3764 7.0783 19.1139 7.04492 18.8604C6.83372 18.9174 6.61532 18.9584 6.3916 18.9805C6.19613 18.9997 5.96399 19 5.5 19C5.03601 19 4.80387 18.9997 4.6084 18.9805C2.70929 18.7934 1.20658 17.2907 1.01953 15.3916C1.00031 15.1961 1 14.964 1 14.5V7.40039C1 5.16018 0.999573 4.03924 1.43555 3.18359C1.81902 2.43109 2.43109 1.81902 3.18359 1.43555C4.03924 0.999573 5.16018 1 7.40039 1H14.5ZM13.5 12.9971C13.2719 13.3018 12.9772 13.5531 12.6348 13.7275C12.619 13.7356 12.6027 13.7425 12.5869 13.75C12.6027 13.7575 12.619 13.7644 12.6348 13.7725C12.977 13.9468 13.2719 14.1975 13.5 14.502V12.9971Z" fill="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_existing_0_iq5a0md0x)" data-glass="clone" filter="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_filter_kp7jav1je)" clip-path="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_clipPath_hs8xrdxar)"></path><path d="M16.5996 5C18.8398 5 19.9608 4.99957 20.8164 5.43555C21.5689 5.81902 22.181 6.43109 22.5645 7.18359C23.0004 8.03924 23 9.16018 23 11.4004V16.5996C23 18.8398 23.0004 19.9608 22.5645 20.8164C22.181 21.5689 21.5689 22.181 20.8164 22.5645C19.9608 23.0004 18.8398 23 16.5996 23H11.4004C9.16018 23 8.03924 23.0004 7.18359 22.5645C6.43109 22.181 5.81902 21.5689 5.43555 20.8164C4.99957 19.9608 5 18.8398 5 16.5996V11.4004C5 9.16018 4.99957 8.03924 5.43555 7.18359C5.81902 6.43109 6.43109 5.81902 7.18359 5.43555C8.03924 4.99957 9.16018 5 11.4004 5H16.5996ZM10.4004 15C9.56068 15 9.14015 14.9998 8.81934 15.1631C8.53709 15.3069 8.3069 15.5371 8.16309 15.8193C7.99981 16.1402 8 16.5607 8 17.4004V17.5996C8 18.4393 7.99981 18.8598 8.16309 19.1807C8.3069 19.4629 8.53709 19.6931 8.81934 19.8369C9.14015 20.0002 9.56068 20 10.4004 20H10.5996C11.4393 20 11.8598 20.0002 12.1807 19.8369C12.4629 19.6931 12.6931 19.4629 12.8369 19.1807C13.0002 18.8598 13 18.4393 13 17.5996V17.4004C13 16.5607 13.0002 16.1402 12.8369 15.8193C12.6931 15.5371 12.4629 15.3069 12.1807 15.1631C11.8598 14.9998 11.4393 15 10.5996 15H10.4004ZM17.4004 8C16.5607 8 16.1402 7.99981 15.8193 8.16309C15.5371 8.3069 15.3069 8.53709 15.1631 8.81934C14.9998 9.14015 15 9.56068 15 10.4004V17.5996C15 18.4393 14.9998 18.8598 15.1631 19.1807C15.3069 19.4629 15.5371 19.6931 15.8193 19.8369C16.1402 20.0002 16.5607 20 17.4004 20H17.5996C18.4393 20 18.8598 20.0002 19.1807 19.8369C19.4629 19.6931 19.6931 19.4629 19.8369 19.1807C20.0002 18.8598 20 18.4393 20 17.5996V10.4004C20 9.56068 20.0002 9.14015 19.8369 8.81934C19.6931 8.53709 19.4629 8.3069 19.1807 8.16309C18.8598 7.99981 18.4393 8 17.5996 8H17.4004ZM10.4004 8C9.56068 8 9.14015 7.99981 8.81934 8.16309C8.53709 8.3069 8.3069 8.53709 8.16309 8.81934C7.99981 9.14015 8 9.56068 8 10.4004V10.5996C8 11.4393 7.99981 11.8598 8.16309 12.1807C8.3069 12.4629 8.53709 12.6931 8.81934 12.8369C9.14015 13.0002 9.56068 13 10.4004 13H10.5996C11.4393 13 11.8598 13.0002 12.1807 12.8369C12.4629 12.6931 12.6931 12.4629 12.8369 12.1807C13.0002 11.8598 13 11.4393 13 10.5996V10.4004C13 9.56068 13.0002 9.14015 12.8369 8.81934C12.6931 8.53709 12.4629 8.3069 12.1807 8.16309C11.8598 7.99981 11.4393 8 10.5996 8H10.4004Z" fill="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_existing_1_07d7dmgh3)" data-glass="blur"></path><path d="M11.4004 22.25L11.4004 23L16.5996 23L16.5996 22.25L11.4004 22.25ZM5.75 16.5996L5.75 11.4004C5.75 10.268 5.75034 9.46335 5.80176 8.83399C5.85246 8.21336 5.94935 7.82889 6.10449 7.52442C6.41605 6.91305 6.91304 6.41605 7.52441 6.10449C7.82889 5.94936 8.21336 5.85247 8.83398 5.80176C9.46335 5.75035 10.268 5.75 11.4004 5.75L16.5996 5.75C17.732 5.75 18.5367 5.75035 19.166 5.80176C19.7866 5.85247 20.1711 5.94936 20.4756 6.10449C21.087 6.41605 21.5839 6.91304 21.8955 7.52441C22.0506 7.82889 22.1475 8.21336 22.1982 8.83398C22.2497 9.46335 22.25 10.268 22.25 11.4004L22.25 16.5996C22.25 17.732 22.2497 18.5366 22.1982 19.166C22.1475 19.7866 22.0506 20.1711 21.8955 20.4756C21.5839 21.087 21.087 21.5839 20.4756 21.8955C20.1711 22.0506 19.7866 22.1475 19.166 22.1982C18.5367 22.2497 17.732 22.25 16.5996 22.25L16.5996 23L18.084 22.9932C19.2757 22.9744 20.0391 22.9041 20.6523 22.6406L20.8164 22.5645C21.4749 22.2289 22.0259 21.7183 22.4102 21.0918L22.5645 20.8164C23.0004 19.9608 23 18.8398 23 16.5996L23 11.4004C23 9.16018 23.0004 8.03924 22.5645 7.18359C22.181 6.43109 21.5689 5.81902 20.8164 5.43555C20.1747 5.10861 19.3839 5.02729 18.084 5.00684L16.5996 5L11.4004 5C9.16018 5 8.03924 4.99957 7.18359 5.43555C6.43108 5.81902 5.81901 6.43109 5.43554 7.1836C4.99957 8.03924 5 9.16018 5 11.4004L5 16.5996C5 18.8398 4.99957 19.9608 5.43555 20.8164L5.58984 21.0918C5.97413 21.7183 6.52512 22.2289 7.18359 22.5645L7.34766 22.6406C7.96088 22.9041 8.72431 22.9744 9.91602 22.9932L11.4004 23L11.4004 22.25C10.268 22.25 9.46335 22.2497 8.83398 22.1982C8.21336 22.1475 7.82889 22.0506 7.52441 21.8955C6.91304 21.5839 6.41605 21.087 6.10449 20.4756C5.94936 20.1711 5.85246 19.7866 5.80176 19.166C5.75034 18.5367 5.75 17.732 5.75 16.5996Z" fill="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_existing_2_le4ebxnat)"></path><defs><linearGradient id="vjnwzgo1w09-1760519092867-2844890_square-grid_existing_0_iq5a0md0x" x1="11" y1="1" x2="11" y2="21" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87,87,87,1)"></stop><stop offset="1" stop-color="rgba(21,21,21,1)"></stop></linearGradient><linearGradient id="vjnwzgo1w09-1760519092867-2844890_square-grid_existing_1_07d7dmgh3" x1="14" y1="5" x2="14" y2="23" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227,227,229,0.6)"></stop><stop offset="1" stop-color="rgba(187,187,192,0.6)"></stop></linearGradient><linearGradient id="vjnwzgo1w09-1760519092867-2844890_square-grid_existing_2_le4ebxnat" x1="14" y1="5" x2="14" y2="15.424" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255,255,255,1)"></stop><stop offset="1" stop-color="rgba(255,255,255,1)" stop-opacity="0"></stop></linearGradient><filter id="vjnwzgo1w09-1760519092867-2844890_square-grid_filter_kp7jav1je" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="vjnwzgo1w09-1760519092867-2844890_square-grid_clipPath_hs8xrdxar"><path d="M16.5996 5C18.8398 5 19.9608 4.99957 20.8164 5.43555C21.5689 5.81902 22.181 6.43109 22.5645 7.18359C23.0004 8.03924 23 9.16018 23 11.4004V16.5996C23 18.8398 23.0004 19.9608 22.5645 20.8164C22.181 21.5689 21.5689 22.181 20.8164 22.5645C19.9608 23.0004 18.8398 23 16.5996 23H11.4004C9.16018 23 8.03924 23.0004 7.18359 22.5645C6.43109 22.181 5.81902 21.5689 5.43555 20.8164C4.99957 19.9608 5 18.8398 5 16.5996V11.4004C5 9.16018 4.99957 8.03924 5.43555 7.18359C5.81902 6.43109 6.43109 5.81902 7.18359 5.43555C8.03924 4.99957 9.16018 5 11.4004 5H16.5996ZM10.4004 15C9.56068 15 9.14015 14.9998 8.81934 15.1631C8.53709 15.3069 8.3069 15.5371 8.16309 15.8193C7.99981 16.1402 8 16.5607 8 17.4004V17.5996C8 18.4393 7.99981 18.8598 8.16309 19.1807C8.3069 19.4629 8.53709 19.6931 8.81934 19.8369C9.14015 20.0002 9.56068 20 10.4004 20H10.5996C11.4393 20 11.8598 20.0002 12.1807 19.8369C12.4629 19.6931 12.6931 19.4629 12.8369 19.1807C13.0002 18.8598 13 18.4393 13 17.5996V17.4004C13 16.5607 13.0002 16.1402 12.8369 15.8193C12.6931 15.5371 12.4629 15.3069 12.1807 15.1631C11.8598 14.9998 11.4393 15 10.5996 15H10.4004ZM17.4004 8C16.5607 8 16.1402 7.99981 15.8193 8.16309C15.5371 8.3069 15.3069 8.53709 15.1631 8.81934C14.9998 9.14015 15 9.56068 15 10.4004V17.5996C15 18.4393 14.9998 18.8598 15.1631 19.1807C15.3069 19.4629 15.5371 19.6931 15.8193 19.8369C16.1402 20.0002 16.5607 20 17.4004 20H17.5996C18.4393 20 18.8598 20.0002 19.1807 19.8369C19.4629 19.6931 19.6931 19.4629 19.8369 19.1807C20.0002 18.8598 20 18.4393 20 17.5996V10.4004C20 9.56068 20.0002 9.14015 19.8369 8.81934C19.6931 8.53709 19.4629 8.3069 19.1807 8.16309C18.8598 7.99981 18.4393 8 17.5996 8H17.4004ZM10.4004 8C9.56068 8 9.14015 7.99981 8.81934 8.16309C8.53709 8.3069 8.3069 8.53709 8.16309 8.81934C7.99981 9.14015 8 9.56068 8 10.4004V10.5996C8 11.4393 7.99981 11.8598 8.16309 12.1807C8.3069 12.4629 8.53709 12.6931 8.81934 12.8369C9.14015 13.0002 9.56068 13 10.4004 13H10.5996C11.4393 13 11.8598 13.0002 12.1807 12.8369C12.4629 12.6931 12.6931 12.4629 12.8369 12.1807C13.0002 11.8598 13 11.4393 13 10.5996V10.4004C13 9.56068 13.0002 9.14015 12.8369 8.81934C12.6931 8.53709 12.4629 8.3069 12.1807 8.16309C11.8598 7.99981 11.4393 8 10.5996 8H10.4004Z" fill="url(#vjnwzgo1w09-1760519092867-2844890_square-grid_existing_1_07d7dmgh3)"></path></clipPath><mask id="vjnwzgo1w09-1760519092867-2844890_square-grid_mask_iltfkn50i"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M16.5996 5C18.8398 5 19.9608 4.99957 20.8164 5.43555C21.5689 5.81902 22.181 6.43109 22.5645 7.18359C23.0004 8.03924 23 9.16018 23 11.4004V16.5996C23 18.8398 23.0004 19.9608 22.5645 20.8164C22.181 21.5689 21.5689 22.181 20.8164 22.5645C19.9608 23.0004 18.8398 23 16.5996 23H11.4004C9.16018 23 8.03924 23.0004 7.18359 22.5645C6.43109 22.181 5.81902 21.5689 5.43555 20.8164C4.99957 19.9608 5 18.8398 5 16.5996V11.4004C5 9.16018 4.99957 8.03924 5.43555 7.18359C5.81902 6.43109 6.43109 5.81902 7.18359 5.43555C8.03924 4.99957 9.16018 5 11.4004 5H16.5996ZM10.4004 15C9.56068 15 9.14015 14.9998 8.81934 15.1631C8.53709 15.3069 8.3069 15.5371 8.16309 15.8193C7.99981 16.1402 8 16.5607 8 17.4004V17.5996C8 18.4393 7.99981 18.8598 8.16309 19.1807C8.3069 19.4629 8.53709 19.6931 8.81934 19.8369C9.14015 20.0002 9.56068 20 10.4004 20H10.5996C11.4393 20 11.8598 20.0002 12.1807 19.8369C12.4629 19.6931 12.6931 19.4629 12.8369 19.1807C13.0002 18.8598 13 18.4393 13 17.5996V17.4004C13 16.5607 13.0002 16.1402 12.8369 15.8193C12.6931 15.5371 12.4629 15.3069 12.1807 15.1631C11.8598 14.9998 11.4393 15 10.5996 15H10.4004ZM17.4004 8C16.5607 8 16.1402 7.99981 15.8193 8.16309C15.5371 8.3069 15.3069 8.53709 15.1631 8.81934C14.9998 9.14015 15 9.56068 15 10.4004V17.5996C15 18.4393 14.9998 18.8598 15.1631 19.1807C15.3069 19.4629 15.5371 19.6931 15.8193 19.8369C16.1402 20.0002 16.5607 20 17.4004 20H17.5996C18.4393 20 18.8598 20.0002 19.1807 19.8369C19.4629 19.6931 19.6931 19.4629 19.8369 19.1807C20.0002 18.8598 20 18.4393 20 17.5996V10.4004C20 9.56068 20.0002 9.14015 19.8369 8.81934C19.6931 8.53709 19.4629 8.3069 19.1807 8.16309C18.8598 7.99981 18.4393 8 17.5996 8H17.4004ZM10.4004 8C9.56068 8 9.14015 7.99981 8.81934 8.16309C8.53709 8.3069 8.3069 8.53709 8.16309 8.81934C7.99981 9.14015 8 9.56068 8 10.4004V10.5996C8 11.4393 7.99981 11.8598 8.16309 12.1807C8.3069 12.4629 8.53709 12.6931 8.81934 12.8369C9.14015 13.0002 9.56068 13 10.4004 13H10.5996C11.4393 13 11.8598 13.0002 12.1807 12.8369C12.4629 12.6931 12.6931 12.4629 12.8369 12.1807C13.0002 11.8598 13 11.4393 13 10.5996V10.4004C13 9.56068 13.0002 9.14015 12.8369 8.81934C12.6931 8.53709 12.4629 8.3069 12.1807 8.16309C11.8598 7.99981 11.4393 8 10.5996 8H10.4004Z" fill="#000"></path></mask></defs></g></svg>
-        </span>
-        <div class="app-card-right">
-          <span class="app-desc">Images, prototypes, and visual work from past projects</span>
-          <span class="app-count"></span>
-        </div>
-      </button>
-      <button class="app" data-app="Case Studies">
-        <span class="app-icon">
-          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style=""><g fill="none" class="nc-icon-wrapper"><path d="M20.4072 10.9961C20.923 11.1034 21.3758 11.4096 21.667 11.8486C22 12.351 22 13.1431 22 14.7266V15.5996C22 17.8398 22.0004 18.9608 21.5645 19.8164C21.181 20.5689 20.5689 21.181 19.8164 21.5645C18.9608 22.0004 17.8398 22 15.5996 22H8.40039C6.16018 22 5.03924 22.0004 4.18359 21.5645C3.43109 21.181 2.81902 20.5689 2.43555 19.8164C1.99957 18.9608 2 17.8398 2 15.5996V14.7266C2 13.1431 2 12.351 2.33301 11.8486C2.62416 11.4096 3.07699 11.1034 3.59277 10.9961C4.18287 10.8735 4.9185 12.1668 6.38867 12.7549L9.62305 14.0488C10.5011 14.4001 10.9403 14.576 11.3936 14.6455C11.7955 14.7072 12.2045 14.7072 12.6064 14.6455C13.0597 14.576 13.4989 14.4001 14.377 14.0488L17.6113 12.7549C19.0815 12.1668 19.8171 10.8735 20.4072 10.9961ZM15 2C16.6569 2 18 3.34315 18 5V8C18 8.55228 17.5523 9 17 9C16.4477 9 16 8.55228 16 8V5C16 4.44772 15.5523 4 15 4H9C8.44772 4 8 4.44772 8 5V8C8 8.55228 7.55228 9 7 9C6.44772 9 6 8.55228 6 8V5C6 3.34315 7.34315 2 9 2H15Z" fill="url(#r6ocm1avvr-1752500502806-5892266_suitcase_existing_0_3b5zzms3i)" data-glass="origin" mask="url(#r6ocm1avvr-1752500502806-5892266_suitcase_mask_4781812il)"></path><path d="M20.4072 10.9961C20.923 11.1034 21.3758 11.4096 21.667 11.8486C22 12.351 22 13.1431 22 14.7266V15.5996C22 17.8398 22.0004 18.9608 21.5645 19.8164C21.181 20.5689 20.5689 21.181 19.8164 21.5645C18.9608 22.0004 17.8398 22 15.5996 22H8.40039C6.16018 22 5.03924 22.0004 4.18359 21.5645C3.43109 21.181 2.81902 20.5689 2.43555 19.8164C1.99957 18.9608 2 17.8398 2 15.5996V14.7266C2 13.1431 2 12.351 2.33301 11.8486C2.62416 11.4096 3.07699 11.1034 3.59277 10.9961C4.18287 10.8735 4.9185 12.1668 6.38867 12.7549L9.62305 14.0488C10.5011 14.4001 10.9403 14.576 11.3936 14.6455C11.7955 14.7072 12.2045 14.7072 12.6064 14.6455C13.0597 14.576 13.4989 14.4001 14.377 14.0488L17.6113 12.7549C19.0815 12.1668 19.8171 10.8735 20.4072 10.9961ZM15 2C16.6569 2 18 3.34315 18 5V8C18 8.55228 17.5523 9 17 9C16.4477 9 16 8.55228 16 8V5C16 4.44772 15.5523 4 15 4H9C8.44772 4 8 4.44772 8 5V8C8 8.55228 7.55228 9 7 9C6.44772 9 6 8.55228 6 8V5C6 3.34315 7.34315 2 9 2H15Z" fill="url(#r6ocm1avvr-1752500502806-5892266_suitcase_existing_0_3b5zzms3i)" data-glass="clone" filter="url(#r6ocm1avvr-1752500502806-5892266_suitcase_filter_b8oimvggo)" clip-path="url(#r6ocm1avvr-1752500502806-5892266_suitcase_clipPath_p6yx8hppg)"></path><path d="M17.8156 6C18.9167 6 19.4672 6 19.9218 6.10767C21.3941 6.45636 22.5436 7.60589 22.8923 9.07816C23 9.53279 23 10.0833 23 11.1844C23 11.5818 23 11.7806 22.9674 11.959C22.8626 12.532 22.5132 13.0308 22.0105 13.3251C21.854 13.4167 21.6672 13.4847 21.2937 13.6205L14.1872 16.2047C13.3772 16.4992 12.9722 16.6465 12.5562 16.7049C12.1872 16.7567 11.8128 16.7567 11.4438 16.7049C11.0278 16.6465 10.6228 16.4992 9.81284 16.2047L2.70632 13.6205C2.33279 13.4847 2.14602 13.4167 1.98947 13.3251C1.48682 13.0308 1.13745 12.532 1.03264 11.959C1 11.7806 1 11.5818 1 11.1844C1 10.0833 1 9.53279 1.10767 9.07816C1.45636 7.60589 2.60589 6.45636 4.07816 6.10767C4.53279 6 5.08332 6 6.18437 6L17.8156 6Z" fill="url(#r6ocm1avvr-1752500502806-5892266_suitcase_existing_1_9ndgfommo)" data-glass="blur"></path><path d="M22.25 11.1846C22.25 10.0408 22.2445 9.59888 22.1621 9.25098C21.8788 8.05486 20.9451 7.12122 19.749 6.83789C19.4011 6.7555 18.9592 6.75 17.8154 6.75H6.18457C5.04078 6.75 4.59888 6.7555 4.25098 6.83789C3.05486 7.12122 2.12122 8.05486 1.83789 9.25098C1.7555 9.59888 1.75 10.0408 1.75 11.1846C1.75 11.6117 1.75307 11.7289 1.77051 11.8242C1.83603 12.1822 2.05419 12.4938 2.36816 12.6777C2.45183 12.7267 2.56134 12.77 2.96289 12.916L10.0693 15.5C10.9082 15.8051 11.228 15.917 11.5479 15.9619C11.8477 16.004 12.1523 16.004 12.4521 15.9619C12.772 15.917 13.0918 15.8051 13.9307 15.5L21.0371 12.916C21.4387 12.77 21.5482 12.7267 21.6318 12.6777C21.9458 12.4938 22.164 12.1822 22.2295 11.8242C22.2469 11.7289 22.25 11.6117 22.25 11.1846ZM22.9961 11.6543C22.992 11.7757 22.9841 11.8699 22.9678 11.959L22.917 12.1699C22.7731 12.6533 22.4506 13.0676 22.0107 13.3252L21.8848 13.3906C21.7488 13.4547 21.5738 13.5184 21.2939 13.6201L14.1875 16.2051L13.6494 16.3984C13.1743 16.5669 12.8686 16.6612 12.5566 16.7051L12.2783 16.7344C12.093 16.7473 11.907 16.7473 11.7217 16.7344L11.4434 16.7051C11.1314 16.6612 10.8257 16.5669 10.3506 16.3984L9.8125 16.2051L2.70605 13.6201C2.4262 13.5184 2.25124 13.4547 2.11523 13.3906L1.98926 13.3252C1.48667 13.0309 1.13702 12.5319 1.03223 11.959C1.01594 11.8699 1.00799 11.7757 1.00391 11.6543L1 11.1846C1 10.0835 0.999755 9.53275 1.10742 9.07812C1.45611 7.60585 2.60585 6.45611 4.07812 6.10742C4.41916 6.02666 4.81422 6.007 5.45508 6.00195L6.18457 6H17.8154C18.9165 6 19.4672 5.99975 19.9219 6.10742C21.3941 6.45611 22.5439 7.60585 22.8926 9.07812C23.0002 9.53275 23 10.0835 23 11.1846L22.9961 11.6543Z" fill="url(#r6ocm1avvr-1752500502806-5892266_suitcase_existing_2_jc11z5glc)"></path><defs><linearGradient id="r6ocm1avvr-1752500502806-5892266_suitcase_existing_0_3b5zzms3i" x1="12" y1="-1.5" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)" data-glass-11="on"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)" data-glass-12="on"></stop></linearGradient><linearGradient id="r6ocm1avvr-1752500502806-5892266_suitcase_existing_1_9ndgfommo" x1="23" y1="11.5" x2="1" y2="11.5" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227, 227, 229, 0.6)" data-glass-21="on"></stop><stop offset="1" stop-color="rgba(187, 187, 192, 0.6)" data-glass-22="on"></stop></linearGradient><linearGradient id="r6ocm1avvr-1752500502806-5892266_suitcase_existing_2_jc11z5glc" x1="12" y1="6" x2="12" y2="11.5" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)" stop-opacity="1" data-glass-light="on"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0" data-glass-light="on"></stop></linearGradient><filter id="r6ocm1avvr-1752500502806-5892266_suitcase_filter_b8oimvggo" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="r6ocm1avvr-1752500502806-5892266_suitcase_clipPath_p6yx8hppg"><path d="M17.8156 6C18.9167 6 19.4672 6 19.9218 6.10767C21.3941 6.45636 22.5436 7.60589 22.8923 9.07816C23 9.53279 23 10.0833 23 11.1844C23 11.5818 23 11.7806 22.9674 11.959C22.8626 12.532 22.5132 13.0308 22.0105 13.3251C21.854 13.4167 21.6672 13.4847 21.2937 13.6205L14.1872 16.2047C13.3772 16.4992 12.9722 16.6465 12.5562 16.7049C12.1872 16.7567 11.8128 16.7567 11.4438 16.7049C11.0278 16.6465 10.6228 16.4992 9.81284 16.2047L2.70632 13.6205C2.33279 13.4847 2.14602 13.4167 1.98947 13.3251C1.48682 13.0308 1.13745 12.532 1.03264 11.959C1 11.7806 1 11.5818 1 11.1844C1 10.0833 1 9.53279 1.10767 9.07816C1.45636 7.60589 2.60589 6.45636 4.07816 6.10767C4.53279 6 5.08332 6 6.18437 6L17.8156 6Z" fill="url(#r6ocm1avvr-1752500502806-5892266_suitcase_existing_1_9ndgfommo)"></path></clipPath><mask id="r6ocm1avvr-1752500502806-5892266_suitcase_mask_4781812il"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M17.8156 6C18.9167 6 19.4672 6 19.9218 6.10767C21.3941 6.45636 22.5436 7.60589 22.8923 9.07816C23 9.53279 23 10.0833 23 11.1844C23 11.5818 23 11.7806 22.9674 11.959C22.8626 12.532 22.5132 13.0308 22.0105 13.3251C21.854 13.4167 21.6672 13.4847 21.2937 13.6205L14.1872 16.2047C13.3772 16.4992 12.9722 16.6465 12.5562 16.7049C12.1872 16.7567 11.8128 16.7567 11.4438 16.7049C11.0278 16.6465 10.6228 16.4992 9.81284 16.2047L2.70632 13.6205C2.33279 13.4847 2.14602 13.4167 1.98947 13.3251C1.48682 13.0308 1.13745 12.532 1.03264 11.959C1 11.7806 1 11.5818 1 11.1844C1 10.0833 1 9.53279 1.10767 9.07816C1.45636 7.60589 2.60589 6.45636 4.07816 6.10767C4.53279 6 5.08332 6 6.18437 6L17.8156 6Z" fill="#000"></path></mask></defs></g></svg>
-        </span>
-        <div class="app-card-right">
-          <span class="app-desc">Deep dives into problems solved and decisions made</span>
-          <span class="app-count"></span>
-        </div>
-      </button>
-      <button class="app" data-app="Career">
-        <span class="app-icon">
-          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style=""><g fill="none" class="nc-icon-wrapper"><path d="M3 21V3C3 2.44772 3.44772 2 4 2C4.55228 2 5 2.44772 5 3V21C5 21.5523 4.55228 22 4 22C3.44772 22 3 21.5523 3 21Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_0_8nbc4ah6x)" data-glass="origin" mask="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_mask_stla8i1d2)"></path><path d="M3 21V3C3 2.44772 3.44772 2 4 2C4.55228 2 5 2.44772 5 3V21C5 21.5523 4.55228 22 4 22C3.44772 22 3 21.5523 3 21Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_0_8nbc4ah6x)" data-glass="clone" filter="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_filter_4x5je8unc)" clip-path="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_clipPath_4tmk5yj40)"></path><path d="M19 14C19.93 14 20.3949 14.0003 20.7764 14.1025C21.8116 14.3799 22.6201 15.1884 22.8975 16.2236C22.9997 16.6051 23 17.07 23 18C23 18.93 22.9997 19.3949 22.8975 19.7764C22.6201 20.8116 21.8116 21.6201 20.7764 21.8975C20.3949 21.9997 19.93 22 19 22H12C11.07 22 10.6051 21.9997 10.2236 21.8975C9.18836 21.6201 8.37994 20.8116 8.10254 19.7764C8.00032 19.3949 8 18.93 8 18C8 17.07 8.00032 16.6051 8.10254 16.2236C8.37994 15.1884 9.18836 14.3799 10.2236 14.1025C10.6051 14.0003 11.07 14 12 14H19ZM4 9C5.65685 9 7 10.3431 7 12C7 13.6569 5.65685 15 4 15C2.34315 15 1 13.6569 1 12C1 10.3431 2.34315 9 4 9ZM19 2C19.93 2 20.3949 2.00032 20.7764 2.10254C21.8116 2.37994 22.6201 3.18836 22.8975 4.22363C22.9997 4.60513 23 5.07003 23 6C23 6.92997 22.9997 7.39487 22.8975 7.77637C22.6201 8.81164 21.8116 9.62006 20.7764 9.89746C20.3949 9.99968 19.93 10 19 10H12C11.07 10 10.6051 9.99968 10.2236 9.89746C9.18836 9.62006 8.37994 8.81164 8.10254 7.77637C8.00032 7.39487 8 6.92997 8 6C8 5.07003 8.00032 4.60513 8.10254 4.22363C8.37994 3.18836 9.18836 2.37994 10.2236 2.10254C10.6051 2.00032 11.07 2 12 2H19Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_1_cj0luqx8i)" data-glass="blur"></path><path d="M19 9.25V10H12V9.25H19ZM22.25 6C22.25 5.02195 22.243 4.68003 22.1729 4.41797C21.9648 3.64151 21.3585 3.0352 20.582 2.82715C20.32 2.75697 19.978 2.75 19 2.75H12C11.022 2.75 10.68 2.75697 10.418 2.82715C9.64151 3.0352 9.0352 3.64151 8.82715 4.41797C8.75697 4.68003 8.75 5.02195 8.75 6C8.75 6.97805 8.75697 7.31997 8.82715 7.58203C9.0352 8.35849 9.64151 8.9648 10.418 9.17285C10.68 9.24303 11.022 9.25 12 9.25V10L11.3838 9.99805C10.9329 9.99405 10.6263 9.98058 10.3711 9.93164L10.2236 9.89746C9.25302 9.63739 8.48133 8.91073 8.16016 7.96777L8.10254 7.77637C8.00032 7.39487 8 6.92997 8 6C8 5.18617 7.99985 4.7284 8.06836 4.37109L8.10254 4.22363C8.36261 3.25302 9.08927 2.48133 10.0322 2.16016L10.2236 2.10254C10.5098 2.02587 10.8428 2.00674 11.3838 2.00195L12 2H19C19.93 2 20.3949 2.00032 20.7764 2.10254C21.8116 2.37994 22.6201 3.18836 22.8975 4.22363C22.9997 4.60513 23 5.07003 23 6C23 6.92997 22.9997 7.39487 22.8975 7.77637C22.6201 8.81164 21.8116 9.62006 20.7764 9.89746C20.3949 9.99968 19.93 10 19 10V9.25C19.978 9.25 20.32 9.24303 20.582 9.17285C21.3585 8.9648 21.9648 8.35849 22.1729 7.58203C22.243 7.31997 22.25 6.97805 22.25 6Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_2_rqplkj30h)"></path><path d="M19 21.25V22H12V21.25H19ZM22.25 18C22.25 17.022 22.243 16.68 22.1729 16.418C21.9648 15.6415 21.3585 15.0352 20.582 14.8271C20.32 14.757 19.978 14.75 19 14.75H12C11.022 14.75 10.68 14.757 10.418 14.8271C9.64151 15.0352 9.0352 15.6415 8.82715 16.418C8.75697 16.68 8.75 17.022 8.75 18C8.75 18.978 8.75697 19.32 8.82715 19.582C9.0352 20.3585 9.64151 20.9648 10.418 21.1729C10.68 21.243 11.022 21.25 12 21.25V22L11.3838 21.998C10.9329 21.9941 10.6263 21.9806 10.3711 21.9316L10.2236 21.8975C9.25302 21.6374 8.48133 20.9107 8.16016 19.9678L8.10254 19.7764C8.00032 19.3949 8 18.93 8 18C8 17.1862 7.99985 16.7284 8.06836 16.3711L8.10254 16.2236C8.36261 15.253 9.08927 14.4813 10.0322 14.1602L10.2236 14.1025C10.5098 14.0259 10.8428 14.0067 11.3838 14.002L12 14H19C19.93 14 20.3949 14.0003 20.7764 14.1025C21.8116 14.3799 22.6201 15.1884 22.8975 16.2236C22.9997 16.6051 23 17.07 23 18C23 18.93 22.9997 19.3949 22.8975 19.7764C22.6201 20.8116 21.8116 21.6201 20.7764 21.8975C20.3949 21.9997 19.93 22 19 22V21.25C19.978 21.25 20.32 21.243 20.582 21.1729C21.3585 20.9648 21.9648 20.3585 22.1729 19.582C22.243 19.32 22.25 18.978 22.25 18Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_3_r5d1plxga)"></path><path d="M6.25 12C6.25 10.7574 5.24264 9.75 4 9.75C2.75736 9.75 1.75 10.7574 1.75 12C1.75 13.2426 2.75736 14.25 4 14.25V15C2.34315 15 1 13.6569 1 12C1 10.3431 2.34315 9 4 9C5.65685 9 7 10.3431 7 12C7 13.6569 5.65685 15 4 15V14.25C5.24264 14.25 6.25 13.2426 6.25 12Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_4_uqc34wscr)"></path><defs><linearGradient id="p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_0_8nbc4ah6x" x1="4" y1="2" x2="4" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)" data-glass-11="on"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)" data-glass-12="on"></stop></linearGradient><linearGradient id="p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_1_cj0luqx8i" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227, 227, 229, 0.6)" data-glass-21="on"></stop><stop offset="1" stop-color="rgba(187, 187, 192, 0.6)" data-glass-22="on"></stop></linearGradient><linearGradient id="p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_2_rqplkj30h" x1="15.5" y1="2" x2="15.5" y2="6.633" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)" data-glass-light="on"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0" data-glass-light="on"></stop></linearGradient><linearGradient id="p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_3_r5d1plxga" x1="15.5" y1="14" x2="15.5" y2="18.633" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)" data-glass-light="on"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0" data-glass-light="on"></stop></linearGradient><linearGradient id="p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_4_uqc34wscr" x1="4" y1="9" x2="4" y2="12.475" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)" data-glass-light="on"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0" data-glass-light="on"></stop></linearGradient><filter id="p7aezj2osi-1760519092871-8235781_timeline-vertical_filter_4x5je8unc" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="p7aezj2osi-1760519092871-8235781_timeline-vertical_clipPath_4tmk5yj40"><path d="M19 14C19.93 14 20.3949 14.0003 20.7764 14.1025C21.8116 14.3799 22.6201 15.1884 22.8975 16.2236C22.9997 16.6051 23 17.07 23 18C23 18.93 22.9997 19.3949 22.8975 19.7764C22.6201 20.8116 21.8116 21.6201 20.7764 21.8975C20.3949 21.9997 19.93 22 19 22H12C11.07 22 10.6051 21.9997 10.2236 21.8975C9.18836 21.6201 8.37994 20.8116 8.10254 19.7764C8.00032 19.3949 8 18.93 8 18C8 17.07 8.00032 16.6051 8.10254 16.2236C8.37994 15.1884 9.18836 14.3799 10.2236 14.1025C10.6051 14.0003 11.07 14 12 14H19ZM4 9C5.65685 9 7 10.3431 7 12C7 13.6569 5.65685 15 4 15C2.34315 15 1 13.6569 1 12C1 10.3431 2.34315 9 4 9ZM19 2C19.93 2 20.3949 2.00032 20.7764 2.10254C21.8116 2.37994 22.6201 3.18836 22.8975 4.22363C22.9997 4.60513 23 5.07003 23 6C23 6.92997 22.9997 7.39487 22.8975 7.77637C22.6201 8.81164 21.8116 9.62006 20.7764 9.89746C20.3949 9.99968 19.93 10 19 10H12C11.07 10 10.6051 9.99968 10.2236 9.89746C9.18836 9.62006 8.37994 8.81164 8.10254 7.77637C8.00032 7.39487 8 6.92997 8 6C8 5.07003 8.00032 4.60513 8.10254 4.22363C8.37994 3.18836 9.18836 2.37994 10.2236 2.10254C10.6051 2.00032 11.07 2 12 2H19Z" fill="url(#p7aezj2osi-1760519092871-8235781_timeline-vertical_existing_1_cj0luqx8i)"></path></clipPath><mask id="p7aezj2osi-1760519092871-8235781_timeline-vertical_mask_stla8i1d2"><rect width="100%" height="100%" fill="#FFF"></rect><path d="M19 14C19.93 14 20.3949 14.0003 20.7764 14.1025C21.8116 14.3799 22.6201 15.1884 22.8975 16.2236C22.9997 16.6051 23 17.07 23 18C23 18.93 22.9997 19.3949 22.8975 19.7764C22.6201 20.8116 21.8116 21.6201 20.7764 21.8975C20.3949 21.9997 19.93 22 19 22H12C11.07 22 10.6051 21.9997 10.2236 21.8975C9.18836 21.6201 8.37994 20.8116 8.10254 19.7764C8.00032 19.3949 8 18.93 8 18C8 17.07 8.00032 16.6051 8.10254 16.2236C8.37994 15.1884 9.18836 14.3799 10.2236 14.1025C10.6051 14.0003 11.07 14 12 14H19ZM4 9C5.65685 9 7 10.3431 7 12C7 13.6569 5.65685 15 4 15C2.34315 15 1 13.6569 1 12C1 10.3431 2.34315 9 4 9ZM19 2C19.93 2 20.3949 2.00032 20.7764 2.10254C21.8116 2.37994 22.6201 3.18836 22.8975 4.22363C22.9997 4.60513 23 5.07003 23 6C23 6.92997 22.9997 7.39487 22.8975 7.77637C22.6201 8.81164 21.8116 9.62006 20.7764 9.89746C20.3949 9.99968 19.93 10 19 10H12C11.07 10 10.6051 9.99968 10.2236 9.89746C9.18836 9.62006 8.37994 8.81164 8.10254 7.77637C8.00032 7.39487 8 6.92997 8 6C8 5.07003 8.00032 4.60513 8.10254 4.22363C8.37994 3.18836 9.18836 2.37994 10.2236 2.10254C10.6051 2.00032 11.07 2 12 2H19Z" fill="#000"></path></mask></defs></g></svg>
-        </span>
-        <div class="app-card-right">
-          <span class="app-desc">A timeline of roles, companies, and everything in between</span>
-          <span class="app-count"></span>
-        </div>
-      </button>
-      <button class="app" data-app="Resume">
-        <span class="app-icon">
-          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style=""><g fill="none" class="nc-icon-wrapper"><path d="M20 17.8633C20.276 17.8633 20.4998 18.0873 20.5 18.3633C20.5 20.6371 18.6947 22.5 16.4443 22.5H7.55566C5.30531 22.5 3.5 20.6371 3.5 18.3633C3.5002 18.0873 3.72398 17.8633 4 17.8633C4.27602 17.8633 4.4998 18.0873 4.5 18.3633C4.5 20.1061 5.87866 21.5 7.55566 21.5H16.4443C18.1213 21.5 19.5 20.1061 19.5 18.3633C19.5002 18.0873 19.724 17.8633 20 17.8633ZM9 11C10.1046 11 11 11.8954 11 13C11 14.1046 10.1046 15 9 15H13C11.8954 15 11 14.1046 11 13C11 11.8954 11.8954 11 13 11H16C17.1046 11 18 11.8954 18 13C18 14.1046 17.1046 15 16 15C17.1046 15 18 15.8954 18 17C18 18.1046 17.1046 19 16 19H8C6.89543 19 6 18.1046 6 17C6 15.8954 6.89543 15 8 15C6.89543 15 6 14.1046 6 13C6 11.8954 6.89543 11 8 11H9Z" fill="url(#aj0oayqgrl-1760519092857-2217509_file_existing_0_n2c3qt28t)" data-glass="origin" mask="url(#aj0oayqgrl-1760519092857-2217509_file_mask_zfad7ij5q)"></path><path d="M20 17.8633C20.276 17.8633 20.4998 18.0873 20.5 18.3633C20.5 20.6371 18.6947 22.5 16.4443 22.5H7.55566C5.30531 22.5 3.5 20.6371 3.5 18.3633C3.5002 18.0873 3.72398 17.8633 4 17.8633C4.27602 17.8633 4.4998 18.0873 4.5 18.3633C4.5 20.1061 5.87866 21.5 7.55566 21.5H16.4443C18.1213 21.5 19.5 20.1061 19.5 18.3633C19.5002 18.0873 19.724 17.8633 20 17.8633ZM9 11C10.1046 11 11 11.8954 11 13C11 14.1046 10.1046 15 9 15H13C11.8954 15 11 14.1046 11 13C11 11.8954 11.8954 11 13 11H16C17.1046 11 18 11.8954 18 13C18 14.1046 17.1046 15 16 15C17.1046 15 18 15.8954 18 17C18 18.1046 17.1046 19 16 19H8C6.89543 19 6 18.1046 6 17C6 15.8954 6.89543 15 8 15C6.89543 15 6 14.1046 6 13C6 11.8954 6.89543 11 8 11H9Z" fill="url(#aj0oayqgrl-1760519092857-2217509_file_existing_0_n2c3qt28t)" data-glass="clone" filter="url(#aj0oayqgrl-1760519092857-2217509_file_filter_xxzjbhbh7)" clip-path="url(#aj0oayqgrl-1760519092857-2217509_file_clipPath_dnq7cby4l)"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M13.3428 1C13.9996 1 14.4217 1.42173 15.1719 2.17188L19.8281 6.82812C20.5783 7.57827 21 8.00037 21 8.65723V19C21 21.2091 19.2091 23 17 23H7C4.79086 23 3 21.2091 3 19V5C3 2.79086 4.79086 1 7 1H13.3428ZM8 16C7.44772 16 7 16.4477 7 17C7 17.5523 7.44772 18 8 18H16L16.1025 17.9951C16.6067 17.9438 17 17.5177 17 17C17 16.4477 16.5523 16 16 16H8ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5523 7.44772 14 8 14H9L9.10254 13.9951C9.60667 13.9438 10 13.5177 10 13C10 12.4823 9.60667 12.0562 9.10254 12.0049L9 12H8ZM13 12C12.4477 12 12 12.4477 12 13C12 13.5523 12.4477 14 13 14H16L16.1025 13.9951C16.6067 13.9438 17 13.5177 17 13C17 12.4823 16.6067 12.0562 16.1025 12.0049L16 12H13Z" fill="url(#aj0oayqgrl-1760519092857-2217509_file_existing_1_9z6in1gxq)" data-glass="blur"></path><path d="M3 19V5C3 2.79086 4.79086 1 7 1H13.3428C13.9996 1 14.4217 1.42173 15.1719 2.17188L19.8281 6.82812C20.5783 7.57827 21 8.00037 21 8.65723V19L20.9951 19.2061C20.8913 21.2512 19.2512 22.8913 17.2061 22.9951L17 23V22.25C18.7389 22.25 20.1592 20.8843 20.2461 19.167L20.25 19V8.65723C20.25 8.51841 20.2146 8.39672 20.083 8.21094C19.9289 7.99336 19.6893 7.74984 19.2978 7.3584L14.6416 2.70215C14.2502 2.31071 14.0066 2.0711 13.7891 1.91699C13.6033 1.78545 13.4816 1.75 13.3428 1.75H7C5.20507 1.75 3.75 3.20508 3.75 5V19C3.75 20.7949 5.20507 22.25 7 22.25V23C4.79086 23 3 21.2091 3 19ZM17 22.25V23H7V22.25H17Z" fill="url(#aj0oayqgrl-1760519092857-2217509_file_existing_2_8xulzs7h3)"></path><path d="M13.3428 1C13.9996 1 14.4217 1.42173 15.1719 2.17188L19.8281 6.82812C20.5783 7.57827 21 8.00037 21 8.65723V9H15C13.8954 9 13 8.10457 13 7V1H13.3428Z" fill="url(#aj0oayqgrl-1760519092857-2217509_file_existing_3_adfv3ugbe)"></path><defs><linearGradient id="aj0oayqgrl-1760519092857-2217509_file_existing_0_n2c3qt28t" x1="12" y1="11" x2="12" y2="22.5" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)" data-glass-11="on"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)" data-glass-12="on"></stop></linearGradient><linearGradient id="aj0oayqgrl-1760519092857-2217509_file_existing_1_9z6in1gxq" x1="12" y1="1" x2="12" y2="23" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(227, 227, 229, 0.6)" data-glass-21="on"></stop><stop offset="1" stop-color="rgba(187, 187, 192, 0.6)" data-glass-22="on"></stop></linearGradient><linearGradient id="aj0oayqgrl-1760519092857-2217509_file_existing_2_8xulzs7h3" x1="12" y1="1" x2="12" y2="13.74" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(255, 255, 255, 1)" data-glass-light="on"></stop><stop offset="1" stop-color="rgba(255, 255, 255, 1)" stop-opacity="0" data-glass-light="on"></stop></linearGradient><linearGradient id="aj0oayqgrl-1760519092857-2217509_file_existing_3_adfv3ugbe" x1="17" y1="1" x2="17" y2="9" gradientUnits="userSpaceOnUse"><stop stop-color="rgba(87, 87, 87, 1)" data-glass-11="on"></stop><stop offset="1" stop-color="rgba(21, 21, 21, 1)" data-glass-12="on"></stop></linearGradient><filter id="aj0oayqgrl-1760519092857-2217509_file_filter_xxzjbhbh7" x="-100%" y="-100%" width="400%" height="400%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"></feGaussianBlur></filter><clipPath id="aj0oayqgrl-1760519092857-2217509_file_clipPath_dnq7cby4l"><path fill-rule="evenodd" clip-rule="evenodd" d="M13.3428 1C13.9996 1 14.4217 1.42173 15.1719 2.17188L19.8281 6.82812C20.5783 7.57827 21 8.00037 21 8.65723V19C21 21.2091 19.2091 23 17 23H7C4.79086 23 3 21.2091 3 19V5C3 2.79086 4.79086 1 7 1H13.3428ZM8 16C7.44772 16 7 16.4477 7 17C7 17.5523 7.44772 18 8 18H16L16.1025 17.9951C16.6067 17.9438 17 17.5177 17 17C17 16.4477 16.5523 16 16 16H8ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5523 7.44772 14 8 14H9L9.10254 13.9951C9.60667 13.9438 10 13.5177 10 13C10 12.4823 9.60667 12.0562 9.10254 12.0049L9 12H8ZM13 12C12.4477 12 12 12.4477 12 13C12 13.5523 12.4477 14 13 14H16L16.1025 13.9951C16.6067 13.9438 17 13.5177 17 13C17 12.4823 16.6067 12.0562 16.1025 12.0049L16 12H13Z" fill="url(#aj0oayqgrl-1760519092857-2217509_file_existing_1_9z6in1gxq)"></path></clipPath><mask id="aj0oayqgrl-1760519092857-2217509_file_mask_zfad7ij5q"><rect width="100%" height="100%" fill="#FFF"></rect><path fill-rule="evenodd" clip-rule="evenodd" d="M13.3428 1C13.9996 1 14.4217 1.42173 15.1719 2.17188L19.8281 6.82812C20.5783 7.57827 21 8.00037 21 8.65723V19C21 21.2091 19.2091 23 17 23H7C4.79086 23 3 21.2091 3 19V5C3 2.79086 4.79086 1 7 1H13.3428ZM8 16C7.44772 16 7 16.4477 7 17C7 17.5523 7.44772 18 8 18H16L16.1025 17.9951C16.6067 17.9438 17 17.5177 17 17C17 16.4477 16.5523 16 16 16H8ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5523 7.44772 14 8 14H9L9.10254 13.9951C9.60667 13.9438 10 13.5177 10 13C10 12.4823 9.60667 12.0562 9.10254 12.0049L9 12H8ZM13 12C12.4477 12 12 12.4477 12 13C12 13.5523 12.4477 14 13 14H16L16.1025 13.9951C16.6067 13.9438 17 13.5177 17 13C17 12.4823 16.6067 12.0562 16.1025 12.0049L16 12H13Z" fill="#000"></path></mask></defs></g></svg>
-        </span>
-        <div class="app-card-right">
-          <span class="app-desc">Curriculum vitae, available to view and download</span>
-          <span class="app-count"></span>
-        </div>
-      </button>
+  <!-- Floating top bar: corner time + theme toggle -->
+  <div id="fdTopBar" role="banner">
+    <div class="corner-status">
+      <time class="corner-status__time" datetime="2026-06-30T09:00">9:00 AM</time>
+      <span class="corner-status__sep" aria-hidden="true">·</span>
+      <span class="corner-status__temp">72°F</span>
     </div>
 
-  </div>
-
-  <!-- Bookshelf view (populated by JS) -->
-  <div id="bookshelfView" style="display:none"></div>
-
-  <!-- Gear view (populated by JS) -->
-  <div id="gearView" style="display:none"></div>
-
-  <!-- App Stack view (populated by JS) -->
-  <div id="appStackView" style="display:none"></div>
-
-  <!-- Places view -->
-  <div id="placesView" style="display:none">
-    <div id="placesMap"></div>
-  </div>
-
-  <!-- Chat view -->
-  <div id="chatView" style="display:none">
-    <div id="chatTranscript" role="log" aria-live="polite" aria-label="Chat transcript"></div>
-  </div>
-
-  </div><!-- /#mainPanel -->
-
-  <!-- Now strip -->
-  <a href="#now" class="now-strip now-strip--dock" id="nowStrip" aria-label="View now page" style="display:none"></a>
-
-  <!-- Certifications strip (work page) -->
-  <ul class="cert-badges-row" id="certBadgesRow" aria-label="Certifications" style="display:none">
-    <li>
-    <a class="cert-badge" href="https://www.credly.com/badges/eb09cf15-7d11-4008-99a2-d0751fa4ce95/linked_in_profile" target="_blank" rel="noopener noreferrer" aria-label="Human-Centered Design, issued by PwC (opens in new tab)">
-      <span class="cert-badge__seal" aria-hidden="true">
-        <svg class="cert-badge__seal-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-          <g class="cert-badge__seal-stamp" transform="translate(24 24) scale(2.12) translate(-24 -24)" fill="none">
-            <path class="cert-badge__seal-stamp-edge" d="M24,15.65L25.72,17.58L28.17,16.77L28.7,19.3L31.23,19.82L30.42,22.28L32.35,24L30.42,25.72L31.23,28.17L28.7,28.7L28.17,31.23L25.72,30.42L24,32.35L22.28,30.42L19.82,31.23L19.3,28.7L16.77,28.18L17.58,25.72L15.65,24L17.58,22.28L16.77,19.82L19.3,19.3L19.82,16.77L22.28,17.58Z"/>
-            <circle class="cert-badge__seal-stamp-inner" cx="24" cy="24" r="4.85"/>
-          </g>
-        </svg>
-      </span>
-      <span class="cert-badge__copy">
-        <span class="cert-badge__title">Human-Centered Design</span>
-        <span class="cert-badge__issuer"><em>Issued by</em> PwC</span>
-      </span>
-    </a>
-    </li>
-    <li>
-    <a class="cert-badge" href="https://courses.edx.org/certificates/d1496b20f068410d9e752063053d32b5" target="_blank" rel="noopener noreferrer" aria-label="Intro to Web Accessibility, issued by edX (opens in new tab)">
-      <span class="cert-badge__seal" aria-hidden="true">
-        <svg class="cert-badge__seal-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-          <g class="cert-badge__seal-stamp" transform="translate(24 24) scale(2.12) translate(-24 -24)" fill="none">
-            <path class="cert-badge__seal-stamp-edge" d="M24,15.65L25.72,17.58L28.17,16.77L28.7,19.3L31.23,19.82L30.42,22.28L32.35,24L30.42,25.72L31.23,28.17L28.7,28.7L28.17,31.23L25.72,30.42L24,32.35L22.28,30.42L19.82,31.23L19.3,28.7L16.77,28.18L17.58,25.72L15.65,24L17.58,22.28L16.77,19.82L19.3,19.3L19.82,16.77L22.28,17.58Z"/>
-            <circle class="cert-badge__seal-stamp-inner" cx="24" cy="24" r="4.85"/>
-          </g>
-        </svg>
-      </span>
-      <span class="cert-badge__copy">
-        <span class="cert-badge__title">Intro to Web Accessibility</span>
-        <span class="cert-badge__issuer"><em>Issued by</em> edX</span>
-      </span>
-    </a>
-    </li>
-    <li>
-    <a class="cert-badge" href="https://www.credly.com/badges/55f3fbdd-aa12-498e-9cc6-40146f7a1d7d" target="_blank" rel="noopener noreferrer" aria-label="Inclusive Mindset, issued by PwC (opens in new tab)">
-      <span class="cert-badge__seal" aria-hidden="true">
-        <svg class="cert-badge__seal-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-          <g class="cert-badge__seal-stamp" transform="translate(24 24) scale(2.12) translate(-24 -24)" fill="none">
-            <path class="cert-badge__seal-stamp-edge" d="M24,15.65L25.72,17.58L28.17,16.77L28.7,19.3L31.23,19.82L30.42,22.28L32.35,24L30.42,25.72L31.23,28.17L28.7,28.7L28.17,31.23L25.72,30.42L24,32.35L22.28,30.42L19.82,31.23L19.3,28.7L16.77,28.18L17.58,25.72L15.65,24L17.58,22.28L16.77,19.82L19.3,19.3L19.82,16.77L22.28,17.58Z"/>
-            <circle class="cert-badge__seal-stamp-inner" cx="24" cy="24" r="4.85"/>
-          </g>
-        </svg>
-      </span>
-      <span class="cert-badge__copy">
-        <span class="cert-badge__title">Inclusive Mindset</span>
-        <span class="cert-badge__issuer"><em>Issued by</em> PwC</span>
-      </span>
-    </a>
-    </li>
-  </ul>
-
-  <!-- Chat bottom fade (visible only in chat mode) -->
-  <div id="chatBottomFade"></div>
-
-  <!-- Chat input bar (visible only in chat mode) -->
-  <div id="chatInputBar" style="display:none" role="group" aria-label="Chat input">
-    <input type="text" id="chatInput" placeholder="Ask me anything…" autocomplete="off" aria-label="Type your message" />
-    <button id="chatSend" type="button" aria-label="Send">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <line x1="22" y1="2" x2="11" y2="13"/>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    <!-- Theme toggle (top right) -->
+    <button id="themeToggle" type="button" title="Dark mode" aria-label="Switch to dark mode" aria-pressed="false" style="margin-left:auto">
+      <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
       </svg>
     </button>
   </div>
 
-  <!-- App panel -->
-  <div id="panelBackdrop">
-    <div id="panel">
-      <button id="panelBack">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <line x1="19" y1="12" x2="5" y2="12"/>
-          <polyline points="12 19 5 12 12 5"/>
-        </svg>
-        Back
-      </button>
-      <h2 id="panelTitle"></h2>
-      <div id="panelContent"></div>
-    </div>
-  </div>
+  <!-- ─────────────────────────────────────────────────── -->
+  <!-- THE WINDOW                                          -->
+  <!-- ─────────────────────────────────────────────────── -->
+  <div class="fd-window" id="fdWindow" role="main">
 
-  <!-- Book detail modal -->
-  <div id="bookModal" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle" aria-label="Book detail">
-    <div id="bookModalFrame">
-      <button id="bookModalClose" aria-label="Close">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-      <div id="bookModalContent">
-        <div id="bookModalCover"></div>
-        <div id="bookModalInfo">
-          <h2 id="bookModalTitle"></h2>
-          <p id="bookModalDesc"></p>
-          <div id="bookModalActions" class="book-modal-actions book-modal-actions--solo">
-            <a id="bookModalNotes" class="book-modal-btn book-modal-btn--notes" href="#" hidden>View notes</a>
-            <a id="bookModalAmazon" class="book-modal-btn book-modal-btn--amazon" href="#" target="_blank" rel="noopener noreferrer" aria-label="Read on Amazon">Read</a>
+    <!-- Title bar -->
+    <div class="fd-bar" role="banner">
+      <div class="fd-traffic" aria-hidden="true">
+        <span class="fd-dot fd-dot--r"></span>
+        <span class="fd-dot fd-dot--y"></span>
+        <span class="fd-dot fd-dot--g"></span>
+      </div>
+
+      <div class="fd-mode-switch" role="group" aria-label="View mode">
+        <div class="fd-mode-track" id="fdModeTrack" aria-hidden="true"></div>
+        <button class="fd-mode-btn" data-mode="life" aria-pressed="true">Life</button>
+        <button class="fd-mode-btn" data-mode="work" aria-pressed="false">Work</button>
+      </div>
+
+      <span class="fd-workspace-label" id="fdWorkspaceLabel" aria-hidden="true">Instinct</span>
+    </div>
+
+    <!-- App layout -->
+    <div class="fd-layout">
+
+      <!-- Left rail -->
+      <nav class="fd-rail" id="fdRail" aria-label="Topics">
+
+        <!-- Life: conversation list -->
+        <div class="fd-convos" id="fdConvos">
+          <div class="fd-rail-search" aria-hidden="true">
+            <input type="search" placeholder="Search" aria-label="Search conversations">
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Section Modal -->
-  <div id="sModal" role="dialog" aria-modal="true" aria-labelledby="sModalTitle">
-    <div id="sModalFrame">
-      <div id="sModalBg" aria-hidden="true"></div>
-      <div id="sModalTop">
-        <div id="sModalTopLeft">
-          <div class="s-modal-lead">
-            <div class="s-modal-section-icon" id="sModalSectionIcon" aria-hidden="true"></div>
-            <button id="sModalBack" type="button" aria-label="Back to index">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
-              </svg>
-            </button>
+          <div class="fd-convo" role="button" tabindex="0" data-topic="about" aria-selected="true" aria-label="about — Designer, tinkerer, note-taker">
+            <div class="fd-convo-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">about</div>
+              <div class="fd-convo-preview">Designer, tinkerer, note-taker</div>
+            </div>
           </div>
-          <span id="sModalTitle"></span>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="photos" aria-selected="false" aria-label="Photos — Fujifilm frames from Atlanta and beyond">
+            <div class="fd-convo-avatar" style="--av-color:#5a7a6b" aria-hidden="true">📷</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Photos</div>
+              <div class="fd-convo-preview">Fujifilm frames from Atlanta and beyond</div>
+            </div>
+          </div>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="writing" aria-selected="false" aria-label="Writing — Notes, book takeaways, essays">
+            <div class="fd-convo-avatar" style="--av-color:#8a6a4b" aria-hidden="true">✍️</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Writing</div>
+              <div class="fd-convo-preview">Notes, book takeaways, essays</div>
+            </div>
+          </div>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="videos" aria-selected="false" aria-label="Videos — YouTube: personal channel + UX with Luke">
+            <div class="fd-convo-avatar" style="--av-color:#9a3a3a" aria-hidden="true">▶</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Videos</div>
+              <div class="fd-convo-preview">YouTube: personal + UX with Luke</div>
+            </div>
+          </div>
+
+          <div class="fd-convo fd-convo--soon" role="button" tabindex="0" data-topic="labs" aria-selected="false" aria-label="Labs — Coming soon">
+            <div class="fd-convo-avatar" style="--av-color:#666" aria-hidden="true">⚗</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Labs</div>
+              <div class="fd-convo-preview">Coming soon</div>
+            </div>
+          </div>
+        </div><!-- /.fd-convos -->
+
+        <!-- Work: channel list -->
+        <div class="fd-channels" id="fdChannels">
+          <div class="fd-ws-header">
+            <span class="fd-ws-name">Instinct</span>
+          </div>
+          <div class="fd-ch-section">Channels</div>
+
+          <div class="fd-ch" role="button" tabindex="0" data-topic="case-studies" aria-selected="true" aria-label="#case-studies">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>case-studies
+          </div>
+          <div class="fd-ch" role="button" tabindex="0" data-topic="axon-design-system" aria-selected="false" aria-label="#axon-design-system">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>axon-design-system
+          </div>
+          <div class="fd-ch" role="button" tabindex="0" data-topic="vetguide" aria-selected="false" aria-label="#vetguide">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>vetguide
+          </div>
+          <div class="fd-ch" role="button" tabindex="0" data-topic="career" aria-selected="false" aria-label="#career">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>career
+          </div>
+          <div class="fd-ch" role="button" tabindex="0" data-topic="resume" aria-selected="false" aria-label="#resume">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>resume
+          </div>
+          <div class="fd-ch fd-ch--soon" role="button" tabindex="0" data-topic="portfolio" aria-selected="false" aria-label="#portfolio — coming soon">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>portfolio
+          </div>
+        </div><!-- /.fd-channels -->
+      </nav>
+
+      <!-- Main pane -->
+      <div class="fd-pane">
+
+        <div class="fd-feed-header" id="fdFeedHeader" aria-live="polite">
+          <span class="fd-feed-title" id="fdFeedTitle">about</span>
+          <span class="fd-feed-sub" id="fdFeedSub">Designer, tinkerer, note-taker</span>
         </div>
-        <button id="sModalClose" aria-label="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      <div id="sModalBody"></div>
-    </div>
-  </div>
 
-  <!-- Power fade overlay -->
-  <div id="powerFade"></div>
+        <!-- Feeds: all topics pre-rendered for SSR/crawlability -->
+        <div class="fd-feeds" id="fd-feeds" role="log" aria-label="Messages" aria-live="polite" aria-atomic="false">
 
-  <!-- Version screen — Time Machine -->
-  <div id="versionScreen">
-    <div class="tm-bg"></div>
-    <button class="tm-return" id="tmReturnBtn" aria-label="Return to site" title="Return (Esc)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
-    <div class="tm-scene">
-      <div class="tm-content">
+          <!-- ═══ LIFE / ABOUT (default) ═══ -->
+          <div class="fd-feed fd-feed--active" data-feed="life/about" aria-label="about conversation">
+            <div class="fd-msg-group" aria-hidden="true"><span class="fd-msg-group-time">Today</span></div>
 
-        <!-- Tab nav -->
-        <nav class="tm-tabs" role="tablist" aria-label="Version screen sections">
-          <button class="tm-tab is-active" id="tmTabVersions" role="tab" data-tab="versions" aria-selected="true" aria-controls="tmVersionsPanel">Versions</button>
-          <button class="tm-tab" id="tmTabCredits" role="tab" data-tab="credits" aria-selected="false" aria-controls="tmCreditsPanel">Credits &amp; Sources</button>
-        </nav>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Hey 👋 I'm Luke — software designer, design systems specialist, and compulsive note-taker living in Atlanta, GA.</div>
+            </article>
 
-        <!-- Versions panel -->
-        <div class="tm-panel" id="tmVersionsPanel" role="tabpanel" aria-labelledby="tmTabVersions" tabindex="0">
-          <div class="tm-stack">
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">I design software for veterinarians at <a href="https://instinct.vet/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Instinct</a>. Before that I spent three years at PwC Digital — building design systems, leading a 120-designer Figma migration, and shipping an AI product pitched to Fortune 500 clients.</div>
+            </article>
 
-            <!-- v1 — past, back window -->
-            <a href="/v1/" class="tm-card v1">
-              <div class="tm-chrome">
-                <span class="tm-dot r"></span>
-                <span class="tm-dot y"></span>
-                <span class="tm-dot g"></span>
-                <span class="tm-chrome-label">v1 &nbsp;·&nbsp; 2024</span>
+            <article class="fd-msg fd-msg--in" aria-label="Currently — what Luke is working on">
+              <div class="fd-now-card">
+                <div class="fd-now-card-head">Currently</div>
+                <div class="fd-now-row"><span class="fd-now-label">LISTENING</span><span class="fd-now-value">Baby Do You Know? — Fulton Lee</span></div>
+                <div class="fd-now-row"><span class="fd-now-label">READING</span><span class="fd-now-value">Thrawn: Heir to the Empire — Timothy Zahn</span></div>
+                <div class="fd-now-row"><span class="fd-now-label">BUILDING</span><span class="fd-now-value">52 — one work week at a time</span></div>
+                <div class="fd-now-row"><span class="fd-now-label">WATCHING</span><span class="fd-now-value">For All Mankind S5</span></div>
+                <div class="fd-now-row"><span class="fd-now-label">THINKING</span><span class="fd-now-value">Slow attention</span></div>
+                <div class="fd-now-row"><span class="fd-now-label">LOCATION</span><span class="fd-now-value">Atlanta, GA</span></div>
               </div>
-              <div class="tm-body">
-                <div>
-                  <div class="tm-version-num">Galaxy</div>
-                  <div class="tm-version-sub">Black hole · Bear notes · Digital garden</div>
+              <time class="fd-msg-time" datetime="2026-05-18">Updated May 2026</time>
+            </article>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">My brain is wired for pattern recognition — always looking for connections, abstractions, and what actually scales. Simple doesn't mean basic; it means the most elegant form of complexity.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Best way to reach me → <a href="https://www.linkedin.com/in/lukevz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">LinkedIn</a> or drop a message below.</div>
+            </article>
+          </div><!-- /life/about -->
+
+          <!-- ═══ LIFE / PHOTOS ═══ -->
+          <div class="fd-feed" data-feed="life/photos" aria-label="Photos conversation">
+            <div class="fd-msg-group" aria-hidden="true"><span class="fd-msg-group-time">Frames</span></div>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Shooting on Fujifilm. Mostly walks, everyday moments, and the occasional trip.</div>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF7517.jpg" alt="Fujifilm frame — Atlanta" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Provia/Standard</div>
                 </div>
               </div>
-            </a>
-
-            <!-- v2 — present, front window -->
-            <a href="/" class="tm-card v2">
-              <div class="tm-chrome">
-                <span class="tm-dot r"></span>
-                <span class="tm-dot y"></span>
-                <span class="tm-dot g"></span>
-                <span class="tm-chrome-label">v2 &nbsp;·&nbsp; present</span>
-              </div>
-              <div class="tm-body">
-                <div>
-                  <div class="tm-version-num">Launchpad</div>
-                  <div class="tm-version-sub">App icons · Zen garden · Case studies</div>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF7542.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Classic Chrome</div>
                 </div>
               </div>
-            </a>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF7569.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Eterna Cinema</div>
+                </div>
+              </div>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF3426.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Velvia/Vivid</div>
+                </div>
+              </div>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF5752.JPG" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Astia/Soft</div>
+                </div>
+              </div>
+            </article>
+          </div><!-- /life/photos -->
 
-            <!-- Timeline bar -->
-            <div class="tm-timeline">
-              <div class="tm-tick now"><span>Today</span></div>
-              <div class="tm-tick"><span>2025</span></div>
-              <div class="tm-tick"><span>2024</span></div>
+          <!-- ═══ LIFE / WRITING ═══ -->
+          <div class="fd-feed" data-feed="life/writing" aria-label="Writing conversation">
+            <div class="fd-msg-group" aria-hidden="true"><span class="fd-msg-group-time">Notes &amp; reads</span></div>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Notes on books, ideas, and things I'm working through. More of a garden than a blog.</div>
+            </article>
+            <article class="fd-msg fd-msg--in" aria-label="Note: 5 Reasons You Need a Digital Garden">
+              <a class="fd-note-card" href="/#writing" target="_blank" rel="noopener">
+                <div class="fd-note-week">Essay · Dec 2025</div>
+                <div class="fd-note-title">5 Reasons You Need a Digital Garden with Examples &amp; Tools to Help</div>
+                <div class="fd-note-excerpt">I started craving a place online that felt like my old creative self again: messy, playful, low stakes. That's when I discovered digital gardens.</div>
+              </a>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <a class="fd-note-card" href="/v1/#note/b.-atomic-habits" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Atomic Habits — James Clear</div>
+                <div class="fd-note-excerpt">Small changes compound. You don't rise to the level of your goals, you fall to the level of your systems.</div>
+              </a>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <a class="fd-note-card" href="/v1/#note/b.-building-a-second-brain" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Building A Second Brain — Tiago Forte</div>
+                <div class="fd-note-excerpt">CODE: Capture, Organize, Distill, Express. The goal isn't to hoard information — it's to move it forward into output.</div>
+              </a>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <a class="fd-note-card" href="/v1/#note/b.-steal-like-an-artist" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Steal Like An Artist — Austin Kleon</div>
+                <div class="fd-note-excerpt">Nothing is original. Your job is to collect good influences, remix them honestly, and make something new.</div>
+              </a>
+            </article>
+          </div><!-- /life/writing -->
+
+          <!-- ═══ LIFE / VIDEOS ═══ -->
+          <div class="fd-feed" data-feed="life/videos" aria-label="Videos conversation">
+            <div class="fd-msg-group" aria-hidden="true"><span class="fd-msg-group-time">YouTube</span></div>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Two channels — one personal, one UX-focused. Both a bit quieter lately while I focus on building.</div>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <a class="fd-video-card" href="https://www.youtube.com/@lukevanzylofficial" target="_blank" rel="noopener" aria-label="Luke Van Zyl — Personal YouTube channel">
+                <div class="fd-video-thumb-wrap">
+                  <div class="fd-video-thumb" style="background:linear-gradient(135deg,#1a1d27 0%,#2a3050 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:13px;font-family:'Geist Mono',monospace;">@lukevanzylofficial</div>
+                </div>
+                <div class="fd-video-info">
+                  <div class="fd-video-title">Luke Van Zyl</div>
+                  <div class="fd-video-channel">youtube.com/@lukevanzylofficial · Personal channel</div>
+                </div>
+              </a>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <a class="fd-video-card" href="https://www.youtube.com/@UXwithLuke" target="_blank" rel="noopener" aria-label="UX with Luke — UX YouTube channel">
+                <div class="fd-video-thumb-wrap">
+                  <div class="fd-video-thumb" style="background:linear-gradient(135deg,#0f1520 0%,#1a2840 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:13px;font-family:'Geist Mono',monospace;">@UXwithLuke</div>
+                </div>
+                <div class="fd-video-info">
+                  <div class="fd-video-title">UX with Luke</div>
+                  <div class="fd-video-channel">youtube.com/@UXwithLuke · Design &amp; UX</div>
+                </div>
+              </a>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Started making YouTube content at 22 — grew a Mac OS tutorial channel to 30k+ subscribers. That's where I taught myself design, video, writing, and web from scratch.</div>
+            </article>
+          </div><!-- /life/videos -->
+
+          <!-- ═══ LIFE / LABS ═══ -->
+          <div class="fd-feed" data-feed="life/labs" aria-label="Labs conversation">
+            <div class="fd-msg-group" aria-hidden="true"><span class="fd-msg-group-time">Side projects</span></div>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Working on some things. This space will fill in.</div>
+            </article>
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-soon">⚗ Labs — coming soon</div>
+            </article>
+          </div><!-- /life/labs -->
+
+          <!-- ═══ WORK / CASE-STUDIES (default) ═══ -->
+          <div class="fd-feed" data-feed="work/case-studies" aria-label="#case-studies channel">
+            <div class="fd-work-divider">Case Studies</div>
+
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                  <span class="fd-pinned-badge">pinned</span>
+                </div>
+                <div class="fd-work-text">AI-powered workflow automation at PwC Digital — built a suite of custom GPTs that gave managers back <strong>30% of their week</strong>.</div>
+                <a class="fd-case-card" href="/work#case-studies/automating-ux-workflows-for-30-time-savings" target="_blank" rel="noopener" aria-label="Case study: Automating UX Workflows for 30% Time Savings">
+                  <img class="fd-case-thumb" src="/images/case-studies/GenAI.png" alt="Custom GPT tools for UX teams" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">AI · Automation · GenAI · 2023</div>
+                    <div class="fd-case-title">Automating UX Workflows for 30% Time Savings</div>
+                    <div class="fd-case-sub">Built a suite of custom GPTs that freed managers up to 30% of their week — and gave designers back the headspace to do actual design work.</div>
+                  </div>
+                </a>
+              </div>
             </div>
 
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                </div>
+                <div class="fd-work-text">Three modular systems across two companies — each cutting hours of repetitive design work down to minutes.</div>
+                <a class="fd-case-card" href="/work#case-studies/cutting-design-time-by-80-with-modular-generators" target="_blank" rel="noopener" aria-label="Case study: Cutting Design Time by 80% with Modular Generators">
+                  <img class="fd-case-thumb" src="/images/case-studies/Figma webpage builder.png" alt="Modular design generator in Figma" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">Design Systems · Figma · Automation · 2019–2022</div>
+                    <div class="fd-case-title">Cutting Design Time by 80% with Modular Generators</div>
+                    <div class="fd-case-sub">Three modular systems across two companies — each cutting hours of repetitive design work down to minutes.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                </div>
+                <div class="fd-work-text">Led a patterns initiative that gave <strong>50+ product teams</strong> reusable components and a modular dashboard builder.</div>
+                <a class="fd-case-card" href="/work#case-studies/streamlining-ux-for-50-teams-developing-a-comprehensive-ux-pattern-library" target="_blank" rel="noopener" aria-label="Case study: Streamlining UX for 50+ Teams">
+                  <img class="fd-case-thumb" src="/images/case-studies/pattern library.png" alt="UX Pattern Library in Figma" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">Design Systems · Component Libraries · Leadership · 2021</div>
+                    <div class="fd-case-title">Streamlining UX for 50+ Teams</div>
+                    <div class="fd-case-sub">Led a patterns initiative that gave 50+ product teams reusable components, a modular dashboard builder, and 86+ fewer one-off requests.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                </div>
+                <div class="fd-work-text">Built the business case, rebuilt the design system, and trained <strong>120+ designers</strong> — collapsing a four-tool stack into one.</div>
+                <a class="fd-case-card" href="/work#case-studies/upskilling-120-designers-leading-a-high-impact-migration-to-figma" target="_blank" rel="noopener" aria-label="Case study: Upskilling 120+ Designers">
+                  <img class="fd-case-thumb" src="/images/case-studies/case for figma.png" alt="Figma migration before and after" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">Design Systems · Change Management · Figma · 2021–2022</div>
+                    <div class="fd-case-title">Upskilling 120+ Designers: High-Impact Migration to Figma</div>
+                    <div class="fd-case-sub">Built the business case, rebuilt the design system, and trained 120+ designers — collapsing a four-tool stack into one.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div><!-- /work/case-studies -->
+
+          <!-- ═══ WORK / AXON-DESIGN-SYSTEM ═══ -->
+          <div class="fd-feed" data-feed="work/axon-design-system" aria-label="#axon-design-system channel">
+            <div class="fd-work-divider">Axon Design System</div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">Now</time></div>
+                <div class="fd-work-text">Building Axon — Instinct's design system. The goal: give a small design team the leverage of a team five times its size, without the entropy of one-off decisions made under time pressure.</div>
+              </div>
+            </div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">Now</time></div>
+                <div class="fd-work-text">A design system isn't a component library — it's a shared language. Components are the output. The real work is the decisions, the documentation, and getting people to actually use it.
+                </div>
+                <div class="fd-soon" style="margin-top:8px">🔒 Screenshots available on request — NDA applies</div>
+              </div>
+            </div>
+          </div><!-- /work/axon-design-system -->
+
+          <!-- ═══ WORK / VETGUIDE ═══ -->
+          <div class="fd-feed" data-feed="work/vetguide" aria-label="#vetguide channel">
+            <div class="fd-work-divider">VetGuide</div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">Now</time></div>
+                <div class="fd-work-text">VetGuide is a core part of Instinct's platform — a clinical reference tool for veterinary teams. I'm leading the redesign: simplifying navigation, improving information density, and making it usable under pressure.</div>
+              </div>
+            </div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">Now</time></div>
+                <div class="fd-work-text">Veterinarians are overworked, understaffed, and under-resourced. If I can reduce the friction between a vet and the information they need in a high-stakes moment — that's the whole job.</div>
+                <div class="fd-soon" style="margin-top:8px">🔒 Redesign in progress — screenshots available on request</div>
+              </div>
+            </div>
+          </div><!-- /work/vetguide -->
+
+          <!-- ═══ WORK / CAREER ═══ -->
+          <div class="fd-feed" data-feed="work/career" aria-label="#career channel">
+            <div class="fd-work-divider">Career timeline</div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#9a3a3a" aria-hidden="true">Y</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Epoch: Self-made</span><time class="fd-work-time" datetime="2012">2012–2013</time></div>
+                <div class="fd-work-text">Built a Mac OS app review and tutorial channel on YouTube — grew to <strong>30k+ subscribers</strong> and multi-million views. Taught myself writing, video, graphic design, and web from scratch.</div>
+              </div>
+            </div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#5a7a6b" aria-hidden="true">F</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Epoch: Freelance</span><time class="fd-work-time" datetime="2015">2015–2018</time></div>
+                <div class="fd-work-text">Solo client work — HTML/CSS, WordPress, graphic design, web design, video production. Formalized into a creative production company in 2018.</div>
+              </div>
+            </div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a6a9a" aria-hidden="true">BC</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Blue Corona — Senior Web Designer</span><time class="fd-work-time" datetime="2021">2021</time></div>
+                <div class="fd-work-text">Designed and built custom websites for <strong>80+ home service companies</strong>. Fast-paced client work focused on marketing effectiveness and delivery speed.</div>
+              </div>
+            </div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#d4a72c" aria-hidden="true">PwC</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">PwC Digital — Senior UX Designer → UX Manager</span><time class="fd-work-time" datetime="2022">2022–2025</time></div>
+                <div class="fd-work-text">Led proof-of-concept product designs. Rebuilt the company design system in Figma. Drove a migration upskilling <strong>120+ designers</strong>. As Manager: led a team of three, managed the system servicing <strong>3,000+ products globally</strong>, was lead designer on SDLC Canvas — the firm's flagship AI product.</div>
+              </div>
+            </div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Instinct — Senior Product Designer</span><time class="fd-work-time" datetime="2025">Late 2025 – now</time></div>
+                <div class="fd-work-text">Designing software for veterinarians. Closer to the published version of my work, directly tied to helping real people with daily problems.</div>
+              </div>
+            </div>
+          </div><!-- /work/career -->
+
+          <!-- ═══ WORK / RESUME ═══ -->
+          <div class="fd-feed" data-feed="work/resume" aria-label="#resume channel">
+            <div class="fd-work-divider">Resume</div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">2026</time></div>
+                <div class="fd-work-text">Full resume — includes the complete timeline, case study highlights, and tooling. PDF, always current.</div>
+                <!-- TODO: Replace href with real resume PDF URL -->
+                <a class="fd-doc-card" href="#TODO-resume-pdf" aria-label="Luke Van Zyl Resume — PDF, 2026">
+                  <div class="fd-doc-icon" aria-hidden="true">PDF</div>
+                  <div>
+                    <div class="fd-doc-name">Luke Van Zyl — Resume</div>
+                    <div class="fd-doc-meta">PDF · 2026 · lukevz.com</div>
+                  </div>
+                </a>
+                <a class="fd-link-card" href="https://www.linkedin.com/in/lukevz/" target="_blank" rel="noopener" style="margin-top:8px" aria-label="Luke Van Zyl on LinkedIn">
+                  <div class="fd-link-domain">linkedin.com</div>
+                  <div class="fd-link-title">Luke Van Zyl — LinkedIn</div>
+                  <div class="fd-link-desc">Senior Product Designer · Instinct · Atlanta, GA</div>
+                </a>
+              </div>
+            </div>
+          </div><!-- /work/resume -->
+
+          <!-- ═══ WORK / PORTFOLIO ═══ -->
+          <div class="fd-feed" data-feed="work/portfolio" aria-label="#portfolio channel">
+            <div class="fd-work-divider">Portfolio</div>
+            <div class="fd-work-msg">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">Soon</time></div>
+                <div class="fd-work-text">Coming soon. In the meantime, check <span style="color:var(--link)">#case-studies</span> for published work.</div>
+                <div class="fd-soon" style="margin-top:8px"># portfolio — coming soon</div>
+              </div>
+            </div>
+          </div><!-- /work/portfolio -->
+
+        </div><!-- /.fd-feeds -->
+
+        <!-- Chips -->
+        <div class="fd-chips-wrap" id="fdChipsWrap" aria-label="Suggested topics"></div>
+
+        <!-- Composer -->
+        <form class="fd-composer" id="fdComposer" aria-label="Send a message" onsubmit="return false;">
+          <div class="fd-input-wrap">
+            <label for="fdInput" class="fd-sr-only">Message Luke</label>
+            <input type="text" id="fdInput" class="fd-input" placeholder="Message…" autocomplete="off" maxlength="500" aria-label="Type a message">
           </div>
-          <p class="tm-scroll-hint">scroll to browse versions</p>
-        </div>
-
-        <!-- Credits panel -->
-        <div class="tm-panel" id="tmCreditsPanel" role="tabpanel" aria-labelledby="tmTabCredits" tabindex="0" hidden>
-          <div class="tm-credits">
-            <a href="https://github.com/Lukevz/digital-garden" class="tm-credit-github" target="_blank" rel="noopener noreferrer">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
-              <span>Source code</span>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-            </a>
-            <div class="tm-credits-rule"></div>
-            <ul class="tm-credits-list">
-              <li class="tm-credit-item">
-                <span class="tm-credit-key">Icons</span>
-                <span class="tm-credit-val">Nucleo Glass</span>
-              </li>
-              <li class="tm-credit-item">
-                <span class="tm-credit-key">Font</span>
-                <a href="https://www.fontshare.com/fonts/satoshi" class="tm-credit-val tm-credit-outlink" target="_blank" rel="noopener noreferrer">Satoshi — Indian Type Foundry</a>
-              </li>
-              <li class="tm-credit-item">
-                <span class="tm-credit-key">Built with</span>
-                <a href="https://claude.ai/code" class="tm-credit-val tm-credit-outlink" target="_blank" rel="noopener noreferrer">Claude Code</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-<!-- ═══════════════════════════════════════════════════════
-       INTRO PRELOADER
-  ═══════════════════════════════════════════════════════ -->
-  <!-- Preloader disabled: restore role/dialog attrs + remove intro-hidden when re-enabling -->
-  <div id="introOverlay" class="intro-hidden" aria-hidden="true" role="presentation">
-
-    <button class="intro-skip" id="introSkip" aria-label="Skip intro">Skip</button>
-
-    <div class="intro-stage">
-      <p class="intro-line" id="introLine1">I'm not a very good production designer.</p>
-      <p class="intro-line intro-line2 intro-hidden" id="introLine2">
-        But I am<span class="intro-ellipsis" id="introEllipsis" aria-hidden="true">…</span><span id="introPhraseContainer" aria-live="polite" aria-atomic="false"></span>
-      </p>
-    </div>
-
-    <div class="intro-hud intro-hidden" id="introHud">
-      <div class="intro-hud-panel">
-        <span class="intro-hud-label" aria-hidden="true">explore</span>
-        <div class="dpad" role="toolbar" aria-label="Reveal traits — use arrow keys or activate a button">
-          <button class="dpad-btn dpad-up" data-dir="up" aria-label="Up — reveal: systems thinker" aria-pressed="false" aria-keyshortcuts="ArrowUp">
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden="true"><polygon points="5.5,1 10.5,10 0.5,10"/></svg>
+          <button type="submit" class="fd-send" id="fdSend" aria-label="Send message" disabled>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 13V3M3 8l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </button>
-          <div class="dpad-row">
-            <button class="dpad-btn dpad-left" data-dir="left" aria-label="Left — reveal: passionate learner" aria-pressed="false" aria-keyshortcuts="ArrowLeft">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden="true"><polygon points="1,5.5 10,0.5 10,10.5"/></svg>
-            </button>
-            <div class="dpad-center" aria-hidden="true"></div>
-            <button class="dpad-btn dpad-right" data-dir="right" aria-label="Right — reveal: tinkerer who ships" aria-pressed="false" aria-keyshortcuts="ArrowRight">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden="true"><polygon points="10,5.5 1,10.5 1,0.5"/></svg>
-            </button>
-          </div>
-          <button class="dpad-btn dpad-down" data-dir="down" aria-label="Down — reveal: relentless documentarian" aria-pressed="false" aria-keyshortcuts="ArrowDown">
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden="true"><polygon points="5.5,10 0.5,1 10.5,1"/></svg>
-          </button>
-        </div>
-        <button class="intro-enter-btn intro-hidden" id="introEnterBtn" aria-label="Enter the site" aria-keyshortcuts="Enter">Enter?</button>
-      </div>
-    </div>
+        </form>
 
-    <div class="intro-sr-only" role="status" aria-live="polite" aria-atomic="true" id="introAnnouncer"></div>
+      </div><!-- /.fd-pane -->
+    </div><!-- /.fd-layout -->
+  </div><!-- /.fd-window -->
 
-  </div><!-- /#introOverlay -->
-
-  <!-- <script src="/js/intro.js"></script> preloader off for now -->
-  <script src="/js/main.js?v=5"></script>
-  <script src="/js/chat.js?v=1"></script>
-
-  <!-- Now strip population -->
-  <script src="/js/now-strip.js"></script>
+  <!-- Content data for JS (chips / navigation) -->
+  <script id="fdData" type="application/json">
+  {
+    "life": {
+      "topics": [
+        { "id": "about",   "label": "about",   "sub": "Designer, tinkerer, note-taker",               "default": true,  "chips": ["What are you working on?", "See my work →", "How do I reach you?"] },
+        { "id": "photos",  "label": "Photos",  "sub": "Fujifilm frames from Atlanta and beyond",                         "chips": ["What camera do you shoot?", "Show me more →"] },
+        { "id": "writing", "label": "Writing", "sub": "Notes, book takeaways, essays",                                   "chips": ["What are you reading?", "Show me writing →"] },
+        { "id": "videos",  "label": "Videos",  "sub": "YouTube: personal + UX with Luke",                               "chips": ["Show me your YouTube →"] },
+        { "id": "labs",    "label": "Labs",    "sub": "Coming soon",                   "soon": true,   "chips": [] }
+      ]
+    },
+    "work": {
+      "workspace": "Instinct",
+      "topics": [
+        { "id": "case-studies",        "label": "case-studies",        "sub": "Published case studies", "default": true, "chips": ["Show me your best work →", "Tell me about the AI project", "Figma migration story?"] },
+        { "id": "axon-design-system",  "label": "axon-design-system",  "sub": "Instinct's design system",              "chips": ["What is Axon?", "Design systems philosophy?"] },
+        { "id": "vetguide",            "label": "vetguide",            "sub": "VetGuide redesign",                      "chips": ["Tell me about VetGuide"] },
+        { "id": "career",              "label": "career",              "sub": "Timeline of career milestones",          "chips": ["Career story?", "Why Instinct?", "Why did you leave PwC?"] },
+        { "id": "resume",              "label": "resume",              "sub": "Full resume — PDF",                      "chips": ["Download resume →"] },
+        { "id": "portfolio",           "label": "portfolio",           "sub": "Coming soon", "soon": true,             "chips": [] }
+      ]
+    },
+    "chipMap": {
+      "What are you working on?":    { "goto": "life/about",         "reply": "Right now: 52 (a work-week note-taking app), Axon (Instinct's design system), and VetGuide redesign. Flip to Work for the full breakdown." },
+      "See my work →":               { "goto": "work/case-studies",  "reply": "Switching to Work. Four published case studies — start with the AI automation one for the strongest signal." },
+      "How do I reach you?":         { "goto": "life/about",         "reply": "Best path: LinkedIn DM → linkedin.com/in/lukevz/. Also on X (@lukevz) and Threads (@lukevanzyl)." },
+      "What camera do you shoot?":   { "goto": "life/photos",        "reply": "Fujifilm X-S20. Shooting mostly Classic Chrome and Eterna Cinema. XF 18-55mm lens for most shots." },
+      "Show me more →":              { "goto": "life/photos",        "reply": "Frames above — scroll up. More will appear here as I add them." },
+      "What are you reading?":       { "goto": "life/writing",       "reply": "Currently reading Thrawn: Heir to the Empire. Book notes in this feed — Atomic Habits and Building A Second Brain are the strongest." },
+      "Show me writing →":           { "goto": "life/writing",       "reply": "Notes and book takeaways above. The digital garden essay is a good starting point if you're new here." },
+      "Show me your YouTube →":      { "goto": "life/videos",        "reply": "Two channels: personal (lifestyle, building, Atlanta) and UX with Luke (design tutorials). Both linked above." },
+      "Show me your best work →":    { "goto": "work/case-studies",  "reply": "The GenAI automation case study is the strongest — 30% time savings is hard to argue with. Figma migration is a close second for scale." },
+      "Tell me about the AI project":{ "goto": "work/case-studies",  "reply": "SDLC Canvas at PwC — AI product for the software development lifecycle. Lead designer from POC to Fortune 500 pitches." },
+      "Figma migration story?":      { "goto": "work/case-studies",  "reply": "Pitched the switch from Sketch/Abstract/InVision to Figma, rebuilt the design system to prove it, trained 120+ designers globally." },
+      "What is Axon?":               { "goto": "work/axon-design-system", "reply": "Axon is Instinct's design system — shared components, patterns, and tokens for a small team. Still early, NDA applies." },
+      "Design systems philosophy?":  { "goto": "work/axon-design-system", "reply": "A design system isn't a component library — it's a shared language. Components are the output. Real work is decisions, documentation, and adoption." },
+      "Tell me about VetGuide":      { "goto": "work/vetguide",      "reply": "Clinical reference tool for vet teams. I'm leading the redesign — simplifying navigation for real clinical pressure. NDA applies." },
+      "Career story?":               { "goto": "work/career",        "reply": "YouTube → freelance → Blue Corona → PwC Digital (Senior → Manager) → Instinct. Full timeline in the career channel." },
+      "Why Instinct?":               { "goto": "work/career",        "reply": "Smaller team, closer to the published product, mission I care about. Veterinarians are overworked — if my design reduces that stress, that's the whole job." },
+      "Why did you leave PwC?":      { "goto": "work/career",        "reply": "PwC was an incredible academy. But at that scale you start feeling like a cog. I wanted to be close to the work and know how it landed." },
+      "Download resume →":           { "goto": "work/resume",        "reply": "Resume linked above — PDF, current as of 2026. LinkedIn has the full timeline too." }
+    }
+  }
+  </script>
 
   <script src="/js/grid.js"></script>
+  <script src="/js/front-door.js"></script>
 
-  <!-- Mapbox public token — gitignored, see mapbox-config.example.js for setup -->
-  <script src="/mapbox-config.js" onerror=""></script>
+  <!-- Lightweight site chrome: theme toggle + live clock -->
+  <script>
+  (function() {
+    // ── Theme toggle ──
+    var themeToggle = document.getElementById('themeToggle');
+    var themeMoon = themeToggle && themeToggle.querySelector('.theme-icon-moon');
+    var themeSun  = themeToggle && themeToggle.querySelector('.theme-icon-sun');
+    var themeOverride = null;
+    var themeTransitionEl = document.getElementById('themeTransition');
+    var themeArc = themeTransitionEl && themeTransitionEl.querySelector('.theme-transition__arc');
+    var wipeBusy = false;
 
+    function sysDark() { return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches; }
+    function isDark() { return themeOverride !== null ? themeOverride : sysDark(); }
+    function prefersReducedMotion() { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+    function updateToggleUI(dark) {
+      if (!themeToggle) return;
+      themeToggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      themeToggle.setAttribute('title', dark ? 'Light mode' : 'Dark mode');
+      themeToggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      if (themeMoon) themeMoon.toggleAttribute('hidden', dark);
+      if (themeSun)  themeSun.toggleAttribute('hidden', !dark);
+    }
+
+    function applyTheme(dark) {
+      themeOverride = dark;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      updateToggleUI(dark);
+      document.dispatchEvent(new CustomEvent('themeblend', { detail: { blend: dark ? 1 : 0 } }));
+    }
+
+    function runWipe(targetDark) {
+      if (!themeTransitionEl || !themeArc || wipeBusy || prefersReducedMotion()) {
+        applyTheme(targetDark);
+        return;
+      }
+      if (isDark() === targetDark) return;
+      wipeBusy = true;
+      var rotFrom = targetDark ? '-90deg' : '90deg';
+      var rotTo   = targetDark ? '90deg'  : '-90deg';
+      themeArc.style.transform = 'rotate(' + rotFrom + ')';
+      themeTransitionEl.className = 'theme-transition is-active ' + (targetDark ? 'theme-transition--to-dark' : 'theme-transition--to-light');
+      themeTransitionEl.setAttribute('aria-hidden', 'false');
+      if (typeof anime !== 'undefined') {
+        anime({
+          targets: themeArc,
+          rotate: [rotFrom, rotTo],
+          duration: 1200,
+          easing: 'cubicBezier(0.38, 0.02, 0.22, 1)',
+          update: function(a) {
+            var t = a.progress / 100;
+            var b = targetDark ? t : (1 - t);
+            document.documentElement.style.setProperty('--theme-blend', String(b));
+            document.dispatchEvent(new CustomEvent('themeblend', { detail: { blend: b } }));
+          },
+          complete: function() {
+            applyTheme(targetDark);
+            document.documentElement.style.removeProperty('--theme-blend');
+            themeArc.style.transform = '';
+            themeTransitionEl.className = 'theme-transition';
+            themeTransitionEl.setAttribute('aria-hidden', 'true');
+            wipeBusy = false;
+          }
+        });
+      } else {
+        applyTheme(targetDark);
+        themeTransitionEl.className = 'theme-transition';
+        wipeBusy = false;
+      }
+    }
+
+    // Init: follow system pref
+    updateToggleUI(sysDark());
+    document.dispatchEvent(new CustomEvent('themeblend', { detail: { blend: sysDark() ? 1 : 0 } }));
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.shiftKey) {
+          themeOverride = null;
+          document.documentElement.removeAttribute('data-theme');
+          updateToggleUI(sysDark());
+          document.dispatchEvent(new CustomEvent('themeblend', { detail: { blend: sysDark() ? 1 : 0 } }));
+          return;
+        }
+        runWipe(!isDark());
+      });
+    }
+
+    // ── Live clock: Atlanta / Eastern time ──
+    (function startClock() {
+      var timeEl = document.querySelector('.corner-status__time');
+      if (!timeEl) return;
+      var tz = 'America/New_York';
+      var timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+      function tick() {
+        var now = new Date();
+        timeEl.textContent = timeFmt.format(now);
+        var parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).formatToParts(now).reduce(function(a, p) { a[p.type] = p.value; return a; }, {});
+        timeEl.setAttribute('datetime', parts.year + '-' + parts.month + '-' + parts.day + 'T' + parts.hour + ':' + parts.minute);
+      }
+      tick();
+      setTimeout(function align() { tick(); setInterval(tick, 60000); }, (60 - new Date().getSeconds()) * 1000);
+    })();
+
+    // ── Weather (Open-Meteo, Atlanta) ──
+    (function fetchWeather() {
+      var tempEl = document.querySelector('.corner-status__temp');
+      if (!tempEl) return;
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=33.749&longitude=-84.388&current_weather=true&temperature_unit=fahrenheit')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var t = d && d.current_weather && Math.round(d.current_weather.temperature);
+          if (typeof t === 'number') tempEl.textContent = t + '°F';
+        })
+        .catch(function() {});
+    })();
+  })();
+  </script>
 </body>
 </html>

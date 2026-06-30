@@ -47,8 +47,10 @@
 
   /** Parse current URL path or hash into { mode, topic }  */
   function parseRoute() {
-    // Support path-based: /life/about, /work/case-studies
-    const path = location.pathname.replace(/^\/front-door\/?/, '');
+    // Strip known prefixes so we work from both / (homepage) and /front-door/*
+    const path = location.pathname
+      .replace(/^\/front-door\/?/, '/')
+      .replace(/^\/$/, '');
     const parts = path.split('/').filter(Boolean);
 
     if (parts[0] === 'life' || parts[0] === 'work') {
