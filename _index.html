@@ -262,6 +262,12 @@
       </svg>
       Places
     </button>
+    <button class="overflow-item" data-mode="travellog">
+      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+        <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3-1 3 1v-1.5L13 19v-5.5l8 2.5z" fill="currentColor" opacity="0.9"/>
+      </svg>
+      Travel Log
+    </button>
   </div>
 
   <!-- Social links (@ menu, bottom left) -->
@@ -427,6 +433,9 @@
     <div id="placesMap"></div>
   </div>
 
+  <!-- Travel Log view (populated by JS) -->
+  <div id="travelLogView" style="display:none"></div>
+
   <!-- Chat view -->
   <div id="chatView" style="display:none">
     <div id="chatTranscript" role="log" aria-live="polite" aria-label="Chat transcript"></div>
@@ -515,6 +524,23 @@
       </button>
       <h2 id="panelTitle"></h2>
       <div id="panelContent"></div>
+    </div>
+  </div>
+
+  <!-- Travel itinerary modal -->
+  <div id="travelModal" role="dialog" aria-modal="true" aria-labelledby="travelModalTitle" aria-label="Trip itinerary" style="pointer-events:none">
+    <div id="travelModalOverlay" aria-hidden="true"></div>
+    <div id="travelModalFrame">
+      <div id="travelModalTop">
+        <h2 id="travelModalTitle"></h2>
+        <button id="travelModalClose" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div id="travelModalMetrics"></div>
+      <div id="travelModalBody"></div>
     </div>
   </div>
 

@@ -134,6 +134,7 @@
       const search = location.search;
       const isLife = !search.includes('work') && !search.includes('bookshelf')
         && !search.includes('gear') && !search.includes('appstack') && !search.includes('places')
+        && !search.includes('travellog')
         && !search.includes('chat');
       if (isLife) {
         strip.style.display = 'inline-flex';
