@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en" data-fd-mode="life" data-fd-topic="about">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Default meta — JS overwrites per topic -->
+  <title>Luke — Designer, tinkerer, note-taker</title>
+  <meta name="description" content="Software designer, design systems specialist, and compulsive note-taker living in Atlanta.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Luke — Designer, tinkerer, note-taker">
+  <meta property="og:description" content="Software designer, design systems specialist, and compulsive note-taker living in Atlanta.">
+  <meta property="og:image" content="https://lukevz.com/images/og_light.png">
+  <meta property="og:url" content="https://lukevz.com/front-door">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap" rel="stylesheet">
+
+  <!-- Site tokens -->
+  <link rel="stylesheet" href="/styles.css">
+
+  <style>
+    /* ── Restore cursor on this page (global styles.css sets cursor:none) ── */
+    @media (hover: hover) and (pointer: fine) {
+      body.fd-page *,
+      body.fd-page *::before,
+      body.fd-page *::after { cursor: auto !important; }
+      body.fd-page { cursor: auto !important; }
+      body.fd-page a,
+      body.fd-page button,
+      body.fd-page [role="listitem"],
+      body.fd-page input,
+      body.fd-page textarea { cursor: pointer !important; }
+      body.fd-page input,
+      body.fd-page textarea { cursor: text !important; }
+    }
+
+    /* ── Page shell ── */
+    body.fd-page {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow: hidden;
+    }
+
+    /* ── macOS window ── */
+    .fd-window {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      width: min(1100px, 100%);
+      height: min(720px, calc(100dvh - 48px));
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow:
+        var(--shadow-panel),
+        0 0 0 1px var(--border-subtle);
+      overflow: hidden;
+    }
+
+    /* ── Title bar ── */
+    .fd-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 44px;
+      padding: 0 16px;
+      background: var(--surface-raised);
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .fd-traffic {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .fd-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .fd-dot--r { background: #ff5f57; }
+    .fd-dot--y { background: #ffbd2e; }
+    .fd-dot--g { background: #28c840; }
+
+    /* Mode switch pill — center of bar */
+    .fd-mode-switch {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      background: var(--thumb-bg);
+      border-radius: 20px;
+      padding: 3px;
+      gap: 0;
+    }
+    .fd-mode-btn {
+      position: relative;
+      z-index: 1; /* appear above the sliding track */
+      padding: 4px 14px;
+      border: none;
+      background: transparent;
+      color: var(--tab-inactive);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 16px;
+      transition: color 0.2s;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .fd-mode-btn:focus-visible {
+      outline: 2px solid var(--link);
+      outline-offset: 2px;
+    }
+    .fd-mode-btn[aria-pressed="true"] {
+      color: var(--tab-active-fg);
+    }
+    .fd-mode-track {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      height: calc(100% - 6px);
+      background: var(--tab-pill-bg);
+      border-radius: 14px;
+      transition: transform 0.2s cubic-bezier(.4,0,.2,1), width 0.2s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+
+    .fd-workspace-label {
+      margin-left: auto;
+      font-size: 11px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    [data-fd-mode="work"] .fd-workspace-label { opacity: 1; }
+
+    /* ── App layout ── */
+    .fd-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Left rail ── */
+    .fd-rail {
+      flex-shrink: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    /* Life rail */
+    [data-fd-mode="life"] .fd-rail {
+      width: 260px;
+      background: var(--surface-raised);
+      border-right: 1px solid var(--border-subtle);
+    }
+    [data-fd-mode="life"] .fd-channels { display: none; }
+    [data-fd-mode="work"] .fd-convos { display: none; }
+
+    /* Work rail */
+    [data-fd-mode="work"] .fd-rail {
+      width: 220px;
+      background: #1e2130;
+      border-right: none;
+    }
+
+    /* ── Life conversations ── */
+    .fd-convos {
+      padding: 8px 0;
+    }
+    .fd-convo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-radius: 0;
+    }
+    .fd-convo:hover { background: var(--hover-fill); }
+    .fd-convo[aria-selected="true"] { background: var(--hover-fill-soft); }
+    .fd-convo:focus-visible {
+      outline: 2px solid var(--link);
+      outline-offset: -2px;
+    }
+
+    .fd-convo-avatar {
+      flex-shrink: 0;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--av-color, var(--link));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-convo-body { flex: 1; min-width: 0; }
+    .fd-convo-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fd-convo-preview {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .fd-convo-meta {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-convo--soon .fd-convo-name,
+    .fd-convo--soon .fd-convo-preview { opacity: 0.45; }
+
+    /* Search bar in life rail */
+    .fd-rail-search {
+      padding: 8px 12px 4px;
+      position: sticky;
+      top: 0;
+      background: var(--surface-raised);
+      z-index: 1;
+    }
+    .fd-rail-search input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-rail-search input:focus { outline: none; border-color: var(--link); }
+
+    /* ── Work channels ── */
+    .fd-channels {
+      padding: 0 0 8px;
+    }
+    .fd-ws-header {
+      padding: 14px 14px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 4px;
+    }
+    .fd-ws-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-ch-section {
+      padding: 10px 14px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-ch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      cursor: pointer;
+      color: rgba(255,255,255,0.62);
+      font-size: 14px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      border-radius: 4px;
+      margin: 0 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .fd-ch:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+    .fd-ch[aria-selected="true"] { background: rgba(255,255,255,0.12); color: #fff; font-weight: 500; }
+    .fd-ch:focus-visible { outline: 2px solid rgba(157,191,232,0.7); }
+    .fd-ch--soon { opacity: 0.38; }
+    .fd-ch-hash { color: rgba(255,255,255,0.35); font-size: 13px; }
+    .fd-ch[aria-selected="true"] .fd-ch-hash { color: rgba(255,255,255,0.55); }
+
+    /* ── Main pane ── */
+    .fd-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── Feed header ── */
+    .fd-feed-header {
+      flex-shrink: 0;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .fd-feed-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-feed-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    /* Work feed header (channel topic) */
+    [data-fd-mode="work"] .fd-feed-header {
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    [data-fd-mode="work"] .fd-feed-title::before { content: '#'; color: var(--text-muted); margin-right: 2px; }
+
+    /* ── Feeds container ── */
+    .fd-feeds {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scroll-behavior: smooth;
+    }
+
+    /* Each topic feed */
+    .fd-feed {
+      display: none;
+      flex-direction: column;
+      padding-bottom: 8px;
+    }
+    .fd-feed.fd-feed--active { display: flex; }
+
+    /* ── Life message bubbles ── */
+    [data-fd-mode="life"] .fd-feed {
+      padding: 16px 16px 8px;
+      gap: 2px;
+    }
+
+    .fd-msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 72%;
+      margin-bottom: 6px;
+    }
+    .fd-msg--in { align-self: flex-start; }
+    .fd-msg--out { align-self: flex-end; }
+    .fd-msg--session { align-self: flex-end; }
+
+    .fd-bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      color: var(--text-primary);
+    }
+    .fd-msg--in .fd-bubble {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-bottom-left-radius: 4px;
+    }
+    .fd-msg--out .fd-bubble,
+    .fd-msg--session .fd-bubble {
+      background: var(--link);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .fd-msg-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      padding: 2px 4px;
+      align-self: center;
+    }
+    .fd-msg--in .fd-msg-time { align-self: flex-start; }
+    .fd-msg--out .fd-msg-time { align-self: flex-end; }
+
+    /* Group timestamps — only show for first in a group */
+    .fd-msg-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 10px 0 4px;
+    }
+    .fd-msg-group-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* ── Session note (one-time) ── */
+    .fd-session-note {
+      align-self: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      text-align: center;
+      padding: 4px 12px;
+      margin: 6px auto;
+    }
+
+    /* ── Now card ── */
+    .fd-now-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 300px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-now-card-head {
+      padding: 10px 14px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .fd-now-row {
+      display: flex;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 13px;
+    }
+    .fd-now-row:last-child { border-bottom: none; }
+    .fd-now-label {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      min-width: 70px;
+      margin-top: 1px;
+    }
+    .fd-now-value { color: var(--text-primary); line-height: 1.4; }
+
+    /* ── Photo card ── */
+    .fd-photo-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 280px;
+    }
+    .fd-photo-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      background: var(--thumb-bg);
+    }
+    .fd-photo-meta {
+      padding: 8px 12px 10px;
+    }
+    .fd-photo-caption {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-photo-recipe {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      margin-top: 4px;
+    }
+
+    /* ── Video card ── */
+    .fd-video-card {
+      background: var(--cs-video-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 280px;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+      display: block;
+    }
+    .fd-video-card:hover { background: var(--cs-video-hover); }
+    .fd-video-thumb {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: var(--thumb-bg);
+      position: relative;
+    }
+    .fd-video-thumb-wrap {
+      position: relative;
+    }
+    .fd-video-play {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      font-size: 11px;
+      font-family: 'Geist Mono', monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .fd-video-info { padding: 8px 12px 10px; }
+    .fd-video-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      line-height: 1.3;
+    }
+    .fd-video-channel {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      margin-top: 4px;
+    }
+
+    /* ── Note card ── */
+    .fd-note-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 14px;
+      max-width: 300px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    .fd-note-card:hover { background: var(--hover-fill); }
+    .fd-note-week {
+      font-size: 11px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .fd-note-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-note-excerpt {
+      font-size: 12px;
+      color: var(--text-body);
+      margin-top: 4px;
+      line-height: 1.5;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Soon card ── */
+    .fd-soon {
+      background: var(--thumb-bg);
+      border-radius: 12px;
+      padding: 14px 18px;
+      max-width: 200px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      border: 1px dashed var(--border-medium);
+    }
+
+    /* ── Work-mode message rows ── */
+    [data-fd-mode="work"] .fd-feed {
+      padding: 16px 0 8px;
+      gap: 0;
+    }
+
+    .fd-work-msg {
+      display: flex;
+      gap: 12px;
+      padding: 6px 20px;
+      transition: background 0.12s;
+    }
+    .fd-work-msg:hover { background: var(--hover-fill-faint); }
+
+    .fd-work-avatar {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      background: var(--av-color, var(--link));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      margin-top: 2px;
+    }
+    .fd-work-body { flex: 1; min-width: 0; }
+    .fd-work-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .fd-work-sender {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-work-sender--you { color: var(--link); }
+    .fd-work-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-work-text {
+      font-size: 14px;
+      color: var(--text-body);
+      line-height: 1.55;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-work-text a {
+      color: var(--link);
+      text-decoration: none;
+    }
+    .fd-work-text a:hover { text-decoration: underline; }
+    .fd-work-text strong { color: var(--text-primary); }
+
+    /* Work divider */
+    .fd-work-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-work-divider::before,
+    .fd-work-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    /* ── Case study card (Work) ── */
+    .fd-case-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 420px;
+      margin-top: 8px;
+      text-decoration: none;
+      display: block;
+      transition: box-shadow 0.15s;
+    }
+    .fd-case-card:hover { box-shadow: var(--shadow-hover-card); }
+    .fd-case-thumb {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+      background: var(--thumb-bg);
+    }
+    .fd-case-body { padding: 12px 16px 14px; }
+    .fd-case-tag {
+      font-size: 11px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .fd-case-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      line-height: 1.3;
+    }
+    .fd-case-sub {
+      font-size: 13px;
+      color: var(--text-body);
+      margin-top: 4px;
+      line-height: 1.4;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+
+    /* ── UI preview card (Work) ── */
+    .fd-ui-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 380px;
+      margin-top: 8px;
+      text-decoration: none;
+      display: block;
+    }
+    .fd-ui-img {
+      width: 100%;
+      display: block;
+      background: var(--thumb-bg);
+    }
+    .fd-ui-caption {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+
+    /* ── Doc card (Work) ── */
+    .fd-doc-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 12px 16px;
+      max-width: 280px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .fd-doc-card:hover { background: var(--hover-fill); }
+    .fd-doc-icon {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      background: var(--link);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Geist Mono', monospace;
+    }
+    .fd-doc-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-doc-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+      margin-top: 2px;
+    }
+
+    /* ── Link unfurl card ── */
+    .fd-link-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--link);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      max-width: 300px;
+      margin-top: 6px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    .fd-link-card:hover { background: var(--hover-fill); }
+    .fd-link-domain {
+      font-size: 11px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .fd-link-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-link-desc {
+      font-size: 12px;
+      color: var(--text-body);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* ── Work: session message (out-going) ── */
+    .fd-work-msg--out .fd-work-sender { color: var(--link); }
+    .fd-work-msg--out .fd-work-avatar { background: var(--link); }
+
+    /* ── Chips ── */
+    .fd-chips-wrap {
+      flex-shrink: 0;
+      padding: 8px 16px 4px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .fd-chip {
+      padding: 6px 12px;
+      border: 1px solid var(--border-medium);
+      border-radius: 20px;
+      background: var(--surface-raised);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .fd-chip:hover {
+      background: var(--hover-fill);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+    .fd-chip:focus-visible { outline: 2px solid var(--link); }
+
+    /* Work chips */
+    [data-fd-mode="work"] .fd-chip {
+      background: var(--thumb-bg);
+      border-color: var(--border-medium);
+    }
+
+    /* ── Composer ── */
+    .fd-composer {
+      flex-shrink: 0;
+      padding: 8px 16px 14px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    /* Life composer: iOS-style rounded */
+    [data-fd-mode="life"] .fd-composer {
+      border-top: 1px solid var(--border-subtle);
+    }
+    [data-fd-mode="life"] .fd-input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border-medium);
+      border-radius: 22px;
+      padding: 8px 16px;
+      transition: border-color 0.15s;
+    }
+    [data-fd-mode="life"] .fd-input-wrap:focus-within {
+      border-color: var(--link);
+    }
+    [data-fd-mode="life"] .fd-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      outline: none;
+      line-height: 1.4;
+    }
+
+    /* Work composer: Slack-style box */
+    [data-fd-mode="work"] .fd-composer {
+      padding: 8px 20px 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    [data-fd-mode="work"] .fd-input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: var(--bg);
+      transition: border-color 0.15s;
+    }
+    [data-fd-mode="work"] .fd-input-wrap:focus-within {
+      border-color: var(--link);
+      box-shadow: 0 0 0 1px var(--link);
+    }
+    [data-fd-mode="work"] .fd-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      outline: none;
+    }
+    .fd-input::placeholder { color: var(--text-muted); }
+
+    .fd-send {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--link);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      opacity: 0.4;
+    }
+    .fd-send.fd-send--ready { opacity: 1; }
+    .fd-send:active { transform: scale(0.92); }
+    .fd-send:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 760px) {
+      body.fd-page {
+        padding: 0;
+        align-items: stretch;
+      }
+      .fd-window {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .fd-layout {
+        flex-direction: column;
+      }
+      [data-fd-mode="life"] .fd-rail,
+      [data-fd-mode="work"] .fd-rail {
+        width: 100%;
+        height: auto;
+        max-height: 48px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-direction: row;
+        display: flex;
+        align-items: center;
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 0;
+      }
+      [data-fd-mode="work"] .fd-rail {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      .fd-convos,
+      .fd-channels {
+        display: flex;
+        flex-direction: row;
+        padding: 0;
+        width: max-content;
+      }
+      .fd-convo {
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 14px;
+        min-width: max-content;
+      }
+      .fd-convo-avatar { display: none; }
+      .fd-convo-preview { display: none; }
+      .fd-convo-name { font-size: 13px; }
+      .fd-ws-header { display: none; }
+      .fd-ch-section { display: none; }
+      .fd-ch { margin: 0; border-radius: 0; padding: 12px 14px; }
+      .fd-rail-search { display: none; }
+      .fd-msg { max-width: 85%; }
+      .fd-case-card { max-width: 100%; }
+    }
+
+    @media (max-width: 400px) {
+      .fd-bubble { font-size: 14px; padding: 8px 12px; }
+      .fd-work-text { font-size: 13px; }
+      .fd-mode-btn { padding: 4px 10px; font-size: 12px; }
+    }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      .fd-mode-track,
+      .fd-mode-btn,
+      .fd-convo,
+      .fd-ch,
+      .fd-chip,
+      .fd-send { transition: none; }
+    }
+
+    /* ── Visually hidden (a11y) ── */
+    .fd-sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+
+    /* ── Pinned badge for Work hero ── */
+    .fd-pinned-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-family: 'Geist Mono', monospace;
+      color: var(--text-muted);
+      border: 1px solid var(--border-medium);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="intro-done fd-page">
+
+  <!-- Skip link -->
+  <a class="fd-sr-only" href="#fd-feeds">Skip to messages</a>
+
+  <!-- Desktop background canvas — reuses existing grid.js -->
+  <canvas id="dotGrid" aria-hidden="true"></canvas>
+
+  <!-- ─────────────────────────────────────────────── -->
+  <!-- THE WINDOW                                      -->
+  <!-- ─────────────────────────────────────────────── -->
+  <div class="fd-window" id="fdWindow" role="main">
+
+    <!-- Title bar -->
+    <div class="fd-bar" role="banner">
+      <!-- Traffic lights -->
+      <div class="fd-traffic" aria-hidden="true">
+        <span class="fd-dot fd-dot--r"></span>
+        <span class="fd-dot fd-dot--y"></span>
+        <span class="fd-dot fd-dot--g"></span>
+      </div>
+
+      <!-- Mode switch -->
+      <div class="fd-mode-switch" role="group" aria-label="View mode">
+        <div class="fd-mode-track" id="fdModeTrack" aria-hidden="true"></div>
+        <button class="fd-mode-btn" data-mode="life" aria-pressed="true">Life</button>
+        <button class="fd-mode-btn" data-mode="work" aria-pressed="false">Work</button>
+      </div>
+
+      <!-- Workspace name (Work only) -->
+      <span class="fd-workspace-label" id="fdWorkspaceLabel" aria-hidden="true">Instinct</span>
+    </div><!-- /.fd-bar -->
+
+    <!-- App layout -->
+    <div class="fd-layout">
+
+      <!-- ─── Left rail ─── -->
+      <nav class="fd-rail" id="fdRail" aria-label="Topics">
+
+        <!-- Life: conversation list -->
+        <div class="fd-convos" id="fdConvos">
+          <div class="fd-rail-search" aria-hidden="true">
+            <input type="search" placeholder="Search" aria-label="Search conversations">
+          </div>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="about" aria-selected="true" aria-label="about — Designer, tinkerer, note-taker">
+            <div class="fd-convo-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">about</div>
+              <div class="fd-convo-preview">Designer, tinkerer, note-taker</div>
+            </div>
+          </div>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="photos" aria-selected="false" aria-label="Photos — Fujifilm frames from Atlanta and beyond">
+            <div class="fd-convo-avatar" style="--av-color:#5a7a6b" aria-hidden="true">📷</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Photos</div>
+              <div class="fd-convo-preview">Fujifilm frames from Atlanta and beyond</div>
+            </div>
+          </div>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="writing" aria-selected="false" aria-label="Writing — Notes, book takeaways, essays">
+            <div class="fd-convo-avatar" style="--av-color:#8a6a4b" aria-hidden="true">✍️</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Writing</div>
+              <div class="fd-convo-preview">Notes, book takeaways, essays</div>
+            </div>
+          </div>
+
+          <div class="fd-convo" role="button" tabindex="0" data-topic="videos" aria-selected="false" aria-label="Videos — YouTube: personal channel + UX with Luke">
+            <div class="fd-convo-avatar" style="--av-color:#9a3a3a" aria-hidden="true">▶</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Videos</div>
+              <div class="fd-convo-preview">YouTube: personal + UX with Luke</div>
+            </div>
+          </div>
+
+          <div class="fd-convo fd-convo--soon" role="button" tabindex="0" data-topic="labs" aria-selected="false" aria-label="Labs — Coming soon">
+            <div class="fd-convo-avatar" style="--av-color:#666" aria-hidden="true">⚗</div>
+            <div class="fd-convo-body">
+              <div class="fd-convo-name">Labs</div>
+              <div class="fd-convo-preview">Coming soon</div>
+            </div>
+          </div>
+        </div><!-- /.fd-convos -->
+
+        <!-- Work: channel list -->
+        <div class="fd-channels" id="fdChannels">
+          <div class="fd-ws-header">
+            <span class="fd-ws-name">Instinct</span>
+          </div>
+
+          <div class="fd-ch-section">Channels</div>
+
+          <div class="fd-ch" role="button" tabindex="0" data-topic="case-studies" aria-selected="true" aria-label="#case-studies">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>case-studies
+          </div>
+
+          <div class="fd-ch" role="button" tabindex="0" data-topic="axon-design-system" aria-selected="false" aria-label="#axon-design-system">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>axon-design-system
+          </div>
+
+          <div class="fd-ch" role="button" tabindex="0" data-topic="vetguide" aria-selected="false" aria-label="#vetguide">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>vetguide
+          </div>
+
+          <div class="fd-ch" role="button" tabindex="0" data-topic="career" aria-selected="false" aria-label="#career">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>career
+          </div>
+
+          <div class="fd-ch" role="button" tabindex="0" data-topic="resume" aria-selected="false" aria-label="#resume">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>resume
+          </div>
+
+          <div class="fd-ch fd-ch--soon" role="button" tabindex="0" data-topic="portfolio" aria-selected="false" aria-label="#portfolio — coming soon">
+            <span class="fd-ch-hash" aria-hidden="true">#</span>portfolio
+          </div>
+        </div><!-- /.fd-channels -->
+
+      </nav><!-- /.fd-rail -->
+
+      <!-- ─── Main pane ─── -->
+      <div class="fd-pane">
+
+        <!-- Feed header (topic title + subtitle) -->
+        <div class="fd-feed-header" id="fdFeedHeader" aria-live="polite">
+          <span class="fd-feed-title" id="fdFeedTitle">about</span>
+          <span class="fd-feed-sub" id="fdFeedSub">Designer, tinkerer, note-taker</span>
+        </div>
+
+        <!-- Feed area: all topics pre-rendered for SSR + crawlability -->
+        <div class="fd-feeds" id="fd-feeds" role="log" aria-label="Messages" aria-live="polite" aria-atomic="false">
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- LIFE / ABOUT (default)                      -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed fd-feed--active" data-feed="life/about" aria-label="about conversation">
+
+            <div class="fd-msg-group" aria-hidden="true">
+              <span class="fd-msg-group-time">Today</span>
+            </div>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Hey 👋 I'm Luke — software designer, design systems specialist, and compulsive note-taker living in Atlanta, GA.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">I design software for veterinarians at <a href="https://instinct.vet/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Instinct</a>. Before that I spent three years at PwC Digital: building design systems, leading a 120-designer Figma migration, and shipping an AI product pitched to Fortune 500 clients.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Currently — what Luke is working on">
+              <div class="fd-now-card">
+                <div class="fd-now-card-head">Currently</div>
+                <div class="fd-now-row">
+                  <span class="fd-now-label">LISTENING</span>
+                  <span class="fd-now-value">Baby Do You Know? — Fulton Lee</span>
+                </div>
+                <div class="fd-now-row">
+                  <span class="fd-now-label">READING</span>
+                  <span class="fd-now-value">Thrawn: Heir to the Empire — Timothy Zahn</span>
+                </div>
+                <div class="fd-now-row">
+                  <span class="fd-now-label">BUILDING</span>
+                  <span class="fd-now-value">52 — one work week at a time</span>
+                </div>
+                <div class="fd-now-row">
+                  <span class="fd-now-label">WATCHING</span>
+                  <span class="fd-now-value">For All Mankind S5</span>
+                </div>
+                <div class="fd-now-row">
+                  <span class="fd-now-label">THINKING</span>
+                  <span class="fd-now-value">Slow attention</span>
+                </div>
+                <div class="fd-now-row">
+                  <span class="fd-now-label">LOCATION</span>
+                  <span class="fd-now-value">Atlanta, GA</span>
+                </div>
+              </div>
+              <time class="fd-msg-time" datetime="2026-05-18">Updated May 2026</time>
+            </article>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">My brain is wired for pattern recognition — always looking for connections, abstractions, and what actually scales. I believe simple doesn't mean basic; it means the most elegant form of complexity.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Best way to reach me → <a href="https://www.linkedin.com/in/lukevz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">LinkedIn</a> or drop a message in the composer below.</div>
+            </article>
+
+          </div><!-- /life/about -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- LIFE / PHOTOS                               -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="life/photos" aria-label="Photos conversation">
+
+            <div class="fd-msg-group" aria-hidden="true">
+              <span class="fd-msg-group-time">Frames</span>
+            </div>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Shooting on Fujifilm. Mostly walks, everyday moments, and the occasional trip.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Photo: DSCF7517">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF7517.jpg" alt="Fujifilm frame — Atlanta" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Provia/Standard</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Photo: DSCF7542">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF7542.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Classic Chrome</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Photo: DSCF7569">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF7569.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Eterna Cinema</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Photo: DSCF3426">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF3426.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Velvia/Vivid</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Photo: DSCF5752">
+              <div class="fd-photo-card">
+                <img class="fd-photo-img" src="/content/photos/DSCF5752.JPG" alt="Fujifilm frame" loading="lazy" width="280" height="210">
+                <div class="fd-photo-meta">
+                  <div class="fd-photo-caption"><!-- TODO: add caption --></div>
+                  <div class="fd-photo-recipe">Fujifilm X-S20 · Astia/Soft</div>
+                </div>
+              </div>
+            </article>
+
+          </div><!-- /life/photos -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- LIFE / WRITING                              -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="life/writing" aria-label="Writing conversation">
+
+            <div class="fd-msg-group" aria-hidden="true">
+              <span class="fd-msg-group-time">Notes &amp; reads</span>
+            </div>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Notes on books, ideas, and things I'm working through. More of a garden than a blog.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Note: 5 Reasons You Need a Digital Garden">
+              <a class="fd-note-card" href="/#writing" target="_blank" rel="noopener">
+                <div class="fd-note-week">Essay · Dec 2025</div>
+                <div class="fd-note-title">5 Reasons You Need a Digital Garden with Examples &amp; Tools to Help</div>
+                <div class="fd-note-excerpt">I started craving a place online that felt like my old creative self again: messy, playful, low stakes. That's when I discovered digital gardens — and they quietly changed how I think, create, and track my ideas.</div>
+              </a>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Book note: Atomic Habits">
+              <a class="fd-note-card" href="/v1/#note/b.-atomic-habits" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Atomic Habits — James Clear</div>
+                <div class="fd-note-excerpt">Small changes compound. The key insight: you don't rise to the level of your goals, you fall to the level of your systems.</div>
+              </a>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Book note: Building A Second Brain">
+              <a class="fd-note-card" href="/v1/#note/b.-building-a-second-brain" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Building A Second Brain — Tiago Forte</div>
+                <div class="fd-note-excerpt">CODE: Capture, Organize, Distill, Express. The goal isn't to hoard information — it's to move it forward into output.</div>
+              </a>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Book note: Steal Like An Artist">
+              <a class="fd-note-card" href="/v1/#note/b.-steal-like-an-artist" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Steal Like An Artist — Austin Kleon</div>
+                <div class="fd-note-excerpt">Nothing is original. Your job is to collect good influences, remix them honestly, and make something new.</div>
+              </a>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="Book note: Show Your Work">
+              <a class="fd-note-card" href="/v1/#note/b.-show-your-work" target="_blank" rel="noopener">
+                <div class="fd-note-week">Book note</div>
+                <div class="fd-note-title">Show Your Work — Austin Kleon</div>
+                <div class="fd-note-excerpt">Share something small every day. Process over product. Teach what you know and the right people will find you.</div>
+              </a>
+            </article>
+
+          </div><!-- /life/writing -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- LIFE / VIDEOS                               -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="life/videos" aria-label="Videos conversation">
+
+            <div class="fd-msg-group" aria-hidden="true">
+              <span class="fd-msg-group-time">YouTube</span>
+            </div>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Two channels — one personal, one UX-focused. Both a bit quieter lately while I focus on building.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="YouTube channel: Luke Van Zyl">
+              <a class="fd-video-card" href="https://www.youtube.com/@lukevanzylofficial" target="_blank" rel="noopener" aria-label="Luke Van Zyl — Personal YouTube channel">
+                <div class="fd-video-thumb-wrap">
+                  <!-- TODO: replace with real channel banner/thumbnail -->
+                  <div class="fd-video-thumb" style="background: linear-gradient(135deg, #1a1d27 0%, #2a3050 100%); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.3); font-size:13px; font-family:'Geist Mono',monospace;">@lukevanzylofficial</div>
+                </div>
+                <div class="fd-video-info">
+                  <div class="fd-video-title">Luke Van Zyl</div>
+                  <div class="fd-video-channel">youtube.com/@lukevanzylofficial · Personal channel</div>
+                </div>
+              </a>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="YouTube channel: UX with Luke">
+              <a class="fd-video-card" href="https://www.youtube.com/@UXwithLuke" target="_blank" rel="noopener" aria-label="UX with Luke — UX-focused YouTube channel">
+                <div class="fd-video-thumb-wrap">
+                  <!-- TODO: replace with real channel banner/thumbnail -->
+                  <div class="fd-video-thumb" style="background: linear-gradient(135deg, #0f1520 0%, #1a2840 100%); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.3); font-size:13px; font-family:'Geist Mono',monospace;">@UXwithLuke</div>
+                </div>
+                <div class="fd-video-info">
+                  <div class="fd-video-title">UX with Luke</div>
+                  <div class="fd-video-channel">youtube.com/@UXwithLuke · Design &amp; UX</div>
+                </div>
+              </a>
+            </article>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Started making YouTube content at 22 — grew a Mac OS tutorial channel to 30k+ subscribers. That's where I taught myself design, video, writing, and web from scratch.</div>
+            </article>
+
+          </div><!-- /life/videos -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- LIFE / LABS                                 -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="life/labs" aria-label="Labs conversation">
+
+            <div class="fd-msg-group" aria-hidden="true">
+              <span class="fd-msg-group-time">Side projects</span>
+            </div>
+
+            <article class="fd-msg fd-msg--in">
+              <div class="fd-bubble">Working on some things. This space will fill in.</div>
+            </article>
+
+            <article class="fd-msg fd-msg--in" aria-label="52 — coming soon">
+              <div class="fd-soon">⚗ Labs — coming soon</div>
+            </article>
+
+          </div><!-- /life/labs -->
+
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- WORK / CASE-STUDIES (default)               -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="work/case-studies" aria-label="#case-studies channel">
+
+            <div class="fd-work-divider">Case Studies</div>
+
+            <!-- Pinned hero case study: GenAI -->
+            <div class="fd-work-msg" aria-label="Luke posted a case study">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                  <span class="fd-pinned-badge">pinned</span>
+                </div>
+                <div class="fd-work-text">AI-powered workflow automation at PwC Digital — built a suite of custom GPTs that gave managers back <strong>30% of their week</strong>.</div>
+                <a class="fd-case-card" href="/work#case-studies/automating-ux-workflows-for-30-time-savings" target="_blank" rel="noopener" aria-label="Case study: Automating UX Workflows for 30% Time Savings">
+                  <img class="fd-case-thumb" src="/images/case-studies/GenAI.png" alt="Custom GPT tools for UX teams — screenshots of the suite" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">AI · Automation · GenAI · 2023</div>
+                    <div class="fd-case-title">Automating UX Workflows for 30% Time Savings</div>
+                    <div class="fd-case-sub">Built a suite of custom GPTs that freed managers up to 30% of their week — and gave designers back the headspace to do actual design work.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Luke posted a case study">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                </div>
+                <div class="fd-work-text">Three modular systems across two companies — each cutting hours of repetitive design work down to minutes.</div>
+                <a class="fd-case-card" href="/work#case-studies/cutting-design-time-by-80-with-modular-generators" target="_blank" rel="noopener" aria-label="Case study: Cutting Design Time by 80% with Modular Generators">
+                  <img class="fd-case-thumb" src="/images/case-studies/Figma webpage builder.png" alt="Modular design generator system in Figma" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">Design Systems · Figma · Automation · 2019–2022</div>
+                    <div class="fd-case-title">Cutting Design Time by 80% with Modular Generators</div>
+                    <div class="fd-case-sub">Three modular systems across two companies — each cutting hours of repetitive design work down to minutes.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Luke posted a case study">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                </div>
+                <div class="fd-work-text">Led a patterns initiative that gave <strong>50+ product teams</strong> reusable components and a modular dashboard builder.</div>
+                <a class="fd-case-card" href="/work#case-studies/streamlining-ux-for-50-teams-developing-a-comprehensive-ux-pattern-library" target="_blank" rel="noopener" aria-label="Case study: Streamlining UX for 50+ Teams">
+                  <img class="fd-case-thumb" src="/images/case-studies/pattern library.png" alt="UX Pattern Library — component grid in Figma" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">Design Systems · Component Libraries · Leadership · 2021</div>
+                    <div class="fd-case-title">Streamlining UX for 50+ Teams</div>
+                    <div class="fd-case-sub">Led a patterns initiative that gave 50+ product teams reusable components, a modular dashboard builder, and 86+ fewer one-off design requests.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Luke posted a case study">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
+                </div>
+                <div class="fd-work-text">Built the business case, rebuilt the design system, and trained <strong>120+ designers</strong> — collapsing a four-tool stack into one.</div>
+                <a class="fd-case-card" href="/work#case-studies/upskilling-120-designers-leading-a-high-impact-migration-to-figma" target="_blank" rel="noopener" aria-label="Case study: Upskilling 120 Designers — Leading a High-Impact Migration to Figma">
+                  <img class="fd-case-thumb" src="/images/case-studies/case for figma.png" alt="Figma migration — before and after tool stack" loading="lazy" width="420" height="160">
+                  <div class="fd-case-body">
+                    <div class="fd-case-tag">Design Systems · Change Management · Figma · 2021–2022</div>
+                    <div class="fd-case-title">Upskilling 120+ Designers: High-Impact Migration to Figma</div>
+                    <div class="fd-case-sub">Built the business case, rebuilt the design system, and trained 120+ designers — collapsing a four-tool stack into one.</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+          </div><!-- /work/case-studies -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- WORK / AXON-DESIGN-SYSTEM                   -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="work/axon-design-system" aria-label="#axon-design-system channel">
+
+            <div class="fd-work-divider">Axon Design System</div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">Now</time>
+                </div>
+                <div class="fd-work-text">Building Axon — Instinct's design system. The goal: give a small design team the leverage of a team five times its size, without the entropy of one-off decisions made under time pressure.</div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">Now</time>
+                </div>
+                <div class="fd-work-text">The design system isn't a component library — it's a shared language. The components are the output. The real work is the decisions, the documentation, and getting people to actually use it.</div>
+                <!-- TODO: Add screenshots of Axon components once shareable -->
+                <div class="fd-soon" style="margin-top:8px">🔒 Screenshots available on request — NDA applies</div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">Now</time>
+                </div>
+                <div class="fd-work-text">Ask Axon is an internal AI assistant I've been exploring — answers questions about component usage, design decisions, and system patterns. Think of it as documentation that talks back.</div>
+              </div>
+            </div>
+
+          </div><!-- /work/axon-design-system -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- WORK / VETGUIDE                             -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="work/vetguide" aria-label="#vetguide channel">
+
+            <div class="fd-work-divider">VetGuide</div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">Now</time>
+                </div>
+                <div class="fd-work-text">VetGuide is a core part of Instinct's platform — a clinical reference tool for veterinary teams. I'm leading the redesign: simplifying navigation, improving information density, and making it actually usable under pressure.</div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">Now</time>
+                </div>
+                <div class="fd-work-text">Veterinarians are overworked, understaffed, and under-resourced. If I can reduce the friction between a vet and the information they need in a high-stakes moment — that's the whole job.</div>
+                <!-- TODO: Add VetGuide redesign progress screenshots when shareable -->
+                <div class="fd-soon" style="margin-top:8px">🔒 Redesign in progress — screenshots available on request</div>
+              </div>
+            </div>
+
+          </div><!-- /work/vetguide -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- WORK / CAREER                               -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="work/career" aria-label="#career channel">
+
+            <div class="fd-work-divider">Career timeline</div>
+
+            <div class="fd-work-msg" aria-label="YouTube era, 2012–2013">
+              <div class="fd-work-avatar" style="--av-color:#9a3a3a" aria-hidden="true">Y</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Epoch: Self-made</span>
+                  <time class="fd-work-time" datetime="2012">2012–2013</time>
+                </div>
+                <div class="fd-work-text">Built a Mac OS app review and tutorial channel on YouTube — grew to <strong>30k+ subscribers</strong> and multi-million views. Taught myself writing, video, graphic design, and web from scratch with zero formal training.</div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Freelance era, 2015–2018">
+              <div class="fd-work-avatar" style="--av-color:#5a7a6b" aria-hidden="true">F</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Epoch: Freelance</span>
+                  <time class="fd-work-time" datetime="2015">2015–2018</time>
+                </div>
+                <div class="fd-work-text">Solo client work — HTML/CSS, WordPress, graphic design, web design, video production for local and regional businesses. Formalized into a creative production company in 2018.</div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Blue Corona, 2021">
+              <div class="fd-work-avatar" style="--av-color:#4a6a9a" aria-hidden="true">BC</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Blue Corona — Senior Web Designer</span>
+                  <time class="fd-work-time" datetime="2021">2021</time>
+                </div>
+                <div class="fd-work-text">Designed and built custom websites for <strong>80+ home service companies</strong>. Fast-paced client work focused on marketing effectiveness and delivery speed.</div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="PwC Digital, 2022–2025">
+              <div class="fd-work-avatar" style="--av-color:#d4a72c" aria-hidden="true">PwC</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">PwC Digital — Senior UX Designer → UX Manager</span>
+                  <time class="fd-work-time" datetime="2022">2022–2025</time>
+                </div>
+                <div class="fd-work-text">
+                  Led proof-of-concept product designs. Pitched and rebuilt the company's design system in Figma. Drove a department-wide migration from Sketch/Abstract/InVision to Figma — upskilling <strong>120+ designers</strong>.<br><br>
+                  Promoted to Manager: led a team of three designers, managed the design system servicing <strong>3,000+ products globally</strong>, was lead designer on SDLC Canvas (flagship AI product pitched to Fortune 500 clients).
+                </div>
+              </div>
+            </div>
+
+            <div class="fd-work-msg" aria-label="Instinct, 2025–present">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Instinct — Senior Product Designer</span>
+                  <time class="fd-work-time" datetime="2025">Late 2025 – now</time>
+                </div>
+                <div class="fd-work-text">Joined at the end of 2025. Designing software for veterinarians — closer to the published version of my work, directly tied to helping real people with daily problems. Closer to the mission than I've ever been.</div>
+              </div>
+            </div>
+
+          </div><!-- /work/career -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- WORK / RESUME                               -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="work/resume" aria-label="#resume channel">
+
+            <div class="fd-work-divider">Resume</div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">2026</time>
+                </div>
+                <div class="fd-work-text">Full resume — includes the complete timeline, case study highlights, and tooling. PDF, always current.</div>
+                <!-- TODO: Replace href with real resume PDF URL -->
+                <a class="fd-doc-card" href="#TODO-resume-pdf" aria-label="Luke Van Zyl Resume — PDF, 2026">
+                  <div class="fd-doc-icon" aria-hidden="true">PDF</div>
+                  <div>
+                    <div class="fd-doc-name">Luke Van Zyl — Resume</div>
+                    <div class="fd-doc-meta">PDF · 2026 · lukevz.com</div>
+                  </div>
+                </a>
+                <a class="fd-link-card" href="https://www.linkedin.com/in/lukevz/" target="_blank" rel="noopener" style="margin-top:8px" aria-label="Luke Van Zyl on LinkedIn — Senior Product Designer at Instinct">
+                  <div class="fd-link-domain">linkedin.com</div>
+                  <div class="fd-link-title">Luke Van Zyl — LinkedIn</div>
+                  <div class="fd-link-desc">Senior Product Designer · Instinct · Atlanta, GA</div>
+                </a>
+              </div>
+            </div>
+
+          </div><!-- /work/resume -->
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- WORK / PORTFOLIO                            -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div class="fd-feed" data-feed="work/portfolio" aria-label="#portfolio channel">
+
+            <div class="fd-work-divider">Portfolio</div>
+
+            <div class="fd-work-msg" aria-label="Luke posted">
+              <div class="fd-work-avatar" style="--av-color:#4a7ab5" aria-hidden="true">L</div>
+              <div class="fd-work-body">
+                <div class="fd-work-meta">
+                  <span class="fd-work-sender">Luke</span>
+                  <time class="fd-work-time">Soon</time>
+                </div>
+                <div class="fd-work-text">This channel is coming soon. In the meantime, check <span style="color:var(--link)">#case-studies</span> for published work.</div>
+                <div class="fd-soon" style="margin-top:8px"># portfolio — coming soon</div>
+              </div>
+            </div>
+
+          </div><!-- /work/portfolio -->
+
+        </div><!-- /.fd-feeds -->
+
+        <!-- Chips -->
+        <div class="fd-chips-wrap" id="fdChipsWrap" aria-label="Suggested topics"></div>
+
+        <!-- Composer -->
+        <form class="fd-composer" id="fdComposer" aria-label="Send a message" onsubmit="return false;">
+          <div class="fd-input-wrap">
+            <label for="fdInput" class="fd-sr-only">Message Luke</label>
+            <input
+              type="text"
+              id="fdInput"
+              class="fd-input"
+              placeholder="Message…"
+              autocomplete="off"
+              maxlength="500"
+              aria-label="Type a message"
+            >
+          </div>
+          <button type="submit" class="fd-send" id="fdSend" aria-label="Send message" disabled>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 13V3M3 8l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </form>
+
+      </div><!-- /.fd-pane -->
+    </div><!-- /.fd-layout -->
+  </div><!-- /.fd-window -->
+
+  <!-- ─────────────────────────────────────────────── -->
+  <!-- CONTENT DATA (used by JS for chips/navigation)  -->
+  <!-- ─────────────────────────────────────────────── -->
+  <script id="fdData" type="application/json">
+  {
+    "life": {
+      "topics": [
+        {
+          "id": "about",
+          "label": "about",
+          "sub": "Designer, tinkerer, note-taker",
+          "default": true,
+          "chips": ["What are you working on?", "See my work →", "How do I reach you?"]
+        },
+        {
+          "id": "photos",
+          "label": "Photos",
+          "sub": "Fujifilm frames from Atlanta and beyond",
+          "chips": ["What camera do you shoot?", "Show me more →"]
+        },
+        {
+          "id": "writing",
+          "label": "Writing",
+          "sub": "Notes, book takeaways, essays",
+          "chips": ["What are you reading?", "Show me writing →"]
+        },
+        {
+          "id": "videos",
+          "label": "Videos",
+          "sub": "YouTube: personal + UX with Luke",
+          "chips": ["Show me your YouTube →"]
+        },
+        {
+          "id": "labs",
+          "label": "Labs",
+          "sub": "Coming soon",
+          "soon": true,
+          "chips": []
+        }
+      ]
+    },
+    "work": {
+      "workspace": "Instinct",
+      "topics": [
+        {
+          "id": "case-studies",
+          "label": "case-studies",
+          "sub": "Published case studies from PwC and beyond",
+          "default": true,
+          "chips": ["Show me your best work →", "Tell me about the AI project", "Figma migration story?"]
+        },
+        {
+          "id": "axon-design-system",
+          "label": "axon-design-system",
+          "sub": "Instinct's design system",
+          "chips": ["What is Axon?", "Design systems philosophy?"]
+        },
+        {
+          "id": "vetguide",
+          "label": "vetguide",
+          "sub": "VetGuide redesign",
+          "chips": ["Tell me about VetGuide"]
+        },
+        {
+          "id": "career",
+          "label": "career",
+          "sub": "Timeline of career milestones",
+          "chips": ["Career story?", "Why Instinct?", "Why did you leave PwC?"]
+        },
+        {
+          "id": "resume",
+          "label": "resume",
+          "sub": "Full resume — PDF",
+          "chips": ["Download resume →"]
+        },
+        {
+          "id": "portfolio",
+          "label": "portfolio",
+          "sub": "Coming soon",
+          "soon": true,
+          "chips": []
+        }
+      ]
+    },
+    "chipMap": {
+      "What are you working on?":    { "goto": "life/about",    "reply": "Right now: 52 (a work-week note-taking app), Axon (Instinct's design system), and VetGuide (the clinical reference tool). Check the Work tab for the full breakdown." },
+      "See my work →":               { "goto": "work/case-studies", "reply": "Switching to the Work tab. Four published case studies — start with the AI automation one for the strongest signal." },
+      "How do I reach you?":         { "goto": "life/about",    "reply": "Best path: LinkedIn DM → linkedin.com/in/lukevz/. I'm also on X (@lukevz) and Threads (@lukevanzyl)." },
+      "What camera do you shoot?":   { "goto": "life/photos",   "reply": "Fujifilm X-S20. Shooting mostly Classic Chrome and Eterna Cinema for the cooler, filmic look. XF 18-55mm lens for most shots." },
+      "Show me more →":              { "goto": "life/photos",   "reply": "All frames above — scroll up. More will appear here as I add them." },
+      "What are you reading?":       { "goto": "life/writing",  "reply": "Currently reading Thrawn: Heir to the Empire. Book notes in this feed — Atomic Habits and Building A Second Brain are the strongest ones so far." },
+      "Show me writing →":           { "goto": "life/writing",  "reply": "Notes and book takeaways above. The digital garden essay is a good starting point if you're new here." },
+      "Show me your YouTube →":      { "goto": "life/videos",   "reply": "Two channels: personal (lifestyle, building, Atlanta) and UX with Luke (design tutorials). Both links are above." },
+      "Show me your best work →":    { "goto": "work/case-studies", "reply": "The GenAI automation case study is the strongest — 30% time savings is hard to argue with. Figma migration is a close second for scale (120 designers)." },
+      "Tell me about the AI project":{ "goto": "work/case-studies", "reply": "SDLC Canvas at PwC — an AI product for the software development lifecycle. I was lead designer from POC to active Fortune 500 pitches. The case study covers the GenAI automation work that ran alongside it." },
+      "Figma migration story?":      { "goto": "work/case-studies", "reply": "Pitched the switch from Sketch/Abstract/InVision to Figma, rebuilt the design system to prove it out, then trained 120+ designers across a global remote team. Case study is linked above." },
+      "What is Axon?":               { "goto": "work/axon-design-system", "reply": "Axon is Instinct's design system — shared components, patterns, and tokens that let a small team move without entropy. Still early, NDA applies, but happy to talk philosophy." },
+      "Design systems philosophy?":  { "goto": "work/axon-design-system", "reply": "A design system isn't a component library — it's a shared language. Components are the output. The real work is decisions, documentation, and adoption. See the career channel for more." },
+      "Tell me about VetGuide":      { "goto": "work/vetguide", "reply": "Clinical reference tool for vet teams. I'm leading the redesign — simplifying navigation, improving information density, and making it usable under real clinical pressure. NDA applies; happy to talk process." },
+      "Career story?":               { "goto": "work/career",   "reply": "YouTube → freelance → Blue Corona → PwC Digital (Senior → Manager) → Instinct. Full timeline is in the career channel above." },
+      "Why Instinct?":               { "goto": "work/career",   "reply": "Smaller team, closer to the published product, directly tied to helping real people. Veterinarians are overworked and understaffed — if my design decisions reduce that stress, that's the whole job." },
+      "Why did you leave PwC?":      { "goto": "work/career",   "reply": "PwC was an incredible academy — I'll always be grateful. But at that scale you can start feeling like a cog. I wanted to be close to the work, know how it landed, and care deeply about the mission. Instinct is that." },
+      "Download resume →":           { "goto": "work/resume",   "reply": "Resume is linked above — PDF, current as of 2026. LinkedIn has the full timeline too: linkedin.com/in/lukevz/" }
+    }
+  }
+  </script>
+
+  <!-- Scripts -->
+  <script src="/js/grid.js"></script>
+  <script src="/js/front-door.js"></script>
+</body>
+</html>

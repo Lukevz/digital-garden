@@ -1124,6 +1124,17 @@ async function handleAPIProxy(req, res) {
   return false;
 }
 
+// Dev rewrites — mirrors vercel.json for local dev
+const DEV_REWRITES = [
+  { pattern: /^\/$/, dest: '_index.html' },
+  { pattern: /^\/work$/, dest: 'work.html' },
+  { pattern: /^\/about$/, dest: 'about.html' },
+  { pattern: /^\/front-door(\/.*)?$/, dest: 'luke-chat-frontdoor.html' },
+  { pattern: /^\/life(\/.*)?$/, dest: 'luke-chat-frontdoor.html' },
+  // /work/:path* handled below only if not matched by /work exact above
+  { pattern: /^\/work\/.+$/, dest: 'luke-chat-frontdoor.html' },
+];
+
 // Simple static server
 const server = createServer(async (req, res) => {
   // Handle API proxy endpoints first
@@ -1132,7 +1143,16 @@ const server = createServer(async (req, res) => {
 
   const reqUrl = new URL(req.url, `http://${req.headers.host}`);
   const decodedPath = decodeURIComponent(reqUrl.pathname);
-  const pathRel = decodedPath === '/' || decodedPath === '' ? '_index.html' : decodedPath.replace(/^\//, '');
+
+  // Apply dev rewrites before static file resolution
+  let rewrittenPath = null;
+  for (const { pattern, dest } of DEV_REWRITES) {
+    if (pattern.test(decodedPath)) { rewrittenPath = dest; break; }
+  }
+
+  const pathRel = rewrittenPath
+    ? rewrittenPath
+    : (decodedPath === '/' || decodedPath === '' ? '_index.html' : decodedPath.replace(/^\//, ''));
   let filePath = join(rootDir, pathRel);
   // Serve index.html for directory requests; try path.html for extensionless routes
   if (filePath.endsWith('/') || !extname(filePath)) {
