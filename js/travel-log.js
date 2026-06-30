@@ -230,59 +230,73 @@ function createHighlightCard(text, stampColor) {
   return card;
 }
 
-function createDayCard(dayGroup, photos, dayIndex, stampColor) {
-  const card = document.createElement('div');
-  card.className = `travel-day-card ${dayIndex % 2 === 0 ? 'travel-day-card--even' : 'travel-day-card--odd'}`;
-  card.style.setProperty('--stamp-color', stampColor);
+/**
+ * One node on the center-spine timeline.
+ * Even index  → text left  · dot · photos right
+ * Odd  index  → photos left · dot · text right
+ */
+function createTimelineNode(dayGroup, photos, dayIndex, stampColor) {
+  const node = document.createElement('div');
+  node.className = 'travel-timeline__node';
+  node.style.setProperty('--stamp-color', stampColor);
 
-  // Day header
-  const header = document.createElement('div');
-  header.className = 'travel-day-card__header';
-  if (dayGroup.day) {
-    const dayLabel = document.createElement('span');
-    dayLabel.className = 'travel-day-card__day';
-    dayLabel.textContent = dayGroup.day;
-    header.appendChild(dayLabel);
+  // ── Text content ──────────────────────────────
+  const textEl = document.createElement('div');
+  textEl.className = 'travel-timeline__text';
+
+  if (dayGroup.day || dayGroup.location) {
+    const hdr = document.createElement('div');
+    hdr.className = 'travel-timeline__day-header';
+    if (dayGroup.day) {
+      const d = document.createElement('span');
+      d.className = 'travel-timeline__day-label';
+      d.textContent = dayGroup.day;
+      hdr.appendChild(d);
+    }
+    if (dayGroup.location) {
+      const l = document.createElement('span');
+      l.className = 'travel-timeline__location';
+      l.textContent = dayGroup.location;
+      hdr.appendChild(l);
+    }
+    textEl.appendChild(hdr);
   }
-  if (dayGroup.location) {
-    const loc = document.createElement('span');
-    loc.className = 'travel-day-card__location';
-    loc.textContent = dayGroup.location;
-    header.appendChild(loc);
-  }
-  card.appendChild(header);
 
-  // Content area: stops + photos side by side
-  const content = document.createElement('div');
-  content.className = 'travel-day-card__content';
-
-  // Stops column
-  const stopsCol = document.createElement('div');
-  stopsCol.className = 'travel-day-card__stops';
-  const spine = document.createElement('ol');
-  spine.className = 'travel-day-card__spine';
+  const stops = document.createElement('ul');
+  stops.className = 'travel-timeline__stops';
   dayGroup.stops.forEach(note => {
     const li = document.createElement('li');
-    li.className = 'travel-day-card__stop';
+    li.className = 'travel-timeline__stop';
     li.textContent = note;
-    spine.appendChild(li);
+    stops.appendChild(li);
   });
-  stopsCol.appendChild(spine);
-  content.appendChild(stopsCol);
+  textEl.appendChild(stops);
 
-  // Photo cluster column
+  // ── Spine dot ────────────────────────────────
+  const spineEl = document.createElement('div');
+  spineEl.className = 'travel-timeline__spine-col';
+  const dot = document.createElement('span');
+  dot.className = 'travel-timeline__dot';
+  spineEl.appendChild(dot);
+
+  // ── Photo cluster ────────────────────────────
+  const photosEl = document.createElement('div');
+  photosEl.className = 'travel-timeline__photos';
   if (photos.length) {
     const cluster = createPhotoCluster(photos, dayIndex);
-    if (cluster) {
-      const photosCol = document.createElement('div');
-      photosCol.className = 'travel-day-card__photos';
-      photosCol.appendChild(cluster);
-      content.appendChild(photosCol);
-    }
+    if (cluster) photosEl.appendChild(cluster);
   }
 
-  card.appendChild(content);
-  return card;
+  // Even: text | dot | photos   Odd: photos | dot | text
+  if (dayIndex % 2 === 0) {
+    node.append(textEl, spineEl, photosEl);
+    textEl.classList.add('travel-timeline__text--left');
+  } else {
+    node.append(photosEl, spineEl, textEl);
+    textEl.classList.add('travel-timeline__text--right');
+  }
+
+  return node;
 }
 
 function renderMarkdownBody(text, stampColor) {
@@ -321,9 +335,15 @@ function buildItinerary(trip) {
   const days = groupRouteByDay(route);
   const photoSlots = distributePhotos(photos, days.length, 3);
 
+  const timeline = document.createElement('div');
+  timeline.className = 'travel-timeline';
+  timeline.style.setProperty('--stamp-color', stampColor);
+
   days.forEach((day, i) => {
-    container.appendChild(createDayCard(day, photoSlots[i] || [], i, stampColor));
+    timeline.appendChild(createTimelineNode(day, photoSlots[i] || [], i, stampColor));
   });
+
+  container.appendChild(timeline);
 
   // Remaining journal notes below timeline
   if (trip.body) {
