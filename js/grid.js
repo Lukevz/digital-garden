@@ -112,8 +112,8 @@
     //     right of short lines instead of a big dead rectangle.
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
-    const TEXT_HOLE_SELECTORS = ['.intro-text'];
-    const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-icon', '.study-card'];
+    const TEXT_HOLE_SELECTORS = ['.bento-card--bio'];
+    const BOX_HOLE_SELECTORS  = ['.bento-card--photo', '.app-icon', '.study-card'];
 
     let holeRects = [];
 
