@@ -492,6 +492,11 @@
       overflow: hidden;
       max-width: 280px;
     }
+    [data-detail-kind] { cursor: pointer; }
+    [data-detail-kind]:focus-visible {
+      outline: 2px solid var(--link);
+      outline-offset: 3px;
+    }
     .fd-photo-img {
       width: 100%;
       aspect-ratio: 4/3;
@@ -689,6 +694,135 @@
     .fd-link-domain { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-muted); margin-bottom: 4px; }
     .fd-link-title { font-size: 13px; font-weight: 600; color: var(--text-primary); font-family: 'Satoshi', system-ui, sans-serif; }
     .fd-link-desc { font-size: 12px; color: var(--text-body); margin-top: 3px; line-height: 1.4; }
+
+    /* ── In-pane detail takeover ── */
+    .fd-pane--detail .fd-feed-header,
+    .fd-pane--detail .fd-feeds,
+    .fd-pane--detail .fd-chips-wrap,
+    .fd-pane--detail .fd-composer {
+      display: none;
+    }
+    .fd-detail {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel-bg);
+    }
+    .fd-pane--detail .fd-detail {
+      display: flex;
+      flex-direction: column;
+    }
+    .fd-detail-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surface-raised);
+    }
+    .fd-detail-back {
+      border: 1px solid var(--border-medium);
+      background: var(--bg);
+      color: var(--text-primary);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .fd-detail-back:hover { background: var(--hover-fill); }
+    .fd-detail-back:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    .fd-detail-kicker {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 1px;
+    }
+    .fd-detail-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-primary);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      letter-spacing: -0.02em;
+    }
+    .fd-detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px clamp(22px, 5vw, 72px) 44px;
+      color: var(--text-body);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      line-height: 1.65;
+    }
+    .fd-detail-content {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .fd-detail-content h1,
+    .fd-detail-content h2,
+    .fd-detail-content h3 {
+      color: var(--text-primary);
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      margin: 1.4em 0 0.55em;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .fd-detail-content h1 { font-size: clamp(30px, 4vw, 48px); margin-top: 0; }
+    .fd-detail-content h2 { font-size: clamp(22px, 2.4vw, 30px); }
+    .fd-detail-content h3 { font-size: 18px; letter-spacing: -0.01em; }
+    .fd-detail-content p,
+    .fd-detail-content li {
+      font-size: 16px;
+    }
+    .fd-detail-content p { margin: 0 0 1em; }
+    .fd-detail-content ul,
+    .fd-detail-content ol { padding-left: 1.35em; margin: 0 0 1.2em; }
+    .fd-detail-content li + li { margin-top: 0.35em; }
+    .fd-detail-content img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 14px;
+      margin: 18px 0 24px;
+      border: 1px solid var(--border-subtle);
+      background: var(--thumb-bg);
+    }
+    .fd-detail-content a { color: var(--link); text-decoration: none; }
+    .fd-detail-content a:hover { text-decoration: underline; }
+    .fd-detail-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 18px;
+    }
+    .fd-detail-pill {
+      border: 1px solid var(--border-medium);
+      background: var(--surface-raised);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .fd-detail-external {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: var(--link);
+      color: #fff !important;
+      font-weight: 700;
+      text-decoration: none !important;
+    }
 
     /* ── Pinned badge ── */
     .fd-pinned-badge {
@@ -1087,7 +1221,7 @@
               <div class="fd-bubble">Shooting on Fujifilm. Mostly walks, everyday moments, and the occasional trip.</div>
             </article>
             <article class="fd-msg fd-msg--in">
-              <div class="fd-photo-card">
+              <div class="fd-photo-card" role="button" tabindex="0" data-detail-kind="image" data-detail-src="/content/photos/DSCF7517.jpg" data-detail-title="Fujifilm frame — Atlanta" data-detail-kicker="Photo" data-detail-body="Fujifilm X-S20 · Provia/Standard">
                 <img class="fd-photo-img" src="/content/photos/DSCF7517.jpg" alt="Fujifilm frame — Atlanta" loading="lazy" width="280" height="210">
                 <div class="fd-photo-meta">
                   <div class="fd-photo-caption"><!-- TODO: add caption --></div>
@@ -1096,7 +1230,7 @@
               </div>
             </article>
             <article class="fd-msg fd-msg--in">
-              <div class="fd-photo-card">
+              <div class="fd-photo-card" role="button" tabindex="0" data-detail-kind="image" data-detail-src="/content/photos/DSCF7542.jpg" data-detail-title="Fujifilm frame" data-detail-kicker="Photo" data-detail-body="Fujifilm X-S20 · Classic Chrome">
                 <img class="fd-photo-img" src="/content/photos/DSCF7542.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
                 <div class="fd-photo-meta">
                   <div class="fd-photo-caption"><!-- TODO: add caption --></div>
@@ -1105,7 +1239,7 @@
               </div>
             </article>
             <article class="fd-msg fd-msg--in">
-              <div class="fd-photo-card">
+              <div class="fd-photo-card" role="button" tabindex="0" data-detail-kind="image" data-detail-src="/content/photos/DSCF7569.jpg" data-detail-title="Fujifilm frame" data-detail-kicker="Photo" data-detail-body="Fujifilm X-S20 · Eterna Cinema">
                 <img class="fd-photo-img" src="/content/photos/DSCF7569.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
                 <div class="fd-photo-meta">
                   <div class="fd-photo-caption"><!-- TODO: add caption --></div>
@@ -1114,7 +1248,7 @@
               </div>
             </article>
             <article class="fd-msg fd-msg--in">
-              <div class="fd-photo-card">
+              <div class="fd-photo-card" role="button" tabindex="0" data-detail-kind="image" data-detail-src="/content/photos/DSCF3426.jpg" data-detail-title="Fujifilm frame" data-detail-kicker="Photo" data-detail-body="Fujifilm X-S20 · Velvia/Vivid">
                 <img class="fd-photo-img" src="/content/photos/DSCF3426.jpg" alt="Fujifilm frame" loading="lazy" width="280" height="210">
                 <div class="fd-photo-meta">
                   <div class="fd-photo-caption"><!-- TODO: add caption --></div>
@@ -1123,7 +1257,7 @@
               </div>
             </article>
             <article class="fd-msg fd-msg--in">
-              <div class="fd-photo-card">
+              <div class="fd-photo-card" role="button" tabindex="0" data-detail-kind="image" data-detail-src="/content/photos/DSCF5752.JPG" data-detail-title="Fujifilm frame" data-detail-kicker="Photo" data-detail-body="Fujifilm X-S20 · Astia/Soft">
                 <img class="fd-photo-img" src="/content/photos/DSCF5752.JPG" alt="Fujifilm frame" loading="lazy" width="280" height="210">
                 <div class="fd-photo-meta">
                   <div class="fd-photo-caption"><!-- TODO: add caption --></div>
@@ -1140,28 +1274,28 @@
               <div class="fd-bubble">Notes on books, ideas, and things I'm working through. More of a garden than a blog.</div>
             </article>
             <article class="fd-msg fd-msg--in" aria-label="Note: 5 Reasons You Need a Digital Garden">
-              <a class="fd-note-card" href="/#writing" target="_blank" rel="noopener">
+              <a class="fd-note-card" href="/content/writing/5%20Reasons%20You%20Need%20a%20Digital%20Garden%20with%20Examples%20%26%20Tools%20to%20Help.md" data-detail-kind="markdown" data-detail-src="/content/writing/5%20Reasons%20You%20Need%20a%20Digital%20Garden%20with%20Examples%20%26%20Tools%20to%20Help.md" data-detail-title="5 Reasons You Need a Digital Garden" data-detail-kicker="Writing">
                 <div class="fd-note-week">Essay · Dec 2025</div>
                 <div class="fd-note-title">5 Reasons You Need a Digital Garden with Examples &amp; Tools to Help</div>
                 <div class="fd-note-excerpt">I started craving a place online that felt like my old creative self again: messy, playful, low stakes. That's when I discovered digital gardens.</div>
               </a>
             </article>
             <article class="fd-msg fd-msg--in">
-              <a class="fd-note-card" href="/v1/#note/b.-atomic-habits" target="_blank" rel="noopener">
+              <a class="fd-note-card" href="/content/writing/B.%20Atomic%20Habits.md" data-detail-kind="markdown" data-detail-src="/content/writing/B.%20Atomic%20Habits.md" data-detail-title="Atomic Habits" data-detail-kicker="Book note">
                 <div class="fd-note-week">Book note</div>
                 <div class="fd-note-title">Atomic Habits — James Clear</div>
                 <div class="fd-note-excerpt">Small changes compound. You don't rise to the level of your goals, you fall to the level of your systems.</div>
               </a>
             </article>
             <article class="fd-msg fd-msg--in">
-              <a class="fd-note-card" href="/v1/#note/b.-building-a-second-brain" target="_blank" rel="noopener">
+              <a class="fd-note-card" href="/content/writing/B.%20Building%20A%20Second%20Brain.md" data-detail-kind="markdown" data-detail-src="/content/writing/B.%20Building%20A%20Second%20Brain.md" data-detail-title="Building A Second Brain" data-detail-kicker="Book note">
                 <div class="fd-note-week">Book note</div>
                 <div class="fd-note-title">Building A Second Brain — Tiago Forte</div>
                 <div class="fd-note-excerpt">CODE: Capture, Organize, Distill, Express. The goal isn't to hoard information — it's to move it forward into output.</div>
               </a>
             </article>
             <article class="fd-msg fd-msg--in">
-              <a class="fd-note-card" href="/v1/#note/b.-steal-like-an-artist" target="_blank" rel="noopener">
+              <a class="fd-note-card" href="/content/writing/B.%20Steal%20Like%20An%20Artist.md" data-detail-kind="markdown" data-detail-src="/content/writing/B.%20Steal%20Like%20An%20Artist.md" data-detail-title="Steal Like An Artist" data-detail-kicker="Book note">
                 <div class="fd-note-week">Book note</div>
                 <div class="fd-note-title">Steal Like An Artist — Austin Kleon</div>
                 <div class="fd-note-excerpt">Nothing is original. Your job is to collect good influences, remix them honestly, and make something new.</div>
@@ -1176,7 +1310,7 @@
               <div class="fd-bubble">Two channels — one personal, one UX-focused. Both a bit quieter lately while I focus on building.</div>
             </article>
             <article class="fd-msg fd-msg--in">
-              <a class="fd-video-card" href="https://www.youtube.com/@lukevanzylofficial" target="_blank" rel="noopener" aria-label="Luke Van Zyl — Personal YouTube channel">
+              <a class="fd-video-card" href="https://www.youtube.com/@lukevanzylofficial" data-detail-kind="external" data-detail-url="https://www.youtube.com/@lukevanzylofficial" data-detail-title="Luke Van Zyl" data-detail-kicker="YouTube channel" data-detail-body="Personal channel for videos about life, building, Atlanta, and whatever I’m trying to make sense of in public." aria-label="Luke Van Zyl — Personal YouTube channel">
                 <div class="fd-video-thumb-wrap">
                   <div class="fd-video-thumb" style="background:linear-gradient(135deg,#1a1d27 0%,#2a3050 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:13px;font-family:'Geist Mono',monospace;">@lukevanzylofficial</div>
                 </div>
@@ -1187,7 +1321,7 @@
               </a>
             </article>
             <article class="fd-msg fd-msg--in">
-              <a class="fd-video-card" href="https://www.youtube.com/@UXwithLuke" target="_blank" rel="noopener" aria-label="UX with Luke — UX YouTube channel">
+              <a class="fd-video-card" href="https://www.youtube.com/@UXwithLuke" data-detail-kind="external" data-detail-url="https://www.youtube.com/@UXwithLuke" data-detail-title="UX with Luke" data-detail-kicker="YouTube channel" data-detail-body="UX-focused channel for design tutorials, Figma, and product design thinking." aria-label="UX with Luke — UX YouTube channel">
                 <div class="fd-video-thumb-wrap">
                   <div class="fd-video-thumb" style="background:linear-gradient(135deg,#0f1520 0%,#1a2840 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:13px;font-family:'Geist Mono',monospace;">@UXwithLuke</div>
                 </div>
@@ -1226,7 +1360,7 @@
                   <span class="fd-pinned-badge">pinned</span>
                 </div>
                 <div class="fd-work-text">AI-powered workflow automation at PwC Digital — built a suite of custom GPTs that gave managers back <strong>30% of their week</strong>.</div>
-                <a class="fd-case-card" href="/work#case-studies/automating-ux-workflows-for-30-time-savings" target="_blank" rel="noopener" aria-label="Case study: Automating UX Workflows for 30% Time Savings">
+                <a class="fd-case-card" href="/content/case-studies/Automating%20UX%20Workflows%20for%2030%25%20Time%20Savings.md" data-detail-kind="markdown" data-detail-src="/content/case-studies/Automating%20UX%20Workflows%20for%2030%25%20Time%20Savings.md" data-detail-title="Automating UX Workflows for 30% Time Savings" data-detail-kicker="Case study" aria-label="Case study: Automating UX Workflows for 30% Time Savings">
                   <img class="fd-case-thumb" src="/images/case-studies/GenAI.png" alt="Custom GPT tools for UX teams" loading="lazy" width="420" height="160">
                   <div class="fd-case-body">
                     <div class="fd-case-tag">AI · Automation · GenAI · 2023</div>
@@ -1245,7 +1379,7 @@
                   <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
                 </div>
                 <div class="fd-work-text">Three modular systems across two companies — each cutting hours of repetitive design work down to minutes.</div>
-                <a class="fd-case-card" href="/work#case-studies/cutting-design-time-by-80-with-modular-generators" target="_blank" rel="noopener" aria-label="Case study: Cutting Design Time by 80% with Modular Generators">
+                <a class="fd-case-card" href="/content/case-studies/Cutting%20Design%20Time%20by%2080%25%20with%20Modular%20Generators.md" data-detail-kind="markdown" data-detail-src="/content/case-studies/Cutting%20Design%20Time%20by%2080%25%20with%20Modular%20Generators.md" data-detail-title="Cutting Design Time by 80% with Modular Generators" data-detail-kicker="Case study" aria-label="Case study: Cutting Design Time by 80% with Modular Generators">
                   <img class="fd-case-thumb" src="/images/case-studies/Figma webpage builder.png" alt="Modular design generator in Figma" loading="lazy" width="420" height="160">
                   <div class="fd-case-body">
                     <div class="fd-case-tag">Design Systems · Figma · Automation · 2019–2022</div>
@@ -1264,7 +1398,7 @@
                   <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
                 </div>
                 <div class="fd-work-text">Led a patterns initiative that gave <strong>50+ product teams</strong> reusable components and a modular dashboard builder.</div>
-                <a class="fd-case-card" href="/work#case-studies/streamlining-ux-for-50-teams-developing-a-comprehensive-ux-pattern-library" target="_blank" rel="noopener" aria-label="Case study: Streamlining UX for 50+ Teams">
+                <a class="fd-case-card" href="/content/case-studies/Streamlining%20UX%20for%2050%2B%20Teams%20-%20Developing%20a%20Comprehensive%20UX%20Pattern%20Library.md" data-detail-kind="markdown" data-detail-src="/content/case-studies/Streamlining%20UX%20for%2050%2B%20Teams%20-%20Developing%20a%20Comprehensive%20UX%20Pattern%20Library.md" data-detail-title="Streamlining UX for 50+ Teams" data-detail-kicker="Case study" aria-label="Case study: Streamlining UX for 50+ Teams">
                   <img class="fd-case-thumb" src="/images/case-studies/pattern library.png" alt="UX Pattern Library in Figma" loading="lazy" width="420" height="160">
                   <div class="fd-case-body">
                     <div class="fd-case-tag">Design Systems · Component Libraries · Leadership · 2021</div>
@@ -1283,7 +1417,7 @@
                   <time class="fd-work-time" datetime="2026-06-22">Jun 22</time>
                 </div>
                 <div class="fd-work-text">Built the business case, rebuilt the design system, and trained <strong>120+ designers</strong> — collapsing a four-tool stack into one.</div>
-                <a class="fd-case-card" href="/work#case-studies/upskilling-120-designers-leading-a-high-impact-migration-to-figma" target="_blank" rel="noopener" aria-label="Case study: Upskilling 120+ Designers">
+                <a class="fd-case-card" href="/content/case-studies/Upskilling%20120%20Designers%20-%20Leading%20a%20High-Impact%20Migration%20to%20Figma.md" data-detail-kind="markdown" data-detail-src="/content/case-studies/Upskilling%20120%20Designers%20-%20Leading%20a%20High-Impact%20Migration%20to%20Figma.md" data-detail-title="Upskilling 120+ Designers" data-detail-kicker="Case study" aria-label="Case study: Upskilling 120+ Designers">
                   <img class="fd-case-thumb" src="/images/case-studies/case for figma.png" alt="Figma migration before and after" loading="lazy" width="420" height="160">
                   <div class="fd-case-body">
                     <div class="fd-case-tag">Design Systems · Change Management · Figma · 2021–2022</div>
@@ -1384,8 +1518,7 @@
               <div class="fd-work-body">
                 <div class="fd-work-meta"><span class="fd-work-sender">Luke</span><time class="fd-work-time">2026</time></div>
                 <div class="fd-work-text">Full resume — includes the complete timeline, case study highlights, and tooling. PDF, always current.</div>
-                <!-- TODO: Replace href with real resume PDF URL -->
-                <a class="fd-doc-card" href="#TODO-resume-pdf" aria-label="Luke Van Zyl Resume — PDF, 2026">
+                <a class="fd-doc-card" href="#resume" data-detail-kind="inline" data-detail-title="Luke Van Zyl — Resume" data-detail-kicker="Resume" data-detail-body="Senior Product Designer at Instinct in Atlanta, GA. Previously UX Manager at PwC Digital, Senior Web Designer at Blue Corona, and self-taught designer through YouTube, freelance work, and client projects. For the most current full timeline, use LinkedIn." data-detail-url="https://www.linkedin.com/in/lukevz/" aria-label="Luke Van Zyl Resume — PDF, 2026">
                   <div class="fd-doc-icon" aria-hidden="true">PDF</div>
                   <div>
                     <div class="fd-doc-name">Luke Van Zyl — Resume</div>
@@ -1431,6 +1564,19 @@
             </svg>
           </button>
         </form>
+
+        <section class="fd-detail" id="fdDetail" aria-hidden="true">
+          <header class="fd-detail-header">
+            <button type="button" class="fd-detail-back" id="fdDetailBack" aria-label="Back to thread">←</button>
+            <div>
+              <div class="fd-detail-kicker" id="fdDetailKicker">Back to thread</div>
+              <div class="fd-detail-title" id="fdDetailTitle">Detail</div>
+            </div>
+          </header>
+          <div class="fd-detail-body">
+            <article class="fd-detail-content" id="fdDetailContent"></article>
+          </div>
+        </section>
 
       </div><!-- /.fd-pane -->
     </div><!-- /.fd-layout -->

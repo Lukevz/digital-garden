@@ -38,6 +38,12 @@
   const form      = document.getElementById('fdComposer');
   const input     = document.getElementById('fdInput');
   const sendBtn   = document.getElementById('fdSend');
+  const pane      = document.querySelector('.fd-pane');
+  const detail    = document.getElementById('fdDetail');
+  const detailBack = document.getElementById('fdDetailBack');
+  const detailKicker = document.getElementById('fdDetailKicker');
+  const detailTitle = document.getElementById('fdDetailTitle');
+  const detailContent = document.getElementById('fdDetailContent');
 
   /* ── Routing helpers ──────────────────────────────────────────────── */
 
@@ -125,6 +131,7 @@
   /* ── Topic switching ──────────────────────────────────────────────── */
 
   function switchTopic(mode, topic, pushUrl = true) {
+    closeDetail(false);
     state.mode  = mode;
     state.topic = topic;
 
@@ -341,6 +348,210 @@
     }
   }
 
+  /* ── In-pane detail takeover ──────────────────────────────────────── */
+
+  function closeDetail(restoreFocus = true) {
+    if (!pane || !detail) return;
+    pane.classList.remove('fd-pane--detail');
+    detail.setAttribute('aria-hidden', 'true');
+    if (restoreFocus) {
+      const activeRail = state.mode === 'work'
+        ? document.querySelector(`.fd-ch[data-topic="${state.topic}"]`)
+        : document.querySelector(`.fd-convo[data-topic="${state.topic}"]`);
+      activeRail?.focus?.();
+    }
+  }
+
+  function showDetail({ title, kicker, html }) {
+    if (!pane || !detail || !detailContent) return;
+    if (detailTitle) detailTitle.textContent = title || 'Detail';
+    if (detailKicker) detailKicker.textContent = kicker || 'Back to thread';
+    detailContent.innerHTML = html || '<p>Nothing to show yet.</p>';
+    pane.classList.add('fd-pane--detail');
+    detail.setAttribute('aria-hidden', 'false');
+    detail.querySelector('.fd-detail-body')?.scrollTo({ top: 0 });
+    detailBack?.focus?.();
+  }
+
+  async function openDetail(trigger) {
+    const kind = trigger.dataset.detailKind || 'inline';
+    const title = trigger.dataset.detailTitle || trigger.textContent.trim() || 'Detail';
+    const kicker = trigger.dataset.detailKicker || (state.mode === 'work' ? `#${state.topic}` : state.topic);
+
+    showDetail({ title, kicker, html: '<p>Loading…</p>' });
+
+    if (kind === 'markdown') {
+      try {
+        const src = trigger.dataset.detailSrc || trigger.getAttribute('href');
+        const res = await fetch(src);
+        if (!res.ok) throw new Error(`content ${res.status}`);
+        const raw = await res.text();
+        const rendered = renderMarkdownDetail(raw, src, title);
+        showDetail({ title: rendered.title || title, kicker, html: rendered.html });
+      } catch (err) {
+        console.warn('[front-door] detail failed:', err);
+        showDetail({
+          title,
+          kicker,
+          html: '<p>Could not load this content. Try again in a second.</p>',
+        });
+      }
+      return;
+    }
+
+    if (kind === 'image') {
+      const src = trigger.dataset.detailSrc || trigger.querySelector('img')?.getAttribute('src') || '';
+      const body = trigger.dataset.detailBody || trigger.querySelector('.fd-photo-recipe')?.textContent || '';
+      showDetail({
+        title,
+        kicker,
+        html: `<img src="${escapeAttr(src)}" alt="${escapeAttr(title)}" loading="lazy">${body ? `<p>${escapeHtml(body)}</p>` : ''}`,
+      });
+      return;
+    }
+
+    const body = trigger.dataset.detailBody || 'More detail coming soon.';
+    const url = trigger.dataset.detailUrl || trigger.getAttribute('href');
+    const cta = url && !url.startsWith('#')
+      ? `<p><a class="fd-detail-external" href="${escapeAttr(url)}" target="_blank" rel="noopener">Open original ↗</a></p>`
+      : '';
+    showDetail({
+      title,
+      kicker,
+      html: `<p>${escapeHtml(body)}</p>${cta}`,
+    });
+  }
+
+  function parseFrontmatter(md) {
+    const match = md.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/);
+    if (!match) return { meta: {}, body: md };
+    const meta = {};
+    match[1].split('\n').forEach(line => {
+      const m = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+      if (m) meta[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    });
+    return { meta, body: md.slice(match[0].length) };
+  }
+
+  function renderMarkdownDetail(raw, src, fallbackTitle) {
+    const { meta, body } = parseFrontmatter(raw);
+    const title = meta.title || firstMarkdownTitle(body) || fallbackTitle;
+    const basePath = src.split('/').slice(0, -1).join('/');
+    const metaHtml = ['company', 'job', 'timeline', 'tag', 'date']
+      .filter(key => meta[key])
+      .map(key => `<span class="fd-detail-pill">${escapeHtml(meta[key])}</span>`)
+      .join('');
+    const headline = meta.headline ? `<p><strong>${escapeHtml(meta.headline)}</strong></p>` : '';
+    const html = `${metaHtml ? `<div class="fd-detail-meta">${metaHtml}</div>` : ''}${headline}${markdownToHtml(body, basePath)}`;
+    return { title, html };
+  }
+
+  function firstMarkdownTitle(md) {
+    const line = md.split('\n').find(l => /^#\s+/.test(l));
+    return line ? line.replace(/^#\s+/, '').trim() : '';
+  }
+
+  function markdownToHtml(md, basePath) {
+    const lines = md
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .filter(line => !/^#(?:[A-Za-z0-9_/-]+|\s*output\/|\s*commonplace\/)/.test(line.trim()));
+
+    let html = '';
+    let paragraph = [];
+    let listType = null;
+
+    const flushParagraph = () => {
+      if (!paragraph.length) return;
+      html += `<p>${renderInline(paragraph.join(' '), basePath)}</p>`;
+      paragraph = [];
+    };
+    const closeList = () => {
+      if (!listType) return;
+      html += `</${listType}>`;
+      listType = null;
+    };
+    const openList = type => {
+      if (listType === type) return;
+      closeList();
+      listType = type;
+      html += `<${type}>`;
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || line === '---' || line === '- ---') {
+        flushParagraph();
+        closeList();
+        continue;
+      }
+
+      const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+      if (img) {
+        flushParagraph();
+        closeList();
+        html += `<img src="${escapeAttr(resolveAssetUrl(img[2], basePath))}" alt="${escapeAttr(img[1])}" loading="lazy">`;
+        continue;
+      }
+
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) {
+        flushParagraph();
+        closeList();
+        const level = Math.min(heading[1].length, 3);
+        html += `<h${level}>${renderInline(heading[2], basePath)}</h${level}>`;
+        continue;
+      }
+
+      const ordered = line.match(/^\d+\.\s+(.+)$/);
+      if (ordered) {
+        flushParagraph();
+        openList('ol');
+        html += `<li>${renderInline(ordered[1], basePath)}</li>`;
+        continue;
+      }
+
+      const unordered = line.match(/^[-*]\s+(.+)$/);
+      if (unordered) {
+        flushParagraph();
+        openList('ul');
+        html += `<li>${renderInline(unordered[1], basePath)}</li>`;
+        continue;
+      }
+
+      closeList();
+      paragraph.push(line);
+    }
+
+    flushParagraph();
+    closeList();
+    return html;
+  }
+
+  function renderInline(text, basePath) {
+    return escapeHtml(text)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
+        const href = resolveAssetUrl(url, basePath);
+        return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener">${label}</a>`;
+      })
+      .replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (_m, prefix, url) => {
+        return `${prefix}<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`;
+      });
+  }
+
+  function resolveAssetUrl(url, basePath) {
+    const clean = String(url || '').trim();
+    if (/^(https?:)?\/\//.test(clean) || clean.startsWith('/') || clean.startsWith('#')) return clean;
+    return `${basePath}/${clean}`;
+  }
+
+  function escapeAttr(str) {
+    return escapeHtml(str).replace(/`/g, '&#96;');
+  }
+
   /* ── Chip handler ─────────────────────────────────────────────────── */
 
   function handleChip(chipText) {
@@ -442,6 +653,32 @@
     function activate() { const t = el.dataset.topic; if (t) switchTopic('work', t); }
     el.addEventListener('click', activate);
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+  });
+
+  document.addEventListener('click', e => {
+    const trigger = e.target.closest('[data-detail-kind]');
+    if (!trigger) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    openDetail(trigger);
+  });
+
+  document.addEventListener('keydown', e => {
+    const trigger = e.target.closest('[data-detail-kind]');
+    if (!trigger) return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    openDetail(trigger);
+  });
+
+  if (detailBack) {
+    detailBack.addEventListener('click', () => closeDetail());
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && pane?.classList.contains('fd-pane--detail')) {
+      closeDetail();
+    }
   });
 
   if (input && sendBtn) {
