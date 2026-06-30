@@ -37,7 +37,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 52px 16px 16px; /* top clearance for floating bar */
+      padding: 48px 20px 12px; /* top clearance for floating bar */
       overflow: hidden;
     }
 
@@ -65,8 +65,8 @@
       z-index: 10;
       display: flex;
       flex-direction: column;
-      width: min(1100px, 100%);
-      height: min(740px, calc(100dvh - 68px));
+      width: clamp(900px, 80vw, 1600px);
+      height: clamp(640px, calc(88dvh - 8px), 980px);
       background: var(--panel-bg);
       border-radius: 14px;
       box-shadow:
@@ -805,7 +805,7 @@
     .fd-send:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 
     /* ── Responsive ── */
-    @media (max-width: 760px) {
+    @media (max-width: 860px) {
       body.fd-home {
         padding: 0;
         align-items: stretch;
