@@ -113,7 +113,7 @@
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
     const TEXT_HOLE_SELECTORS = ['.intro-text'];
-    const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-icon', '.study-card'];
+    const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card'];
 
     let holeRects = [];
 
@@ -176,9 +176,35 @@
       }
     }
 
+    /* ── Genie collapse ──────────────────────────────────────────────
+       As you scroll off the hero, the pattern gets "sucked" toward the
+       bottom-center of the glow — but NOT all at once: the bottom rows go
+       first and each row above follows slightly later, so the collapse
+       sweeps upward like a genie. Driven per-cell here (a single CSS
+       transform on the canvas can't stagger rows). Home view only. */
+    const GENIE = {
+      range:   0.8,   // fraction of one viewport of scroll over which it completes
+      stagger: 0.5,   // bottom→top delay spread (0 = all together, →1 = very sequential)
+      scale:   0.5,   // mark shrink at full collapse (marks halve, then vanish)
+      funnel:  0.25,  // horizontal migration toward center at full collapse (0..1)
+      drop:    0.35,  // downward migration into the glow at full collapse (0..1)
+      fade:    1.0,   // alpha falloff (1 = fully gone by the end)
+    };
+
+    function genieProgress() {
+      if (prefersReducedMotion) return 0;
+      const b = document.body.classList;
+      if (b.contains('work-mode') || b.contains('chat-mode') || b.contains('places-mode')) return 0;
+      const vh = gridLogicalH || innerHeight || 1;
+      const sy = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const p = sy / (vh * GENIE.range);
+      return p < 0 ? 0 : p > 1 ? 1 : p;
+    }
+
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
+      const genieP = genieProgress();
       for (const cl of cells) {
         if (cl.hidden) continue; // grid-snapped binary hole — cell fully off
         if (cl.bx > w + SP || cl.by > h + SP) continue;
@@ -195,23 +221,40 @@
             y += Math.sin(ang) * str;
           }
         }
+        // ── Genie collapse (bottom rows lead, each row above follows) ──
+        let markScale = 1, genieAlpha = 1;
+        if (genieP > 0) {
+          const vb = h > 0 ? cl.by / h : 0;                 // 0 = top row … 1 = bottom row
+          const delay = (1 - vb) * GENIE.stagger;           // bottom rows ≈ no delay
+          let cp = (genieP - delay) / (1 - GENIE.stagger);
+          cp = cp < 0 ? 0 : cp > 1 ? 1 : cp;
+          if (cp > 0) {
+            const e = cp * cp;                              // ease-in: linger, then draw in
+            x += (w / 2 - x) * e * GENIE.funnel;            // migrate toward horizontal center
+            y += (h - y) * e * GENIE.drop;                  // sink toward the bottom / glow
+            markScale = 1 - e * (1 - GENIE.scale);
+            genieAlpha = 1 - e * GENIE.fade;
+            if (genieAlpha <= 0.004) continue;              // fully sucked in
+          }
+        }
         let breathMult = 1;
         if (cl.fadeBreath) {
           const { phase, period, peak } = cl.fadeBreath;
           const u = ((performance.now() + phase) % period) / period;
           breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
-        const alpha = cl.al * breathMult;
+        const alpha = cl.al * breathMult * genieAlpha;
         if (alpha < 0.004) continue;
         c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
         if (cl.tp === 0) {
           c.beginPath();
-          c.arc(x, y, cl.sz, 0, 6.2832);
+          c.arc(x, y, cl.sz * markScale, 0, 6.2832);
           c.fill();
         } else if (cl.tp === 1) {
-          c.fillRect(x - cl.sz / 2, y - cl.sz / 2, cl.sz, cl.sz);
+          const sq = cl.sz * markScale;
+          c.fillRect(x - sq / 2, y - sq / 2, sq, sq);
         } else {
-          const h = cl.slashHalf;
+          const h = cl.slashHalf * markScale;
           const k = 0.72;
           c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
           c.lineWidth = 1.25;
@@ -393,6 +436,17 @@
       holeRaf = requestAnimationFrame(() => { holeRaf = 0; refreshHoles(); });
     }
     window.addEventListener('scroll', scheduleHoleRefresh, { passive: true });
+    // Drive the genie collapse: force a redraw each frame while scrolling so the
+    // staggered per-row shrink stays smooth even when the ambient loop is idle.
+    let genieRaf = 0;
+    function scheduleGenieDraw() {
+      if (genieRaf) return;
+      genieRaf = requestAnimationFrame(() => {
+        genieRaf = 0;
+        if (gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
+      });
+    }
+    window.addEventListener('scroll', scheduleGenieDraw, { passive: true });
     // Mode switches toggle classes on <body>; re-measure when they do.
     new MutationObserver(scheduleHoleRefresh)
       .observe(document.body, { attributes: true, attributeFilter: ['class'] });

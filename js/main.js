@@ -205,7 +205,12 @@
     });
 
     // ── Entrance ──
-    animateHeadingIn(document.querySelector('h1'), 80);
+    animateHeadingIn(
+      document.querySelector('.intro-greeting-life')
+        || document.querySelector('.intro-headline-content')
+        || document.querySelector('h1'),
+      80
+    );
 
     anime({
       targets: '.app',
@@ -445,30 +450,53 @@
     const modeTab      = document.getElementById('modeTab');
     const tabPill      = modeTab.querySelector('.tab-pill');
     const tabOpts      = modeTab.querySelectorAll('.tab-opt');
-    const overflowBtn  = document.getElementById('overflowBtn');
     const overflowPanel = document.getElementById('overflowPanel');
-    const overflowItems = overflowPanel.querySelectorAll('.overflow-item');
+    const overflowItems = overflowPanel ? overflowPanel.querySelectorAll('.overflow-item') : [];
     const avatarImg    = document.getElementById('avatarImg');
     const launchpad    = document.querySelector('.launchpad');
     const portfolioGrid = document.getElementById('portfolioGrid');
-    const heading      = document.querySelector('h1');
+    const heading      = document.querySelector('.intro-headline-content') || document.querySelector('h1');
     // Captured before splitText mutates innerHTML
-    const defaultHeadline = "Hi, I'm Luke";
+    const defaultHeadline = '<span class="intro-greeting">Hi, I\'m Luke!</span>';
     const workHeadline    = 'Designing <span class="vet-preview-wrap">software for veterinarians at <a href="https://instinct.vet/" target="_blank" rel="noopener" class="vet-link vet-link--logo"><span class="instinct-inline-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54 38" fill="none" class="instinct-inline-logo__img instinct-inline-logo__img--light" aria-hidden="true" focusable="false"><path d="M55.3876 27.1048H60.434V9.61596H55.3876V27.1048ZM73.664 18.5356H73.6141L66.4435 9.61632H61.9464V27.1051H66.9672V17.9107H67.0178L74.3887 27.1051H78.6606V9.61632H73.664V18.5356ZM43.4656 11.969C43.4392 11.9558 43.1802 11.8875 43.1436 11.515C42.9631 9.7003 41.3135 6.5088 38.4323 4.89219C36.8531 4.00621 35.103 3.49709 33.2927 3.50005C32.2042 3.50076 31.2272 3.61152 30.5113 3.85865C30.2751 3.94013 30.1607 3.80296 30.1409 3.78755C28.4707 2.51719 25.4487 0.804408 21.2575 0.810318C19.1809 0.812556 17.0472 1.25255 14.9156 2.11659C9.69167 4.23498 7.35915 7.93479 6.32127 10.6678C5.90904 11.7636 5.62444 12.9006 5.47039 14.0587C5.42199 14.4226 5.2122 14.735 4.89094 14.9125C2.97138 15.9709 1.13177 17.4307 0.371857 20.1878C0.354262 20.2517 0.335191 20.3147 0.318313 20.3793C0.298525 20.4497 0.282363 20.5223 0.263292 20.5942C0.0967953 21.2411 -0.000756656 21.9152 4.42053e-06 22.6142C4.42053e-06 22.6604 0.00658551 22.7052 0.00730177 22.7507C0.00586917 22.8057 0.000720683 22.8578 0.000720683 22.9135C0.00954018 29.9272 6.7819 31.4815 9.25817 31.4778C9.38142 31.4778 9.84863 31.4683 10.5968 31.4683C11.0758 31.4683 11.166 31.5467 11.3274 31.6905C12.1328 32.4079 14.7477 35.2076 16.4325 36.6725C17.2423 37.3773 18.4401 37.3685 19.2484 36.663L24.2458 31.7052C24.4203 31.5527 24.644 31.4631 24.8766 31.4654C27.4819 31.4874 30.7431 31.469 33.3565 31.4874C36.9785 31.5138 40.2727 30.7275 43.3416 28.7587C46.7216 26.5912 48.5362 23.7438 48.647 20.4827C48.6572 20.1761 48.658 19.8666 48.6382 19.5526C48.4145 16.07 46.4656 13.5101 43.4656 11.969ZM92.0863 17.4737C91.3117 16.9984 90.2504 16.6031 88.9015 16.2869C87.8848 16.0199 87.1396 15.8087 86.6643 15.6488C86.1912 15.4911 85.8824 15.3459 85.7416 15.2124C85.5985 15.0789 85.5281 14.93 85.5281 14.7627C85.5281 14.4122 85.7027 14.1598 86.0533 13.9999C86.4025 13.8422 86.9526 13.7623 87.7022 13.7623C88.4526 13.7623 89.0973 13.7806 89.6386 13.8128C90.1792 13.8474 90.6421 13.8884 91.0257 13.9383L93.1741 14.1634L93.898 10.3647L92.599 10.0155C91.8003 9.81527 90.9912 9.6627 90.1755 9.55346C89.3592 9.44566 88.5677 9.39131 87.8027 9.39131C86.4024 9.39131 85.1416 9.57907 84.0171 9.95244C82.8934 10.3273 82.0095 10.9155 81.3692 11.7144C80.7266 12.5145 80.4068 13.5547 80.4068 14.8376C80.4068 15.8703 80.5726 16.716 80.9064 17.3739C81.2393 18.0312 81.8093 18.5857 82.6183 19.0354C83.4259 19.485 84.5203 19.9177 85.9029 20.3337C86.8352 20.6175 87.5107 20.8464 87.9274 21.021C88.3433 21.1962 88.6051 21.3546 88.7144 21.4963C88.8223 21.637 88.8758 21.8 88.8758 21.9841C88.8758 22.2665 88.7306 22.4872 88.4393 22.6448C88.1482 22.804 87.6597 22.8825 86.9783 22.8825C86.178 22.8825 85.391 22.8495 84.6164 22.7827C83.8425 22.716 83.1721 22.6413 82.6051 22.5576L80.5572 22.2833L79.757 26.1305L81.2812 26.5552C82.2142 26.8061 83.1296 26.9975 84.0296 27.1295C84.9289 27.2631 85.82 27.3297 86.7032 27.3297C88.102 27.3297 89.368 27.1178 90.5005 26.6931C91.633 26.2676 92.5323 25.6177 93.1983 24.7435C93.8651 23.8691 94.1973 22.7579 94.1973 21.4081C94.1973 20.5427 94.0396 19.7894 93.7235 19.1469C93.4066 18.5065 92.8624 17.9476 92.0863 17.4737ZM152.338 9.59832V14.0205H157.76V27.0871H162.78V14.0205H168.152V9.59832H152.338ZM94.8578 14.0385H100.279V27.1051H105.3V14.0385H110.672V9.61632H94.8578V14.0385ZM149.648 22.3573C148.915 22.4579 148.236 22.5415 147.612 22.6082C146.986 22.6749 146.416 22.708 145.9 22.708C144.951 22.708 144.164 22.5671 143.54 22.2833C142.914 22.0009 142.445 21.538 142.127 20.8962C141.812 20.2552 141.653 19.3934 141.653 18.3099C141.653 17.261 141.824 16.4212 142.166 15.7867C142.506 15.1544 143.006 14.6923 143.664 14.4011C144.322 14.1092 145.117 13.9632 146.05 13.9632C146.65 13.9632 147.245 13.9926 147.837 14.0505C148.427 14.1092 149.056 14.1876 149.723 14.2882L150.347 14.3622L151.197 10.4402L150.972 10.3647C150.172 10.0654 149.331 9.82405 148.449 9.64067C147.566 9.45801 146.675 9.36561 145.775 9.36561C144.476 9.36561 143.265 9.55857 142.14 9.94071C141.016 10.3236 140.029 10.8935 139.18 11.6512C138.33 12.4104 137.667 13.3463 137.193 14.4627C136.718 15.5783 136.481 16.8701 136.481 18.3356C136.481 20.3505 136.869 22.0251 137.643 23.3578C138.417 24.6899 139.487 25.6845 140.853 26.3431C142.218 27.0011 143.793 27.3297 145.575 27.3297C146.475 27.3297 147.404 27.2388 148.362 27.0546C149.318 26.8728 150.223 26.6146 151.073 26.2808L151.497 26.1062L150.722 22.2084L149.648 22.3573ZM130.198 18.5356H130.147L122.977 9.61632H118.479V27.1051H123.5V17.9107H123.551L130.922 27.1051H135.194V9.61632H130.198V18.5356ZM112.029 27.1048H117.075V9.61596H112.029V27.1048Z" fill="currentColor"></path><path d="M32.6438 22.7121C32.4296 22.3769 32.1201 22.1099 31.7497 21.9551L33.7529 14.0392C33.8174 14.0451 33.8798 14.0583 33.9458 14.0583C34.2715 14.0583 34.5737 13.9717 34.8436 13.8309L38.2492 18.5231C37.8869 18.8781 37.6609 19.3718 37.6609 19.9189C37.6609 20.1016 37.694 20.2739 37.7402 20.4412L32.6438 22.7121ZM17.7714 28.4488L11.1986 23.1302C11.3908 22.9307 11.5382 22.6938 11.6321 22.4304L19.1049 23.2783C19.1247 23.8901 19.4247 24.4277 19.8817 24.7732L17.7714 28.4488ZM17.7824 9.96464L22.9558 14.5453C22.7556 14.8519 22.6367 15.2172 22.6367 15.6111C22.6367 15.7688 22.6602 15.9199 22.6954 16.0666L11.3753 20.6356C11.2015 20.3957 10.98 20.1969 10.7203 20.0576L17.7824 9.96464ZM32.0358 12.5128L26.2976 14.6649C25.9631 14.0641 25.3294 13.6534 24.5937 13.6534C24.1155 13.6534 23.6827 13.8324 23.3423 14.1177L18.6626 9.97346L31.9932 12.0867C31.9932 12.0925 31.9918 12.0984 31.9918 12.1042C31.9918 12.2444 32.0079 12.3808 32.0358 12.5128ZM30.9964 21.804C30.6436 21.804 30.3172 21.9045 30.0311 22.0681L26.013 16.9519C26.3446 16.6013 26.5514 16.1312 26.5514 15.6111C26.5514 15.4703 26.5345 15.3338 26.5067 15.2018L32.2455 13.0497C32.4583 13.4304 32.7869 13.7378 33.1925 13.9072L31.1893 21.8231C31.1248 21.8172 31.0624 21.804 30.9964 21.804ZM22.1629 21.6038L24.0531 17.483C24.2255 17.5329 24.4052 17.5681 24.5937 17.5681C24.9465 17.5681 25.2729 17.4676 25.559 17.304L29.5764 22.4201C29.3314 22.6798 29.1524 23.004 29.0783 23.3671L22.9947 23.0326C22.9389 22.4407 22.6279 21.9236 22.1629 21.6038ZM11.7472 21.8649C11.7524 21.7497 11.7516 21.6338 11.7362 21.5157C11.7186 21.3874 11.6878 21.2649 11.6482 21.1468L22.914 16.5998C23.0673 16.8602 23.2741 17.0832 23.5265 17.2483L21.6414 21.358C21.4558 21.2994 21.2614 21.259 21.0561 21.259C20.1516 21.259 19.3991 21.8752 19.1739 22.7077L11.7472 21.8649ZM39.6179 17.962C39.2915 17.962 38.9886 18.0492 38.7179 18.1908L35.3123 13.4986C35.6739 13.1437 35.9005 12.6507 35.9005 12.1042C35.9005 11.0253 35.0255 10.1502 33.9458 10.1502C33.0722 10.1502 32.3409 10.7275 32.0908 11.5189L17.7766 9.2495L17.7318 9.53409L17.4957 9.36903L10.1541 19.861C9.95456 19.8243 9.74771 19.8082 9.53501 19.8368C8.46409 19.9813 7.71226 20.9671 7.85675 22.038C8.00126 23.1096 8.98634 23.8608 10.0572 23.7162C10.3015 23.6832 10.526 23.6025 10.7299 23.4911L17.9335 29.3202L20.3863 25.0483C20.5961 25.1246 20.8191 25.173 21.0561 25.173C22.0022 25.173 22.7922 24.5011 22.9734 23.6084L29.0578 23.9429C29.1502 24.9375 29.9776 25.718 30.9964 25.718C32.0768 25.718 32.9534 24.8422 32.9534 23.761C32.9534 23.5791 32.9204 23.406 32.8742 23.2395L37.9705 20.9678C38.3182 21.5128 38.924 21.8766 39.6179 21.8766C40.6991 21.8766 41.5749 21.0001 41.5749 19.9189C41.5749 18.8385 40.6991 17.962 39.6179 17.962Z" fill="white"></path><path d="M19.7273 7.29592C18.7458 6.51104 17.4356 7.18592 17.3336 8.41683C16.5465 7.81973 15.7741 8.10579 15.3941 8.50705C14.524 9.42478 15.2261 10.6784 16.2391 11.0673C17.0857 11.3922 17.9924 11.6658 18.891 11.8676C19.2189 11.2499 19.4786 10.7393 19.6957 10.3579C20.7022 8.58921 20.1095 7.6011 19.7273 7.29592Z" fill="#FABB00"></path></svg><img src="/src/img/instinct-icon-dark.svg" alt="" class="instinct-inline-logo__img instinct-inline-logo__img--dark" decoding="async" aria-hidden="true" /></span></a><span class="vet-preview" aria-hidden="true"><img src="/src/img/instinct-site-preview.png" alt="" decoding="async" loading="eager" width="800" height="520" /></span></span>';
     const descEl          = document.querySelector('.description');
     const defaultDesc     = descEl.innerHTML;
     const workDesc        = `I think in systems, design in details, and am always chasing the pattern that makes something complicated feel completely obvious.`;
     let currentMode    = 'life';
+    let refreshHomeScroll = () => {};
 
     const modeTabInset = 6; /* keep in sync with #modeTab padding in styles.css */
+
+    function navModeFromState(mode, hashSection) {
+      if (hashSection === 'photos') return 'photos';
+      if (mode === 'chat' || mode === 'gear') return mode;
+      return null;
+    }
+
+    function syncNavTabs() {
+      const hashSection = location.hash.slice(1).split('/')[0] || null;
+      const navMode = navModeFromState(currentMode, hashSection);
+      const isOverflowOnlyMode = currentMode === 'bookshelf' || currentMode === 'appstack' || currentMode === 'places';
+
+      tabPill.style.opacity = navMode && !isOverflowOnlyMode ? '1' : '0';
+
+      tabOpts.forEach(btn => {
+        const active = btn.dataset.mode === navMode;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        if (active) positionTabPill(btn);
+      });
+
+      overflowItems.forEach(item => item.classList.toggle('active', item.dataset.mode === currentMode));
+    }
 
     function positionTabPill(btn) {
       tabPill.style.width  = btn.offsetWidth + 'px';
       tabPill.style.transform = `translateX(${btn.offsetLeft - modeTabInset}px)`;
     }
 
-    // Init pill on the active tab
-    requestAnimationFrame(() => positionTabPill(modeTab.querySelector('.tab-opt.active')));
+    // Init pill — hidden until a nav tab is active
+    requestAnimationFrame(() => syncNavTabs());
 
     // ── Bookshelf ──
     const bookshelfView  = document.getElementById('bookshelfView');
@@ -1430,7 +1458,11 @@
     });
 
     function setMode(mode) {
-      if (mode === currentMode) return;
+      if (mode === 'projects') mode = 'work';
+      if (mode === currentMode) {
+        syncNavTabs();
+        return;
+      }
       const prevMode = currentMode;
       currentMode = mode;
 
@@ -1438,18 +1470,8 @@
       const isGearMode       = mode === 'gear';
       const isAppStackMode   = mode === 'appstack';
       const isPlacesMode     = mode === 'places';
-      const isSpecialMode    = isBookshelfMode || isGearMode || isAppStackMode || isPlacesMode;
-      tabPill.style.opacity = isSpecialMode ? '0' : '1';
-      overflowBtn.classList.toggle('active', isSpecialMode);
-      overflowItems.forEach(item => item.classList.toggle('active', item.dataset.mode === mode));
+      const isOverflowOnlyMode = isBookshelfMode || isAppStackMode || isPlacesMode;
       closeOverflowPanel();
-
-      tabOpts.forEach(btn => {
-        const active = btn.dataset.mode === mode;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-        if (active) positionTabPill(btn);
-      });
 
       const isWork      = mode === 'work';
       const isBookshelf = mode === 'bookshelf';
@@ -1458,7 +1480,7 @@
       const isPlaces    = mode === 'places';
       const isChat      = mode === 'chat';
       const isSpecial   = isBookshelf || isGear || isAppStack || isPlaces;
-      const urlSuffix   = isWork ? '?work' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : isChat ? '?chat' : location.pathname;
+      const urlSuffix   = isWork ? '?projects' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : isChat ? '?chat' : location.pathname;
       history.pushState(null, '', urlSuffix);
       // Defer work-mode removal when transitioning work→life to avoid a layout
       // jump: removing it early changes body from padding-top centering to
@@ -1478,9 +1500,6 @@
 
       // Headshot + headline only swap between life ↔ work
       if (!isSpecial && !prevIsSpecial && workStatusChanged) {
-        if (avatarImg) {
-          avatarImg.src = isWork ? '/src/img/headshot-work.jpg' : '/src/img/headshot-personal.jpg';
-        }
         animateHeadingOut(heading, () => {
           heading.innerHTML = isWork ? workHeadline : defaultHeadline;
           animateHeadingIn(heading);
@@ -1618,7 +1637,6 @@
         if (prevIsChat && chatView) chatView.style.display = 'none';
         if (prevIsSpecial) {
           const prevSpecial = prevSpecialView();
-          if (avatarImg) avatarImg.src = '/src/img/headshot-work.jpg';
           heading.innerHTML = workHeadline;
           descEl.innerHTML  = workDesc;
           fadeOutSpecial(prevSpecial, () => {
@@ -1656,7 +1674,6 @@
         if (prevIsChat && chatView) chatView.style.display = 'none';
         if (prevIsSpecial) {
           const prevSpecial = prevSpecialView();
-          if (avatarImg) avatarImg.src = '/src/img/headshot-personal.jpg';
           heading.innerHTML = defaultHeadline;
           descEl.innerHTML  = defaultDesc;
           fadeOutSpecial(prevSpecial, () => {
@@ -1691,47 +1708,70 @@
           });
         }
       }
+      syncNavTabs();
+      refreshHomeScroll();
+    }
+
+    function onNavClick(navMode) {
+      if (navMode === 'photos') {
+        if (currentMode !== 'life') setMode('life');
+        indexScrollPos = 0;
+        location.hash = '#photos';
+        return;
+      }
+      if (navMode === 'logbook') {
+        if (currentMode !== 'life') {
+          setMode('life');
+          setTimeout(() => { if (window.scrollToHomeSection) window.scrollToHomeSection('homeLogbook'); }, 320);
+        } else if (window.scrollToHomeSection) {
+          window.scrollToHomeSection('homeLogbook');
+        }
+        location.hash = '';
+        return;
+      }
+      if (navMode === 'projects') {
+        if (modalIsOpen) closeSModal();
+        location.hash = '';
+        if (currentMode !== 'life') {
+          setMode('life');
+          setTimeout(() => { if (window.scrollToHomeSection) window.scrollToHomeSection('homeProjects'); }, 320);
+        } else if (window.scrollToHomeSection) {
+          window.scrollToHomeSection('homeProjects');
+        }
+        return;
+      }
+      if (modalIsOpen) closeSModal();
+      location.hash = '';
+      setMode(navMode);
     }
 
     tabOpts.forEach(btn => {
-      btn.addEventListener('click', () => setMode(btn.dataset.mode));
+      btn.addEventListener('click', () => onNavClick(btn.dataset.mode));
     });
 
-    // ── Overflow panel ──
+    // ── Overflow panel (legacy modes via ?bookshelf etc.) ──
     let overflowOpen = false;
 
     function closeOverflowPanel() {
-      if (!overflowOpen) return;
+      if (!overflowOpen || !overflowPanel) return;
       overflowOpen = false;
       overflowPanel.classList.remove('open');
-      overflowBtn.setAttribute('aria-expanded', 'false');
       overflowPanel.setAttribute('aria-hidden', 'true');
     }
 
-    overflowBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (overflowOpen) {
-        closeOverflowPanel();
-      } else {
-        overflowPanel.style.width = modeTab.offsetWidth + 'px';
-        overflowOpen = true;
-        overflowPanel.classList.add('open');
-        overflowBtn.setAttribute('aria-expanded', 'true');
-        overflowPanel.setAttribute('aria-hidden', 'false');
-      }
-    });
+    if (overflowPanel) {
+      overflowItems.forEach(item => {
+        item.addEventListener('click', () => setMode(item.dataset.mode));
+      });
 
-    overflowItems.forEach(item => {
-      item.addEventListener('click', () => setMode(item.dataset.mode));
-    });
+      document.addEventListener('click', e => {
+        if (overflowOpen && !overflowPanel.contains(e.target)) closeOverflowPanel();
+      });
 
-    document.addEventListener('click', e => {
-      if (overflowOpen && !overflowPanel.contains(e.target)) closeOverflowPanel();
-    });
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && overflowOpen) closeOverflowPanel();
-    });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && overflowOpen) closeOverflowPanel();
+      });
+    }
 
     // ── Power → fade to black → version ──
     const powerBtn      = document.getElementById('powerBtn');
@@ -2197,7 +2237,8 @@
       'portfolio':    { label: 'Portfolio' },
       'case-studies': { label: 'Case Studies' },
       'career':       { label: 'Career' },
-      'resume':       { label: 'Resume' }
+      'resume':       { label: 'Resume' },
+      'logbook':      { label: 'Logbook' },
     };
 
     const SECTION_APP_BY_SLUG = {
@@ -2517,6 +2558,7 @@
       sModal.style.pointerEvents = 'none';
       restoreModalFocus(sModal);
       history.pushState(null, '', location.pathname + location.search);
+      syncNavTabs();
     }
 
     // Keep keyboard focus inside whichever dialog is currently open.
@@ -2715,6 +2757,51 @@
       setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
     }
 
+    function fetchFlights() {
+      return fetch('/flights.js')
+        .then(r => r.text())
+        .then(t => {
+          const m = t.match(/export default (\[[\s\S]*\]);?\s*$/);
+          return m ? JSON.parse(m[1]) : [];
+        })
+        .catch(() => []);
+    }
+
+    function renderLogbook() {
+      sModalTitle.textContent = 'Logbook';
+      sModalBack.style.display = 'none';
+      fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
+      fetchFlights().then(flights => {
+        const groups = ['IN FLIGHT', 'ARRIVED', 'CANCELLED'];
+        let html = '';
+        groups.forEach(status => {
+          const items = flights.filter(f => f.status === status);
+          if (!items.length) return;
+          html += `<h3 class="logbook-group">${escHtml(status)}</h3><div class="sm-list">`;
+          items.forEach(f => {
+            if (f.url) {
+              html += `<a class="sm-row" href="${escHtml(f.url)}" target="_blank" rel="noopener noreferrer">
+                <span class="sm-row-title">${escHtml(f.title)}</span>
+                <span class="sm-row-sub">${escHtml(f.gate)} · ${escHtml(f.date)}</span>
+              </a>`;
+            } else {
+              html += `<div class="sm-row sm-row--static">
+                <span class="sm-row-title">${escHtml(f.title)}</span>
+                <span class="sm-row-sub">${escHtml(f.gate)} · ${escHtml(f.date)}</span>
+              </div>`;
+            }
+          });
+          html += '</div>';
+        });
+        if (!html) {
+          fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic;margin-top:8px">Nothing logged yet.</p></div>`);
+          return;
+        }
+        fadeSwap(`<div class="sm-fade">${html}</div>`);
+        setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
+      });
+    }
+
     function parseCareerMd(md) {
       const body = md.replace(/^---[\s\S]*?---\n?/, '');
       const sections = body.split(/^## /m).filter(s => s.trim());
@@ -2830,6 +2917,7 @@
       if (section === 'resume')    { renderResumeEmbed(); return; }
       if (section === 'photos')    { renderPhotosGrid(); return; }
       if (section === 'labs')      { renderLabsGrid(); return; }
+      if (section === 'logbook')   { renderLogbook(); return; }
 
       if (section === 'videos') {
         renderMixedIndex(section);
@@ -3128,21 +3216,33 @@
       if (parsed && parsed.section === 'versions' && !parsed.item) {
         closeSModal();
         showVersionScreenFromHash();
+        syncNavTabs();
         return;
       }
 
       hideVersionScreenIfNeeded();
 
-      if (!parsed) { closeSModal(); return; }
+      if (!parsed) { closeSModal(); syncNavTabs(); return; }
 
       if (parsed.section === 'now') {
         openSModal();
         renderNowBoard();
+        syncNavTabs();
+        return;
+      }
+
+      if (parsed.section === 'logbook') {
+        closeSModal();
+        if (typeof window.scrollToHomeSection === 'function') {
+          window.scrollToHomeSection('homeLogbook');
+        }
+        syncNavTabs();
         return;
       }
 
       if (!SECTIONS[parsed.section]) {
         closeSModal();
+        syncNavTabs();
         return;
       }
       // Don't open modals for sections marked "coming soon" (e.g. Labs).
@@ -3150,6 +3250,7 @@
       const sectionBtn = sectionApp && document.querySelector(`.app[data-app="${sectionApp}"]`);
       if (sectionBtn && sectionBtn.classList.contains('app--coming-soon')) {
         closeSModal();
+        syncNavTabs();
         return;
       }
       openSModal();
@@ -3159,6 +3260,7 @@
         indexScrollPos = 0;
         renderIndex(parsed.section);
       }
+      syncNavTabs();
     }
 
     // App icon clicks → hash
@@ -3194,7 +3296,7 @@
     window.addEventListener('hashchange', handleHash);
 
     // Restore mode from URL query param
-    if (location.search === '?work') setMode('work');
+    if (location.search === '?work' || location.search === '?projects') setMode('work');
     else if (location.search === '?bookshelf') setMode('bookshelf');
     else if (location.search === '?gear') setMode('gear');
     else if (location.search === '?appstack') setMode('appstack');
@@ -3237,4 +3339,114 @@
         tick();
         setInterval(tick, 60 * 1000);
       }, (60 - new Date().getSeconds()) * 1000);
+    })();
+
+    // ── Hero → below-fold "event horizon" parallax ──
+    // Three layers move at three different speeds as you scroll past the hero:
+    //   • hero    — position:fixed, speed 0 (stays put behind everything)
+    //   • glow    — the aurora gradient, rises SLOWER than the content (GLOW_SPEED)
+    //   • content — the below-fold, rises at native scroll speed (fastest)
+    // The speed gap makes the content feel like it's accelerating up THROUGH the
+    // gradient — a transition moment rather than a static divider.
+    (function heroParallax() {
+      const belowFold = document.getElementById('belowFold');
+      const glowTrack = document.querySelector('.hero-glow-track');
+      const topBar = document.getElementById('topBar');
+      if (!belowFold || !glowTrack) return;
+
+      const reduced = typeof matchMedia === 'function'
+        && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // ── Tunables ──
+      const GLOW_SPEED    = 0.5;   // glow rises at this fraction of content speed (<1 ⇒ content is faster)
+      const GLOW_FADE     = 0.55;  // how much the glow dims as you cross it (0 = never, 1 = fully gone)
+      const CONTENT_BOOST = 0;     // extra content speed-up (0 = native). Small values only — >0 can poke content above the seam.
+      const NAV_REVEAL_DISTANCE = 88; // px past viewport top for the glow to fully reveal the bar
+      const GREETING_FADE_START = 96;  // px below viewport top — greeting starts fading
+      const GREETING_FADE_END   = -12; // px above viewport top — greeting fully gone before nav appears
+
+      // NB: the dot-grid "genie" collapse (bottom-up sequential shrink into the
+      // glow) is driven per-cell inside grid.js, not here — a single CSS transform
+      // can't stagger rows.
+
+      const inner   = CONTENT_BOOST > 0 ? belowFold.querySelector('.below-fold-inner') : null;
+      let ticking = false;
+
+      function navPinnedOpen() {
+        return reduced
+          || currentMode === 'chat'
+          || currentMode === 'places'
+          || currentMode === 'bookshelf'
+          || currentMode === 'appstack';
+      }
+
+      function smoothstep(t) {
+        return t * t * (3 - 2 * t);
+      }
+
+      function setNavReveal(reveal) {
+        if (!topBar) return;
+        const clamped = Math.max(0, Math.min(1, reveal));
+        topBar.style.setProperty('--nav-reveal', clamped.toFixed(3));
+        topBar.classList.toggle('nav-revealed', clamped > 0.04);
+      }
+
+      function setGreetingReveal(reveal) {
+        const clamped = Math.max(0, Math.min(1, reveal));
+        document.body.style.setProperty('--intro-greeting-reveal', clamped.toFixed(3));
+      }
+
+      function greetingRevealFromGlow(glowTop, seam) {
+        if (seam <= 0) return 0;
+        if (glowTop >= GREETING_FADE_START) return 1;
+        if (glowTop <= GREETING_FADE_END) return 0;
+        return smoothstep((glowTop - GREETING_FADE_END) / (GREETING_FADE_START - GREETING_FADE_END));
+      }
+
+      function update() {
+        ticking = false;
+
+        if (navPinnedOpen()) {
+          setNavReveal(1);
+          setGreetingReveal(0);
+          return;
+        }
+
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const seam = belowFold.getBoundingClientRect().top; // viewport-y of the gradient seam
+        const travel = Math.max(0, vh - seam);              // px the seam has risen from the bottom
+        const progress = vh > 0 ? Math.min(1, travel / vh) : 0;
+
+        // Hold the glow back so the content overtakes it (rises at GLOW_SPEED).
+        const lag = travel * (1 - GLOW_SPEED);
+        glowTrack.style.transform = `translate3d(0, ${lag.toFixed(2)}px, 0)`;
+        glowTrack.style.opacity = (1 - progress * GLOW_FADE).toFixed(3);
+
+        if (inner) {
+          inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;
+        }
+
+        const glowTop = glowTrack.getBoundingClientRect().top;
+
+        // Reveal the top bar only once the gradient limb crosses the viewport top.
+        let reveal = 0;
+        if (seam <= 0) {
+          reveal = 1;
+        } else if (glowTop <= 0) {
+          reveal = smoothstep(Math.min(1, (-glowTop) / NAV_REVEAL_DISTANCE));
+        }
+        setNavReveal(reveal);
+        setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : greetingRevealFromGlow(glowTop, seam));
+      }
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      refreshHomeScroll = update;
+      update();
     })();
