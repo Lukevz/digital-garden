@@ -1867,21 +1867,22 @@
     body.starfield-mode .clock-hero-scale { display: none; }
     body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
 
-    /* Blue atmospheric limb at the horizon — retint the hero glow from the
-       aurora pastels to a cool planetary-rim blue. */
+    /* Earthy planetary limb at the horizon — warm tan/terracotta easing into
+       brown, echoing the planet surface in the reference. Retints the hero
+       glow away from the aurora pastels. */
     body.starfield-mode .hero-glow {
       background: radial-gradient(ellipse 82% 100% at 50% 100%,
-        rgba(160,198,255,0.58) 0%,
-        rgba(96,146,224,0.34) 32%,
-        rgba(42,74,140,0.12) 56%,
-        transparent 78%);
-      filter: blur(22px) saturate(1.05);
+        rgba(222,190,148,0.5) 0%,
+        rgba(192,148,104,0.3) 34%,
+        rgba(150,108,72,0.12) 58%,
+        transparent 80%);
+      filter: blur(26px) saturate(1);
     }
     body.starfield-mode .hero-glow::after {
       background: radial-gradient(ellipse 82% 100% at 50% 0%,
-        rgba(120,160,230,0.26) 0%,
-        rgba(70,110,180,0.13) 26%,
-        transparent 60%);
+        rgba(210,176,134,0.24) 0%,
+        rgba(170,126,86,0.11) 28%,
+        transparent 62%);
     }
 
     /* Shrink the dial phrase ~24% while anchoring its top edge, so the greeting

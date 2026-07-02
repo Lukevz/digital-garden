@@ -31,19 +31,6 @@
       const n = parseInt(hex.slice(1), 16);
       return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
     }
-    // A 4-point sparkle: four tips joined by concave quadratic edges pinched
-    // toward the centre, so it reads as a twinkle rather than a plus sign.
-    function drawSparkle(c, cx, cy, R, fill) {
-      const r = R * 0.16;
-      c.fillStyle = fill;
-      c.beginPath();
-      c.moveTo(cx, cy - R);
-      c.quadraticCurveTo(cx + r, cy - r, cx + R, cy);
-      c.quadraticCurveTo(cx + r, cy + r, cx, cy + R);
-      c.quadraticCurveTo(cx - r, cy + r, cx - R, cy);
-      c.quadraticCurveTo(cx - r, cy - r, cx, cy - R);
-      c.fill();
-    }
     let bodies = null; // { deathStar, sunBig, sunSmall } — set per layout
     const useFinePointer = typeof matchMedia !== 'undefined' &&
       matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -104,20 +91,22 @@
         for (let ri = 0; ri <= rows; ri++) {
           const bx = offX + ci * SP;
           const by = offY + ri * SP;
-          // Mostly uniform, with slight per-star size/alpha variation so the
-          // field reads as near vs. distant stars rather than a mechanical mesh.
-          const dim = r() < 0.24;
+          // Size tiers give a natural distant-starfield spread: mostly tiny
+          // speckles, some medium points, a few larger soft orbs (soft edge).
+          const t = r();
+          const tier = t < 0.62 ? 0 : t < 0.9 ? 1 : 2;
+          const sz = STAR_R * (tier === 0 ? 0.3 + r() * 0.22
+                             : tier === 1 ? 0.55 + r() * 0.35
+                             :              0.95 + r() * 0.6);
           const cell = {
-            bx, by,
-            sz: (dim ? 0.6 : 0.82) * (0.9 + r() * 0.2) * STAR_R,
-            al: (dim ? 0.32 : 0.7) + r() * 0.16,
+            bx, by, sz,
+            soft: tier === 2, // larger orbs render with a soft radial falloff
+            al: (tier === 0 ? 0.42 : tier === 1 ? 0.58 : 0.5) + r() * 0.16,
           };
           // Subtle twinkle on a fraction of stars — opacity + size breathe.
-          if (!prefersReducedMotion && r() < 0.42) {
-            cell.twinkle = { phase: r() * 90000, period: 2400 + r() * 4000, depth: 0.42 + r() * 0.4 };
+          if (!prefersReducedMotion && r() < 0.4) {
+            cell.twinkle = { phase: r() * 90000, period: 2400 + r() * 4000, depth: 0.38 + r() * 0.38 };
           }
-          // A few brighter stars carry a soft shimmering glow halo.
-          if (!prefersReducedMotion && !dim && r() < 0.09) cell.glow = true;
           cells.push(cell);
         }
       }
@@ -306,21 +295,24 @@
           tw = 1 - depth * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
         const shimmer = prefersReducedMotion ? 1
-          : 1 + 0.16 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
+          : 1 + 0.09 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
         const alpha = Math.min(1, cl.al * tw * shimmer * genieAlpha);
         if (alpha < 0.004) continue;
         const R = cl.sz * markScale * (cl.twinkle ? 0.9 + 0.12 * tw : 1);
-        // Soft glow halo on the few brightest stars — shimmers with the wave.
-        if (cl.glow && R > 0.5) {
-          const ga = Math.min(0.5, alpha * 0.55);
-          const gr = R * 3.4;
+        if (cl.soft) {
+          // Distant orb — a soft radial falloff, no hard edge, blends into sky.
+          const gr = R * 2.0;
           const g = c.createRadialGradient(x, y, 0, x, y, gr);
-          g.addColorStop(0, `rgba(${gridDotRgb},${ga.toFixed(3)})`);
+          g.addColorStop(0, `rgba(${gridDotRgb},${alpha.toFixed(3)})`);
+          g.addColorStop(0.45, `rgba(${gridDotRgb},${(alpha * 0.4).toFixed(3)})`);
           g.addColorStop(1, `rgba(${gridDotRgb},0)`);
           c.fillStyle = g;
           c.beginPath(); c.arc(x, y, gr, 0, 6.2832); c.fill();
+        } else {
+          // Crisp little speckle (anti-aliased round point).
+          c.fillStyle = `rgba(${gridDotRgb},${alpha.toFixed(3)})`;
+          c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
         }
-        drawSparkle(c, x, y, R, `rgba(${gridDotRgb},${alpha.toFixed(3)})`);
       }
       // Celestial bodies sit above the stars and fade out as the field collapses.
       if (bodies) drawBodies(c, ts, genieP);
