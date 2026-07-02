@@ -1,5 +1,5 @@
 /**
- * Home feed — videos carousel, writing table, projects masonry, logbook stacks.
+ * Home feed — projects masonry, writing table, editorial video grid, logbook stacks.
  */
 (function () {
   const YT_HANDLES = ['lukevanzylofficial', 'uxwithluke'];
@@ -118,8 +118,11 @@
     if (videoCache[handle]) return Promise.resolve(videoCache[handle]);
     return fetch(`/api/youtube/channel-videos?handle=${handle}`)
       .then(r => r.json())
-      .then(({ videos }) => {
-        videoCache[handle] = videos || [];
+      .then(({ videos, channelTitle }) => {
+        videoCache[handle] = (videos || []).map(v => ({
+          ...v,
+          channel: channelTitle || handle,
+        }));
         return videoCache[handle];
       })
       .catch(() => []);
@@ -133,6 +136,34 @@
     });
   }
 
+  function excerpt(text, max) {
+    if (!text) return '';
+    const clean = String(text).replace(/\s+/g, ' ').trim();
+    if (clean.length <= max) return clean;
+    return `${clean.slice(0, max).trim()}…`;
+  }
+
+  function videoCard(v, variant, { showDek = false } = {}) {
+    const title = esc(v.title);
+    const date = formatDate(v.publishedAt || '');
+    const channel = esc(v.channel || '');
+    const dek = showDek && v.description
+      ? `<p class="video-card__dek">${esc(excerpt(v.description, 150))}</p>`
+      : '';
+
+    return `<a class="video-card video-card--${variant}" href="#videos/${v.videoId}" aria-label="${title}">
+      <div class="video-card__media">
+        <img src="${esc(v.thumbnail)}" alt="" loading="lazy">
+      </div>
+      <div class="video-card__body">
+        ${channel ? `<span class="video-card__eyebrow">${channel}</span>` : ''}
+        <h3 class="video-card__title">${title}</h3>
+        ${dek}
+        ${date ? `<time class="video-card__date" datetime="${esc(v.publishedAt || '')}">${date}</time>` : ''}
+      </div>
+    </a>`;
+  }
+
   function renderVideos(videos) {
     const el = document.getElementById('videoCarousel');
     if (!el) return;
@@ -142,35 +173,15 @@
       return;
     }
 
-    const hero = videos[0];
-    const rest = videos.slice(1, 5);
-    const heroTitle = esc(hero.title);
-    const heroDate = formatDate((hero.publishedAt || '').slice(0, 10));
+    const items = videos.slice(0, 6);
+    const [lead, ...rest] = items;
+    const side = rest.slice(0, 2);
+    const compact = rest.slice(2);
 
-    let html = `<a class="video-hero" href="#videos/${hero.videoId}" aria-label="Play: ${heroTitle}">
-      <div class="video-hero__bg" style="background-image:url('${esc(hero.thumbnail)}')"></div>
-      <div class="video-hero__shade"></div>
-      <span class="video-hero__play" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      </span>
-      <div class="video-hero__meta">
-        <p class="video-hero__title">${heroTitle}</p>
-        ${heroDate ? `<span class="video-hero__date">${heroDate}</span>` : ''}
-      </div>
-    </a>`;
-
-    if (rest.length) {
-      html += '<div class="video-row">';
-      rest.forEach(v => {
-        const t = esc(v.title);
-        html += `<a class="video-thumb" href="#videos/${v.videoId}" aria-label="${t}">
-          <img src="${esc(v.thumbnail)}" alt="" loading="lazy">
-          <span class="video-thumb__title">${t}</span>
-        </a>`;
-      });
-      html += '</div>';
-    }
-
+    el.className = 'video-grid';
+    let html = videoCard(lead, 'lead', { showDek: true });
+    side.forEach(v => { html += videoCard(v, 'side'); });
+    compact.forEach(v => { html += videoCard(v, 'compact'); });
     el.innerHTML = html;
   }
 

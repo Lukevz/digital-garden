@@ -35,6 +35,9 @@
       const g = Math.round(GRID_RGB_LIGHT[1] + (GRID_RGB_DARK[1] - GRID_RGB_LIGHT[1]) * t);
       const b = Math.round(GRID_RGB_LIGHT[2] + (GRID_RGB_DARK[2] - GRID_RGB_LIGHT[2]) * t);
       gridDotRgb = `${r},${g},${b}`;
+      // Expose the exact grid mark color as a CSS var so DOM-based effects
+      // (e.g. the clock-dial hero) can visually match the canvas pattern.
+      document.documentElement.style.setProperty('--grid-mark-rgb', gridDotRgb);
     }
 
     function readGridDotRgb() {
@@ -114,16 +117,23 @@
     //     cards, each cleared by its bounding box.
     const TEXT_HOLE_SELECTORS = ['.intro-text'];
     const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card'];
+    // The clock-dial hero replaces background cells 1:1 (its dial lattice is
+    // snapped onto this same 28px grid by js/clock-hero.js), so its cells are
+    // hidden by exact center-in-rect cover — no pad, no AABB reach. The
+    // surrounding texture runs right up to the dial field with no cleared
+    // border, which is what lets the dials read as the background itself.
+    const EXACT_HOLE_SELECTORS = ['.clock-hero'];
 
     let holeRects = [];
 
-    function pushRect(out, r) {
+    function pushRect(out, r, exact) {
       if (r.width < 1 || r.height < 1) return; // hidden / collapsed / empty line
       out.push({
         cx: r.left + r.width / 2,
         cy: r.top + r.height / 2,
         hw: r.width / 2,
         hh: r.height / 2,
+        exact: !!exact,
       });
     }
 
@@ -151,6 +161,9 @@
       for (const sel of BOX_HOLE_SELECTORS) {
         for (const el of document.querySelectorAll(sel)) pushRect(next, el.getBoundingClientRect());
       }
+      for (const sel of EXACT_HOLE_SELECTORS) {
+        for (const el of document.querySelectorAll(sel)) pushRect(next, el.getBoundingClientRect(), true);
+      }
       holeRects = next;
       computeCellMask();
     }
@@ -166,8 +179,11 @@
       for (const cl of cells) {
         let hidden = false;
         for (const r of holeRects) {
-          if (Math.abs(cl.bx - r.cx) <= r.hw + reach &&
-              Math.abs(cl.by - r.cy) <= r.hh + reach) {
+          // Exact rects (clock hero) hide a cell only when its CENTER falls
+          // inside — the dial grid replaces those cells one-for-one.
+          const rx = r.exact ? 0 : reach;
+          if (Math.abs(cl.bx - r.cx) <= r.hw + rx &&
+              Math.abs(cl.by - r.cy) <= r.hh + rx) {
             hidden = true;
             break;
           }

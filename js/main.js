@@ -3359,11 +3359,19 @@
 
       // ── Tunables ──
       const GLOW_SPEED    = 0.5;   // glow rises at this fraction of content speed (<1 ⇒ content is faster)
-      const GLOW_FADE     = 0.55;  // how much the glow dims as you cross it (0 = never, 1 = fully gone)
+      const GLOW_FADE_END = 0.55;  // scroll progress (fraction of one viewport) by which the glow is fully gone —
+                                   // once the top of the body reaches ~mid-viewport, the aurora has cleared out
       const CONTENT_BOOST = 0;     // extra content speed-up (0 = native). Small values only — >0 can poke content above the seam.
-      const NAV_REVEAL_DISTANCE = 88; // px past viewport top for the glow to fully reveal the bar
-      const GREETING_FADE_START = 96;  // px below viewport top — greeting starts fading
-      const GREETING_FADE_END   = -12; // px above viewport top — greeting fully gone before nav appears
+      // Greeting fades out first; nav follows on a shorter ramp once the greeting
+      // is mostly gone — a brief gap avoids the two stacking on top of each other.
+      // Values are UNCAPPED scroll progress (scrollY / viewport-height): 0 = at
+      // the top, 1 = one screen down (the body has just covered the hero).
+      // NB: driven off scroll progress, NOT the glow limb — the glow lags behind
+      // the scroll, so keying off it snapped the swap at exactly one viewport.
+      const GREET_OUT_START = 0.50; // greeting begins fading
+      const GREET_OUT_END   = 0.74; // greeting fully gone
+      const NAV_IN_START    = 0.68; // nav begins once greeting is mostly faded
+      const NAV_IN_END      = 0.86; // nav fully in — still a shorter ramp than before
 
       // NB: the dot-grid "genie" collapse (bottom-up sequential shrink into the
       // glow) is driven per-cell inside grid.js, not here — a single CSS transform
@@ -3396,11 +3404,11 @@
         document.body.style.setProperty('--intro-greeting-reveal', clamped.toFixed(3));
       }
 
-      function greetingRevealFromGlow(glowTop, seam) {
-        if (seam <= 0) return 0;
-        if (glowTop >= GREETING_FADE_START) return 1;
-        if (glowTop <= GREETING_FADE_END) return 0;
-        return smoothstep((glowTop - GREETING_FADE_END) / (GREETING_FADE_START - GREETING_FADE_END));
+      // Smooth 0 → 1 ramp as p travels from `start` to `end` (outside → clamped).
+      function fadeBetween(p, start, end) {
+        if (p <= start) return 0;
+        if (p >= end) return 1;
+        return smoothstep((p - start) / (end - start));
       }
 
       function update() {
@@ -3416,27 +3424,24 @@
         const seam = belowFold.getBoundingClientRect().top; // viewport-y of the gradient seam
         const travel = Math.max(0, vh - seam);              // px the seam has risen from the bottom
         const progress = vh > 0 ? Math.min(1, travel / vh) : 0;
+        const scrollProgress = vh > 0 ? travel / vh : 0;    // uncapped — drives the greeting → nav hand-off
 
         // Hold the glow back so the content overtakes it (rises at GLOW_SPEED).
         const lag = travel * (1 - GLOW_SPEED);
         glowTrack.style.transform = `translate3d(0, ${lag.toFixed(2)}px, 0)`;
-        glowTrack.style.opacity = (1 - progress * GLOW_FADE).toFixed(3);
+        // Fully clear the glow by the time the body's top reaches ~mid-viewport,
+        // so the aurora is gone before the nav swaps in rather than lingering.
+        const glowFade = smoothstep(Math.min(1, progress / GLOW_FADE_END));
+        glowTrack.style.opacity = (1 - glowFade).toFixed(3);
 
         if (inner) {
           inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;
         }
 
-        const glowTop = glowTrack.getBoundingClientRect().top;
-
-        // Reveal the top bar only once the gradient limb crosses the viewport top.
-        let reveal = 0;
-        if (seam <= 0) {
-          reveal = 1;
-        } else if (glowTop <= 0) {
-          reveal = smoothstep(Math.min(1, (-glowTop) / NAV_REVEAL_DISTANCE));
-        }
-        setNavReveal(reveal);
-        setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : greetingRevealFromGlow(glowTop, seam));
+        // Brief beat between greeting out and nav in so they don't stack visibly.
+        const greetOut = fadeBetween(scrollProgress, GREET_OUT_START, GREET_OUT_END);
+        setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : (1 - greetOut));
+        setNavReveal(fadeBetween(scrollProgress, NAV_IN_START, NAV_IN_END));
       }
 
       function onScroll() {
