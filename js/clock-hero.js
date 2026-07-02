@@ -76,7 +76,7 @@
   const LETTER_W = 3;
   const LETTER_H = 5;
   const LETTER_GAP = 1; // columns between letters
-  const LINE_GAP = 2;   // rows between the two word lines
+  const LINE_GAP = 1;   // rows between the two word lines
   const OVERREACH = 1.0; // dead-end arms run exactly to the junction dial's centre; round caps close the join
 
   const PHRASES = [
@@ -113,7 +113,7 @@
   // fuses abutting segments, so no overlap fudge is added (it would push
   // every terminal past the shared cap height / baseline).
   function handLen(reach) { return reach * pitch; }
-  function litWidth(p) { return Math.max(1.8, p * 0.095); }
+  function litWidth(p) { return Math.max(1.9, p * 0.106); }
 
   const MAX_WORD_LEN = PHRASES.reduce(
     (m, [w1, w2]) => Math.max(m, w1.length, w2.length), 0

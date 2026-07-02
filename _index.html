@@ -56,11 +56,6 @@
   </div>
 
   <div class="topBar-center">
-    <div class="intro-greeting-bar" id="introGreetingBar" aria-label="Greeting">
-      <img src="/src/img/headshot-work.jpg" alt="Luke van Zyl" class="avatar avatar--inline" id="avatarImg">
-      <span class="intro-greeting-life">Hi, I'm Luke!</span>
-    </div>
-
     <!-- Mode tab group -->
     <div id="modeTab" role="group" aria-label="View mode">
     <div class="tab-pill"></div>
@@ -299,7 +294,14 @@
   <!-- Sits outside the 760px .intro column so the dot-matrix can spell
        words wide enough to stay legible. -->
   <div class="clock-hero-wrap">
-    <div class="clock-hero" id="clockHero" aria-hidden="true" hidden></div>
+    <div class="intro-greeting-bar" id="introGreetingBar" aria-label="Greeting">
+      <span class="intro-greeting-life"><img src="/src/img/headshot-work.jpg" alt="Luke van Zyl" class="avatar avatar--inline" id="avatarImg"><span class="greet-text"><span class="greet-line">Hi, I'm Luke!</span><span class="greet-line">I'm a...</span></span></span>
+    </div>
+    <!-- Scale wrapper: shrinks the dial phrase without touching #clockHero's own
+         transform (JS sets a grid-snap translate on it every layout). -->
+    <div class="clock-hero-scale">
+      <div class="clock-hero" id="clockHero" aria-hidden="true" hidden></div>
+    </div>
   </div>
 
   <div id="mainPanel" role="main" tabindex="-1">

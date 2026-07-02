@@ -115,7 +115,7 @@
     //     right of short lines instead of a big dead rectangle.
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
-    const TEXT_HOLE_SELECTORS = ['.intro-text'];
+    const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text'];
     const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card'];
     // The clock-dial hero replaces background cells 1:1 (its dial lattice is
     // snapped onto this same 28px grid by js/clock-hero.js), so its cells are

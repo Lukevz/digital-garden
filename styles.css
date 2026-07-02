@@ -15,8 +15,11 @@
 
     :root {
       --label-size: 11px;
+      /* Background pattern pitch — must match SP in js/grid.js / BG_SP in js/clock-hero.js.
+         Hero lockup sizes/gaps are expressed in multiples of this so they land on the grid. */
+      --grid-sp: 28px;
       /* Paired tokens — interpolated via --theme-blend during theme arc */
-      --bg-light: #f2f1ee;
+      --bg-light: #f1f1f0;
       --bg-dark: #13141a;
       --text-muted-light: #9a9790;
       --text-muted-dark: #868c9a;
@@ -765,15 +768,21 @@
       position: absolute;
       left: 50%;
       bottom: 0;
-      width: 100vw;
-      height: 100%;
+      /* Overflow the viewport on both sides and grow taller than the track so the
+         blurred falloff happens OFF-SCREEN — the visible area gets the solid
+         colored core instead of the thin, prematurely-faded edge. */
+      width: 128vw;
+      height: 135%;
       pointer-events: none;
       transform: translateX(-50%);
+      /* Mid/outer stops lean blue in light mode (--theme-blend → 0) so the aurora
+         doesn't clash with the neutral-gray light background; dark mode
+         (--theme-blend → 1) resolves back to the original purple/pink. */
       background: radial-gradient(
-        ellipse at 50% 100%,
+        ellipse 82% 100% at 50% 100%,
         color-mix(in oklab, #8fb8ff 100%, transparent) 0%,
-        color-mix(in oklab, #b48bff 82%, transparent) 35%,
-        color-mix(in oklab, #ffb0d0 52%, transparent) 58%,
+        color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 82%, transparent) 35%,
+        color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 52%, transparent) 58%,
         transparent 80%
       );
       /* saturate() is dialed up in light mode (where --theme-blend → 0) so the
@@ -797,10 +806,10 @@
       height: 55vh;
       max-height: 460px;
       background: radial-gradient(
-        ellipse at 50% 0%,
+        ellipse 82% 100% at 50% 0%,
         color-mix(in oklab, #8fb8ff 45%, transparent) 0%,
-        color-mix(in oklab, #b48bff 24%, transparent) 22%,
-        color-mix(in oklab, #ffb0d0 10%, transparent) 42%,
+        color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 24%, transparent) 22%,
+        color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 10%, transparent) 42%,
         transparent 68%
       );
     }
@@ -1810,6 +1819,8 @@
        the background itself rearranging, not a component sitting on top. */
     .clock-hero-wrap {
       display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
       width: 100%;
       pointer-events: none;
@@ -1825,11 +1836,77 @@
       display: none;
     }
 
+    /* Shrink the dial phrase ~24% while anchoring its top edge, so the greeting
+       above it stays "just above the first line." transform-origin:top keeps the
+       first word row where it lays out; the wrap's negative margin below reclaims
+       the whitespace the scale leaves under the shrunk phrase. */
+    .clock-hero-scale {
+      transform: scale(0.76);
+      transform-origin: top center;
+      margin-bottom: -6%;
+    }
+
     .clock-hero {
       position: relative;
     }
     .clock-hero canvas {
       display: block;
+    }
+
+    /* Lift the whole lockup so it sits vertically centred between the top of the
+       viewport and the top of the aurora glow (which occupies the bottom ~17vh),
+       i.e. its midpoint moves from 50vh up to ~41.5vh. Scoped to the lockup itself
+       so it never shifts the shared hero centring used by other views. */
+    .clock-hero-wrap {
+      transform: translateY(-8.5vh);
+    }
+
+    /* ── Hero greeting (avatar + welcome), sits just above the dial phrase ── */
+    .clock-hero-wrap .intro-greeting-bar {
+      display: block;
+      width: 100%;
+      /* One grid cell of breathing room down to the phrase's first row. */
+      margin: 0 0 var(--grid-sp);
+      padding: 0;
+      pointer-events: none;
+      opacity: var(--intro-greeting-reveal, 1);
+    }
+    body.work-mode .clock-hero-wrap .intro-greeting-bar {
+      display: none;
+    }
+    /* Avatar on the left, two stacked text lines on the right; the whole group is
+       centred on the viewport (greeting-life is full-width with justify-content:center). */
+    .clock-hero-wrap .intro-greeting-life {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      /* Geist Mono echoes the constructed, on-grid geometry of the dial letters. */
+      font-family: 'Geist Mono', ui-monospace, monospace;
+      font-size: clamp(23px, 3.5vw, 34px);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+    .clock-hero-wrap .greet-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .clock-hero-wrap .greet-line { display: block; }
+    .clock-hero-wrap .intro-greeting-bar .avatar--inline {
+      flex-shrink: 0;
+      /* Same height as the two text lines (2 × line-height), square + rounded. */
+      height: 2.4em;
+      width: 2.4em;
+      object-fit: cover;
+      object-position: center 28%;
+      border-radius: 22%;
+      box-shadow: inset 0 0 0 1px var(--glass-border);
     }
 
     /* ── Now strip ── */
@@ -5433,12 +5510,15 @@ body.places-mode .topBar-actions,
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  /* Shadow only when focused — while parked off-screen via translateY, a
+     box-shadow isn't clipped by the transform and its blur bleeds back down
+     past the viewport's top edge (a stray dark band above the clock). */
   transform: translateY(-150%);
   transition: transform 0.18s ease;
 }
 .skip-link:focus {
   transform: translateY(0);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   outline: 2px solid var(--link, #4a7ab5);
   outline-offset: 2px;
 }
