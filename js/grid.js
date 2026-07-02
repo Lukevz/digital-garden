@@ -22,9 +22,10 @@
     // palette (pale stars on a dark sky) per the reference; celestial bodies and
     // a fraction of stars breathe subtly. The pitch also drives the content
     // hole-clearing reach below.
-    const SP = 56;                    // star pitch (uniform)
-    const STAR_R = SP * 0.17;         // base sparkle radius
-    const STAR_COLOR = '224,231,244'; // pale blue-white star
+    const SP = 40;                    // star pitch (uniform) — denser field
+    const STAR_R = SP * 0.12;         // base sparkle radius — small twinkles
+    // Stars take the theme-aware grid mark colour (see gridDotRgb below): dark
+    // marks on a light sky, pale marks on a dark sky.
     // Convert #rrggbb → rgba() with alpha.
     function hexA(hex, a) {
       const n = parseInt(hex.slice(1), 16);
@@ -82,11 +83,11 @@
     // Anchor the twin suns and Death Star relative to the viewport (snapped to
     // the lattice so they nestle among the stars rather than floating off-grid).
     function buildBodies(w, h) {
-      const sunBig = { cx: w - SP * 3.0, cy: h * 0.66, r: SP * 1.32 };
+      const sunBig = { cx: w - SP * 3.4, cy: h * 0.66, r: SP * 0.95 };
       bodies = {
-        deathStar: { cx: SP * 2.5, cy: SP * 2.5, r: SP * 0.92 },
+        deathStar: { cx: SP * 2.8, cy: SP * 2.8, r: SP * 0.66 },
         sunBig,
-        sunSmall: { cx: sunBig.cx - SP * 1.7, cy: sunBig.cy - SP * 2.05, r: SP * 0.6 },
+        sunSmall: { cx: sunBig.cx - SP * 1.9, cy: sunBig.cy - SP * 2.15, r: SP * 0.42 },
       };
     }
 
@@ -111,10 +112,12 @@
             sz: (dim ? 0.6 : 0.82) * (0.9 + r() * 0.2) * STAR_R,
             al: (dim ? 0.32 : 0.7) + r() * 0.16,
           };
-          // Subtle twinkle on a fraction of stars — opacity breathes in/out.
-          if (!prefersReducedMotion && r() < 0.3) {
-            cell.twinkle = { phase: r() * 90000, period: 2600 + r() * 4200, depth: 0.4 + r() * 0.4 };
+          // Subtle twinkle on a fraction of stars — opacity + size breathe.
+          if (!prefersReducedMotion && r() < 0.42) {
+            cell.twinkle = { phase: r() * 90000, period: 2400 + r() * 4000, depth: 0.42 + r() * 0.4 };
           }
+          // A few brighter stars carry a soft shimmering glow halo.
+          if (!prefersReducedMotion && !dim && r() < 0.09) cell.glow = true;
           cells.push(cell);
         }
       }
@@ -294,16 +297,30 @@
             if (genieAlpha <= 0.004) continue;              // fully sucked in
           }
         }
-        // ── Subtle twinkle (opacity breathes toward dim, then back) ──
+        // ── Twinkle (opacity + size breathe) + a slow diagonal shimmer wave
+        //    sweeping across the whole field, so the sky gently glimmers. ──
         let tw = 1;
         if (cl.twinkle) {
           const { phase, period, depth } = cl.twinkle;
           const u = ((ts + phase) % period) / period;
           tw = 1 - depth * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
-        const alpha = cl.al * tw * genieAlpha;
+        const shimmer = prefersReducedMotion ? 1
+          : 1 + 0.16 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
+        const alpha = Math.min(1, cl.al * tw * shimmer * genieAlpha);
         if (alpha < 0.004) continue;
-        drawSparkle(c, x, y, cl.sz * markScale, `rgba(${STAR_COLOR},${alpha.toFixed(3)})`);
+        const R = cl.sz * markScale * (cl.twinkle ? 0.9 + 0.12 * tw : 1);
+        // Soft glow halo on the few brightest stars — shimmers with the wave.
+        if (cl.glow && R > 0.5) {
+          const ga = Math.min(0.5, alpha * 0.55);
+          const gr = R * 3.4;
+          const g = c.createRadialGradient(x, y, 0, x, y, gr);
+          g.addColorStop(0, `rgba(${gridDotRgb},${ga.toFixed(3)})`);
+          g.addColorStop(1, `rgba(${gridDotRgb},0)`);
+          c.fillStyle = g;
+          c.beginPath(); c.arc(x, y, gr, 0, 6.2832); c.fill();
+        }
+        drawSparkle(c, x, y, R, `rgba(${gridDotRgb},${alpha.toFixed(3)})`);
       }
       // Celestial bodies sit above the stars and fade out as the field collapses.
       if (bodies) drawBodies(c, ts, genieP);
@@ -313,22 +330,25 @@
     function drawBodies(c, ts, genieP) {
       const fade = 1 - genieP;
       if (fade <= 0.01) return;
-      const bob = prefersReducedMotion ? 0 : Math.sin(ts / 4200) * 3;
-      const pulse = prefersReducedMotion ? 0 : Math.sin(ts / 3000);
-      drawSun(c, bodies.sunBig, '#efd23f', '#e6a028', fade, 1 + pulse * 0.015);
-      drawSun(c, bodies.sunSmall, '#f0a032', '#df7d1c', fade, 1 - pulse * 0.02);
-      drawDeathStar(c, bodies.deathStar, fade, bob);
+      const bob = prefersReducedMotion ? 0 : Math.sin(ts / 4200) * 2;
+      // Two out-of-phase shimmer signals in 0..1 so each body breathes its own way.
+      const shimA = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 2600);
+      const shimB = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 3300 + 1.5);
+      drawSun(c, bodies.sunBig, '#efd23f', '#e6a028', fade, shimA);
+      drawSun(c, bodies.sunSmall, '#f0a032', '#df7d1c', fade, shimB);
+      drawDeathStar(c, bodies.deathStar, fade, bob, shimB);
     }
 
-    function drawSun(c, b, core, edge, fade, scale) {
-      const cx = b.cx, cy = b.cy, r = b.r * scale;
+    function drawSun(c, b, core, edge, fade, shim) {
+      const cx = b.cx, cy = b.cy, r = b.r * (1 + (shim - 0.5) * 0.04);
       c.save();
-      // Soft outer corona.
-      const glow = c.createRadialGradient(cx, cy, r * 0.55, cx, cy, r * 2.2);
-      glow.addColorStop(0, hexA(core, 0.34 * fade));
+      // Soft outer corona that breathes in radius + intensity (the shimmer).
+      const cr = r * (2.0 + shim * 0.5);
+      const glow = c.createRadialGradient(cx, cy, r * 0.5, cx, cy, cr);
+      glow.addColorStop(0, hexA(core, (0.26 + shim * 0.16) * fade));
       glow.addColorStop(1, hexA(core, 0));
       c.fillStyle = glow;
-      c.beginPath(); c.arc(cx, cy, r * 2.2, 0, 6.2832); c.fill();
+      c.beginPath(); c.arc(cx, cy, cr, 0, 6.2832); c.fill();
       // Disc, lit slightly from the upper-left.
       c.globalAlpha = fade;
       const g = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
@@ -339,9 +359,16 @@
       c.restore();
     }
 
-    function drawDeathStar(c, b, fade, bob) {
+    function drawDeathStar(c, b, fade, bob, shim) {
       const cx = b.cx, cy = b.cy + bob, r = b.r;
       c.save();
+      // Faint cool halo that gently shimmers.
+      const hr = r * (1.7 + shim * 0.2);
+      const halo = c.createRadialGradient(cx, cy, r * 0.8, cx, cy, hr);
+      halo.addColorStop(0, 'rgba(150,170,205,' + ((0.09 + shim * 0.06) * fade).toFixed(3) + ')');
+      halo.addColorStop(1, 'rgba(150,170,205,0)');
+      c.fillStyle = halo;
+      c.beginPath(); c.arc(cx, cy, hr, 0, 6.2832); c.fill();
       c.globalAlpha = fade;
       // Grey sphere, lit from the upper-left with a dark limb lower-right.
       const g = c.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.1, cx, cy, r);

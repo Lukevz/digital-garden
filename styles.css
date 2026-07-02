@@ -1838,23 +1838,24 @@
 
     /* ══════════════════════════════════════════════════════════════════
        Starfield ("Tatooine") alternate background — renderer in js/grid.js.
-       A deep-space star chart: a uniform sparkle lattice with a Death Star
-       top-left and twin suns on the right (all on canvas), and just the
-       avatar + intro copy in the middle (no animated dial phrase). The scene
-       is inherently dark, so the whole UI runs the dark palette: the theme
-       tokens are declared on <html> off --theme-blend, so forcing it to 1
-       here re-resolves every foreground colour to its legible dark variant. */
-    html:has(body.starfield-mode) { --theme-blend: 1; color-scheme: dark; }
+       A star chart: a uniform sparkle lattice with a Death Star top-left and
+       twin suns on the right (all on canvas), and just the avatar + intro copy
+       in the middle (no animated dial phrase). It's theme-aware — the light/
+       dark toggle still applies, so the sky and stars flip between a light
+       "day" chart and a deep-space one. */
 
-    /* Deep-space sky behind the fixed star canvas: near-black up top easing
-       into a faint blue toward the horizon, where the atmospheric limb glows. */
+    /* Sky behind the fixed star canvas, interpolated by --theme-blend: a soft
+       light gradient in light mode, deep space easing into a faint blue toward
+       the horizon in dark mode. Stars themselves take the theme-aware grid
+       mark colour (dark on light, pale on dark) in js/grid.js. */
     body.starfield-mode {
       background:
-        radial-gradient(135% 108% at 50% 120%, #13243f 0%, #070b16 46%, #03040a 100%) fixed;
+        radial-gradient(135% 108% at 50% 120%,
+          color-mix(in oklab, #eef0f4 calc((1 - var(--theme-blend)) * 100%), #13243f calc(var(--theme-blend) * 100%)) 0%,
+          color-mix(in oklab, #f1f1f0 calc((1 - var(--theme-blend)) * 100%), #070b16 calc(var(--theme-blend) * 100%)) 46%,
+          color-mix(in oklab, #ebedf1 calc((1 - var(--theme-blend)) * 100%), #03040a calc(var(--theme-blend) * 100%)) 100%)
+        fixed;
     }
-
-    /* Space is always dark — the theme toggle would only fight it, so hide it. */
-    body.starfield-mode #themeToggle { display: none; }
 
     /* Middle of the hero: avatar sits just above the intro copy; the animated
        dial phrase and its "I'm a…" greeting line are dropped. */
