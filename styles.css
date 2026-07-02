@@ -1836,6 +1836,53 @@
       display: none;
     }
 
+    /* ══════════════════════════════════════════════════════════════════
+       Starfield ("Tatooine") alternate background — renderer in js/grid.js.
+       A deep-space star chart: a uniform sparkle lattice with a Death Star
+       top-left and twin suns on the right (all on canvas), and just the
+       avatar + intro copy in the middle (no animated dial phrase). The scene
+       is inherently dark, so the whole UI runs the dark palette: the theme
+       tokens are declared on <html> off --theme-blend, so forcing it to 1
+       here re-resolves every foreground colour to its legible dark variant. */
+    html:has(body.starfield-mode) { --theme-blend: 1; color-scheme: dark; }
+
+    /* Deep-space sky behind the fixed star canvas: near-black up top easing
+       into a faint blue toward the horizon, where the atmospheric limb glows. */
+    body.starfield-mode {
+      background:
+        radial-gradient(135% 108% at 50% 120%, #13243f 0%, #070b16 46%, #03040a 100%) fixed;
+    }
+
+    /* Space is always dark — the theme toggle would only fight it, so hide it. */
+    body.starfield-mode #themeToggle { display: none; }
+
+    /* Middle of the hero: avatar sits just above the intro copy; the animated
+       dial phrase and its "I'm a…" greeting line are dropped. */
+    body.starfield-mode .clock-hero-wrap {
+      display: flex !important;
+      order: -1;
+      margin: 0 0 20px;
+    }
+    body.starfield-mode .clock-hero-scale { display: none; }
+    body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
+
+    /* Blue atmospheric limb at the horizon — retint the hero glow from the
+       aurora pastels to a cool planetary-rim blue. */
+    body.starfield-mode .hero-glow {
+      background: radial-gradient(ellipse 82% 100% at 50% 100%,
+        rgba(160,198,255,0.58) 0%,
+        rgba(96,146,224,0.34) 32%,
+        rgba(42,74,140,0.12) 56%,
+        transparent 78%);
+      filter: blur(22px) saturate(1.05);
+    }
+    body.starfield-mode .hero-glow::after {
+      background: radial-gradient(ellipse 82% 100% at 50% 0%,
+        rgba(120,160,230,0.26) 0%,
+        rgba(70,110,180,0.13) 26%,
+        transparent 60%);
+    }
+
     /* Shrink the dial phrase ~24% while anchoring its top edge, so the greeting
        above it stays "just above the first line." transform-origin:top keeps the
        first word row where it lays out; the wrap's negative margin below reclaims

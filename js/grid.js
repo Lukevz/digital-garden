@@ -16,7 +16,34 @@
     let gridLogicalW = 0;
     let gridLogicalH = 0;
     let gridDpr = 1;
-    const SP = 28;
+    // ── Starfield lattice ──
+    // A uniform, centred grid of 4-point sparkles (a "star chart"), with a
+    // Death Star top-left and Tatooine-style twin suns on the right. Deep-space
+    // palette (pale stars on a dark sky) per the reference; celestial bodies and
+    // a fraction of stars breathe subtly. The pitch also drives the content
+    // hole-clearing reach below.
+    const SP = 56;                    // star pitch (uniform)
+    const STAR_R = SP * 0.17;         // base sparkle radius
+    const STAR_COLOR = '224,231,244'; // pale blue-white star
+    // Convert #rrggbb → rgba() with alpha.
+    function hexA(hex, a) {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+    // A 4-point sparkle: four tips joined by concave quadratic edges pinched
+    // toward the centre, so it reads as a twinkle rather than a plus sign.
+    function drawSparkle(c, cx, cy, R, fill) {
+      const r = R * 0.16;
+      c.fillStyle = fill;
+      c.beginPath();
+      c.moveTo(cx, cy - R);
+      c.quadraticCurveTo(cx + r, cy - r, cx + R, cy);
+      c.quadraticCurveTo(cx + r, cy + r, cx, cy + R);
+      c.quadraticCurveTo(cx - r, cy + r, cx - R, cy);
+      c.quadraticCurveTo(cx - r, cy - r, cx, cy - R);
+      c.fill();
+    }
+    let bodies = null; // { deathStar, sunBig, sunSmall } — set per layout
     const useFinePointer = typeof matchMedia !== 'undefined' &&
       matchMedia('(hover: hover) and (pointer: fine)').matches;
     // Respect the user's reduced-motion preference: keep the dot grid static
@@ -52,43 +79,47 @@
 
     let ambientAnim = false;
 
+    // Anchor the twin suns and Death Star relative to the viewport (snapped to
+    // the lattice so they nestle among the stars rather than floating off-grid).
+    function buildBodies(w, h) {
+      const sunBig = { cx: w - SP * 3.0, cy: h * 0.66, r: SP * 1.32 };
+      bodies = {
+        deathStar: { cx: SP * 2.5, cy: SP * 2.5, r: SP * 0.92 },
+        sunBig,
+        sunSmall: { cx: sunBig.cx - SP * 1.7, cy: sunBig.cy - SP * 2.05, r: SP * 0.6 },
+      };
+    }
+
     function buildCells(w, h) {
       const r = prng(8675309);
       cells = [];
-      for (let bx = SP / 2; bx < w + SP; bx += SP) {
-        for (let by = SP / 2; by < h + SP; by += SP) {
-          const rv = r(), al = (0.20 + r() * 0.12) * 0.9;
-          const tp = rv < 0.50 ? 0 : rv < 0.78 ? 1 : 2; // 0=dot 1=sq 2=slash
-          const cell = { bx, by, tp, al, sz: tp === 0 ? 0.8 + r() * 0.7 : 1.6 + r() * 1.0, slash: '/' };
-          if (tp === 2) cell.slashHalf = 3.6 + r() * 3.2;
-          // Slow opacity drift on a few slashes — 0 → up to (peak × base alpha)
-          if (tp === 2 && r() < 0.16 && !prefersReducedMotion) {
-            cell.fadeBreath = {
-              phase: r() * 90000,
-              period: 16000 + r() * 22000,
-              peak: 0.5 + r() * 0.5
-            };
-          }
-          // Gentle opacity drift on a small fraction of dots and squares
-          if ((tp === 0 || tp === 1) && r() < 0.065 && !prefersReducedMotion) {
-            cell.fadeBreath = {
-              phase: r() * 90000,
-              period: 22000 + r() * 34000,
-              peak: 0.35 + r() * 0.45
-            };
-          }
-          // Slow pendulum rotation on a few slashes — like leaves swaying in wind
-          if (tp === 2 && r() < 0.12 && !prefersReducedMotion) {
-            cell.rotateDrift = {
-              phase: r() * 90000,
-              period: 19000 + r() * 26000,
-              range: 0.28 + r() * 0.22
-            };
+      // Uniform, centred lattice so the field reads as a symmetric star chart:
+      // whole columns/rows fill the viewport with equal margins on each side.
+      const cols = Math.max(1, Math.round((w - SP) / SP));
+      const rows = Math.max(1, Math.round((h - SP) / SP));
+      const offX = (w - cols * SP) / 2;
+      const offY = (h - rows * SP) / 2;
+      for (let ci = 0; ci <= cols; ci++) {
+        for (let ri = 0; ri <= rows; ri++) {
+          const bx = offX + ci * SP;
+          const by = offY + ri * SP;
+          // Mostly uniform, with slight per-star size/alpha variation so the
+          // field reads as near vs. distant stars rather than a mechanical mesh.
+          const dim = r() < 0.24;
+          const cell = {
+            bx, by,
+            sz: (dim ? 0.6 : 0.82) * (0.9 + r() * 0.2) * STAR_R,
+            al: (dim ? 0.32 : 0.7) + r() * 0.16,
+          };
+          // Subtle twinkle on a fraction of stars — opacity breathes in/out.
+          if (!prefersReducedMotion && r() < 0.3) {
+            cell.twinkle = { phase: r() * 90000, period: 2600 + r() * 4200, depth: 0.4 + r() * 0.4 };
           }
           cells.push(cell);
         }
       }
-      ambientAnim = cells.some(c => c.fadeBreath || c.rotateDrift);
+      buildBodies(w, h);
+      ambientAnim = !prefersReducedMotion; // twinkle + celestial pulse
     }
 
     /* ── Ripples ── */
@@ -188,6 +219,16 @@
             break;
           }
         }
+        // Also clear the stars a celestial body sits over, so it reads as a
+        // solid disc against the sky rather than sparkles poking through it.
+        if (!hidden && bodies) {
+          for (const key in bodies) {
+            const b = bodies[key];
+            const clearR = b.r + SP * 0.5;
+            const dx = cl.bx - b.cx, dy = cl.by - b.cy;
+            if (dx * dx + dy * dy <= clearR * clearR) { hidden = true; break; }
+          }
+        }
         cl.hidden = hidden;
       }
     }
@@ -253,58 +294,70 @@
             if (genieAlpha <= 0.004) continue;              // fully sucked in
           }
         }
-        let breathMult = 1;
-        if (cl.fadeBreath) {
-          const { phase, period, peak } = cl.fadeBreath;
-          const u = ((performance.now() + phase) % period) / period;
-          breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
+        // ── Subtle twinkle (opacity breathes toward dim, then back) ──
+        let tw = 1;
+        if (cl.twinkle) {
+          const { phase, period, depth } = cl.twinkle;
+          const u = ((ts + phase) % period) / period;
+          tw = 1 - depth * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
-        const alpha = cl.al * breathMult * genieAlpha;
+        const alpha = cl.al * tw * genieAlpha;
         if (alpha < 0.004) continue;
-        c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
-        if (cl.tp === 0) {
-          c.beginPath();
-          c.arc(x, y, cl.sz * markScale, 0, 6.2832);
-          c.fill();
-        } else if (cl.tp === 1) {
-          const sq = cl.sz * markScale;
-          c.fillRect(x - sq / 2, y - sq / 2, sq, sq);
-        } else {
-          const h = cl.slashHalf * markScale;
-          const k = 0.72;
-          c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
-          c.lineWidth = 1.25;
-          c.lineCap = 'round';
-          if (cl.rotateDrift) {
-            const { phase, period, range } = cl.rotateDrift;
-            const u = ((performance.now() + phase) % period) / period;
-            const dAngle = range * Math.sin(u * 2 * Math.PI);
-            c.save();
-            c.translate(x, y);
-            c.rotate(dAngle);
-            c.beginPath();
-            if (cl.slash === '/') {
-              c.moveTo(-h * k, h * k);
-              c.lineTo(h * k, -h * k);
-            } else {
-              c.moveTo(-h * k, -h * k);
-              c.lineTo(h * k, h * k);
-            }
-            c.stroke();
-            c.restore();
-          } else {
-            c.beginPath();
-            if (cl.slash === '/') {
-              c.moveTo(x - h * k, y + h * k);
-              c.lineTo(x + h * k, y - h * k);
-            } else {
-              c.moveTo(x - h * k, y - h * k);
-              c.lineTo(x + h * k, y + h * k);
-            }
-            c.stroke();
-          }
-        }
+        drawSparkle(c, x, y, cl.sz * markScale, `rgba(${STAR_COLOR},${alpha.toFixed(3)})`);
       }
+      // Celestial bodies sit above the stars and fade out as the field collapses.
+      if (bodies) drawBodies(c, ts, genieP);
+    }
+
+    /* ── Celestial bodies (Death Star + Tatooine twin suns) ── */
+    function drawBodies(c, ts, genieP) {
+      const fade = 1 - genieP;
+      if (fade <= 0.01) return;
+      const bob = prefersReducedMotion ? 0 : Math.sin(ts / 4200) * 3;
+      const pulse = prefersReducedMotion ? 0 : Math.sin(ts / 3000);
+      drawSun(c, bodies.sunBig, '#efd23f', '#e6a028', fade, 1 + pulse * 0.015);
+      drawSun(c, bodies.sunSmall, '#f0a032', '#df7d1c', fade, 1 - pulse * 0.02);
+      drawDeathStar(c, bodies.deathStar, fade, bob);
+    }
+
+    function drawSun(c, b, core, edge, fade, scale) {
+      const cx = b.cx, cy = b.cy, r = b.r * scale;
+      c.save();
+      // Soft outer corona.
+      const glow = c.createRadialGradient(cx, cy, r * 0.55, cx, cy, r * 2.2);
+      glow.addColorStop(0, hexA(core, 0.34 * fade));
+      glow.addColorStop(1, hexA(core, 0));
+      c.fillStyle = glow;
+      c.beginPath(); c.arc(cx, cy, r * 2.2, 0, 6.2832); c.fill();
+      // Disc, lit slightly from the upper-left.
+      c.globalAlpha = fade;
+      const g = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+      g.addColorStop(0, core);
+      g.addColorStop(1, edge);
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, r, 0, 6.2832); c.fill();
+      c.restore();
+    }
+
+    function drawDeathStar(c, b, fade, bob) {
+      const cx = b.cx, cy = b.cy + bob, r = b.r;
+      c.save();
+      c.globalAlpha = fade;
+      // Grey sphere, lit from the upper-left with a dark limb lower-right.
+      const g = c.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.1, cx, cy, r);
+      g.addColorStop(0, '#c3c7ce');
+      g.addColorStop(0.55, '#888d96');
+      g.addColorStop(1, '#41454d');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, r, 0, 6.2832); c.fill();
+      // Superlaser dish — a smaller, darker inset disc toward the upper-right.
+      const dx = cx + r * 0.34, dy = cy - r * 0.3, dr = r * 0.24;
+      const dg = c.createRadialGradient(dx - dr * 0.35, dy - dr * 0.35, dr * 0.1, dx, dy, dr);
+      dg.addColorStop(0, '#70747c');
+      dg.addColorStop(1, '#2f323a');
+      c.fillStyle = dg;
+      c.beginPath(); c.arc(dx, dy, dr, 0, 6.2832); c.fill();
+      c.restore();
     }
 
     /* ── Lens ── */
@@ -469,20 +522,6 @@
     // Re-measure once fonts/async content (e.g. post counts) settle.
     window.addEventListener('load', refreshHoles);
     setTimeout(refreshHoles, 600);
-
-    /* ── Slash flipper ── */
-    function flipSlashes() {
-      const slashCells = cells.filter(c => c.tp === 2 && !c.rotateDrift);
-      if (!slashCells.length) return;
-      const count = 1 + Math.floor(Math.random() * 2); // flip 1–2 at a time
-      for (let i = 0; i < count; i++) {
-        const cell = slashCells[Math.floor(Math.random() * slashCells.length)];
-        cell.slash = cell.slash === '/' ? '\\' : '/';
-      }
-      if (gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
-      setTimeout(flipSlashes, 18000 + Math.random() * 8000); // every 18–26s
-    }
-    setTimeout(flipSlashes, 18000 + Math.random() * 8000);
 
     resize();
     window.addEventListener('resize', () => { clearTimeout(canvas._rt); canvas._rt = setTimeout(resize, 100); });
