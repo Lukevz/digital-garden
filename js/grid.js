@@ -23,7 +23,7 @@
     // a fraction of stars breathe subtly. The pitch also drives the content
     // hole-clearing reach below.
     const SP = 40;                    // star pitch (uniform) — denser field
-    const STAR_R = SP * 0.12;         // base sparkle radius — small twinkles
+    const STAR_R = SP * 0.085;        // base star radius — small crisp points
     // Stars take the theme-aware grid mark colour (see gridDotRgb below): dark
     // marks on a light sky, pale marks on a dark sky.
     // Convert #rrggbb → rgba() with alpha.
@@ -92,21 +92,19 @@
           const bx = offX + ci * SP;
           const by = offY + ri * SP;
           // Size tiers give a natural distant-starfield spread: mostly tiny
-          // speckles, some medium points, a few larger soft orbs (soft edge).
+          // pinpoints, some a touch larger, a rare few brighter still.
           const t = r();
-          const tier = t < 0.62 ? 0 : t < 0.9 ? 1 : 2;
-          const sz = STAR_R * (tier === 0 ? 0.3 + r() * 0.22
-                             : tier === 1 ? 0.55 + r() * 0.35
-                             :              0.95 + r() * 0.6);
-          const cell = {
-            bx, by, sz,
-            soft: tier === 2, // larger orbs render with a soft radial falloff
-            al: (tier === 0 ? 0.42 : tier === 1 ? 0.58 : 0.5) + r() * 0.16,
-          };
-          // Subtle twinkle on a fraction of stars — opacity + size breathe.
-          if (!prefersReducedMotion && r() < 0.4) {
-            cell.twinkle = { phase: r() * 90000, period: 2400 + r() * 4000, depth: 0.38 + r() * 0.38 };
+          const sz = STAR_R * (t < 0.7 ? 0.28 + r() * 0.24
+                             : t < 0.93 ? 0.55 + r() * 0.3
+                             :            0.9 + r() * 0.45);
+          const cell = { bx, by, sz, al: 0.3 + r() * 0.24 };
+          // Most stars twinkle — deep enough that they fade nearly to nothing
+          // and swell back, like real stars blinking in and out.
+          if (!prefersReducedMotion && r() < 0.62) {
+            cell.twinkle = { phase: r() * 90000, period: 2200 + r() * 4200, depth: 0.55 + r() * 0.4 };
           }
+          // A few of those get a brief bloom at their brightest instant only.
+          if (cell.twinkle && r() < 0.13) cell.bright = true;
           cells.push(cell);
         }
       }
@@ -295,24 +293,25 @@
           tw = 1 - depth * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
         }
         const shimmer = prefersReducedMotion ? 1
-          : 1 + 0.09 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
+          : 1 + 0.07 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
         const alpha = Math.min(1, cl.al * tw * shimmer * genieAlpha);
         if (alpha < 0.004) continue;
-        const R = cl.sz * markScale * (cl.twinkle ? 0.9 + 0.12 * tw : 1);
-        if (cl.soft) {
-          // Distant orb — a soft radial falloff, no hard edge, blends into sky.
-          const gr = R * 2.0;
-          const g = c.createRadialGradient(x, y, 0, x, y, gr);
-          g.addColorStop(0, `rgba(${gridDotRgb},${alpha.toFixed(3)})`);
-          g.addColorStop(0.45, `rgba(${gridDotRgb},${(alpha * 0.4).toFixed(3)})`);
+        const R = cl.sz * markScale;
+        // Transient bloom: only near a twinkle's brightest instant does a bright
+        // star flare a soft halo — it grows and vanishes with the peak, so it's
+        // never a permanent border. Below the threshold there's no halo at all.
+        if (cl.bright && tw > 0.74) {
+          const b = (tw - 0.74) / 0.26;            // 0 → 1 across the peak
+          const gr = R * (2.4 + b * 1.8);
+          const g = c.createRadialGradient(x, y, R * 0.5, x, y, gr);
+          g.addColorStop(0, `rgba(${gridDotRgb},${(alpha * 0.42 * b).toFixed(3)})`);
           g.addColorStop(1, `rgba(${gridDotRgb},0)`);
           c.fillStyle = g;
           c.beginPath(); c.arc(x, y, gr, 0, 6.2832); c.fill();
-        } else {
-          // Crisp little speckle (anti-aliased round point).
-          c.fillStyle = `rgba(${gridDotRgb},${alpha.toFixed(3)})`;
-          c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
         }
+        // The star itself is always a crisp anti-aliased point.
+        c.fillStyle = `rgba(${gridDotRgb},${alpha.toFixed(3)})`;
+        c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
       }
       // Celestial bodies sit above the stars and fade out as the field collapses.
       if (bodies) drawBodies(c, ts, genieP);
