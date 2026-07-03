@@ -33,6 +33,15 @@ const Q_LOG_MAX = 1000;
 const GAPS_KEY = 'chat:gaps';        // hash keyed by normalized topic → gap record
 const LOG_TIMEOUT_MS = 4000;
 
+// Per-IP rate limits. The system prompt tells the model to deflect free-assistant
+// abuse, but that lives only in the prompt — a direct POST to /api/chat never sees
+// it, and every request spends real Gemini tokens (answer stream + classify call).
+// These caps are the actual cost guard. Generous enough for a real conversation,
+// brutal for a script hammering the endpoint in a loop.
+const RATE_PER_MIN = 20;
+const RATE_PER_DAY = 300;
+const MAX_MESSAGES = 100; // reject absurdly large payloads before we do any work
+
 async function callGemini(apiKey, payload) {
   return fetch(GEMINI_URL, {
     method: 'POST',
@@ -306,6 +315,38 @@ async function logInteraction(apiKey, question, kb) {
   }
 }
 
+// Best-guess client IP behind Vercel's proxy. x-forwarded-for is a comma-list
+// with the real client first.
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || '';
+}
+
+// Fixed-window per-IP rate limit backed by the same KV as the guestbook. Two
+// windows: a per-minute burst cap (stops tight loops) and a per-day total cap
+// (stops slow drains). Fails OPEN if KV is unavailable — a real visitor must
+// never be blocked because logging infra is down, matching the rest of chat.
+async function checkRateLimit(ip) {
+  if (!ip) return { ok: true };
+  try {
+    const minKey = `chat:rl:min:${ip}`;
+    const perMin = await kv.incr(minKey);
+    if (perMin === 1) await kv.expire(minKey, 60);
+    if (perMin > RATE_PER_MIN) return { ok: false, retryAfter: 60 };
+
+    const dayKey = `chat:rl:day:${ip}`;
+    const perDay = await kv.incr(dayKey);
+    if (perDay === 1) await kv.expire(dayKey, 86400);
+    if (perDay > RATE_PER_DAY) return { ok: false, retryAfter: 3600 };
+
+    return { ok: true };
+  } catch (e) {
+    console.warn('[chat] rate limit check skipped:', e.message);
+    return { ok: true };
+  }
+}
+
 async function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -344,6 +385,19 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Cost guard: reject over-rate callers before spending any Gemini tokens.
+  // 429 is handled with a friendly message on the client (js/chat.js).
+  const rl = await checkRateLimit(clientIp(req));
+  if (!rl.ok) {
+    res.writeHead(429, {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Retry-After': String(rl.retryAfter || 60)
+    });
+    res.end(JSON.stringify({ error: 'rate_limited', retryAfter: rl.retryAfter || 60 }));
+    return;
+  }
+
   let body;
   try {
     body = req.body && typeof req.body === 'object' ? req.body : await readJsonBody(req);
@@ -357,6 +411,11 @@ export default async function handler(req, res) {
   if (!messages.length) {
     res.writeHead(400, { ...corsHeaders, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'messages required' }));
+    return;
+  }
+  if (messages.length > MAX_MESSAGES) {
+    res.writeHead(400, { ...corsHeaders, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'too many messages' }));
     return;
   }
 

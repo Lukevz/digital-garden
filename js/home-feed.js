@@ -1,75 +1,10 @@
 /**
- * Home feed — projects masonry, writing table, editorial video grid, logbook stacks.
+ * Home feed — case studies split (rendered in main.js), writing table,
+ * videos thumbnails, photos masonry.
  */
 (function () {
   const YT_HANDLES = ['lukevanzylofficial', 'uxwithluke'];
   const videoCache = {};
-
-  const PROJECTS = [
-    { title: 'GymBud',          desc: 'Interval timer for strength training',              tall: true  },
-    { title: 'Research Garden',   desc: 'Document rabbit-hole research sessions',            tall: false },
-    { title: 'Digital Garden',    desc: 'Bear-style notes in the browser',                   tall: true  },
-    { title: 'Flight Board',    desc: 'Solari-style project tracker',                      tall: false },
-    { title: 'Now Board',       desc: 'What I\'m focused on right now',                    tall: true  },
-    { title: 'Particle Field',  desc: 'Black hole particle simulation background',         tall: false },
-  ];
-
-  const LOGBOOK_STACKS = [
-    {
-      id: 'books',
-      label: 'Books',
-      colors: ['#4a3728', '#2a1a10'],
-      items: [
-        { title: 'Phoebe Berman\'s Gonna Lose It', sub: 'Brooke Averick' },
-        { title: 'Heir to the Empire', sub: 'Timothy Zahn' },
-        { title: 'Ready Player One', sub: 'Ernest Cline' },
-        { title: 'Building a Second Brain', sub: 'Tiago Forte' },
-        { title: 'Steal Like an Artist', sub: 'Austin Kleon' },
-      ],
-    },
-    {
-      id: 'tv',
-      label: 'TV',
-      colors: ['#2a3a5c', '#141c2e'],
-      items: [
-        { title: 'Severance', sub: 'Season 2' },
-        { title: 'The Bear', sub: 'Season 3' },
-        { title: 'Andor', sub: 'Rewatch' },
-        { title: 'Slow Horses', sub: 'Apple TV+' },
-      ],
-    },
-    {
-      id: 'movies',
-      label: 'Movies',
-      colors: ['#3d2a4a', '#1a1020'],
-      items: [
-        { title: 'Dune: Part Two', sub: '2024' },
-        { title: 'Past Lives', sub: '2023' },
-        { title: 'The Holdovers', sub: '2023' },
-      ],
-    },
-    {
-      id: 'games',
-      label: 'Games',
-      colors: ['#1e4a3a', '#0a2018'],
-      items: [
-        { title: 'Hades II', sub: 'Early access' },
-        { title: 'Balatro', sub: 'Mobile' },
-        { title: 'Zelda: TOTK', sub: 'Slow playthrough' },
-      ],
-    },
-    {
-      id: 'music',
-      label: 'Music',
-      colors: ['#4a3a1e', '#201808'],
-      items: [
-        { title: 'Hand Habits', sub: 'On repeat' },
-        { title: 'Japanese Breakfast', sub: 'Jubilee' },
-        { title: 'Khruangbin', sub: 'Live sessions' },
-        { title: 'Bon Iver', sub: 'SABLE' },
-      ],
-    },
-  ];
 
   function esc(s) {
     return String(s)
@@ -136,36 +71,22 @@
     });
   }
 
-  function excerpt(text, max) {
-    if (!text) return '';
-    const clean = String(text).replace(/\s+/g, ' ').trim();
-    if (clean.length <= max) return clean;
-    return `${clean.slice(0, max).trim()}…`;
-  }
-
-  function videoCard(v, variant, { showDek = false } = {}) {
+  function filmstripFrame(v) {
     const title = esc(v.title);
-    const date = formatDate(v.publishedAt || '');
     const channel = esc(v.channel || '');
-    const dek = showDek && v.description
-      ? `<p class="video-card__dek">${esc(excerpt(v.description, 150))}</p>`
-      : '';
-
-    return `<a class="video-card video-card--${variant}" href="#videos/${v.videoId}" aria-label="${title}">
-      <div class="video-card__media">
+    return `<a class="filmstrip-frame" href="#videos/${v.videoId}" aria-label="${title}">
+      <div class="filmstrip-frame__media">
         <img src="${esc(v.thumbnail)}" alt="" loading="lazy">
       </div>
-      <div class="video-card__body">
-        ${channel ? `<span class="video-card__eyebrow">${channel}</span>` : ''}
-        <h3 class="video-card__title">${title}</h3>
-        ${dek}
-        ${date ? `<time class="video-card__date" datetime="${esc(v.publishedAt || '')}">${date}</time>` : ''}
+      <div class="filmstrip-frame__body">
+        ${channel ? `<span class="filmstrip-frame__eyebrow">${channel}</span>` : ''}
+        <h3 class="filmstrip-frame__title">${title}</h3>
       </div>
     </a>`;
   }
 
   function renderVideos(videos) {
-    const el = document.getElementById('videoCarousel');
+    const el = document.getElementById('videoFilmstrip');
     if (!el) return;
 
     if (!videos.length) {
@@ -173,16 +94,29 @@
       return;
     }
 
-    const items = videos.slice(0, 6);
-    const [lead, ...rest] = items;
-    const side = rest.slice(0, 2);
-    const compact = rest.slice(2);
+    const frames = videos.slice(0, 12).map(filmstripFrame).join('');
+    el.innerHTML = `<div class="video-filmstrip__track">${frames}</div>`;
+  }
 
-    el.className = 'video-grid';
-    let html = videoCard(lead, 'lead', { showDek: true });
-    side.forEach(v => { html += videoCard(v, 'side'); });
-    compact.forEach(v => { html += videoCard(v, 'compact'); });
-    el.innerHTML = html;
+  function photoTile(img) {
+    const src = img.thumb || img.src;
+    return `<div class="home-photo">
+      <img src="${esc(src)}" alt="" loading="lazy" decoding="async">
+    </div>`;
+  }
+
+  function renderPhotos(images) {
+    const el = document.getElementById('homePhotosGrid');
+    if (!el) return;
+
+    if (!images.length) {
+      el.innerHTML = '<p class="home-empty">No photos yet.</p>';
+      return;
+    }
+
+    // Cap the count so the masonry stays ~2-3 rows tall (see .home-photos-masonry).
+    const tiles = images.slice(0, 15).map(photoTile).join('');
+    el.innerHTML = `<div class="home-photos-masonry">${tiles}</div>`;
   }
 
   function renderWriting(items) {
@@ -190,7 +124,10 @@
     if (!el) return;
 
     const posts = (items || [])
-      .map(({ file, date }) => ({ title: cleanTitle(file), slug: filenameToSlug(cleanTitle(file)), date: date || '' }))
+      // Slug must match slugToFilename() in main.js, which slugifies the raw
+      // filename (minus .md) — so build it from `file`, not the cleaned title,
+      // or "B. …" book notes route to "Not found".
+      .map(({ file, date }) => ({ title: cleanTitle(file), slug: filenameToSlug(file.replace(/\.md$/, '')), date: date || '' }))
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 8);
 
@@ -211,65 +148,6 @@
     </table>`;
   }
 
-  function renderProjects() {
-    const el = document.getElementById('projectsMasonry');
-    if (!el) return;
-
-    el.innerHTML = PROJECTS.map(p => `
-      <a class="project-card" href="#" tabindex="0" aria-label="${esc(p.title)}" style="aspect-ratio:3/${p.tall ? 4.6 : 3.6}">
-        <div class="project-card__fill"></div>
-        <div class="project-card__overlay">
-          <p class="project-card__title">${esc(p.title)}</p>
-          <p class="project-card__desc">${esc(p.desc)}</p>
-        </div>
-      </a>`).join('');
-  }
-
-  function renderLogbookStacks() {
-    const el = document.getElementById('logbookStacks');
-    if (!el) return;
-
-    el.innerHTML = LOGBOOK_STACKS.map(stack => {
-      const items = stack.items.map((item, i) => `
-        <div class="logbook-item" style="transition-delay:${i * 45}ms">
-          ${esc(item.title)}
-          ${item.sub ? `<span class="logbook-item__sub">${esc(item.sub)}</span>` : ''}
-        </div>`).join('');
-
-      const cards = [0, 1, 2].map(() =>
-        `<div class="logbook-stack__card" style="--stack-a:${stack.colors[0]};--stack-b:${stack.colors[1]}"></div>`
-      ).join('');
-
-      return `<div class="logbook-stack" data-stack="${stack.id}">
-        <button type="button" class="logbook-stack__btn" aria-expanded="false" aria-controls="stack-grid-${stack.id}">
-          <div class="logbook-stack__pile" aria-hidden="true">${cards}</div>
-          <span class="logbook-stack__label">${esc(stack.label)} <span class="logbook-stack__count">(${stack.items.length})</span></span>
-        </button>
-        <div class="logbook-stack__grid" id="stack-grid-${stack.id}" hidden>${items}</div>
-      </div>`;
-    }).join('');
-
-    el.querySelectorAll('.logbook-stack__btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const stack = btn.closest('.logbook-stack');
-        const grid = stack.querySelector('.logbook-stack__grid');
-        const expanded = stack.classList.toggle('is-expanded');
-        btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-        grid.hidden = !expanded;
-
-        // Collapse other stacks
-        if (expanded) {
-          el.querySelectorAll('.logbook-stack.is-expanded').forEach(other => {
-            if (other === stack) return;
-            other.classList.remove('is-expanded');
-            other.querySelector('.logbook-stack__btn').setAttribute('aria-expanded', 'false');
-            other.querySelector('.logbook-stack__grid').hidden = true;
-          });
-        }
-      });
-    });
-  }
-
   function initIcons() {
     document.querySelectorAll('[data-clone-icon]').forEach(slot => {
       cloneAppIcon(slot.dataset.cloneIcon, slot);
@@ -278,10 +156,16 @@
 
   function init() {
     initIcons();
-    renderProjects();
-    renderLogbookStacks();
 
     fetchAllVideos().then(renderVideos);
+
+    fetch('/api/content/list?category=photos')
+      .then(r => r.json())
+      .then(({ images }) => renderPhotos(images || []))
+      .catch(() => {
+        const el = document.getElementById('homePhotosGrid');
+        if (el) el.innerHTML = '<p class="home-empty">Couldn\'t load photos.</p>';
+      });
 
     fetch('/api/content/list?category=writing')
       .then(r => r.json())

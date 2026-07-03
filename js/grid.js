@@ -43,9 +43,15 @@
     const GRID_RGB_LIGHT = [58, 61, 69];
     const GRID_RGB_DARK = [178, 186, 202];
     let gridDotRgb = '58,61,69';
+    // 1 = dark (constellation as authored), 0 = light (half-turned sky). The
+    // theme wipe ramps this 0↔1, so the celestial swing animates with it.
+    let themeBlend = 1;
+    let bodyPivot = { cx: 0, cy: 0 }; // centre the sky rotates about
+    let frameBodies = null;           // per-frame rotated body positions
 
     function setGridDotBlend(blend) {
       const t = Math.max(0, Math.min(1, blend));
+      themeBlend = t;
       const r = Math.round(GRID_RGB_LIGHT[0] + (GRID_RGB_DARK[0] - GRID_RGB_LIGHT[0]) * t);
       const g = Math.round(GRID_RGB_LIGHT[1] + (GRID_RGB_DARK[1] - GRID_RGB_LIGHT[1]) * t);
       const b = Math.round(GRID_RGB_LIGHT[2] + (GRID_RGB_DARK[2] - GRID_RGB_LIGHT[2]) * t);
@@ -76,6 +82,61 @@
         sunBig,
         sunSmall: { cx: sunBig.cx - SP * 1.9, cy: sunBig.cy - SP * 2.15, r: SP * 0.42 },
       };
+      // Pivot sits above the viewport midline so the bodies swung in from the
+      // far side land tucked up toward the top corners (matching how the moon
+      // nestles into the top-left in dark mode) rather than sagging low.
+      bodyPivot = { cx: w / 2, cy: h * 0.42 };
+    }
+
+    // Snappy ease for the celestial swing: near-flat and slow at both ends, a
+    // fast whip through the middle — reads as a slow wind-up, an abrupt spin,
+    // then a soft landing. Symmetric, so it mirrors cleanly on the way back.
+    function easeInOutExpo(x) {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      return x < 0.5
+        ? Math.pow(2, 20 * x - 10) / 2
+        : (2 - Math.pow(2, -20 * x + 10)) / 2;
+    }
+
+    // The night sky rotates a half-turn between themes. In dark mode the bodies
+    // sit where they're authored (moon top-left, twin suns lower-right); as the
+    // theme wipes to light the whole constellation swings 180° about the
+    // viewport centre — the big sun rises over the top to the upper-left, the
+    // smaller sun trails down-and-right of it, and the moon sets toward the
+    // bottom-right. The negative angle sweeps the right-side suns up over the
+    // top (a sunrise arc) rather than down under. themeBlend drives the swing
+    // (1 = dark/authored, 0 = light/half-turned), so it animates with the
+    // toggle at no extra cost.
+    function computeFrameBodies() {
+      if (!bodies) return null;
+      // Ease the swing fraction (0 dark → 1 light) rather than the raw blend, so
+      // the rotation whips through the middle and settles slowly at each end.
+      const a = -easeInOutExpo(1 - themeBlend) * Math.PI;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const out = {};
+      for (const key in bodies) {
+        const b = bodies[key];
+        const dx = b.cx - bodyPivot.cx, dy = b.cy - bodyPivot.cy;
+        out[key] = {
+          cx: bodyPivot.cx + dx * ca - dy * sa,
+          cy: bodyPivot.cy + dx * sa + dy * ca,
+          r: b.r,
+        };
+      }
+      return out;
+    }
+
+    // Is a cell centre covered by any body at its current (rotated) position?
+    // Tested per-frame in the draw loop so the cleared disc follows the swing.
+    function cellUnderBody(bx, by, fb) {
+      for (const key in fb) {
+        const b = fb[key];
+        const clearR = b.r + SP * 0.5;
+        const dx = bx - b.cx, dy = by - b.cy;
+        if (dx * dx + dy * dy <= clearR * clearR) return true;
+      }
+      return false;
     }
 
     function buildCells(w, h) {
@@ -83,10 +144,28 @@
       cells = [];
       // Uniform, centred lattice so the field reads as a symmetric star chart:
       // whole columns/rows fill the viewport with equal margins on each side.
-      const cols = Math.max(1, Math.round((w - SP) / SP));
-      const rows = Math.max(1, Math.round((h - SP) / SP));
+      // Carry one extra ring vs. what fits with a half-cell margin so the
+      // outermost dots sit ~one pitch from the edge — i.e. the gap to the
+      // viewport edge matches the gap between dots, instead of the wider
+      // (~1.5·pitch) inset the half-cell centring used to leave.
+      const cols = Math.max(1, Math.round(w / SP));
+      const rows = Math.max(1, Math.round(h / SP));
       const offX = (w - cols * SP) / 2;
       const offY = (h - rows * SP) / 2;
+      // The outermost ring hugs the very edge (reads as the margin), so the
+      // first *visible* row is one pitch in. Expose its Y so fixed UI (the top
+      // bar) can centre on it — keeping the clock/weather + icons on the first
+      // star row. Recomputed here on every (re)build, i.e. on resize.
+      let firstRowY = offY;
+      while (firstRowY < SP * 0.5) firstRowY += SP;
+      document.documentElement.style.setProperty('--grid-first-row-y', firstRowY.toFixed(1) + 'px');
+      // Same for the first visible column. The lattice is centred, so the last
+      // visible column is its mirror (w − inset) — the top bar uses this one
+      // value to sit the clock's left edge on the left dot and the power
+      // button's right edge on the right dot.
+      let firstColX = offX;
+      while (firstColX < SP * 0.5) firstColX += SP;
+      document.documentElement.style.setProperty('--grid-col-inset', firstColX.toFixed(1) + 'px');
       for (let ci = 0; ci <= cols; ci++) {
         for (let ri = 0; ri <= rows; ri++) {
           const bx = offX + ci * SP;
@@ -137,7 +216,14 @@
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
     const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text'];
-    const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card'];
+    // .corner-status (clock + weather) and the top-right action buttons cut into
+    // the field the same way — each cleared by its own box so the pattern
+    // displaces around them and texture survives in the gaps between the icons.
+    // Clear around each icon's 20px SVG rather than its padded button box, so an
+    // icon only knocks out the one star row it sits on (the taller button box
+    // would reach into the row below).
+    const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card',
+                                 '.corner-status', '.topBar-actions button svg:not([hidden])'];
     // The clock-dial hero replaces background cells 1:1 (its dial lattice is
     // snapped onto this same 28px grid by js/clock-hero.js), so its cells are
     // hidden by exact center-in-rect cover — no pad, no AABB reach. The
@@ -209,16 +295,9 @@
             break;
           }
         }
-        // Also clear the stars a celestial body sits over, so it reads as a
-        // solid disc against the sky rather than sparkles poking through it.
-        if (!hidden && bodies) {
-          for (const key in bodies) {
-            const b = bodies[key];
-            const clearR = b.r + SP * 0.5;
-            const dx = cl.bx - b.cx, dy = cl.by - b.cy;
-            if (dx * dx + dy * dy <= clearR * clearR) { hidden = true; break; }
-          }
-        }
+        // NB: stars sitting under a celestial body are cleared per-frame in
+        // the draw loop (see cellUnderBody), not here — the bodies rotate with
+        // the theme swing, so their cleared discs must follow them each frame.
         cl.hidden = hidden;
       }
     }
@@ -252,9 +331,13 @@
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
       const genieP = genieProgress();
+      frameBodies = computeFrameBodies();
       for (const cl of cells) {
         if (cl.hidden) continue; // grid-snapped binary hole — cell fully off
         if (cl.bx > w + SP || cl.by > h + SP) continue;
+        // Clear stars under a body so it reads as a solid disc, not sparkles
+        // poking through — using the body's rotated position for this frame.
+        if (frameBodies && cellUnderBody(cl.bx, cl.by, frameBodies)) continue;
         let x = cl.bx, y = cl.by;
         for (const rp of ripples) {
           const dt = (ts - rp.t0) / 1000;
@@ -314,42 +397,53 @@
         c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
       }
       // Celestial bodies sit above the stars and fade out as the field collapses.
-      if (bodies) drawBodies(c, ts, genieP);
+      if (frameBodies) drawBodies(c, ts, genieP);
     }
 
     /* ── Celestial bodies (Death Star + Tatooine twin suns) ── */
     function drawBodies(c, ts, genieP) {
+      const fb = frameBodies;
+      if (!fb) return;
       const fade = 1 - genieP;
       if (fade <= 0.01) return;
       const bob = prefersReducedMotion ? 0 : Math.sin(ts / 4200) * 2;
       // Two out-of-phase shimmer signals in 0..1 so each body breathes its own way.
       const shimA = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 2600);
       const shimB = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 3300 + 1.5);
-      drawSun(c, bodies.sunBig, '#efd23f', '#e6a028', fade, shimA);
-      drawSun(c, bodies.sunSmall, '#f0a032', '#df7d1c', fade, shimB);
-      drawDeathStar(c, bodies.deathStar, fade, bob, shimB);
+      // Dial the bodies back so they read as distant scenery, not spotlights
+      // competing with the hero copy: suns to ~55%, the (already muted) grey
+      // Death Star a touch less.
+      drawSun(c, fb.sunBig, '#efd23f', '#e6a028', fade * 0.55, shimA);
+      drawSun(c, fb.sunSmall, '#f0a032', '#df7d1c', fade * 0.55, shimB);
+      drawDeathStar(c, fb.deathStar, fade * 0.72, bob, shimB);
     }
 
+    // Twin suns: a shaded orb whose rim feathers into the sky (no hard circle),
+    // wrapped in a soft corona that breathes with the shimmer.
     function drawSun(c, b, core, edge, fade, shim) {
       const cx = b.cx, cy = b.cy, r = b.r * (1 + (shim - 0.5) * 0.04);
       c.save();
-      // Soft outer corona that breathes in radius + intensity (the shimmer).
+      // Outer corona that breathes in radius + intensity.
       const cr = r * (2.0 + shim * 0.5);
       const glow = c.createRadialGradient(cx, cy, r * 0.5, cx, cy, cr);
-      glow.addColorStop(0, hexA(core, (0.26 + shim * 0.16) * fade));
+      glow.addColorStop(0, hexA(core, 0.42 * (0.62 + shim * 0.38) * fade));
       glow.addColorStop(1, hexA(core, 0));
       c.fillStyle = glow;
       c.beginPath(); c.arc(cx, cy, cr, 0, 6.2832); c.fill();
-      // Disc, lit slightly from the upper-left.
+      // Disc, lit from the upper-left, feathering to transparent at the rim.
       c.globalAlpha = fade;
-      const g = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+      const g = c.createRadialGradient(cx - r * 0.28, cy - r * 0.28, r * 0.1, cx, cy, r * 1.06);
       g.addColorStop(0, core);
-      g.addColorStop(1, edge);
+      g.addColorStop(0.55, edge);
+      g.addColorStop(0.82, hexA(edge, 0.85));
+      g.addColorStop(1, hexA(edge, 0));
       c.fillStyle = g;
-      c.beginPath(); c.arc(cx, cy, r, 0, 6.2832); c.fill();
+      c.beginPath(); c.arc(cx, cy, r * 1.06, 0, 6.2832); c.fill();
       c.restore();
     }
 
+    // Death Star: grey sphere lit from the upper-left, rim feathered into the
+    // sky, with a faint cool halo and the superlaser dish inset.
     function drawDeathStar(c, b, fade, bob, shim) {
       const cx = b.cx, cy = b.cy + bob, r = b.r;
       c.save();
@@ -361,18 +455,19 @@
       c.fillStyle = halo;
       c.beginPath(); c.arc(cx, cy, hr, 0, 6.2832); c.fill();
       c.globalAlpha = fade;
-      // Grey sphere, lit from the upper-left with a dark limb lower-right.
-      const g = c.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.1, cx, cy, r);
-      g.addColorStop(0, '#c3c7ce');
-      g.addColorStop(0.55, '#888d96');
-      g.addColorStop(1, '#41454d');
-      c.fillStyle = g;
-      c.beginPath(); c.arc(cx, cy, r, 0, 6.2832); c.fill();
-      // Superlaser dish — a smaller, darker inset disc toward the upper-right.
       const dx = cx + r * 0.34, dy = cy - r * 0.3, dr = r * 0.24;
+      // Sphere, feathering to transparent at the rim.
+      const g = c.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.1, cx, cy, r * 1.06);
+      g.addColorStop(0, '#c3c7ce');
+      g.addColorStop(0.5, '#888d96');
+      g.addColorStop(0.82, 'rgba(65,69,77,0.85)');
+      g.addColorStop(1, 'rgba(65,69,77,0)');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, r * 1.06, 0, 6.2832); c.fill();
+      // Superlaser dish — a smaller, darker inset disc toward the upper-right.
       const dg = c.createRadialGradient(dx - dr * 0.35, dy - dr * 0.35, dr * 0.1, dx, dy, dr);
-      dg.addColorStop(0, '#70747c');
-      dg.addColorStop(1, '#2f323a');
+      dg.addColorStop(0, 'rgba(112,116,124,0.9)');
+      dg.addColorStop(1, 'rgba(47,50,58,0)');
       c.fillStyle = dg;
       c.beginPath(); c.arc(dx, dy, dr, 0, 6.2832); c.fill();
       c.restore();

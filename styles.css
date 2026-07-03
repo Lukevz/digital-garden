@@ -312,7 +312,10 @@
       width: 100%;
       max-width: 1100px;
       margin: 0 auto;
-      padding: 48px 20px 120px;
+      /* Extra top padding pushes the first section (Projects) further down,
+         so more of the aurora bleed (.hero-glow::after, below) stays visible
+         as its own gap before real content starts. */
+      padding: clamp(120px, 20vh, 260px) 20px 120px;
     }
 
     /* ── Home feed sections ── */
@@ -486,6 +489,136 @@
       font-size: 0.9rem;
     }
 
+    /* Videos — horizontal filmstrip. A dark film band with perforated sprocket
+       rails top & bottom; frames scroll horizontally inside it. */
+    /* Videos: a clean horizontal row of thumbnails — no filmstrip decoration
+       (sprocket rails / dark film base removed), theme-aware surfaces. */
+    .video-filmstrip { position: relative; }
+
+    .video-filmstrip__track {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--glass-border-medium) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    .video-filmstrip__track::-webkit-scrollbar { height: 8px; }
+    .video-filmstrip__track::-webkit-scrollbar-track { background: transparent; }
+    .video-filmstrip__track::-webkit-scrollbar-thumb {
+      background: var(--glass-border-medium);
+      border-radius: 4px;
+    }
+
+    .filmstrip-frame {
+      flex: 0 0 auto;
+      width: clamp(200px, 22vw, 258px);
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: opacity 0.18s ease;
+    }
+    .filmstrip-frame:hover { opacity: 0.9; }
+
+    .filmstrip-frame__media {
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 10px;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    }
+    .filmstrip-frame__media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .filmstrip-frame:hover .filmstrip-frame__media img { transform: scale(1.04); }
+
+    .filmstrip-frame__body {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .filmstrip-frame__eyebrow {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .filmstrip-frame__title {
+      margin: 0;
+      font-size: 0.86rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--text-primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .video-filmstrip .home-loading,
+    .video-filmstrip .home-empty {
+      color: var(--text-secondary);
+    }
+
+    /* Experiments — full-width glass "coming soon" panel at the foot of the feed. */
+    .experiments-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      min-height: 250px;
+      padding: 48px 24px;
+      border-radius: 20px;
+      text-align: center;
+      background: var(--glass-bg);
+      box-shadow: inset 0 0 0 1px var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+    }
+    .experiments-cta__icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .experiments-cta__icon svg {
+      display: block;
+      width: 52px;
+      height: 52px;
+    }
+    .experiments-cta__title {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 30px);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+    }
+    .experiments-cta__badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      user-select: none;
+    }
+
     /* Writing — minimal table */
     .writing-table {
       width: 100%;
@@ -503,7 +636,7 @@
       padding: 0 12px 10px 0;
       border-bottom: 1px solid var(--glass-border-medium);
     }
-    .writing-table th:last-child { padding-right: 0; }
+    .writing-table th:last-child { padding-right: 0; text-align: right; }
 
     .writing-table td {
       padding: 11px 12px 11px 0;
@@ -528,16 +661,153 @@
     .writing-table a:hover { color: var(--link, #4a7ab5); }
 
     /* Projects — portrait masonry */
-    .projects-masonry {
-      columns: 3;
-      column-gap: 14px;
+    /* Case-study section: two-column master/detail split (see renderCaseStudies-
+       Masonry). Left = list of titles, right = expanding cover + blurb preview. */
+    .projects-masonry { display: block; }
+
+    .cs-split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .cs-split__list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cs-split__row {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      /* Rows grow to divide the list column's full height, so the stacked list
+         matches the height of the preview image beside it. */
+      flex: 1 1 0;
+      text-align: left;
+      padding: 18px 20px;
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      font: inherit;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      transition: box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .cs-split__row:hover { transform: translateX(3px); }
+    .cs-split__row.is-active {
+      background: color-mix(in oklab, var(--text-secondary) 9%, var(--surface-raised));
+      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 55%, transparent);
+    }
+
+    .cs-split__row-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    .cs-split__row-sub {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .cs-split__preview {
+      position: sticky;
+      top: 88px;
+    }
+
+    .cs-preview {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      -webkit-appearance: none;
+      appearance: none;
+      animation: csPreviewIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cs-preview__media {
+      display: block;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: color-mix(in oklab, var(--text-secondary) 8%, var(--surface-raised));
+    }
+    .cs-preview__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cs-preview:hover .cs-preview__media img { transform: scale(1.03); }
+
+    .cs-preview__body {
+      display: block;
+      padding: 14px 16px 16px;
+    }
+    /* Fixed line counts + reserved heights keep every preview the same height,
+       so hovering between studies never reflows the row (and the list beside
+       it, which stretches to match, stays put). */
+    .cs-preview__title {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.25;
+      min-height: 2.5em;          /* 2 lines */
+      margin: 0 0 6px;
+    }
+    .cs-preview__desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      min-height: 2.9em;          /* 2 lines */
+      margin: 0 0 10px;
+    }
+    .cs-preview .cs-tags {
+      margin-top: 0;
+      height: 28px;               /* single chip row — fixed, no reflow */
+      overflow: hidden;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    .cs-preview__cta {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--link, #4a7ab5);
+    }
+
+    @keyframes csPreviewIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: none; }
     }
 
     .project-card {
       position: relative;
       display: block;
       break-inside: avoid;
-      margin-bottom: 14px;
+      margin-bottom: 0;
       border-radius: 16px;
       overflow: hidden;
       aspect-ratio: 3 / 4;
@@ -583,6 +853,30 @@
       color: rgba(255,255,255,0.75);
       line-height: 1.35;
       margin: 0;
+    }
+
+    /* Case-study tiles reuse the projects masonry as <button>s. Reset the button
+       chrome, tint each fill by its --cs-accent, and keep the label visible (not
+       hover-only) since these carry real titles worth reading at a glance. */
+    button.project-card--case {
+      width: 100%;
+      border: 0;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .project-card--case .project-card__fill {
+      background: linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--cs-accent, #888) 40%, var(--surface-raised)),
+        color-mix(in oklab, var(--cs-accent, #888) 12%, var(--bg))
+      );
+    }
+    .project-card--case .project-card__overlay {
+      opacity: 1;
+      background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.18) 46%, transparent 72%);
     }
 
     /* Logbook — expandable media stacks */
@@ -737,11 +1031,22 @@
 
       .video-card--compact:last-child { border-bottom: none; }
 
-      .projects-masonry { columns: 2; }
+      .cs-split {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .cs-split__preview {
+        position: static;
+        order: -1;
+      }
+      .cs-split__row {
+        flex: 0 0 auto;
+        justify-content: flex-start;
+        padding: 15px 18px;
+      }
     }
 
     @media (max-width: 480px) {
-      .projects-masonry { columns: 1; }
       .logbook-stacks { gap: 14px; }
     }
 
@@ -803,8 +1108,8 @@
       top: 100%;
       left: 0;
       right: 0;
-      height: 55vh;
-      max-height: 460px;
+      height: 75vh;
+      max-height: 620px;
       background: radial-gradient(
         ellipse 82% 100% at 50% 0%,
         color-mix(in oklab, #8fb8ff 45%, transparent) 0%,
@@ -894,13 +1199,21 @@
     /* Top bar: time & weather · mode tabs · theme */
     #topBar {
       position: fixed;
-      top: 20px;
+      /* Centre the bar on the first visible star row (exposed by js/grid.js) so
+         the clock/weather and top-right icons sit exactly on that row. Falls
+         back to 40px (one grid pitch) before the grid reports in. */
+      top: var(--grid-first-row-y, 40px);
+      transform: translateY(-50%);
       left: 0;
       right: 0;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center;
-      padding: 0 20px;
+      /* Inset to the first/last visible dot columns so the clock's left edge
+         lands on the left dot and the power button's icon on the right dot.
+         The right side subtracts the icon button's 8px padding so the glyph
+         (not the invisible button box) lines up. */
+      padding: 0 calc(var(--grid-col-inset, 40px) - 8px) 0 var(--grid-col-inset, 40px);
       z-index: 11;
       pointer-events: none;
       --nav-reveal: 0;
@@ -970,7 +1283,8 @@
       grid-column: 1;
       justify-self: start;
       min-width: 0;
-      padding-left: 8px;
+      /* Left edge sits on the first dot column via #topBar's padding-left. */
+      padding-left: 0;
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
@@ -1957,6 +2271,67 @@
       border-radius: 22%;
       box-shadow: inset 0 0 0 1px var(--glass-border);
     }
+
+    /* ══ Starfield hero lockup ═════════════════════════════════════════════
+       A single left-justified block: avatar + "Hi, I'm Luke!" on the first
+       row, the intro description on the second. The whole hero column is
+       vertically centred in the band ABOVE the horizon glow (the gradient),
+       not the full viewport — we reserve the glow's ~17vh at the bottom so the
+       lockup's midpoint lands ~41.5vh. */
+    body.starfield-mode:not(.work-mode) .hero {
+      justify-content: center;
+      padding-bottom: 19vh;
+    }
+
+    /* Greeting row shares the intro column's width + padding so the avatar's
+       left edge lines up with the description's left edge below it. */
+    body.starfield-mode .clock-hero-wrap {
+      width: 760px;
+      max-width: calc(100vw - 40px);
+      margin: 0 auto 14px;   /* tight gap down to the description */
+      padding: 0 12px;
+      transform: none;       /* drop the old lift; .hero padding centres it now */
+      align-items: flex-start;
+    }
+    /* Avatar hard-left, greeting beside it, matching the description's style. */
+    body.starfield-mode .clock-hero-wrap .intro-greeting-life {
+      justify-content: flex-start;
+      gap: 18px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: clamp(24px, 5vw, 34px);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--text-body);
+    }
+    /* Gap to the description is owned solely by .clock-hero-wrap's margin. */
+    body.starfield-mode .clock-hero-wrap .intro-greeting-bar { margin: 0; }
+    /* Show just the greeting line (drop the "I'm a…" second line). */
+    body.starfield-mode .clock-hero-wrap .greet-text { display: flex; }
+    body.starfield-mode .clock-hero-wrap .greet-line + .greet-line { display: none; }
+
+    /* Description: left-justified, same column + left edge as the greeting row. */
+    body.starfield-mode .intro {
+      width: 760px;
+      max-width: calc(100vw - 40px);
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    body.starfield-mode .intro-copy { text-align: left; }
+
+    /* Combined lockup: the greeting joins the description as one paragraph (the
+       h1 already holds both inline), the enlarged avatar sits above it, and the
+       duplicate greeting beside the avatar is dropped. */
+    body.starfield-mode:not(.work-mode) .intro .intro-headline-content {
+      display: inline;
+      margin-right: 0.35em; /* the greeting/description spans have no whitespace between them */
+    }
+    body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
+    body.starfield-mode .clock-hero-wrap .intro-greeting-bar .avatar--inline {
+      height: clamp(84px, 13vw, 128px);
+      width: clamp(84px, 13vw, 128px);
+      border-radius: 22%;
+    }
+    body.starfield-mode .clock-hero-wrap { margin-bottom: 18px; }
 
     /* ── Now strip ── */
     .now-strip {
@@ -4976,6 +5351,36 @@ a.portfolio-img-item:hover img {
 
 @media (max-width: 560px) {
   .photos-masonry { column-count: 2; }
+}
+
+/* Home-feed photos teaser: denser masonry (more per row), count-capped in
+   home-feed.js to keep it ~2-3 rows tall. */
+.home-photos-masonry {
+  columns: 4;
+  column-gap: 10px;
+}
+
+.home-photo {
+  display: block;
+  break-inside: avoid;
+  margin: 0 0 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.home-photo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .home-photos-masonry { columns: 3; }
+}
+
+@media (max-width: 480px) {
+  .home-photos-masonry { columns: 2; column-gap: 8px; }
 }
 
 .photo-item {

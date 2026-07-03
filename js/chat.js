@@ -232,7 +232,7 @@
         parseSSE(buffer, (delta) => {
           ensureBubble();
           assistantText += delta;
-          assistantBubble.textContent = assistantText;
+          renderAssistantText(assistantBubble, assistantText);
           scrollToBottom(transcript);
         });
       }

@@ -367,6 +367,76 @@
 
     let loadedStudies = [];
 
+    // Home-feed "Case Studies" section: a two-column master/detail split — the
+    // list of study titles on the left, an expanding cover + blurb preview on
+    // the right. Hovering/selecting a row updates the preview; clicking the
+    // preview (or a row) opens the full case-study modal.
+    function caseStudyCover(meta, body) {
+      if (meta && meta.cover) return String(meta.cover).trim();
+      const m = (body || '').match(/!\[[^\]]*\]\(([^)]+)\)/);
+      return m ? m[1].trim() : '';
+    }
+
+    function renderCaseStudyPreview(i) {
+      const box = document.getElementById('csSplitPreview');
+      if (!box || !loadedStudies[i]) return;
+      const { meta, body } = loadedStudies[i];
+      const title = meta.title || meta.job || meta.role || meta.company || 'Untitled';
+      const cover = caseStudyCover(meta, body);
+      let desc = meta.headline || caseStudyCardBlurb(body);
+      if (desc && desc.length > 220) desc = `${desc.slice(0, 217).trim()}…`;
+      box.innerHTML = `
+        <button type="button" class="cs-preview" aria-label="View case study: ${escHtml(title)}">
+          <span class="cs-preview__media">
+            ${cover ? `<img src="${escHtml(cover)}" alt="" loading="lazy" decoding="async">` : ''}
+          </span>
+          <span class="cs-preview__body">
+            <span class="cs-preview__title">${escHtml(title)}</span>
+            ${desc ? `<span class="cs-preview__desc">${escHtml(desc)}</span>` : ''}
+            ${renderCaseStudyTagChips(meta.tag)}
+            <span class="cs-preview__cta">View case study →</span>
+          </span>
+        </button>`;
+      const btn = box.querySelector('.cs-preview');
+      if (btn) btn.addEventListener('click', () => { renderPrevDetail(i); openSModal(); });
+    }
+
+    function renderCaseStudiesMasonry() {
+      const el = document.getElementById('caseStudiesMasonry');
+      if (!el) return;
+      if (!loadedStudies.length) {
+        el.innerHTML = '<p class="home-empty">No case studies yet.</p>';
+        return;
+      }
+      const rows = loadedStudies.map(({ meta }, i) => {
+        const title = meta.title || meta.job || meta.role || meta.company || 'Untitled';
+        const sub = [meta.company, meta.timeline].filter(Boolean).join(' · ');
+        return `<button type="button" class="cs-split__row${i === 0 ? ' is-active' : ''}" data-idx="${i}" aria-label="${escHtml(title)}">
+          <span class="cs-split__row-title">${escHtml(title)}</span>
+          ${sub ? `<span class="cs-split__row-sub">${escHtml(sub)}</span>` : ''}
+        </button>`;
+      }).join('');
+
+      el.innerHTML = `
+        <div class="cs-split">
+          <div class="cs-split__list">${rows}</div>
+          <div class="cs-split__preview" id="csSplitPreview"></div>
+        </div>`;
+
+      const rowEls = [...el.querySelectorAll('.cs-split__row')];
+      const select = (i) => {
+        rowEls.forEach(r => r.classList.toggle('is-active', +r.dataset.idx === i));
+        renderCaseStudyPreview(i);
+      };
+      rowEls.forEach(r => {
+        const idx = +r.dataset.idx;
+        r.addEventListener('click', () => select(idx));
+        r.addEventListener('mouseenter', () => select(idx));
+        r.addEventListener('focus', () => select(idx));
+      });
+      select(0);
+    }
+
     function buildPrevCard(meta, body, idx) {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -417,8 +487,12 @@
             prevGrid.appendChild(buildPrevCard(meta, body, i));
           });
         }
+        renderCaseStudiesMasonry();
       })
-      .catch(() => {});
+      .catch(() => {
+        const el = document.getElementById('caseStudiesMasonry');
+        if (el) el.innerHTML = '<p class="home-empty">Couldn\'t load case studies.</p>';
+      });
 
     function closePanel() {
       if (!panelOpen) return;
@@ -1458,7 +1532,7 @@
     });
 
     function setMode(mode) {
-      if (mode === 'projects') mode = 'work';
+      if (mode === 'videos') mode = 'life';
       if (mode === currentMode) {
         syncNavTabs();
         return;
@@ -1719,24 +1793,14 @@
         location.hash = '#photos';
         return;
       }
-      if (navMode === 'logbook') {
-        if (currentMode !== 'life') {
-          setMode('life');
-          setTimeout(() => { if (window.scrollToHomeSection) window.scrollToHomeSection('homeLogbook'); }, 320);
-        } else if (window.scrollToHomeSection) {
-          window.scrollToHomeSection('homeLogbook');
-        }
-        location.hash = '';
-        return;
-      }
-      if (navMode === 'projects') {
+      if (navMode === 'videos') {
         if (modalIsOpen) closeSModal();
         location.hash = '';
         if (currentMode !== 'life') {
           setMode('life');
-          setTimeout(() => { if (window.scrollToHomeSection) window.scrollToHomeSection('homeProjects'); }, 320);
+          setTimeout(() => { if (window.scrollToHomeSection) window.scrollToHomeSection('homeVideos'); }, 320);
         } else if (window.scrollToHomeSection) {
-          window.scrollToHomeSection('homeProjects');
+          window.scrollToHomeSection('homeVideos');
         }
         return;
       }
@@ -1749,20 +1813,44 @@
       btn.addEventListener('click', () => onNavClick(btn.dataset.mode));
     });
 
-    // ── Overflow panel (legacy modes via ?bookshelf etc.) ──
+    // ── Overflow panel (Bookshelf / My Gear / App Stack / Places) ──
     let overflowOpen = false;
+    const overflowBtn = document.getElementById('overflowBtn');
 
     function closeOverflowPanel() {
       if (!overflowOpen || !overflowPanel) return;
       overflowOpen = false;
       overflowPanel.classList.remove('open');
       overflowPanel.setAttribute('aria-hidden', 'true');
+      if (overflowBtn) {
+        overflowBtn.classList.remove('active');
+        overflowBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function openOverflowPanel() {
+      if (overflowOpen || !overflowPanel) return;
+      overflowOpen = true;
+      overflowPanel.classList.add('open');
+      overflowPanel.setAttribute('aria-hidden', 'false');
+      if (overflowBtn) {
+        overflowBtn.classList.add('active');
+        overflowBtn.setAttribute('aria-expanded', 'true');
+      }
     }
 
     if (overflowPanel) {
       overflowItems.forEach(item => {
         item.addEventListener('click', () => setMode(item.dataset.mode));
       });
+
+      if (overflowBtn) {
+        overflowBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          if (overflowOpen) closeOverflowPanel();
+          else openOverflowPanel();
+        });
+      }
 
       document.addEventListener('click', e => {
         if (overflowOpen && !overflowPanel.contains(e.target)) closeOverflowPanel();
