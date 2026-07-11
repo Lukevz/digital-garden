@@ -309,7 +309,8 @@
        sweeps upward like a genie. Driven per-cell here (a single CSS
        transform on the canvas can't stagger rows). Home view only. */
     const GENIE = {
-      range:   0.8,   // fraction of one viewport of scroll over which it completes
+      range:   0.5,   // fraction of one viewport of scroll over which it completes
+                      // (lower = warp triggers sooner, with less scrolling)
       stagger: 0.5,   // bottom→top delay spread (0 = all together, →1 = very sequential)
       scale:   0.5,   // mark shrink at full collapse (marks halve, then vanish)
       funnel:  0.25,  // horizontal migration toward center at full collapse (0..1)
@@ -320,17 +321,52 @@
     function genieProgress() {
       if (prefersReducedMotion) return 0;
       const b = document.body.classList;
-      if (b.contains('work-mode') || b.contains('chat-mode') || b.contains('places-mode')) return 0;
+      if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) return 0;
       const vh = gridLogicalH || innerHeight || 1;
       const sy = window.pageYOffset || document.documentElement.scrollTop || 0;
       const p = sy / (vh * GENIE.range);
       return p < 0 ? 0 : p > 1 ? 1 : p;
     }
 
+    /* ── Hyperspace entrance ──────────────────────────────────────────
+       On first landing the field starts fully collapsed at the genie's
+       vanishing point (bottom-center) and flies back out to rest — the scroll
+       collapse run in reverse, so the page arrives like a ship dropping out of
+       hyperspace. One-shot: it disarms itself once the stars have settled, and
+       never fires if we didn't load into the home view. */
+    const ENTRANCE = {
+      armed: !prefersReducedMotion,
+      hold:  160,    // ms held fully collapsed before release
+      dur:   2100,   // ms to fly out from collapsed → resting
+    };
+    let entranceStart = -1;   // ts of the first frame after arming; -1 = not yet
+    function entranceProgress(ts) {
+      if (!ENTRANCE.armed) return 0;
+      // If the page came up in another mode, the entrance would fly over the
+      // wrong layout — skip it entirely rather than play it hidden.
+      const b = document.body.classList;
+      if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) {
+        ENTRANCE.armed = false; return 0;
+      }
+      if (entranceStart < 0) entranceStart = ts;
+      const t = ts - entranceStart - ENTRANCE.hold;
+      if (t <= 0) return 1;                                 // held fully collapsed
+      const p = t / ENTRANCE.dur;
+      if (p >= 1) { ENTRANCE.armed = false; return 0; }     // settled — disarm
+      // Smootherstep (eases in AND out) so the field glides out — no hard burst
+      // at the start, a soft settle at the end.
+      const e = p * p * p * (p * (p * 6 - 15) + 10);
+      return 1 - e;                                          // collapse amount 1 → 0
+    }
+
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
-      const genieP = genieProgress();
+      // The scroll collapse and the one-shot hyperspace entrance share the same
+      // geometry, so the larger of the two drives the frame: on landing the
+      // entrance holds it near 1 and eases to 0 (stars fly out); afterwards it's
+      // purely scroll-driven.
+      const genieP = Math.max(genieProgress(), entranceProgress(ts));
       frameBodies = computeFrameBodies();
       for (const cl of cells) {
         if (cl.hidden) continue; // grid-snapped binary hole — cell fully off
@@ -398,6 +434,18 @@
       }
       // Celestial bodies sit above the stars and fade out as the field collapses.
       if (frameBodies) drawBodies(c, ts, genieP);
+      // Ship lift-offs ride above everything. Schedule the first lazily, then
+      // fire on cadence — only when the moon is actually on-screen (not fading
+      // out under a scroll/entrance collapse).
+      if (!prefersReducedMotion) {
+        if (nextLaunchTs < 0) {
+          scheduleLaunch(ts);
+        } else if (ts >= nextLaunchTs) {
+          if (frameBodies && (1 - genieP) > 0.5) spawnLaunch(ts);
+          scheduleLaunch(ts);
+        }
+        drawLaunches(c, ts, genieP);
+      }
     }
 
     /* ── Celestial bodies (Death Star + Tatooine twin suns) ── */
@@ -473,6 +521,74 @@
       c.restore();
     }
 
+    /* ── Ship lift-offs (blurred shimmers peeling off the moon) ──────────
+       Every ~15–30s a small soft shimmer lifts off the moon's surface and
+       shoots away into open sky — quick off the pad, then easing out and
+       fading as it coasts, like a ship breaking orbit. Deliberately subtle
+       background scenery: a faint blurred streak, never a spotlight. Skipped
+       entirely under reduced-motion. */
+    const launches = [];
+    const LAUNCH_MIN_GAP = 15000, LAUNCH_MAX_GAP = 30000; // ms between lift-offs
+    const LAUNCH_DUR = 2600;                              // ms lift-off → gone
+    let nextLaunchTs = -1;                                // scheduled next one; set lazily
+
+    function scheduleLaunch(ts) {
+      nextLaunchTs = ts + LAUNCH_MIN_GAP + Math.random() * (LAUNCH_MAX_GAP - LAUNCH_MIN_GAP);
+    }
+
+    function spawnLaunch(ts) {
+      const m = frameBodies && frameBodies.deathStar;
+      if (!m) return;
+      // Fly away from the moon toward the open interior of the sky, with a bit
+      // of spread so successive ships don't all trace the same line.
+      const toCenter = Math.atan2(gridLogicalH * 0.5 - m.cy, gridLogicalW * 0.5 - m.cx);
+      const ang = toCenter + (Math.random() - 0.5) * 1.1;
+      launches.push({
+        t0: ts,
+        // Lift off the surface, not the dead centre of the disc.
+        x0: m.cx + Math.cos(ang) * m.r,
+        y0: m.cy + Math.sin(ang) * m.r,
+        ang,
+        dist: SP * (4.2 + Math.random() * 4.6),          // how far it coasts before fading
+        size: SP * (0.10 + Math.random() * 0.06),
+      });
+    }
+
+    function drawLaunches(c, ts, genieP) {
+      if (prefersReducedMotion || !launches.length) return;
+      const fade = 1 - genieP;
+      for (let i = launches.length - 1; i >= 0; i--) {
+        const L = launches[i];
+        const p = (ts - L.t0) / LAUNCH_DUR;
+        if (p >= 1) { launches.splice(i, 1); continue; }
+        // Fast off the pad, easing out as it coasts (ease-out cubic on distance).
+        const e = 1 - Math.pow(1 - p, 3);
+        const x = L.x0 + Math.cos(L.ang) * L.dist * e;
+        const y = L.y0 + Math.sin(L.ang) * L.dist * e;
+        // Quick bloom on, long fade off — and it never gets loud (peak ~0.5).
+        const a = (p < 0.14 ? p / 0.14 : 1 - (p - 0.14) / 0.86) * fade * 0.55;
+        if (a <= 0.01) continue;
+        const gr = L.size * 3.4;
+        // Elongate the soft glow along the travel axis so it reads as a blurred
+        // streak trailing back toward the moon rather than a round dot. Build
+        // the gradient in the rotated/scaled local frame (origin at the head).
+        c.save();
+        c.translate(x, y);
+        c.rotate(L.ang);
+        c.scale(1.9, 0.68);
+        const g = c.createRadialGradient(0, 0, 0, 0, 0, gr);
+        g.addColorStop(0,   `rgba(${gridDotRgb},${(a * 0.9).toFixed(3)})`);
+        g.addColorStop(0.4, `rgba(${gridDotRgb},${(a * 0.32).toFixed(3)})`);
+        g.addColorStop(1,   `rgba(${gridDotRgb},0)`);
+        c.fillStyle = g;
+        c.beginPath(); c.arc(0, 0, gr, 0, 6.2832); c.fill();
+        c.restore();
+        // Bright little core at the head of the streak.
+        c.fillStyle = `rgba(${gridDotRgb},${a.toFixed(3)})`;
+        c.beginPath(); c.arc(x, y, L.size * 0.75, 0, 6.2832); c.fill();
+      }
+    }
+
     /* ── Lens ── */
     const lens       = document.getElementById('lens');
     const lensCanvas = document.getElementById('lensCanvas');
@@ -508,7 +624,7 @@
       curOffX = mode === 'cross' ? -12 : -8;
       curOffY = mode === 'cross' ? -12 : -9;
     }
-    if (useFinePointer) {
+    if (useFinePointer && cursorEl) {
       setCursor('pointer');
       cursorEl.style.transform = 'translate3d(-100px,-100px,0)';
     }
@@ -573,12 +689,17 @@
 
     function tick(ts) {
       ripples = ripples.filter(r => ts - r.t0 < RPDUR);
-      const ripplesActive = ripples.length > 0;
-      if (ripplesActive || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
+      // Ripples and ship lift-offs move fast enough to want the full refresh
+      // rate; the slow ambient breathing is fine at the capped 30fps. The
+      // one-shot hyperspace entrance also flies out fast, so it must run at the
+      // full rate while armed — otherwise the 30fps cap makes it look choppy.
+      const ripplesActive = ripples.length > 0 || launches.length > 0;
+      const fullRate = ripplesActive || ENTRANCE.armed;
+      if (fullRate || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
         lastDrawTs = ts;
         drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
       }
-      if (ripplesActive || ambientAnim) {
+      if (fullRate || ambientAnim) {
         requestAnimationFrame(tick);
       } else {
         animating = false;

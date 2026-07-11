@@ -543,14 +543,16 @@
 
     function navModeFromState(mode, hashSection) {
       if (hashSection === 'photos') return 'photos';
-      if (mode === 'chat' || mode === 'gear') return mode;
+      if (hashSection === 'videos') return 'videos';
+      if (hashSection === 'writing') return 'writing';
+      if (mode === 'gear') return mode;
       return null;
     }
 
     function syncNavTabs() {
       const hashSection = location.hash.slice(1).split('/')[0] || null;
       const navMode = navModeFromState(currentMode, hashSection);
-      const isOverflowOnlyMode = currentMode === 'bookshelf' || currentMode === 'appstack' || currentMode === 'places';
+      const isOverflowOnlyMode = currentMode === 'bookshelf' || currentMode === 'gear' || currentMode === 'appstack' || currentMode === 'places';
 
       tabPill.style.opacity = navMode && !isOverflowOnlyMode ? '1' : '0';
 
@@ -577,9 +579,271 @@
     const gearView       = document.getElementById('gearView');
     const appStackView   = document.getElementById('appStackView');
     const placesView     = document.getElementById('placesView');
-    const chatView       = document.getElementById('chatView');
-    const chatInputBar   = document.getElementById('chatInputBar');
     const introEl = document.querySelector('.intro');
+
+    // ── Chat dock + overlay (floating "Ask me anything" compose bar → 90% modal) ──
+    const chatDock          = document.getElementById('chatDock');
+    const chatDockInput     = document.getElementById('chatDockInput');
+    const chatDockSend      = document.getElementById('chatDockSend');
+    const chatOverlay       = document.getElementById('chatOverlay');
+    const chatOverlayPanel  = document.getElementById('chatOverlayPanel');
+    const chatOverlayClose  = document.getElementById('chatOverlayClose');
+    let chatOverlayOpen = false;
+
+    function openChatOverlay() {
+      if (chatOverlayOpen || !chatOverlay) return;
+      if (modalIsOpen) closeSModal();
+      if (bookModalOpen) closeBookModal();
+      if (panelOpen) closePanel();
+      chatOverlayOpen = true;
+      chatOverlay.classList.add('is-open');
+      chatOverlay.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('chat-overlay-open');
+      if (location.search !== '?chat') history.pushState(null, '', location.pathname + '?chat');
+      activateModalFocus(chatOverlayPanel, document.getElementById('chatInput'));
+      if (window.chat && typeof window.chat.init === 'function') window.chat.init();
+      if (window.chat && typeof window.chat.focus === 'function') window.chat.focus();
+    }
+
+    function closeChatOverlay() {
+      if (!chatOverlayOpen || !chatOverlay) return;
+      chatOverlayOpen = false;
+      chatOverlay.classList.remove('is-open');
+      chatOverlay.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('chat-overlay-open');
+      restoreModalFocus(chatOverlayPanel);
+      if (location.search === '?chat') history.pushState(null, '', location.pathname);
+    }
+
+    // Dock grows in place (wider + a few rows tall) as soon as the visitor
+    // starts typing; it only hands off to the full overlay once they send.
+    function updateDockExpansion() {
+      if (!chatDock || !chatDockInput) return;
+      chatDock.classList.toggle('is-expanded', chatDockInput.value.trim().length > 0);
+    }
+
+    // ── Hero answer: on the home page the dock streams its answer straight
+    //    into the intro copy ("Hi, I'm Luke!…"), no modal. The read line sits
+    //    at the TOP (aligned with the photo); the first 4 lines read down from
+    //    it, and fresh text keeps arriving below behind a subtle bottom fade —
+    //    streaming is faster than reading, so we never auto-follow. Scrolling
+    //    down is the reading gesture: each read line rises ABOVE the read line
+    //    into the recede zone, where it shrinks and fades off the top.
+    //    Off the home hero (other modes) the dock falls back to the overlay. ──
+    const introTextEl  = document.querySelector('.intro-text');
+    const introCopyEl  = document.querySelector('.intro-copy');
+    let heroAnswerEl = null;
+    let heroAnswerBody = null;
+    let heroAnswering = false;
+
+    function heroAvailable() {
+      return currentMode === 'life' && !!introTextEl && !!introCopyEl;
+    }
+
+    // Wrap every word of the (freshly rendered) answer in a span.hw — inside
+    // links/bold/code too — so applyHeroRecede can scale visual lines
+    // independently. Whitespace stays as bare text nodes between the spans, so
+    // wrapping behavior is unchanged.
+    function wordifyHero(root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const textNodes = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode);
+      textNodes.forEach(node => {
+        if (!/\S/.test(node.nodeValue)) return;
+        // Already wordified (recede pass can run twice on one render) — the
+        // word's own text node lives inside its .hw span; don't nest another.
+        if (node.parentNode.classList && node.parentNode.classList.contains('hw')) return;
+        const frag = document.createDocumentFragment();
+        node.nodeValue.split(/(\s+)/).forEach(part => {
+          if (!part) return;
+          if (/\s/.test(part)) {
+            frag.appendChild(document.createTextNode(part));
+          } else {
+            const s = document.createElement('span');
+            s.className = 'hw';
+            s.textContent = part;
+            frag.appendChild(s);
+          }
+        });
+        node.parentNode.replaceChild(frag, node);
+      });
+    }
+
+    // Flat per-line recede, viewport-relative: the read line sits HERO_RECEDE_EM
+    // below the window top (matching the CSS mask), and each line ABOVE it —
+    // i.e. already read and scrolled up past it — shrinks continuously with its
+    // depth, scaled about the LINE's center: translateX((s−1)·(wordCenter−
+    // lineCenter)) + scale(s) per word is exactly a scale of the whole line
+    // around its center. Recomputed on scroll, so a line shrinks smoothly as it
+    // rises out of the reading band. Desktop overlay only (mobile stacked keeps
+    // plain scrolling text).
+    const HERO_RECEDE_EM = 4.5;    // recede zone above the read line; matches the mask
+    const HERO_LINE_SCALE = 0.955; // shrink per line-height of depth above the read line
+    const HERO_MIN_SCALE = 0.8;
+
+    function applyHeroRecede() {
+      if (!heroAnswerEl || !heroAnswerBody) return;
+      if (!heroAnswerEl.classList.contains('is-overflowing')) return;
+      // The recede pairs with the fixed-window overlay; when that CSS isn't
+      // active (mobile stacked layout) leave the text alone.
+      if (getComputedStyle(heroAnswerEl).position !== 'absolute') return;
+      wordifyHero(heroAnswerBody);
+      const words = Array.from(heroAnswerBody.querySelectorAll('.hw'));
+      if (!words.length) return;
+      const fs = parseFloat(getComputedStyle(heroAnswerEl).fontSize) || 16;
+      const lineH = 1.5 * fs;
+      // Read line in content coordinates (offsets ignore scroll/transforms): the
+      // reading position sits HERO_RECEDE_EM below the window top, with the
+      // recede zone above it. Lines whose bottom is above the read line have
+      // been scrolled past.
+      const readLine = heroAnswerEl.scrollTop + HERO_RECEDE_EM * fs;
+      // Group words into visual lines by top offset. Tolerance of half a line
+      // absorbs metric differences within a line (e.g. smaller inline code).
+      const tolerance = lineH / 2;
+      const lines = [];
+      let line = null;
+      words.forEach(w => {
+        const top = w.offsetTop;
+        if (!line || Math.abs(top - line.top) > tolerance) {
+          line = { top, words: [] };
+          lines.push(line);
+        }
+        line.words.push(w);
+      });
+      // Measure all line extents first, then write transforms — transforms
+      // don't invalidate layout, so there's no read/write thrash.
+      lines.forEach(ln => {
+        let left = Infinity, right = -Infinity;
+        ln.words.forEach(w => {
+          left = Math.min(left, w.offsetLeft);
+          right = Math.max(right, w.offsetLeft + w.offsetWidth);
+        });
+        ln.center = (left + right) / 2;
+      });
+      lines.forEach(ln => {
+        const depth = readLine - (ln.top + lineH); // px the line sits ABOVE the read line
+        const s = depth <= 0 ? 1
+          : Math.max(HERO_MIN_SCALE, Math.pow(HERO_LINE_SCALE, depth / lineH));
+        ln.words.forEach(w => {
+          if (s === 1) { if (w.style.transform) w.style.transform = ''; return; }
+          const wc = w.offsetLeft + w.offsetWidth / 2;
+          const dx = (s - 1) * (wc - ln.center);
+          w.style.transform = 'translateX(' + dx.toFixed(2) + 'px) scale(' + s.toFixed(4) + ')';
+        });
+      });
+    }
+
+    // Answer taller than the 4-line focus band? (6em at line-height 1.5 —
+    // keep in sync with the mask in styles.css.) This is the trigger for the
+    // fixed-height window, the bottom fade, and the recede, so the effect
+    // starts the moment a 5th line exists.
+    function heroOverflowing() {
+      if (!heroAnswerEl) return false;
+      const fs = parseFloat(getComputedStyle(heroAnswerEl).fontSize) || 16;
+      return heroAnswerEl.scrollHeight > 6 * fs + 4;
+    }
+
+    function updateHeroOverflow() {
+      if (!heroAnswerEl) return;
+      heroAnswerEl.classList.toggle('is-overflowing', heroOverflowing());
+    }
+
+    // Scrolling is the reading gesture — just keep the recede in sync with
+    // the new scroll position, one pass per frame.
+    let heroRecedeScheduled = false;
+    function onHeroScroll() {
+      if (heroRecedeScheduled) return;
+      heroRecedeScheduled = true;
+      requestAnimationFrame(() => {
+        heroRecedeScheduled = false;
+        applyHeroRecede();
+      });
+    }
+
+    function clearHeroAnswer() {
+      if (!heroAnswering) return;
+      heroAnswering = false;
+      if (introTextEl) introTextEl.classList.remove('is-answering');
+      if (heroAnswerEl) { heroAnswerEl.remove(); heroAnswerEl = null; heroAnswerBody = null; }
+      if (window.chat && window.chat.reset) window.chat.reset();
+    }
+
+    function askInHero(text) {
+      if (!introTextEl || !introCopyEl) return;
+      if (window.chat && window.chat.busy && window.chat.busy()) return;
+      // Snap the hero back into view if the visitor had scrolled down.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.chat && window.chat.init) window.chat.init();
+
+      heroAnswering = true;
+      introTextEl.classList.add('is-answering');
+
+      if (!heroAnswerEl) {
+        heroAnswerEl = document.createElement('div');
+        heroAnswerEl.className = 'hero-answer';
+        heroAnswerEl.setAttribute('aria-live', 'polite');
+        heroAnswerEl.addEventListener('scroll', onHeroScroll);
+        // Inner body holds the text: the outer element owns the scroll + fade
+        // mask, the body carries the per-line recede transforms. renderInto()
+        // always targets the body.
+        heroAnswerBody = document.createElement('div');
+        heroAnswerBody.className = 'hero-answer__body';
+        heroAnswerEl.appendChild(heroAnswerBody);
+        introCopyEl.insertAdjacentElement('afterend', heroAnswerEl);
+      }
+
+      heroAnswerEl.classList.remove('is-overflowing', 'is-in');
+      // The element is reused across questions — start each answer pinned to
+      // the first lines, not wherever the last read ended.
+      heroAnswerEl.scrollTop = 0;
+      heroAnswerBody.innerHTML =
+        '<span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span>';
+      requestAnimationFrame(() => heroAnswerEl && heroAnswerEl.classList.add('is-in'));
+
+      window.chat.ask(text, {
+        onDelta: (full) => { window.chat.renderInto(heroAnswerBody, full); updateHeroOverflow(); applyHeroRecede(); },
+        onDone:  () => { updateHeroOverflow(); applyHeroRecede(); },
+        onError: (msg) => { if (heroAnswerBody) heroAnswerBody.textContent = msg; }
+      });
+    }
+
+    function submitDockMessage() {
+      if (!chatDockInput) return;
+      const text = chatDockInput.value.trim();
+      if (!text) return;
+      chatDockInput.value = '';
+      chatDock.classList.remove('is-expanded');
+      chatDockInput.blur();
+      if (heroAvailable()) {
+        askInHero(text);
+        return;
+      }
+      openChatOverlay();
+      if (window.chat && typeof window.chat.sendMessage === 'function') window.chat.sendMessage(text);
+    }
+
+    if (chatDock) chatDock.addEventListener('click', e => {
+      if (e.target === chatDockInput) return;
+      if (chatDockSend && chatDockSend.contains(e.target)) return;
+      if (chatDockInput) chatDockInput.focus();
+    });
+    if (chatDockInput) {
+      chatDockInput.addEventListener('input', updateDockExpansion);
+      chatDockInput.addEventListener('blur', () => {
+        if (!chatDockInput.value.trim()) chatDock.classList.remove('is-expanded');
+      });
+      chatDockInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          submitDockMessage();
+        }
+      });
+    }
+    if (chatDockSend) chatDockSend.addEventListener('click', submitDockMessage);
+    if (chatOverlayClose) chatOverlayClose.addEventListener('click', closeChatOverlay);
+    if (chatOverlay) chatOverlay.addEventListener('click', e => { if (e.target === chatOverlay) closeChatOverlay(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && chatOverlayOpen) closeChatOverlay(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Tab' && chatOverlayOpen) trapModalTab(chatOverlayPanel, e); });
 
     const BOOKS = [
       // ── Most recently read first ──
@@ -1540,6 +1804,10 @@
       const prevMode = currentMode;
       currentMode = mode;
 
+      // Leaving the home hero drops any in-progress answer so it isn't stranded
+      // behind the intro copy when we come back.
+      if (mode !== 'life') clearHeroAnswer();
+
       const isBookshelfMode  = mode === 'bookshelf';
       const isGearMode       = mode === 'gear';
       const isAppStackMode   = mode === 'appstack';
@@ -1552,9 +1820,8 @@
       const isGear      = mode === 'gear';
       const isAppStack  = mode === 'appstack';
       const isPlaces    = mode === 'places';
-      const isChat      = mode === 'chat';
       const isSpecial   = isBookshelf || isGear || isAppStack || isPlaces;
-      const urlSuffix   = isWork ? '?projects' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : isChat ? '?chat' : location.pathname;
+      const urlSuffix   = isWork ? '?projects' : isBookshelf ? '?bookshelf' : isGear ? '?gear' : isAppStack ? '?appstack' : isPlaces ? '?places' : location.pathname;
       history.pushState(null, '', urlSuffix);
       // Defer work-mode removal when transitioning work→life to avoid a layout
       // jump: removing it early changes body from padding-top centering to
@@ -1565,10 +1832,14 @@
         document.body.classList.toggle('work-mode', isWork);
       }
       document.body.classList.toggle('places-mode', isPlaces);
-      if (!isWork && !isSpecial) window.scrollTo({ top: 0 });
+      // Overflow-menu pages (bookshelf, gear, app stack, places) render plain:
+      // no starfield background. Toggled together via a single body class.
+      document.body.classList.toggle('overflow-mode', isSpecial);
+      // Always land at the top when entering these pages; work mode defers its
+      // own scroll handling to avoid a layout jump on the work→life transition.
+      if (!isWork) window.scrollTo({ top: 0 });
 
       const prevIsSpecial = prevMode === 'bookshelf' || prevMode === 'gear' || prevMode === 'appstack' || prevMode === 'places';
-      const prevIsChat = prevMode === 'chat';
       // Headline/avatar should only animate when the work/non-work status actually changes
       const workStatusChanged = isWork !== (prevMode === 'work');
 
@@ -1592,15 +1863,11 @@
 
       // Show/hide now strip
       const nowStripEl = document.getElementById('nowStrip');
-      if (nowStripEl) nowStripEl.style.display = (isWork || isSpecial || isChat) ? 'none' : '';
+      if (nowStripEl) nowStripEl.style.display = (isWork || isSpecial) ? 'none' : '';
 
       // Show/hide cert badges strip (work page only)
       const certBadgesEl = document.getElementById('certBadgesRow');
       if (certBadgesEl) certBadgesEl.style.display = isWork ? '' : 'none';
-
-      // Show/hide chat input bar; toggle a body class for theming hooks
-      if (chatInputBar) chatInputBar.style.display = isChat ? 'flex' : 'none';
-      document.body.classList.toggle('chat-mode', isChat);
 
       // Helper: get the currently-visible special view element
       function prevSpecialView() {
@@ -1625,7 +1892,6 @@
         if (except !== gearView)      gearView.style.display = 'none';
         if (except !== appStackView)  appStackView.style.display = 'none';
         if (except !== placesView)    placesView.style.display = 'none';
-        if (chatView && except !== chatView) chatView.style.display = 'none';
         if (introEl && except !== introEl) introEl.style.display = 'none';
       }
 
@@ -1692,23 +1958,7 @@
             anime({ targets: placesView, opacity: [0, 1], duration: 300, easing: 'easeOutQuad' });
           }
         });
-      } else if (isChat) {
-        const prevView = prevIsSpecial ? prevSpecialView() : (prevMode === 'work' ? portfolioGrid : launchpad);
-        anime({
-          targets: [prevView, introEl].filter(Boolean),
-          opacity: 0, scale: 0.97,
-          duration: 220, easing: 'easeInQuad',
-          complete: () => {
-            hideAllViews(chatView);
-            chatView.style.opacity = '0';
-            chatView.style.display = 'flex';
-            anime({ targets: chatView, opacity: [0, 1], duration: 300, easing: 'easeOutQuad' });
-            if (window.chat && typeof window.chat.init === 'function') window.chat.init();
-            if (window.chat && typeof window.chat.focus === 'function') window.chat.focus();
-          }
-        });
       } else if (isWork) {
-        if (prevIsChat && chatView) chatView.style.display = 'none';
         if (prevIsSpecial) {
           const prevSpecial = prevSpecialView();
           heading.innerHTML = workHeadline;
@@ -1721,13 +1971,6 @@
             anime({ targets: '.work-launchpad .app, .study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
               easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(40) });
           });
-        } else if (prevIsChat) {
-          if (introEl) { introEl.style.removeProperty('display'); introEl.style.opacity = ''; introEl.style.transform = ''; }
-          portfolioGrid.style.opacity = '';
-          portfolioGrid.style.transform = '';
-          portfolioGrid.style.display = 'grid';
-          anime({ targets: '.work-launchpad .app, .study, .kpi', opacity: [0, 1], translateY: [14, 0], duration: 600,
-            easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(40) });
         } else {
           anime({
             targets: launchpad,
@@ -1745,7 +1988,6 @@
         }
       } else {
         // life mode
-        if (prevIsChat && chatView) chatView.style.display = 'none';
         if (prevIsSpecial) {
           const prevSpecial = prevSpecialView();
           heading.innerHTML = defaultHeadline;
@@ -1758,13 +2000,6 @@
             anime({ targets: '.app', opacity: [0, 1], translateY: [14, 0], duration: 600,
               easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(55) });
           });
-        } else if (prevIsChat) {
-          if (introEl) { introEl.style.removeProperty('display'); introEl.style.opacity = ''; introEl.style.transform = ''; }
-          launchpad.style.opacity = '';
-          launchpad.style.transform = '';
-          launchpad.style.display = 'flex';
-          anime({ targets: '.app', opacity: [0, 1], translateY: [14, 0], duration: 600,
-            easing: 'cubicBezier(0.16,1,0.3,1)', delay: anime.stagger(55) });
         } else {
           anime({
             targets: portfolioGrid,
@@ -1787,23 +2022,16 @@
     }
 
     function onNavClick(navMode) {
-      if (navMode === 'photos') {
+      // Writing / Videos / Photos each open their dedicated section page.
+      if (navMode === 'photos' || navMode === 'videos' || navMode === 'writing') {
         if (currentMode !== 'life') setMode('life');
         indexScrollPos = 0;
-        location.hash = '#photos';
+        location.hash = `#${navMode}`;
         return;
       }
-      if (navMode === 'videos') {
-        if (modalIsOpen) closeSModal();
-        location.hash = '';
-        if (currentMode !== 'life') {
-          setMode('life');
-          setTimeout(() => { if (window.scrollToHomeSection) window.scrollToHomeSection('homeVideos'); }, 320);
-        } else if (window.scrollToHomeSection) {
-          window.scrollToHomeSection('homeVideos');
-        }
-        return;
-      }
+      // Chat is no longer a full-page mode — it opens the floating overlay
+      // on top of whatever's currently showing.
+      if (navMode === 'chat') { openChatOverlay(); return; }
       if (modalIsOpen) closeSModal();
       location.hash = '';
       setMode(navMode);
@@ -3389,7 +3617,7 @@
     else if (location.search === '?gear') setMode('gear');
     else if (location.search === '?appstack') setMode('appstack');
     else if (location.search === '?places') setMode('places');
-    else if (location.search === '?chat') setMode('chat');
+    else if (location.search === '?chat') openChatOverlay();
 
     // Deep link on load
     handleHash();
@@ -3470,9 +3698,9 @@
 
       function navPinnedOpen() {
         return reduced
-          || currentMode === 'chat'
           || currentMode === 'places'
           || currentMode === 'bookshelf'
+          || currentMode === 'gear'
           || currentMode === 'appstack';
       }
 

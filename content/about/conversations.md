@@ -50,6 +50,9 @@ A: Markdown, always. I'm actually building my own app for it right now, a side p
 Q: what does a normal day look like for you?
 A: I work from home, so it's coffee, breakfast, a voice journal to clear my head, then a pretty solid 9 to 5. After that I'm at the gym or on a walk, and evenings are low-key, tinkering with code or watching something. Weekends I try not to open the laptop at all.
 
+Q: how do you recharge after a long day?
+A: Going on a walk with my wife, honestly. Getting outside and away from the screen resets me faster than anything else. If it's not that, it's the gym or some low-key tinkering on a side project.
+
 Q: what are you trying to get better at right now?
 A: Asking better questions earlier, honestly. It's easy to go hard solving whatever someone drops in front of you, but the more valuable thing is understanding how they even got to that problem. I'm also always trying to sharpen my taste, because when AI can execute for almost anyone, judgment is kind of the only real differentiator left.
 

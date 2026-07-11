@@ -8,11 +8,6 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @media (hover: hover) and (pointer: fine) {
-      *, *::before, *::after { cursor: none !important; }
-      body { cursor: none; }
-    }
-
     :root {
       --label-size: 11px;
       /* Background pattern pitch — must match SP in js/grid.js / BG_SP in js/clock-hero.js.
@@ -274,10 +269,18 @@
       overflow-x: hidden;
     }
 
+    /* Wrapper around the avatar (.clock-hero-wrap) and the intro copy.
+       Transparent by default so every non-starfield mode keeps its original
+       stacked column layout; starfield mode turns it into a centred
+       avatar-left / text-right row (see starfield lockup rules below). */
+    .hero-lockup { display: contents; }
+
     /* Reserves scroll length equal to the fixed hero's height, so page content
-       starts scrolling from below it instead of collapsing underneath. */
+       starts scrolling from below it instead of collapsing underneath. Slightly
+       shorter than a full viewport so the below-fold content's top edge peeks
+       into view above the aurora on first load, hinting there's more to scroll to. */
     .hero-spacer {
-      height: 100vh;
+      height: 88vh;
       pointer-events: none;
     }
 
@@ -1055,13 +1058,16 @@
        in main.js translates it DOWN as you scroll so it rises slower than the
        content, letting the body accelerate up through the gradient. Kept as a
        separate element so its parallax transform never fights the drift
-       animation living on .hero-glow. */
+       animation living on .hero-glow. Sized to the bottom quarter of the
+       viewport; since .hero-spacer is shorter than 100vh, the seam itself sits
+       above the fold, leaving the aurora clear of the true bottom edge with a
+       strip of real content peeking beneath it. */
     .hero-glow-track {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 100%;
-      height: 17vh;
+      height: 19vh;
       min-height: 130px;
       max-height: 230px;
       pointer-events: none;
@@ -1080,22 +1086,32 @@
       height: 135%;
       pointer-events: none;
       transform: translateX(-50%);
-      /* Mid/outer stops lean blue in light mode (--theme-blend → 0) so the aurora
-         doesn't clash with the neutral-gray light background; dark mode
-         (--theme-blend → 1) resolves back to the original purple/pink. */
-      background: radial-gradient(
-        ellipse 82% 100% at 50% 100%,
-        color-mix(in oklab, #8fb8ff 100%, transparent) 0%,
-        color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 82%, transparent) 35%,
-        color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 52%, transparent) 58%,
-        transparent 80%
-      );
+      /* Five separate colored blobs (blue/teal/purple/violet/pink) staggered
+         left-to-right and composited with `screen`, instead of one gradient
+         sweeping through all the hues in sequence. Sequential stops mixed
+         adjacent complementary-ish hues directly and turned muddy/brown in
+         the transition zones; screen-blending separate blobs makes their
+         overlaps brighten and combine instead. Light mode (--theme-blend → 0)
+         leans each blob blue; dark mode (→ 1) resolves to the original
+         purple/pink. */
+      background:
+        radial-gradient(ellipse 46% 96% at 14% 100%, color-mix(in oklab, #8fb8ff 95%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 32% 100%, color-mix(in oklab, color-mix(in oklab, #7fe0d0 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 90%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 50% 100%, color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 68% 100%, color-mix(in oklab, color-mix(in oklab, #c6a8ff calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) 90%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 86% 100%, color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%);
+      background-blend-mode: screen;
       /* saturate() is dialed up in light mode (where --theme-blend → 0) so the
          pastels keep their punch against a bright background; dark mode
-         (--theme-blend → 1) resolves to 1× / full opacity, exactly as before. */
-      filter: blur(28px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
+         (--theme-blend → 1) resolves to 1× / full opacity, exactly as before.
+         Lower blur (vs. the original 28px) plus the tighter per-blob falloff
+         above give the limb a more distinct edge instead of a wide soft fade. */
+      filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
       opacity: calc(0.85 + var(--theme-blend) * 0.15);
-      animation: heroGlowDrift 13s ease-in-out infinite;
+      /* Two animations on different periods (13s / 6.2s) so the drift and the
+         shimmer never fall into lockstep — keeps the aurora feeling like it's
+         rippling rather than mechanically looping. */
+      animation: heroGlowDrift 13s ease-in-out infinite, heroGlowShimmerPulse 6.2s ease-in-out infinite;
     }
 
     /* Extends the fade further down into the content below the seam, so the
@@ -1108,15 +1124,20 @@
       top: 100%;
       left: 0;
       right: 0;
-      height: 75vh;
-      max-height: 620px;
-      background: radial-gradient(
-        ellipse 82% 100% at 50% 0%,
-        color-mix(in oklab, #8fb8ff 45%, transparent) 0%,
-        color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 24%, transparent) 22%,
-        color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 10%, transparent) 42%,
-        transparent 68%
-      );
+      /* Taller than the original (75vh / 620px) with the fade pushed out to
+         92% instead of 68%, so the color trails off gradually across most of
+         the section instead of running out partway and leaving a flat black
+         gap before the real background shows through — trimmed back down
+         from a first pass that ran a bit too tall. */
+      height: 85vh;
+      max-height: 680px;
+      background:
+        radial-gradient(ellipse 50% 100% at 18% 0%, color-mix(in oklab, #8fb8ff 32%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 36% 0%, color-mix(in oklab, color-mix(in oklab, #7fe0d0 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 30%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 54% 0%, color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 32%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 72% 0%, color-mix(in oklab, color-mix(in oklab, #c6a8ff calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) 30%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 90% 0%, color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 32%, transparent) 0%, transparent 92%);
+      background-blend-mode: screen;
     }
 
     /* Thin shimmering highlight tracing the glow's seam — like sunlight
@@ -1146,6 +1167,20 @@
       0%   { transform: translateX(calc(-50% - 26px)) scaleX(0.965); }
       50%  { transform: translateX(calc(-50% + 26px)) scaleX(1.04); }
       100% { transform: translateX(calc(-50% - 26px)) scaleX(0.965); }
+    }
+
+    /* Subtle brightness/opacity flicker layered on top of the drift, on its
+       own shorter period — reads as the aurora shimmering rather than just
+       swaying side to side. */
+    @keyframes heroGlowShimmerPulse {
+      0%, 100% {
+        opacity: calc(0.85 + var(--theme-blend) * 0.15);
+        filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5)) brightness(1);
+      }
+      50% {
+        opacity: calc(0.72 + var(--theme-blend) * 0.15);
+        filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5)) brightness(1.15);
+      }
     }
 
     @keyframes heroGlowShimmer {
@@ -1386,7 +1421,7 @@
     }
     #overflowBtn svg { display: block; }
     @media (hover: hover) and (pointer: fine) {
-      #overflowBtn { cursor: none !important; }
+      #overflowBtn { cursor: pointer; }
     }
 
     /* Overflow dropdown panel */
@@ -1448,7 +1483,7 @@
     .overflow-item:hover { background: var(--hover-fill); }
     .overflow-item.active { color: var(--tab-pill-bg); font-weight: 600; }
     @media (hover: hover) and (pointer: fine) {
-      .overflow-item { cursor: none !important; }
+      .overflow-item { cursor: pointer; }
     }
 
     /* Top-right cluster: theme · @ · power */
@@ -2090,7 +2125,8 @@
       mask-composite: intersect;
     }
 
-    body.places-mode #dotGrid {
+    body.places-mode #dotGrid,
+    body.overflow-mode #dotGrid {
       opacity: 0;
     }
 
@@ -2181,22 +2217,33 @@
     body.starfield-mode .clock-hero-scale { display: none; }
     body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
 
-    /* Earthy planetary limb at the horizon — warm tan/terracotta easing into
-       brown, echoing the planet surface in the reference. Retints the hero
+    /* Earthy planetary limb at the horizon — a Tatooine twin-sunset spread
+       (sand → amber → terracotta → mauve-plum → umber) instead of one flat
+       tan-to-brown sweep. Same five-blob + screen-blend approach as the
+       aurora's .hero-glow: separate colored blobs staggered left-to-right so
+       their overlaps brighten into warm in-between tones instead of the
+       muddy blend a single multi-stop gradient produces. Retints the hero
        glow away from the aurora pastels. */
     body.starfield-mode .hero-glow {
-      background: radial-gradient(ellipse 82% 100% at 50% 100%,
-        rgba(222,190,148,0.5) 0%,
-        rgba(192,148,104,0.3) 34%,
-        rgba(150,108,72,0.12) 58%,
-        transparent 80%);
+      background:
+        radial-gradient(ellipse 46% 96% at 14% 100%, rgba(222,190,148,0.55) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 32% 100%, rgba(214,142,74,0.5) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 50% 100%, rgba(192,148,104,0.5) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 68% 100%, rgba(196,108,96,0.45) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 86% 100%, rgba(150,96,104,0.4) 0%, transparent 75%);
+      background-blend-mode: screen;
       filter: blur(26px) saturate(1);
     }
     body.starfield-mode .hero-glow::after {
-      background: radial-gradient(ellipse 82% 100% at 50% 0%,
-        rgba(210,176,134,0.24) 0%,
-        rgba(170,126,86,0.11) 28%,
-        transparent 62%);
+      /* Fade pushed out to 88% (was 62%) so the color trails off gradually
+         instead of running out partway and leaving flat black beneath it. */
+      background:
+        radial-gradient(ellipse 50% 100% at 18% 0%, rgba(222,190,148,0.26) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 36% 0%, rgba(214,142,74,0.22) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 54% 0%, rgba(192,148,104,0.22) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 72% 0%, rgba(196,108,96,0.2) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 90% 0%, rgba(150,96,104,0.18) 0%, transparent 90%);
+      background-blend-mode: screen;
     }
 
     /* Shrink the dial phrase ~24% while anchoring its top edge, so the greeting
@@ -2332,6 +2379,97 @@
       border-radius: 22%;
     }
     body.starfield-mode .clock-hero-wrap { margin-bottom: 18px; }
+
+    /* ── Starfield lockup: avatar LEFT of the copy ────────────────────────────
+       Lay the wrapper out as a single centred row: the enlarged avatar on the
+       left, the "Hi, I'm Luke! …" paragraph on the right. Overrides the stacked
+       (avatar-above-copy) rules above, whose widths/margins we neutralise here. */
+    body.starfield-mode:not(.work-mode) .hero-lockup {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(12px, 1.6vw, 22px);
+      width: 620px;
+      max-width: calc(100vw - 40px);
+      margin: 0 auto;
+    }
+    /* Avatar column: shrink to the image (drop the old 760px column + margins);
+       order:-1 (set above) keeps it to the left of the copy. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap {
+      width: auto;
+      flex: 0 0 auto;
+      margin: 0;
+    }
+    /* Copy column: take the remaining width, stay left-justified beside the avatar. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro {
+      width: auto;
+      flex: 0 1 auto;
+      align-items: flex-start;
+      margin: 0;
+    }
+    /* Constrain the measure so the "Hi, I'm Luke! …" paragraph wraps to three
+       lines (~44 chars/line for the ~133-char copy — Satoshi fits ~1.5 chars per
+       ch, so 36ch ≈ 50 chars). Tune this if the copy ever changes length. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy {
+      font-size: clamp(19px, 3.4vw, 26px);
+      width: 32ch;
+      max-width: 100%;
+    }
+    /* Lock the measure on .intro-text (not just the copy) so the AI answer
+       that takes the copy's place wraps at the same width — without this the
+       column shrink-wraps the answer and it renders narrower. The font-size
+       here exists only so 32ch resolves identically; .intro-copy re-declares
+       the same clamp for its own text. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-text {
+      font-size: clamp(19px, 3.4vw, 26px);
+      width: 32ch;
+      max-width: 100%;
+    }
+    /* Match the avatar's height to those three text lines so its top and bottom
+       align with the copy and the two read as equal-height. The copy's font
+       size is clamp(19px,3.4vw,26px) and line-height gives ~3 lines, so we tie
+       the avatar to 4.8 × font-size; aspect-ratio keeps it square at that height. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-bar .avatar--inline {
+      height: calc(4.8 * clamp(19px, 3.4vw, 26px));
+      width: auto;
+      aspect-ratio: 1 / 1;
+    }
+
+    /* Below the width where the avatar + 3-line (42ch) copy fit side-by-side,
+       fall back to the stacked layout so the copy keeps a readable measure and
+       the height-match assumption (exactly 3 lines) still holds. */
+    @media (max-width: 1024px) {
+      body.starfield-mode:not(.work-mode) .hero-lockup {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      body.starfield-mode:not(.work-mode) .hero-lockup .intro { align-items: center; }
+      body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy { text-align: center; }
+    }
+
+    /* ── Dedicated overflow-menu pages (Bookshelf / My Gear / App Stack / Places) ──
+       These render standalone: no home-feed content bleeding in, and the page's
+       own (often tall) grid scrolls from the top of the hero.
+       • Hide the below-the-fold home feed + its scroll spacer so Case Studies /
+         Experiments don't slide up over — or fade the bottom of — the grid.
+       • Drop the hero's intro lockup (invisible avatar/greeting) so it doesn't
+         reserve blank space above the grid.
+       • Switch the hero from vertical-centering to top-aligned, so a grid taller
+         than the viewport isn't clipped at the top (the fixed hero's own
+         overflow-y then scrolls it). Mirrors the work-mode treatment. */
+    body.overflow-mode .below-fold,
+    body.overflow-mode .hero-spacer { display: none; }
+
+    body.overflow-mode .hero-lockup,
+    body.overflow-mode.starfield-mode:not(.work-mode) .hero-lockup { display: none; }
+
+    body.overflow-mode .hero,
+    body.overflow-mode.starfield-mode:not(.work-mode) .hero {
+      justify-content: flex-start;
+      padding-bottom: 0;
+    }
 
     /* ── Now strip ── */
     .now-strip {
@@ -2503,22 +2641,6 @@
       color: rgba(232, 234, 240, 0.5);
     }
 
-    /* ── Custom cursor (desktop / fine pointer only) ── */
-    #customCursor {
-      display: none;
-      position: fixed;
-      pointer-events: none;
-      z-index: 9999;
-      top: 0; left: 0;
-      /* Position is driven by translate3d in grid.js so it stays on the GPU
-         compositor; will-change keeps it on its own layer. */
-      will-change: transform;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-    }
-    @media (hover: hover) and (pointer: fine) {
-      #customCursor { display: block; }
-    }
-
     /* ── Magnifying lens ── */
     #lens {
       display: none;
@@ -2570,19 +2692,6 @@
       z-index: 4;
     }
 
-/* Bottom fade — only visible in chat mode */
-    #chatBottomFade {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 140px;
-      background: linear-gradient(to bottom, transparent, var(--bg));
-      pointer-events: none;
-      z-index: 5;
-    }
-    body.chat-mode #chatBottomFade { display: block; }
 
     /* ── Portfolio case study cards ── */
     .portfolio {
@@ -4181,7 +4290,7 @@
     .book-card:hover { transform: translateY(-5px); }
 
     @media (hover: hover) and (pointer: fine) {
-      .book-card { cursor: none !important; }
+      .book-card { cursor: pointer; }
     }
 
     .book-cover {
@@ -4349,7 +4458,7 @@
       transition: background 0.15s, color 0.15s;
     }
     #bookModalClose:hover { background: var(--hover-fill-soft); color: var(--text-primary); }
-    @media (hover: hover) and (pointer: fine) { #bookModalClose { cursor: none !important; } }
+    @media (hover: hover) and (pointer: fine) { #bookModalClose { cursor: pointer; } }
     #bookModalContent {
       display: flex;
       gap: 40px;
@@ -4498,7 +4607,7 @@
       opacity: 0.92;
     }
     @media (hover: hover) and (pointer: fine) {
-      .book-modal-btn { cursor: none !important; }
+      .book-modal-btn { cursor: pointer; }
     }
 
     @media (max-width: 700px) {
@@ -4548,7 +4657,7 @@
     .gear-card:hover { transform: translateY(-5px); }
 
     @media (hover: hover) and (pointer: fine) {
-      .gear-card { cursor: none !important; }
+      .gear-card { cursor: default; }
     }
 
     .gear-img {
@@ -4666,7 +4775,7 @@
     .app-stack-card:hover { transform: translateY(-5px); }
 
     @media (hover: hover) and (pointer: fine) {
-      .app-stack-card { cursor: none !important; }
+      .app-stack-card { cursor: pointer; }
     }
 
     .app-stack-img {
@@ -5671,29 +5780,364 @@ a.portfolio-img-item:hover img {
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-/* ── Chat view ── */
-body.chat-mode #mainPanel {
-  width: 760px;
-  max-width: calc(100vw - 40px);
+/* ── Hero answer: the dock streams its reply straight into the home intro copy
+   (no modal). The intro copy is hidden and the answer takes its slot. The
+   FIRST 4 lines pin in the focus band (centered on the photo) so the visitor
+   reads from the start at their own pace — streaming is faster than reading,
+   so we never auto-follow the newest line. New text accumulates below the
+   band behind a bottom fade that signals "scroll for more"; scrolling down
+   is the reading gesture, and each line grows/solidifies as it rises into
+   the band. ── */
+.intro-text.is-answering .intro-copy { display: none; }
+
+.hero-answer {
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: clamp(17px, 3.4vw, 23px);
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--text-body);
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.28s ease, transform 0.35s ease;
+  scrollbar-width: none;
+  /* .intro is pointer-events:none (it sits over the canvas); re-enable here or
+     the answer can never be scrolled and its links can't be clicked. */
+  pointer-events: auto;
+}
+.hero-answer::-webkit-scrollbar { width: 0; height: 0; }
+.hero-answer.is-in { opacity: 1; }
+
+/* Flat per-line recede: JS (applyHeroRecede in main.js) wraps every word in a
+   .hw span, groups spans into visual lines, and scales each line about its own
+   center — no perspective tilt, so left edges stay put. Recomputed on scroll,
+   so a line grows smoothly back to full size as it rises into the band.
+   inline-block is what makes the spans transformable; text-decoration:inherit
+   keeps underlines on words inside links (inline-block otherwise drops the
+   parent's underline). */
+.hero-answer .hw {
+  display: inline-block;
+  text-decoration: inherit;
 }
 
-#chatView {
-  width: 760px;
+/* ── Static lockup + read line aligned to the photo top (desktop starfield) ──
+   The welcome copy keeps its layout box while answering (visibility:hidden,
+   not display:none), so the lockup row never changes size and the photo does
+   not move. The answer is an absolutely positioned overlay anchored to the
+   copy's box: short answers (≤ 4 lines) center on the photo; once the answer
+   outgrows the band (JS sets .is-overflowing) it becomes a fixed-height
+   window with a read line HERO_RECEDE below its top edge, sat near the photo
+   top. The first 4 lines read DOWN from there behind a subtle bottom fade;
+   already-read lines rise into the recede zone above the read line, where the
+   top mask fades them off (JS shrinks them to match). Keep --hero-recede in
+   sync with HERO_RECEDE_EM in main.js. */
+@media (min-width: 1025px) {
+  body.starfield-mode:not(.work-mode) .intro-text { position: relative; }
+  body.starfield-mode:not(.work-mode) .intro-text.is-answering .intro-copy {
+    display: block;
+    visibility: hidden;
+  }
+  body.starfield-mode:not(.work-mode) .hero-answer {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+  }
+  body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing {
+    --hero-recede: 4.5em;            /* recede zone above the read line (3 lines) */
+    --hero-window: min(15em, 44vh);
+    height: var(--hero-window);
+    max-height: none;
+    /* Read line = window top + --hero-recede. Offset the window up so the read
+       line sits ~photo top (photo-center − ~2.2em). */
+    transform: translateY(calc(-1 * var(--hero-recede) - 2.2em));
+    /* Faded above the read line (read lines shrink + fade off the top), solid
+       through the 4-line reading band, then a subtle fade below = the "there's
+       more, scroll" signal. Fixed to the window, so scrolling pulls read lines
+       up into the top fade and fresh lines up into the band. */
+    -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0,
+      rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
+      #000 var(--hero-recede),
+      #000 calc(var(--hero-recede) + 6em),
+      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + 8.5em),
+      transparent var(--hero-window));
+            mask-image: linear-gradient(to bottom,
+      transparent 0,
+      rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
+      #000 var(--hero-recede),
+      #000 calc(var(--hero-recede) + 6em),
+      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + 8.5em),
+      transparent var(--hero-window));
+  }
+  /* Padding-top = the recede zone, so at scrollTop 0 the first line lands on the
+     read line (nothing above it yet). Bottom tail-room lets the last lines
+     scroll up to the read line so the whole answer can be read; sized to the
+     space below the band (window − recede − 6em band). */
+  body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing .hero-answer__body {
+    padding-top: var(--hero-recede);
+    margin-bottom: calc(var(--hero-window) - var(--hero-recede) - 6em);
+  }
+}
+
+.hero-answer p { margin: 0 0 0.5em; }
+.hero-answer p:last-child { margin-bottom: 0; }
+.hero-answer a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+.hero-answer a:hover { text-decoration-color: currentColor; }
+.hero-answer code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.88em;
+  background: rgba(128, 128, 128, 0.16);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Classic (non-starfield) layout centers the hero copy. */
+body:not(.starfield-mode) .hero-answer { text-align: center; }
+
+/* ── Chat dock: floating "Ask me anything" trigger, dynamic-island style ──
+   Fixed bottom-center pill, visible on every mode/page. Grows in place
+   (wider + a few rows tall) while typing; only expands into the full
+   #chatOverlay modal (see below) once the first message is sent. */
+#chatDock {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 340px;
   max-width: calc(100vw - 40px);
-  margin: 0 auto;
+  padding: 8px 8px 8px 20px;
+  background: var(--glass-bg);
+  border: none;
+  border-radius: 999px;
+  color: var(--text-muted, #888);
+  font-family: inherit;
+  font-size: 15px;
+  text-align: left;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.28)),
+    0 1px 1px rgba(0, 0, 0, calc(0.03 + var(--theme-blend) * 0.08)),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease,
+    width 0.2s cubic-bezier(0.16,1,0.3,1), border-radius 0.2s ease, padding 0.2s ease;
+}
+#chatDock.is-expanded {
+  align-items: flex-end;
+  width: 480px;
+  max-width: calc(100vw - 40px);
+  border-radius: 24px;
+  padding: 12px 12px 12px 16px;
+}
+#chatDockSend {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  box-sizing: border-box;
+  background: var(--accent, #3a3d45);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#chatDockSend svg { width: 100%; height: 100%; }
+#chatDockInput {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary, inherit);
+  font: inherit;
+  line-height: 20px;
+  padding: 0;
+  height: 20px;
+  overflow: hidden;
+  transition: height 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease;
+}
+#chatDockInput::placeholder { color: var(--text-secondary, #888); opacity: 0.9; }
+#chatDock.is-expanded #chatDockInput {
+  height: 60px;
+  overflow-y: auto;
+}
+
+/* ── Dock entrance ──
+   On the home page the dock starts as just the circular send button and blooms
+   outward from the center into the full pill, timed to land as the hero copy
+   finishes typing. Applied + released by js/hero-entrance.js, so pages without
+   the entrance (and reduced-motion) keep the dock at its resting state. Width
+   grows while the pill stays center-anchored (left:50% + translateX(-50%)), so
+   it expands symmetrically from the middle. */
+#chatDock.dock-enter {
+  width: 56px;
+  padding: 8px;
+  gap: 0;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.85);
+}
+#chatDock.dock-enter #chatDockInput { opacity: 0; }
+/* Dock fades/shrinks out while the overlay is open (and is unreachable behind
+   its backdrop anyway); reappears once the overlay closes. */
+body.chat-overlay-open #chatDock {
+  opacity: 0;
+  transform: translateX(-50%) scale(0.92);
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  #chatDock {
+    width: auto;
+    left: 20px;
+    right: 20px;
+    transform: none;
+  }
+  #chatDock.is-expanded {
+    width: auto;
+  }
+  body.chat-overlay-open #chatDock {
+    transform: scale(0.92);
+  }
+  /* The mobile dock is full-width (width:auto can't animate a bloom), so the
+     entrance degrades to a soft fade + scale from center. */
+  #chatDock.dock-enter {
+    width: auto;
+    padding: 8px 8px 8px 20px;
+    gap: 12px;
+    transform: scale(0.9);
+  }
+}
+
+/* ── Chat overlay: the dock expands into this centered modal ── */
+#chatOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--backdrop-modal);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+#chatOverlay.is-open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Prevent the page behind the overlay from scrolling while it's open. */
+body.chat-overlay-open {
+  overflow: hidden;
+}
+
+#chatOverlayPanel {
+  width: 90vw;
+  height: 90vh;
   display: flex;
   flex-direction: column;
   position: relative;
-  z-index: 2;
+  background: var(--glass-bg);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.40)),
+    0 8px 24px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.20)),
+    inset 0 1.5px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  /* Reveal via clip-path instead of scaling the whole panel — the box itself
+     stays pinned at its final 90vw/90vh the entire time, so #chatInputBar
+     (already flex-shrink:0, anchored at the bottom) never changes size. Only
+     the clipped region grows upward from the bottom edge, so the transcript
+     and header appear to rise up around the already-settled input bar. */
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 0.34s cubic-bezier(0.16,1,0.3,1);
+}
+#chatOverlay.is-open #chatOverlayPanel {
+  clip-path: inset(0% 0 0 0);
+}
+
+#chatOverlayTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--modal-top-border);
+  flex-shrink: 0;
+}
+#chatOverlayTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+#chatOverlayClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+#chatOverlayClose:hover { color: var(--text-primary); }
+
+/* Fades the transcript's bottom edge into the panel background just above
+   the input row, echoing the old page-level #chatBottomFade. */
+#chatOverlayFade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--glass-bg));
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  #chatOverlayPanel {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
 }
 
 #chatTranscript {
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 24px 8px 140px;
+  padding: 20px 24px 24px;
   overflow-y: auto;
-  max-height: calc(100vh - 220px);
   scroll-behavior: smooth;
 }
 
@@ -5772,6 +6216,28 @@ body.chat-mode #mainPanel {
   text-decoration-color: currentColor;
 }
 
+.chat-mock-badge {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 99999;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 170, 60, 0.5);
+  background: rgba(255, 170, 60, 0.12);
+  color: #e69a3c;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.chat-mock-badge:hover {
+  background: rgba(255, 170, 60, 0.22);
+}
+
 @keyframes chat-dot-bounce {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-4px); opacity: 1; }
@@ -5790,19 +6256,18 @@ body.chat-mode #mainPanel {
 .chat-dot:nth-child(2) { animation-delay: 0.15s; }
 .chat-dot:nth-child(3) { animation-delay: 0.30s; }
 
-/* ── Chat input bar (floating, sibling to .now-strip) ── */
+/* ── Chat input bar — docked at the bottom of #chatOverlayPanel ── */
 #chatInputBar {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 6;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 560px;
-  max-width: calc(100vw - 40px);
+  width: calc(100% - 48px);
+  max-width: 760px;
+  margin: 0 auto 20px;
   padding: 8px 10px 8px 16px;
+  box-sizing: border-box;
   background: var(--glass-bg-medium);
   border-radius: 14px;
   box-shadow:
@@ -5852,13 +6317,7 @@ body.chat-mode #mainPanel {
 
 @media (max-width: 640px) {
   #chatInputBar {
-    width: auto;
-    left: 20px;
-    right: 20px;
-    transform: none;
-  }
-  #chatTranscript {
-    max-height: calc(100vh - 200px);
+    width: calc(100% - 32px);
   }
 }
 

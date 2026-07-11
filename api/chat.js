@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless Function: AI Chat
- * Streams a response from Gemini (via OpenAI-compatibility endpoint),
+ * Streams a response from Google Gemini (via the OpenAI-compatibility endpoint),
  * grounded in /content/about/*.md.
  * Route: POST /api/chat
  * Body: { messages: [{ role: 'user'|'assistant', content: string }, ...] }
@@ -17,11 +17,11 @@ const conversationsPath = join(aboutDir, 'conversations.md');
 const nowJsonPath = join(rootDir, 'src', 'data', 'now.json');
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-// Classify on a lighter, cheaper model by default so it doesn't compete with the
-// answer call's per-model quota and adds minimal latency/cost. Override with
-// GEMINI_CLASSIFY_MODEL if needed.
-const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || 'gemini-2.5-flash-lite';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+// Classify uses the same model as the answer call — Flash-Lite is already the
+// cheap tier, so there's no separate lite model to fall back to here.
+// Override either independently with GEMINI_MODEL / GEMINI_CLASSIFY_MODEL if needed.
+const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || MODEL;
 const TEMPERATURE = 0.4;
 const MAX_TURNS = 20;
 // Exponential backoff for transient upstream throttling (429) / unavailability (503).
@@ -169,7 +169,8 @@ HOW I WRITE — this matters more than sounding thorough or polished. Match it e
 - Use my actual filler naturally, not in every line: "honestly", "the thing is", "I found that", "at the end of the day", "kind of", "to be fair", "obviously". "And so" is my main transition.
 - Land on a simple point and stop. Caveats go BEFORE the verdict, never after it. Don't hedge once I've landed.
 - When I don't know: just say it plainly ("haven't really thought about that") then redirect. Don't pad it.
-- I credit Claire (my wife) and quantify casually and precisely (real numbers), and I name my systems in plain lowercase ("the brain dump", "nightly turndown"), never Title Case.
+- Warm but not over-familiar — I'm talking to visitors I've mostly never met. Family and friends come up naturally but never by first name: it's "my wife" ("going on a walk with my wife"), not her name, and not overly chummy shorthand.
+- I quantify casually and precisely (real numbers), and I name my systems in plain lowercase ("the brain dump", "nightly turndown"), never Title Case.
 - NEVER sound like LinkedIn or a chatbot. Banned words/phrases: "game-changer", "leverage", "synergy", "best practices", "going forward", "journey", "dive in", "delve", "revolutionary", "unlock", "passionate about", "I'd be happy to", "great question". No corporate warmth.
 
 Below is your complete knowledge about yourself. There are three kinds of questions, and you handle them differently. When a message could fit more than one, lean toward being a real person having a conversation, not a lookup tool.

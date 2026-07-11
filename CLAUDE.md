@@ -277,7 +277,7 @@ Supported audio formats: `.m4a`, `.mp3`, `.wav`, `.ogg`, `.aac`, `.flac`, `.webm
 
 ## Chat Assistant (api/chat.js)
 
-The chat tab answers in Luke's voice, grounded in `/content/about/*.md` (see `loadKnowledgeBase()`), streaming from Gemini.
+The chat tab answers in Luke's voice, grounded in `/content/about/*.md` (see `loadKnowledgeBase()`), streaming from Google Gemini via its OpenAI-compatibility endpoint.
 
 **Three kinds of questions (handled in `buildSystemPrompt()`):**
 - **Real questions about Luke** (life, work, plans, considered opinions, biography): answered only if covered by the knowledge base; otherwise it redirects to DM rather than guessing. Out-of-scope topics (`out-of-scope.md`) are politely declined.
@@ -289,7 +289,7 @@ The system prompt also leads with a distilled **"HOW I WRITE"** voice block (hoi
 **Voice examples (`content/about/conversations.md`):** a fill-in worksheet of `Q:` / `A:` pairs in Luke's real words. `loadVoiceExamples()` parses it (only pairs with a non-empty answer are kept, so it works incrementally) and `buildSystemPrompt()` injects them as a prominent `<my-real-answers>` few-shot block — the strongest signal for matching Luke's voice. It's excluded from the main KB blob so it isn't buried. Empty file → block is omitted entirely. Harvest good answers from the gap pipeline into this file over time to keep tightening the voice.
 
 **Question capture + gap tracking (KV-backed):**
-- Every visitor question is classified by a cheap second Gemini call (`classifyQuestion()`) as `general`, `personal_covered`, or `personal_gap`. This runs in parallel with the streamed answer and is awaited before the response ends, so it adds no latency to the first token and never blocks chat (all KV/classify calls are best-effort, wrapped in try/catch).
+- Every visitor question is classified by a second Gemini call (`classifyQuestion()`) as `general`, `personal_covered`, or `personal_gap`. This runs in parallel with the streamed answer and is awaited before the response ends, so it adds no latency to the first token and never blocks chat (all KV/classify calls are best-effort, wrapped in try/catch).
 - Every question is appended to a capped Vercel KV list (`chat:questions`, last 1000).
 - `personal_gap` questions are upserted into a deduped gap to-do list (`chat:gaps`, hashed by normalized topic) with a `suggestion` phrased for Luke to answer, plus a count and example questions.
 
@@ -302,8 +302,9 @@ The system prompt also leads with a distilled **"HOW I WRITE"** voice block (hoi
 - `.github/workflows/kb-gaps-resolve.yml` (on PR merge) runs `.github/scripts/kb-resolve.mjs`, which reads `Resolves-KB-Gap: <key>` lines from the merged PR's title/body and POSTs them to the resolve endpoint, so answered gaps drop off the list. The secret lives only in GitHub Actions, never in a chat session.
 - Required GitHub repo secret: `CHAT_INSIGHTS_KEY` (Settings → Secrets and variables → Actions). Optional repo variable: `CHAT_INSIGHTS_URL` (defaults to `https://lukevz.com`).
 
-**Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` / `GEMINI_CLASSIFY_MODEL` (optional overrides), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
-**Env vars:** `GEMINI_API_KEY` (required), `GEMINI_MODEL` (answer model, default `gemini-2.5-flash`) / `GEMINI_CLASSIFY_MODEL` (classifier model, default `gemini-2.5-flash-lite` so it doesn't share the answer model's quota), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
+**Mock/test mode (js/chat.js):** For styling/UX work on the chat UI without spending Gemini tokens. Enable with `?chatmock=1` in the URL (that page load only) or persistently via `chat.mock(true)` in the console (`chat.mock(false)` to turn off; stored in localStorage under `chatMockMode`). An orange "chat test mode" badge shows while it's on (click it to disable). Mock mode swaps only the transport (`chatFetch()` → `mockFetch()`), faking the SSE stream with a `ReadableStream`, so the real streaming/markdown/error code paths all run, including the headless hero `ask()` path. Message keywords select fixtures: `help`, `short`, `long`, `links`, `md`, `empty`, `error` (500), `429`, `netfail`; anything else cycles canned in-voice replies.
+
+**Env vars:** `GEMINI_API_KEY` (required — Google AI Studio key on a billed project), `GEMINI_MODEL` (answer + classify model, default `gemini-3.1-flash-lite`) / `GEMINI_CLASSIFY_MODEL` (optional override if classify should use a different model than the answer call), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
 
 ## Content Sources
 

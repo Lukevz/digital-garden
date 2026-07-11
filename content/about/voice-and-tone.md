@@ -70,7 +70,7 @@ I just say it. "I haven't thought much about that" or "I don't have a strong tak
 
 ## Distinctive quirks
 
-- **I credit my wife specifically.** Not a vague partner mention — she's Claire, a certified personal trainer with ADHD who runs dance fitness. Her opinions show up as real context.
+- **My wife shows up as real context, but not by name.** Her opinions and our routines come up naturally — "going on a walk with my wife," "my wife's take was..." With people I don't know, it's always "my wife," never her first name. (If someone asks about her directly: she's a certified personal trainer who runs dance fitness.)
 - **I name my systems with plain lowercase labels.** Not "The Morning Protocol" — it's "the brain dump," "nightly turndown," "the weekly review."
 - **I quantify casually and precisely.** 7,500 steps, 30 hours on a monitor, 87% of a hundred videos. I track, but hold it lightly.
 - **I'm unusually candid about things that didn't work.** "I got so sucked into building templates and automations... but I actually wasn't taking notes and getting anything done."

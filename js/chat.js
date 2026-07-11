@@ -10,6 +10,117 @@
   let inflight = false;
   let initialized = false;
 
+  // --- Mock mode -------------------------------------------------------------
+  // Test the chat UI (bubbles, streaming, markdown, links, error states)
+  // without hitting /api/chat, so styling/UX work burns zero Gemini tokens.
+  // Enable with ?chatmock=1 in the URL (this page load only), or persistently
+  // from the console with chat.mock(true) / off with chat.mock(false).
+  // In mock mode, message keywords pick a fixture: help, short, long, links,
+  // md, empty, error, 429, netfail. Anything else cycles canned replies.
+  const MOCK_KEY = 'chatMockMode';
+  let mockMode = false;
+  try {
+    mockMode = localStorage.getItem(MOCK_KEY) === '1' || /[?&]chatmock=1/.test(location.search);
+  } catch (e) { /* storage unavailable — URL param only */ }
+
+  const MOCK_REPLIES = [
+    "Honestly, the one I'm keeping is the BenQ. The thing is, once you stop chasing specs and just live with a monitor for 30 hours a week, the answer gets obvious fast.",
+    "I work from home, so it's coffee, breakfast, a voice journal to clear my head, then a pretty solid 9 to 5. After that I'm at the gym or on a walk with my wife.",
+    "Haven't really thought about that, honestly. Ask me about design systems or my note-taking setup though — I can talk about those all day.",
+  ];
+  let mockReplyIndex = 0;
+
+  const MOCK_FIXTURES = {
+    help: "Mock commands: **short**, **long**, **links**, **md**, **empty**, **error**, **429**, **netfail**. Anything else cycles a few canned replies. Toggle with `chat.mock(false)`.",
+    short: "Cats, and I don't even have to think about it.",
+    long: "Honestly it was a long, winding road. I started a Mac tutorial channel on YouTube as a teenager and taught myself design, video, and code from scratch, then did years of freelance and agency work before landing in UX properly.\n\nAnd so by the time I got the official title, I'd already been doing the work for a decade. The thing is, that path taught me more about shipping real things than any bootcamp could have — I was debugging my own site at 2am because nobody else was going to.\n\nAt the end of the day, I think the winding road was the point. You pick up taste from making a thousand small judgment calls, not from following a curriculum. That works for me.",
+    links: "You can find me on linkedin.com/in/lukevz or check out [my work](https://lukevz.com/work) — the side project lives at https://github.com/lukevz too. And so if you want the full story, /work has it.",
+    md: "The **big thing** is keeping it *plain text* — my whole setup runs on markdown and a folder called `posts`. **Bold**, *italic*, and `inline code` all show up in real answers, which means the styling has to hold up.",
+  };
+
+  function sseChunk(text) {
+    return 'data: ' + JSON.stringify({ choices: [{ delta: { content: text } }] }) + '\n\n';
+  }
+
+  function mockFetch(history) {
+    const lastUser = [...history].reverse().find(m => m.role === 'user');
+    const cmd = (lastUser?.content || '').trim().toLowerCase();
+
+    if (cmd === 'netfail') return Promise.reject(new TypeError('mock network failure'));
+    if (cmd === 'error') return Promise.resolve(new Response('mock upstream error', { status: 500 }));
+    if (cmd === '429') return Promise.resolve(new Response('mock rate limit', { status: 429 }));
+
+    let reply;
+    if (cmd === 'empty') reply = '';
+    else if (MOCK_FIXTURES[cmd]) reply = MOCK_FIXTURES[cmd];
+    else reply = MOCK_REPLIES[mockReplyIndex++ % MOCK_REPLIES.length];
+
+    const encoder = new TextEncoder();
+    const words = reply.match(/\S+\s*/g) || [];
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const stream = new ReadableStream({
+      async start(controller) {
+        await sleep(500); // fake first-token latency so the typing indicator shows
+        for (const w of words) {
+          controller.enqueue(encoder.encode(sseChunk(w)));
+          await sleep(24);
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      }
+    });
+    return Promise.resolve(new Response(stream, {
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream' }
+    }));
+  }
+
+  // Single fetch entry point for both the transcript and the headless hero
+  // path — mock mode swaps the transport, everything downstream is identical.
+  function chatFetch(history) {
+    if (mockMode) return mockFetch(history);
+    return fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history })
+    });
+  }
+
+  function updateMockBadge() {
+    let badge = document.getElementById('chatMockBadge');
+    if (!mockMode) {
+      if (badge) badge.remove();
+      return;
+    }
+    if (badge) return;
+    badge = document.createElement('button');
+    badge.id = 'chatMockBadge';
+    badge.className = 'chat-mock-badge';
+    badge.type = 'button';
+    badge.textContent = 'chat test mode — no tokens';
+    badge.title = 'Click to turn off (or chat.mock(false) in the console)';
+    badge.addEventListener('click', () => setMockMode(false));
+    document.body.appendChild(badge);
+  }
+
+  function setMockMode(on) {
+    mockMode = on !== false;
+    try {
+      if (mockMode) localStorage.setItem(MOCK_KEY, '1');
+      else localStorage.removeItem(MOCK_KEY);
+    } catch (e) { /* storage unavailable — session-only toggle */ }
+    updateMockBadge();
+    console.info('[chat] mock mode ' + (mockMode ? 'ON — type "help" in the chat for fixtures' : 'OFF'));
+    return mockMode;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateMockBadge);
+  } else {
+    updateMockBadge();
+  }
+  // --- end mock mode ----------------------------------------------------------
+
   function el(tag, className, text) {
     const e = document.createElement(tag);
     if (className) e.className = className;
@@ -180,6 +291,7 @@
 
     let assistantBubble = null;
     let assistantText = '';
+    let renderScheduled = false;
 
     function ensureBubble() {
       if (!assistantBubble) {
@@ -188,12 +300,23 @@
       }
     }
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages })
+    // Deltas can arrive many times a second; re-parsing + rebuilding the whole
+    // bubble on every single one gets slower as the reply grows (it re-does the
+    // full markdown pass every time) and starts to visibly lag behind the
+    // stream. Batch to one render per animation frame instead — the text still
+    // accumulates immediately, only the (expensive) DOM rebuild is throttled.
+    function scheduleRender() {
+      if (renderScheduled) return;
+      renderScheduled = true;
+      requestAnimationFrame(() => {
+        renderScheduled = false;
+        if (assistantBubble) renderAssistantText(assistantBubble, assistantText);
+        scrollToBottom(transcript);
       });
+    }
+
+    try {
+      const res = await chatFetch(messages);
 
       if (!res.ok || !res.body) {
         ensureBubble();
@@ -223,8 +346,7 @@
           done = parseSSE(ready, (delta) => {
             ensureBubble();
             assistantText += delta;
-            renderAssistantText(assistantBubble, assistantText);
-            scrollToBottom(transcript);
+            scheduleRender();
           });
         }
       }
@@ -232,9 +354,15 @@
         parseSSE(buffer, (delta) => {
           ensureBubble();
           assistantText += delta;
-          renderAssistantText(assistantBubble, assistantText);
-          scrollToBottom(transcript);
+          scheduleRender();
         });
+      }
+
+      // Flush any pending text immediately rather than waiting for the next
+      // frame — the stream is done, nothing left to batch against.
+      if (assistantBubble) {
+        renderAssistantText(assistantBubble, assistantText);
+        scrollToBottom(transcript);
       }
 
       if (assistantText) {
@@ -294,5 +422,99 @@
     if (input) setTimeout(() => input.focus(), 50);
   }
 
-  window.chat = { init, focus };
+  // Programmatic send — used by the floating dock to hand off the first
+  // message (typed before the overlay/transcript existed) once it opens.
+  function sendMessage(text) {
+    text = (text || '').trim();
+    const transcript = document.getElementById('chatTranscript');
+    const send = document.getElementById('chatSend');
+    if (!text || !transcript || !send || inflight) return;
+    showWelcome(transcript);
+    streamChat(text, transcript, send);
+  }
+
+  // Headless streaming — same API/history as the transcript, but hands the
+  // accumulating text back through callbacks instead of owning any DOM. Used by
+  // the home hero, which streams the answer straight into the intro copy.
+  //   handlers: { onDelta(fullText), onDone(fullText), onError(message) }
+  async function ask(userText, handlers) {
+    userText = (userText || '').trim();
+    handlers = handlers || {};
+    if (!userText || inflight) return;
+    inflight = true;
+
+    messages.push({ role: 'user', content: userText });
+
+    let assistantText = '';
+    let renderScheduled = false;
+
+    // Batch onDelta to one call per frame — the raw text accumulates
+    // immediately, only the (caller-side) DOM rebuild is throttled.
+    function flush() {
+      if (renderScheduled) return;
+      renderScheduled = true;
+      requestAnimationFrame(() => {
+        renderScheduled = false;
+        if (handlers.onDelta) handlers.onDelta(assistantText);
+      });
+    }
+
+    try {
+      const res = await chatFetch(messages);
+
+      if (!res.ok || !res.body) {
+        const msg = res.status === 429
+          ? "I'm getting more questions than I can handle right now — give me a few seconds and try again."
+          : "Hmm — something broke on my end. Try again in a moment, or DM me directly.";
+        const errText = await res.text().catch(() => '');
+        console.error('[chat] upstream error', res.status, errText);
+        if (handlers.onError) handlers.onError(msg);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let done = false;
+      const onDelta = (delta) => { assistantText += delta; flush(); };
+
+      while (!done) {
+        const { value, done: streamDone } = await reader.read();
+        if (streamDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lastNl = buffer.lastIndexOf('\n\n');
+        if (lastNl >= 0) {
+          done = parseSSE(buffer.slice(0, lastNl), onDelta);
+          buffer = buffer.slice(lastNl + 2);
+        }
+      }
+      if (buffer) parseSSE(buffer, onDelta);
+
+      if (assistantText) {
+        messages.push({ role: 'assistant', content: assistantText });
+        if (handlers.onDelta) handlers.onDelta(assistantText); // final flush
+        if (handlers.onDone) handlers.onDone(assistantText);
+      } else if (handlers.onError) {
+        handlers.onError("Got nothing back. Try rephrasing?");
+      }
+    } catch (e) {
+      console.error('[chat] ask error', e);
+      if (handlers.onError) handlers.onError("Connection hiccup. Try again?");
+    } finally {
+      inflight = false;
+    }
+  }
+
+  // Render accumulated markdown into an arbitrary element (used by the hero).
+  function renderInto(el, text) {
+    if (el) renderMarkdown(el, text);
+  }
+
+  // Drop the conversation history — the hero calls this when the visitor
+  // dismisses an answer and returns to the intro.
+  function reset() {
+    messages.length = 0;
+  }
+
+  window.chat = { init, focus, sendMessage, ask, renderInto, reset, mock: setMockMode, busy: () => inflight };
 })();

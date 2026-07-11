@@ -43,7 +43,6 @@
       <div class="theme-transition__arc" aria-hidden="true"></div>
     </div>
   </div>
-  <div id="customCursor" aria-hidden="true"></div>
   <div id="lens" aria-hidden="true"><canvas id="lensCanvas" width="128" height="128"></canvas></div>
 
   <!-- Top bar: local time & weather · mode tabs · theme -->
@@ -59,7 +58,7 @@
     <!-- Mode tab group -->
     <div id="modeTab" role="group" aria-label="View mode">
     <div class="tab-pill"></div>
-    <button class="tab-opt" data-mode="chat" aria-pressed="false">Chat</button>
+    <button class="tab-opt" data-mode="writing" aria-pressed="false">Writing</button>
     <button class="tab-opt" data-mode="videos" aria-pressed="false">Videos</button>
     <button class="tab-opt" data-mode="photos" aria-pressed="false">Photos</button>
     <button id="overflowBtn" aria-label="More" aria-expanded="false" aria-haspopup="true" title="More">
@@ -281,6 +280,10 @@
   <!-- Hero: full first-viewport section with rounded bottom corners + planetary glow -->
   <section class="hero" id="heroSection">
 
+  <!-- Hero lockup: in starfield mode the avatar (.clock-hero-wrap) and the
+       intro copy sit side-by-side; a display:contents wrapper keeps every other
+       mode's stacked layout untouched. -->
+  <div class="hero-lockup">
   <!-- Intro -->
   <div class="intro">
     <div class="intro-text">
@@ -307,6 +310,7 @@
       <div class="clock-hero" id="clockHero" aria-hidden="true" hidden></div>
     </div>
   </div>
+  </div><!-- /.hero-lockup -->
 
   <div id="mainPanel" role="main" tabindex="-1">
 
@@ -417,11 +421,6 @@
     <div id="placesMap"></div>
   </div>
 
-  <!-- Chat view -->
-  <div id="chatView" style="display:none">
-    <div id="chatTranscript" role="log" aria-live="polite" aria-label="Chat transcript"></div>
-  </div>
-
   </div><!-- /#mainPanel -->
 
   </section><!-- /.hero -->
@@ -447,36 +446,6 @@
         </header>
         <div class="projects-masonry" id="caseStudiesMasonry">
           <p class="home-loading">Loading case studies…</p>
-        </div>
-      </section>
-
-      <section class="home-section" id="homeWriting" aria-labelledby="homeWritingTitle">
-        <header class="home-section-header">
-          <span class="home-section-icon" data-clone-icon="Writing" aria-hidden="true"></span>
-          <h2 class="home-section-title" id="homeWritingTitle">Writing</h2>
-        </header>
-        <div class="writing-table-wrap" id="writingTable">
-          <p class="home-loading">Loading posts…</p>
-        </div>
-      </section>
-
-      <section class="home-section" id="homeVideos" aria-labelledby="homeVideosTitle">
-        <header class="home-section-header">
-          <span class="home-section-icon" data-clone-icon="Videos" aria-hidden="true"></span>
-          <h2 class="home-section-title" id="homeVideosTitle">Videos</h2>
-        </header>
-        <div class="video-filmstrip" id="videoFilmstrip">
-          <p class="home-loading">Loading videos…</p>
-        </div>
-      </section>
-
-      <section class="home-section" id="homePhotos" aria-labelledby="homePhotosTitle">
-        <header class="home-section-header">
-          <span class="home-section-icon" data-clone-icon="Photos" aria-hidden="true"></span>
-          <h2 class="home-section-title" id="homePhotosTitle">Photos</h2>
-        </header>
-        <div class="home-photos" id="homePhotosGrid">
-          <p class="home-loading">Loading photos…</p>
         </div>
       </section>
 
@@ -546,18 +515,44 @@
     </li>
   </ul>
 
-  <!-- Chat bottom fade (visible only in chat mode) -->
-  <div id="chatBottomFade"></div>
-
-  <!-- Chat input bar (visible only in chat mode) -->
-  <div id="chatInputBar" style="display:none" role="group" aria-label="Chat input">
-    <input type="text" id="chatInput" placeholder="Ask me anything…" autocomplete="off" aria-label="Type your message" />
-    <button id="chatSend" type="button" aria-label="Send">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Floating chat dock — "Ask me anything" compose field, always visible.
+       Grows in place while typing; only becomes the full #chatOverlay modal
+       once the first message is sent (js/main.js submitDockMessage). -->
+  <div id="chatDock" role="group" aria-label="Ask me anything">
+    <textarea id="chatDockInput" placeholder="Ask me anything…" rows="1" aria-label="Type your message"></textarea>
+    <button id="chatDockSend" type="button" aria-label="Send">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <line x1="22" y1="2" x2="11" y2="13"/>
         <polygon points="22 2 15 22 11 13 2 9 22 2"/>
       </svg>
     </button>
+  </div>
+
+  <!-- Chat overlay: the dock expands into this 90vw/90vh modal. Reuses the
+       same #chatTranscript/#chatInputBar markup + js/chat.js logic regardless
+       of entry point (dock click or the top-nav Chat tab). -->
+  <div id="chatOverlay" role="dialog" aria-modal="true" aria-label="Chat" aria-hidden="true">
+    <div id="chatOverlayPanel">
+      <div id="chatOverlayTop">
+        <span id="chatOverlayTitle">Luke's Digital Brain</span>
+        <button id="chatOverlayClose" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div id="chatTranscript" role="log" aria-live="polite" aria-label="Chat transcript"></div>
+      <div id="chatOverlayFade" aria-hidden="true"></div>
+      <div id="chatInputBar" role="group" aria-label="Chat input">
+        <input type="text" id="chatInput" placeholder="Ask me anything…" autocomplete="off" aria-label="Type your message" />
+        <button id="chatSend" type="button" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- App panel -->
@@ -764,6 +759,7 @@
 
   <!-- <script src="/js/intro.js"></script> preloader off for now -->
   <script src="/js/main.js?v=5"></script>
+  <script src="/js/hero-entrance.js?v=1"></script>
   <script src="/js/home-feed.js?v=1"></script>
   <script src="/js/chat.js?v=1"></script>
 
