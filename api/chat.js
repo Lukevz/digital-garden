@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless Function: AI Chat
- * Streams a response from Gemini (via OpenAI-compatibility endpoint),
+ * Streams a response from Google Gemini (via the OpenAI-compatibility endpoint),
  * grounded in /content/about/*.md.
  * Route: POST /api/chat
  * Body: { messages: [{ role: 'user'|'assistant', content: string }, ...] }
@@ -17,11 +17,11 @@ const conversationsPath = join(aboutDir, 'conversations.md');
 const nowJsonPath = join(rootDir, 'src', 'data', 'now.json');
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-// Classify on a lighter, cheaper model by default so it doesn't compete with the
-// answer call's per-model quota and adds minimal latency/cost. Override with
-// GEMINI_CLASSIFY_MODEL if needed.
-const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || 'gemini-2.5-flash-lite';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+// Classify uses the same model as the answer call — Flash-Lite is already the
+// cheap tier, so there's no separate lite model to fall back to here.
+// Override either independently with GEMINI_MODEL / GEMINI_CLASSIFY_MODEL if needed.
+const CLASSIFY_MODEL = process.env.GEMINI_CLASSIFY_MODEL || MODEL;
 const TEMPERATURE = 0.4;
 const MAX_TURNS = 20;
 // Exponential backoff for transient upstream throttling (429) / unavailability (503).
@@ -32,6 +32,15 @@ const Q_LOG_KEY = 'chat:questions'; // capped list of every visitor question
 const Q_LOG_MAX = 1000;
 const GAPS_KEY = 'chat:gaps';        // hash keyed by normalized topic → gap record
 const LOG_TIMEOUT_MS = 4000;
+
+// Per-IP rate limits. The system prompt tells the model to deflect free-assistant
+// abuse, but that lives only in the prompt — a direct POST to /api/chat never sees
+// it, and every request spends real Gemini tokens (answer stream + classify call).
+// These caps are the actual cost guard. Generous enough for a real conversation,
+// brutal for a script hammering the endpoint in a loop.
+const RATE_PER_MIN = 20;
+const RATE_PER_DAY = 300;
+const MAX_MESSAGES = 100; // reject absurdly large payloads before we do any work
 
 async function callGemini(apiKey, payload) {
   return fetch(GEMINI_URL, {
@@ -160,7 +169,8 @@ HOW I WRITE — this matters more than sounding thorough or polished. Match it e
 - Use my actual filler naturally, not in every line: "honestly", "the thing is", "I found that", "at the end of the day", "kind of", "to be fair", "obviously". "And so" is my main transition.
 - Land on a simple point and stop. Caveats go BEFORE the verdict, never after it. Don't hedge once I've landed.
 - When I don't know: just say it plainly ("haven't really thought about that") then redirect. Don't pad it.
-- I credit Claire (my wife) and quantify casually and precisely (real numbers), and I name my systems in plain lowercase ("the brain dump", "nightly turndown"), never Title Case.
+- Warm but not over-familiar — I'm talking to visitors I've mostly never met. Family and friends come up naturally but never by first name: it's "my wife" ("going on a walk with my wife"), not her name, and not overly chummy shorthand.
+- I quantify casually and precisely (real numbers), and I name my systems in plain lowercase ("the brain dump", "nightly turndown"), never Title Case.
 - NEVER sound like LinkedIn or a chatbot. Banned words/phrases: "game-changer", "leverage", "synergy", "best practices", "going forward", "journey", "dive in", "delve", "revolutionary", "unlock", "passionate about", "I'd be happy to", "great question". No corporate warmth.
 
 Below is your complete knowledge about yourself. There are three kinds of questions, and you handle them differently. When a message could fit more than one, lean toward being a real person having a conversation, not a lookup tool.
@@ -306,6 +316,38 @@ async function logInteraction(apiKey, question, kb) {
   }
 }
 
+// Best-guess client IP behind Vercel's proxy. x-forwarded-for is a comma-list
+// with the real client first.
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || '';
+}
+
+// Fixed-window per-IP rate limit backed by the same KV as the guestbook. Two
+// windows: a per-minute burst cap (stops tight loops) and a per-day total cap
+// (stops slow drains). Fails OPEN if KV is unavailable — a real visitor must
+// never be blocked because logging infra is down, matching the rest of chat.
+async function checkRateLimit(ip) {
+  if (!ip) return { ok: true };
+  try {
+    const minKey = `chat:rl:min:${ip}`;
+    const perMin = await kv.incr(minKey);
+    if (perMin === 1) await kv.expire(minKey, 60);
+    if (perMin > RATE_PER_MIN) return { ok: false, retryAfter: 60 };
+
+    const dayKey = `chat:rl:day:${ip}`;
+    const perDay = await kv.incr(dayKey);
+    if (perDay === 1) await kv.expire(dayKey, 86400);
+    if (perDay > RATE_PER_DAY) return { ok: false, retryAfter: 3600 };
+
+    return { ok: true };
+  } catch (e) {
+    console.warn('[chat] rate limit check skipped:', e.message);
+    return { ok: true };
+  }
+}
+
 async function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -344,6 +386,19 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Cost guard: reject over-rate callers before spending any Gemini tokens.
+  // 429 is handled with a friendly message on the client (js/chat.js).
+  const rl = await checkRateLimit(clientIp(req));
+  if (!rl.ok) {
+    res.writeHead(429, {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Retry-After': String(rl.retryAfter || 60)
+    });
+    res.end(JSON.stringify({ error: 'rate_limited', retryAfter: rl.retryAfter || 60 }));
+    return;
+  }
+
   let body;
   try {
     body = req.body && typeof req.body === 'object' ? req.body : await readJsonBody(req);
@@ -357,6 +412,11 @@ export default async function handler(req, res) {
   if (!messages.length) {
     res.writeHead(400, { ...corsHeaders, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'messages required' }));
+    return;
+  }
+  if (messages.length > MAX_MESSAGES) {
+    res.writeHead(400, { ...corsHeaders, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'too many messages' }));
     return;
   }
 

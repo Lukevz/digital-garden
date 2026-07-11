@@ -6,6 +6,7 @@ timeline: 2021–2022
 tag: Design Systems · Change Management · Figma
 headline: Built the business case, rebuilt the design system, and trained 120+ designers — collapsing a four-tool stack into one.
 date: 2026-06-22
+cover: /images/case-studies/design system contribution.png
 ---
 
 ![Upskilling 120+ designers hero image](/images/case-studies/case for figma.png)

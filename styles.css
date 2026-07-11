@@ -8,15 +8,13 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @media (hover: hover) and (pointer: fine) {
-      *, *::before, *::after { cursor: none !important; }
-      body { cursor: none; }
-    }
-
     :root {
       --label-size: 11px;
+      /* Background pattern pitch — must match SP in js/grid.js / BG_SP in js/clock-hero.js.
+         Hero lockup sizes/gaps are expressed in multiples of this so they land on the grid. */
+      --grid-sp: 28px;
       /* Paired tokens — interpolated via --theme-blend during theme arc */
-      --bg-light: #f2f1ee;
+      --bg-light: #f1f1f0;
       --bg-dark: #13141a;
       --text-muted-light: #9a9790;
       --text-muted-dark: #868c9a;
@@ -242,11 +240,959 @@
       font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 72px 20px 20px;
+      align-items: stretch;
+      justify-content: flex-start;
       overflow-x: hidden;
       overflow-y: auto;
+      isolation: isolate;
+      --intro-greeting-reveal: 1;
+    }
+
+    /* ── Hero: fixed in place for exactly one viewport, holds the centered intro
+       + app views. The background pattern lives only here — scrolling content
+       (below-fold, opaque) slides up over it like a curtain, covering it fully.
+       Rounded bottom corners + a soft planetary glow invite scrolling further. ── */
+    .hero {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 72px 20px;
+      border-radius: 0 0 64px 64px;
+      z-index: 2;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* Wrapper around the avatar (.clock-hero-wrap) and the intro copy.
+       Transparent by default so every non-starfield mode keeps its original
+       stacked column layout; starfield mode turns it into a centred
+       avatar-left / text-right row (see starfield lockup rules below). */
+    .hero-lockup { display: contents; }
+
+    /* Reserves scroll length equal to the fixed hero's height, so page content
+       starts scrolling from below it instead of collapsing underneath. Slightly
+       shorter than a full viewport so the below-fold content's top edge peeks
+       into view above the aurora on first load, hinting there's more to scroll to. */
+    .hero-spacer {
+      height: 88vh;
+      pointer-events: none;
+    }
+
+    /* ── Below the fold — scroll-reveal placeholder sections ──
+       Opaque background + higher z-index than .hero so this section visually
+       slides up and covers the fixed hero (and its background pattern)
+       as the page scrolls, like a curtain being drawn over it. */
+    .below-fold {
+      position: relative;
+      z-index: 8;
+      background: var(--bg);
+      width: 100%;
+    }
+
+    /* Soft fade above the section's hard edge so the opaque cover blends into
+       the glow instead of slicing across it as a harsh line while scrolling. */
+    .below-fold::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 100%;
+      height: 200px;
+      pointer-events: none;
+      background: linear-gradient(to bottom, transparent 0%, var(--bg) 100%);
+    }
+
+    .below-fold-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      /* Extra top padding pushes the first section (Projects) further down,
+         so more of the aurora bleed (.hero-glow::after, below) stays visible
+         as its own gap before real content starts. */
+      padding: clamp(120px, 20vh, 260px) 20px 120px;
+    }
+
+    /* ── Home feed sections ── */
+    .home-section {
+      scroll-margin-top: 88px;
+    }
+
+    .home-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .home-section-icon {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .home-section-icon svg {
+      display: block;
+      width: 24px;
+      height: 24px;
+    }
+
+    .home-section-title {
+      font-size: clamp(22px, 3.5vw, 28px);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    .home-loading,
+    .home-empty {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-style: italic;
+      margin: 0;
+    }
+
+    /* Videos — editorial news grid */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 18px 20px;
+      align-items: start;
+      padding-top: 4px;
+      border-top: 2px solid var(--text-primary);
+    }
+
+    .video-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      text-decoration: none;
+      color: inherit;
+      transition: opacity 0.18s ease;
+    }
+    .video-card:hover { opacity: 0.82; }
+
+    .video-card__media {
+      position: relative;
+      overflow: hidden;
+      border-radius: 6px;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    }
+
+    .video-card__media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .video-card:hover .video-card__media img { transform: scale(1.03); }
+
+    .video-card__body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .video-card__eyebrow {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .video-card__title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text-primary);
+    }
+
+    .video-card__dek {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--text-secondary);
+    }
+
+    .video-card__date {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .video-card--lead {
+      grid-column: 1 / span 7;
+      grid-row: 1 / span 2;
+      gap: 14px;
+    }
+
+    .video-card--lead .video-card__media {
+      aspect-ratio: 16 / 10;
+    }
+
+    .video-card--lead .video-card__title {
+      font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .video-card--side {
+      grid-column: 8 / span 5;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 14px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid color-mix(in oklab, var(--glass-border-medium) 75%, transparent);
+    }
+
+    .video-card--side:nth-of-type(2) { grid-row: 1; }
+    .video-card--side:nth-of-type(3) { grid-row: 2; border-bottom: none; padding-bottom: 0; }
+
+    .video-card--side .video-card__media {
+      flex: 0 0 38%;
+      max-width: 168px;
+      aspect-ratio: 16 / 10;
+    }
+
+    .video-card--side .video-card__title {
+      font-size: 0.92rem;
+    }
+
+    .video-card--compact {
+      padding-top: 18px;
+      border-top: 1px solid color-mix(in oklab, var(--glass-border-medium) 75%, transparent);
+    }
+
+    .video-card--compact:nth-of-type(4) { grid-column: 1 / span 5; grid-row: 3; }
+    .video-card--compact:nth-of-type(5) { grid-column: 6 / span 3; grid-row: 3; }
+    .video-card--compact:nth-of-type(6) { grid-column: 9 / span 4; grid-row: 3; }
+
+    .video-card--compact .video-card__media {
+      aspect-ratio: 16 / 9;
+    }
+
+    .video-card--compact .video-card__title {
+      font-size: 0.9rem;
+    }
+
+    /* Videos — horizontal filmstrip. A dark film band with perforated sprocket
+       rails top & bottom; frames scroll horizontally inside it. */
+    /* Videos: a clean horizontal row of thumbnails — no filmstrip decoration
+       (sprocket rails / dark film base removed), theme-aware surfaces. */
+    .video-filmstrip { position: relative; }
+
+    .video-filmstrip__track {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--glass-border-medium) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    .video-filmstrip__track::-webkit-scrollbar { height: 8px; }
+    .video-filmstrip__track::-webkit-scrollbar-track { background: transparent; }
+    .video-filmstrip__track::-webkit-scrollbar-thumb {
+      background: var(--glass-border-medium);
+      border-radius: 4px;
+    }
+
+    .filmstrip-frame {
+      flex: 0 0 auto;
+      width: clamp(200px, 22vw, 258px);
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: opacity 0.18s ease;
+    }
+    .filmstrip-frame:hover { opacity: 0.9; }
+
+    .filmstrip-frame__media {
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 10px;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    }
+    .filmstrip-frame__media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .filmstrip-frame:hover .filmstrip-frame__media img { transform: scale(1.04); }
+
+    .filmstrip-frame__body {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .filmstrip-frame__eyebrow {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .filmstrip-frame__title {
+      margin: 0;
+      font-size: 0.86rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--text-primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .video-filmstrip .home-loading,
+    .video-filmstrip .home-empty {
+      color: var(--text-secondary);
+    }
+
+    /* Experiments — full-width glass "coming soon" panel at the foot of the feed. */
+    .experiments-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      min-height: 250px;
+      padding: 48px 24px;
+      border-radius: 20px;
+      text-align: center;
+      background: var(--glass-bg);
+      box-shadow: inset 0 0 0 1px var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+    }
+    .experiments-cta__icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .experiments-cta__icon svg {
+      display: block;
+      width: 52px;
+      height: 52px;
+    }
+    .experiments-cta__title {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 30px);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+    }
+    .experiments-cta__badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      user-select: none;
+    }
+
+    /* Writing — minimal table */
+    .writing-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    .writing-table th {
+      text-align: left;
+      font-weight: 500;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      padding: 0 12px 10px 0;
+      border-bottom: 1px solid var(--glass-border-medium);
+    }
+    .writing-table th:last-child { padding-right: 0; text-align: right; }
+
+    .writing-table td {
+      padding: 11px 12px 11px 0;
+      border-bottom: 1px solid color-mix(in oklab, var(--glass-border-medium) 60%, transparent);
+      vertical-align: baseline;
+    }
+    .writing-table tr:last-child td { border-bottom: none; }
+    .writing-table td:last-child {
+      padding-right: 0;
+      text-align: right;
+      white-space: nowrap;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.85rem;
+    }
+
+    .writing-table a {
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .writing-table a:hover { color: var(--link, #4a7ab5); }
+
+    /* Projects — portrait masonry */
+    /* Case-study section: two-column master/detail split (see renderCaseStudies-
+       Masonry). Left = list of titles, right = expanding cover + blurb preview. */
+    .projects-masonry { display: block; }
+
+    .cs-split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .cs-split__list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cs-split__row {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      /* Rows grow to divide the list column's full height, so the stacked list
+         matches the height of the preview image beside it. */
+      flex: 1 1 0;
+      text-align: left;
+      padding: 18px 20px;
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      font: inherit;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      transition: box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .cs-split__row:hover { transform: translateX(3px); }
+    .cs-split__row.is-active {
+      background: color-mix(in oklab, var(--text-secondary) 9%, var(--surface-raised));
+      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 55%, transparent);
+    }
+
+    .cs-split__row-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    .cs-split__row-sub {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .cs-split__preview {
+      position: sticky;
+      top: 88px;
+    }
+
+    .cs-preview {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      -webkit-appearance: none;
+      appearance: none;
+      animation: csPreviewIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cs-preview__media {
+      display: block;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: color-mix(in oklab, var(--text-secondary) 8%, var(--surface-raised));
+    }
+    .cs-preview__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cs-preview:hover .cs-preview__media img { transform: scale(1.03); }
+
+    .cs-preview__body {
+      display: block;
+      padding: 14px 16px 16px;
+    }
+    /* Fixed line counts + reserved heights keep every preview the same height,
+       so hovering between studies never reflows the row (and the list beside
+       it, which stretches to match, stays put). */
+    .cs-preview__title {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.25;
+      min-height: 2.5em;          /* 2 lines */
+      margin: 0 0 6px;
+    }
+    .cs-preview__desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      min-height: 2.9em;          /* 2 lines */
+      margin: 0 0 10px;
+    }
+    .cs-preview .cs-tags {
+      margin-top: 0;
+      height: 28px;               /* single chip row — fixed, no reflow */
+      overflow: hidden;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    .cs-preview__cta {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--link, #4a7ab5);
+    }
+
+    @keyframes csPreviewIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .project-card {
+      position: relative;
+      display: block;
+      break-inside: avoid;
+      margin-bottom: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      aspect-ratio: 3 / 4;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      text-decoration: none;
+    }
+
+    .project-card__fill {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        145deg,
+        color-mix(in oklab, var(--text-secondary) 18%, var(--surface-raised)),
+        color-mix(in oklab, var(--text-secondary) 8%, var(--bg))
+      );
+    }
+
+    .project-card__overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 55%);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .project-card:hover .project-card__overlay,
+    .project-card:focus-visible .project-card__overlay { opacity: 1; }
+
+    .project-card__title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.25;
+      margin: 0 0 4px;
+    }
+
+    .project-card__desc {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.35;
+      margin: 0;
+    }
+
+    /* Case-study tiles reuse the projects masonry as <button>s. Reset the button
+       chrome, tint each fill by its --cs-accent, and keep the label visible (not
+       hover-only) since these carry real titles worth reading at a glance. */
+    button.project-card--case {
+      width: 100%;
+      border: 0;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .project-card--case .project-card__fill {
+      background: linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--cs-accent, #888) 40%, var(--surface-raised)),
+        color-mix(in oklab, var(--cs-accent, #888) 12%, var(--bg))
+      );
+    }
+    .project-card--case .project-card__overlay {
+      opacity: 1;
+      background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.18) 46%, transparent 72%);
+    }
+
+    /* Logbook — expandable media stacks */
+    .logbook-stacks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .logbook-stack {
+      flex: 1 1 140px;
+      min-width: 120px;
+      max-width: 100%;
+    }
+
+    .logbook-stack__btn {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      color: inherit;
+    }
+
+    .logbook-stack__pile {
+      position: relative;
+      height: 120px;
+      margin-bottom: 10px;
+      transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    }
+
+    .logbook-stack.is-expanded .logbook-stack__pile {
+      height: 0;
+      margin-bottom: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .logbook-stack__card {
+      position: absolute;
+      left: 50%;
+      width: 72px;
+      height: 96px;
+      margin-left: -36px;
+      border-radius: 8px;
+      background: linear-gradient(160deg, var(--stack-a, #555) 0%, var(--stack-b, #222) 100%);
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.2),
+        inset 0 1px 0 rgba(255,255,255,0.12);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+    }
+    .logbook-stack__card:nth-child(1) { top: 8px;  transform: rotate(-6deg) translateX(-6px); z-index: 1; }
+    .logbook-stack__card:nth-child(2) { top: 4px;  transform: rotate(2deg); z-index: 2; }
+    .logbook-stack__card:nth-child(3) { top: 0;    transform: rotate(8deg) translateX(8px); z-index: 3; }
+
+    .logbook-stack__label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding-left: 4px;
+    }
+
+    .logbook-stack__count {
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+
+    .logbook-stack__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease 0.05s;
+    }
+
+    .logbook-stack.is-expanded .logbook-stack__grid {
+      max-height: 800px;
+      opacity: 1;
+      margin-top: 4px;
+    }
+
+    .logbook-stack.is-expanded {
+      flex: 1 1 100%;
+    }
+
+    .logbook-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      font-size: 0.8rem;
+      line-height: 1.3;
+      color: var(--text-primary);
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+      transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .logbook-stack.is-expanded .logbook-item {
+      opacity: 1;
+      transform: none;
+    }
+
+    .logbook-item__sub {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .video-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .video-card--lead,
+      .video-card--side,
+      .video-card--compact {
+        grid-column: 1 / -1;
+        grid-row: auto;
+      }
+
+      .video-card--lead {
+        padding-bottom: 18px;
+        border-bottom: 1px solid color-mix(in oklab, var(--glass-border-medium) 75%, transparent);
+      }
+
+      .video-card--side {
+        flex-direction: row;
+        padding: 16px 0;
+        border-bottom: 1px solid color-mix(in oklab, var(--glass-border-medium) 75%, transparent);
+      }
+
+      .video-card--side .video-card__media {
+        flex-basis: 112px;
+        max-width: 112px;
+      }
+
+      .video-card--compact {
+        padding: 16px 0;
+        border-top: none;
+        border-bottom: 1px solid color-mix(in oklab, var(--glass-border-medium) 75%, transparent);
+      }
+
+      .video-card--compact:last-child { border-bottom: none; }
+
+      .cs-split {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .cs-split__preview {
+        position: static;
+        order: -1;
+      }
+      .cs-split__row {
+        flex: 0 0 auto;
+        justify-content: flex-start;
+        padding: 15px 18px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .logbook-stacks { gap: 14px; }
+    }
+
+    /* Parallax track for the glow. Anchored just above the below-fold seam and
+       carried upward 1:1 with the scrolling content by default; heroParallax()
+       in main.js translates it DOWN as you scroll so it rises slower than the
+       content, letting the body accelerate up through the gradient. Kept as a
+       separate element so its parallax transform never fights the drift
+       animation living on .hero-glow. Sized to the bottom quarter of the
+       viewport; since .hero-spacer is shorter than 100vh, the seam itself sits
+       above the fold, leaving the aurora clear of the true bottom edge with a
+       strip of real content peeking beneath it. */
+    .hero-glow-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 100%;
+      height: 19vh;
+      min-height: 130px;
+      max-height: 230px;
+      pointer-events: none;
+      z-index: 0;
+      will-change: transform, opacity;
+    }
+
+    .hero-glow {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      /* Overflow the viewport on both sides and grow taller than the track so the
+         blurred falloff happens OFF-SCREEN — the visible area gets the solid
+         colored core instead of the thin, prematurely-faded edge. */
+      width: 128vw;
+      height: 135%;
+      pointer-events: none;
+      transform: translateX(-50%);
+      /* Five separate colored blobs (blue/teal/purple/violet/pink) staggered
+         left-to-right and composited with `screen`, instead of one gradient
+         sweeping through all the hues in sequence. Sequential stops mixed
+         adjacent complementary-ish hues directly and turned muddy/brown in
+         the transition zones; screen-blending separate blobs makes their
+         overlaps brighten and combine instead. Light mode (--theme-blend → 0)
+         leans each blob blue; dark mode (→ 1) resolves to the original
+         purple/pink. */
+      background:
+        radial-gradient(ellipse 46% 96% at 14% 100%, color-mix(in oklab, #8fb8ff 95%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 32% 100%, color-mix(in oklab, color-mix(in oklab, #7fe0d0 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 90%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 50% 100%, color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 68% 100%, color-mix(in oklab, color-mix(in oklab, #c6a8ff calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) 90%, transparent) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 86% 100%, color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%);
+      background-blend-mode: screen;
+      /* saturate() is dialed up in light mode (where --theme-blend → 0) so the
+         pastels keep their punch against a bright background; dark mode
+         (--theme-blend → 1) resolves to 1× / full opacity, exactly as before.
+         Lower blur (vs. the original 28px) plus the tighter per-blob falloff
+         above give the limb a more distinct edge instead of a wide soft fade. */
+      filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
+      opacity: calc(0.85 + var(--theme-blend) * 0.15);
+      /* Two animations on different periods (13s / 6.2s) so the drift and the
+         shimmer never fall into lockstep — keeps the aurora feeling like it's
+         rippling rather than mechanically looping. */
+      animation: heroGlowDrift 13s ease-in-out infinite, heroGlowShimmerPulse 6.2s ease-in-out infinite;
+    }
+
+    /* Extends the fade further down into the content below the seam, so the
+       glow melts smoothly into the dark background instead of ending in a
+       hard rectangular cutoff. Doesn't affect what's visible above the seam
+       (the part visible on first landing), only bleeds downward from it. */
+    .hero-glow::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      /* Taller than the original (75vh / 620px) with the fade pushed out to
+         92% instead of 68%, so the color trails off gradually across most of
+         the section instead of running out partway and leaving a flat black
+         gap before the real background shows through — trimmed back down
+         from a first pass that ran a bit too tall. */
+      height: 85vh;
+      max-height: 680px;
+      background:
+        radial-gradient(ellipse 50% 100% at 18% 0%, color-mix(in oklab, #8fb8ff 32%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 36% 0%, color-mix(in oklab, color-mix(in oklab, #7fe0d0 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 30%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 54% 0%, color-mix(in oklab, color-mix(in oklab, #8fa8ff calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 32%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 72% 0%, color-mix(in oklab, color-mix(in oklab, #c6a8ff calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) 30%, transparent) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 90% 0%, color-mix(in oklab, color-mix(in oklab, #9fc0ff calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 32%, transparent) 0%, transparent 92%);
+      background-blend-mode: screen;
+    }
+
+    /* Thin shimmering highlight tracing the glow's seam — like sunlight
+       sliding along the hard limb of a planet. */
+    .hero-glow::before {
+      content: '';
+      position: absolute;
+      top: 6%;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        transparent 30%,
+        color-mix(in oklab, #fff 75%, transparent) 50%,
+        transparent 70%,
+        transparent 100%
+      );
+      background-size: 260% 100%;
+      opacity: calc(0.4 + var(--theme-blend) * 0.3);
+      animation: heroGlowShimmer 7.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroGlowDrift {
+      0%   { transform: translateX(calc(-50% - 26px)) scaleX(0.965); }
+      50%  { transform: translateX(calc(-50% + 26px)) scaleX(1.04); }
+      100% { transform: translateX(calc(-50% - 26px)) scaleX(0.965); }
+    }
+
+    /* Subtle brightness/opacity flicker layered on top of the drift, on its
+       own shorter period — reads as the aurora shimmering rather than just
+       swaying side to side. */
+    @keyframes heroGlowShimmerPulse {
+      0%, 100% {
+        opacity: calc(0.85 + var(--theme-blend) * 0.15);
+        filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5)) brightness(1);
+      }
+      50% {
+        opacity: calc(0.72 + var(--theme-blend) * 0.15);
+        filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5)) brightness(1.15);
+      }
+    }
+
+    @keyframes heroGlowShimmer {
+      0%   { background-position: -40% 0; }
+      100% { background-position: 140% 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-glow,
+      .hero-glow::before {
+        animation: none;
+      }
     }
 
     /* Frosted veil under dot grid: translucent + blur over base fill (html), pattern paints above */
@@ -268,7 +1214,7 @@
 
     /* In places mode, give corner widgets a frosted pill so they read over the map */
     body.places-mode .corner-status,
-    body.places-mode #themeToggle {
+    body.places-mode .topBar-actions {
       background: color-mix(in oklab, var(--bg) 62%, transparent);
       backdrop-filter: blur(12px) saturate(1.2);
       -webkit-backdrop-filter: blur(12px) saturate(1.2);
@@ -280,29 +1226,100 @@
       opacity: 0.85;
       padding: 6px 10px;
     }
-    body.places-mode #themeToggle {
+    body.places-mode .topBar-actions {
       opacity: 0.72;
+      padding: 2px 4px;
     }
 
     /* Top bar: time & weather · mode tabs · theme */
     #topBar {
       position: fixed;
-      top: 20px;
+      /* Centre the bar on the first visible star row (exposed by js/grid.js) so
+         the clock/weather and top-right icons sit exactly on that row. Falls
+         back to 40px (one grid pitch) before the grid reports in. */
+      top: var(--grid-first-row-y, 40px);
+      transform: translateY(-50%);
       left: 0;
       right: 0;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center;
-      padding: 0 20px;
+      /* Inset to the first/last visible dot columns so the clock's left edge
+         lands on the left dot and the power button's icon on the right dot.
+         The right side subtracts the icon button's 8px padding so the glyph
+         (not the invisible button box) lines up. */
+      padding: 0 calc(var(--grid-col-inset, 40px) - 8px) 0 var(--grid-col-inset, 40px);
       z-index: 11;
       pointer-events: none;
+      --nav-reveal: 0;
     }
     #topBar > * { pointer-events: auto; }
+    #topBar:not(.nav-revealed) #modeTab { pointer-events: none; }
+
+    /* Center slot: greeting before scroll, mode tabs after */
+    .topBar-center {
+      grid-column: 2;
+      justify-self: center;
+      display: grid;
+      align-items: center;
+      justify-items: center;
+      max-width: calc(100vw - 200px);
+    }
+
+    .intro-greeting-bar,
+    #modeTab {
+      grid-area: 1 / 1;
+    }
+
+    .intro-greeting-bar {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 4px 8px;
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: var(--intro-greeting-reveal, 1);
+    }
+
+    body:not(.work-mode) .intro-greeting-bar {
+      display: flex;
+    }
+
+    body:not(.work-mode) .intro .intro-headline-content {
+      display: none;
+    }
+
+    .intro-greeting-life {
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: clamp(22px, 3.6vw, 32px);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .intro-greeting-bar .avatar--inline {
+      display: block;
+      flex-shrink: 0;
+      width: auto;
+      height: clamp(48px, 7vw, 56px);
+      margin: 0;
+      border-radius: 50%;
+      vertical-align: middle;
+      box-shadow: inset 0 0 0 1px var(--glass-border);
+    }
+
+    body.work-mode #introGreetingBar {
+      display: none;
+    }
 
     .corner-status {
+      grid-column: 1;
       justify-self: start;
       min-width: 0;
-      padding-left: 8px;
+      /* Left edge sits on the first dot column via #topBar's padding-left. */
+      padding-left: 0;
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
@@ -328,7 +1345,7 @@
       white-space: nowrap;
     }
 
-    /* Mode tab group */
+    /* Mode tab group — Chat / Projects / Photos / Gear / Logbook */
     #modeTab {
       position: relative;
       background: var(--glass-bg-medium);
@@ -337,9 +1354,9 @@
       display: flex;
       align-items: center;
       gap: 0;
+      max-width: 100%;
+      opacity: var(--nav-reveal, 0);
       box-shadow:
-        0 8px 32px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.22)),
-        0 1px 1px rgba(0, 0, 0, calc(0.03 + var(--theme-blend) * 0.08)),
         inset 0 1px 0 var(--glass-highlight),
         inset 0 0 0 1px var(--glass-border-medium);
       backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
@@ -364,9 +1381,9 @@
       background: none;
       border: none;
       cursor: pointer;
-      padding: 10px 32px;
+      padding: 7px 16px;
       font-family: inherit;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 500;
       color: var(--tab-inactive);
       border-radius: 10px;
@@ -404,7 +1421,7 @@
     }
     #overflowBtn svg { display: block; }
     @media (hover: hover) and (pointer: fine) {
-      #overflowBtn { cursor: none !important; }
+      #overflowBtn { cursor: pointer; }
     }
 
     /* Overflow dropdown panel */
@@ -466,47 +1483,50 @@
     .overflow-item:hover { background: var(--hover-fill); }
     .overflow-item.active { color: var(--tab-pill-bg); font-weight: 600; }
     @media (hover: hover) and (pointer: fine) {
-      .overflow-item { cursor: none !important; }
+      .overflow-item { cursor: pointer; }
+    }
+
+    /* Top-right cluster: theme · @ · power */
+    .topBar-actions {
+      grid-column: 3;
+      justify-self: end;
+      display: flex;
+      align-items: center;
+    }
+
+    .social-anchor {
+      position: relative;
     }
 
     /* Power button */
     #powerBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
       background: none;
       border: none;
       cursor: pointer;
       padding: 8px;
       opacity: 0.35;
       transition: opacity 0.2s ease;
-      z-index: 10;
       color: var(--text-primary);
     }
     #powerBtn:hover { opacity: 0.7; }
     #powerBtn svg { display: block; }
 
-    /* Social button — bottom left, matches power button style */
+    /* Social button — matches power button style */
     #socialBtn {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
       background: none;
       border: none;
       cursor: pointer;
       padding: 8px;
       opacity: 0.35;
       transition: opacity 0.2s ease;
-      z-index: 10;
       color: var(--text-primary);
     }
     #socialBtn:hover,
     #socialBtn.open { opacity: 0.7; }
     #socialBtn svg { display: block; }
 
-    /* Theme toggle — top right */
+    /* Theme toggle */
     #themeToggle {
-      justify-self: end;
       background: none;
       border: none;
       cursor: pointer;
@@ -610,16 +1630,15 @@
       );
     }
 
-    /* Social panel — opens above bottom-left @ button */
+    /* Social panel — opens below top-right @ button */
     #socialPanel {
-      position: fixed;
-      bottom: calc(20px + 36px + 8px);
-      left: 12px;
-      right: auto;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
       background: var(--glass-bg);
       border-radius: 14px;
       padding: 6px;
-      z-index: 11;
+      z-index: 12;
       box-shadow:
         0 12px 40px rgba(0, 0, 0, calc(0.08 + var(--theme-blend) * 0.30)),
         0 2px 6px rgba(0, 0, 0, calc(0.04 + var(--theme-blend) * 0.12)),
@@ -629,8 +1648,8 @@
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
       opacity: 0;
       pointer-events: none;
-      transform: scale(0.95) translateY(6px);
-      transform-origin: bottom left;
+      transform: scale(0.95) translateY(-6px);
+      transform-origin: top right;
       transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16,1,0.3,1);
       min-width: 200px;
     }
@@ -678,15 +1697,39 @@
       line-height: 1.25;
     }
 
-    /* Avatar */
-    .avatar {
-      width: 225px;
-      height: 225px;
+    /* Avatar — inline beside the greeting */
+    .avatar--inline {
+      display: inline-block;
+      width: auto;
+      height: 2em;
+      aspect-ratio: 1;
       border-radius: 22%;
       object-fit: cover;
       object-position: center top;
-      display: block;
+      vertical-align: -0.4em;
+      margin: 0 0.2em 0 0.35em;
       box-shadow: inset 0 0 0 1px var(--glass-border);
+    }
+
+    body.work-mode .avatar--inline {
+      display: none;
+    }
+
+    body.work-mode .intro-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    body.work-mode .intro-headline-content {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+
+    body.work-mode .intro-copy .description {
+      display: block;
     }
 
     /* Intro text column */
@@ -695,11 +1738,29 @@
       flex-direction: column;
     }
 
-    .intro-text h1 {
-      font-size: clamp(22px, 4vw, 32px);
+    .intro-copy {
+      font-size: clamp(24px, 5vw, 34px);
+      font-weight: 400;
+      color: var(--text-body);
+      line-height: 1.25;
+      margin-bottom: 0;
+      text-align: center;
     }
 
-    /* Description */
+    .intro-greeting {
+      font-size: inherit;
+      font-weight: inherit;
+      color: var(--text-primary);
+      line-height: inherit;
+    }
+
+    .intro-text h1 .description {
+      font-size: inherit;
+      font-weight: inherit;
+      color: inherit;
+    }
+
+    /* Description (work mode — sibling of h1 content swap) */
     .description {
       text-align: left;
       font-size: clamp(15px, 3.2vw, 20px);
@@ -839,7 +1900,7 @@
 
     /* App list — horizontal row */
     .launchpad {
-      display: flex;
+      display: none !important;
       flex-direction: row;
       gap: 4px;
       position: relative;
@@ -1064,7 +2125,8 @@
       mask-composite: intersect;
     }
 
-    body.places-mode #dotGrid {
+    body.places-mode #dotGrid,
+    body.overflow-mode #dotGrid {
       opacity: 0;
     }
 
@@ -1078,31 +2140,340 @@
       z-index: 2;
       width: 620px;
       max-width: calc(100vw - 40px);
-      min-height: 220px;
     }
 
     /* Intro row — wider than the content below, centered by body flex */
     .intro {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: center;
       width: 760px;
       max-width: calc(100vw - 40px);
       padding: 0 12px;
-      gap: 32px;
       pointer-events: none;
       margin-bottom: 24px;
       position: relative;
       z-index: 2;
     }
 
-    /* Avatar column */
-    .avatar-col {
+    /* ── Clock-dial hero ──────────────────────────────────────
+       A canvas matrix of two-hand dials (like ClockClock24) that spell
+       phrases. All rendering and choreography live in js/clock-hero.js:
+       hands draw in the exact color/weight family as the ambient dot-grid
+       marks (--grid-mark-rgb), off dials rest as faint slashes sampled from
+       the background's own size/alpha ranges and sway continuously, and on
+       each phrase change every hand sweeps forward (never backward) and
+       decelerates into the letterforms, holds long enough to read, then
+       sweeps on. The dial lattice is pitch- and position-snapped onto the
+       background's 28px grid (translate set from JS) so the field reads as
+       the background itself rearranging, not a component sitting on top. */
+    .clock-hero-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      pointer-events: none;
+      margin: 4px 0 24px;
+      position: relative;
+      z-index: 2;
+    }
+    body:not(.clock-hero-mode) .clock-hero-wrap,
+    body.work-mode .clock-hero-wrap {
+      display: none !important;
+    }
+    body.clock-hero-mode:not(.work-mode) .intro-text {
+      display: none;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       Starfield ("Tatooine") alternate background — renderer in js/grid.js.
+       A star chart: a uniform sparkle lattice with a Death Star top-left and
+       twin suns on the right (all on canvas), and just the avatar + intro copy
+       in the middle (no animated dial phrase). It's theme-aware — the light/
+       dark toggle still applies, so the sky and stars flip between a light
+       "day" chart and a deep-space one. */
+
+    /* Sky behind the fixed star canvas, interpolated by --theme-blend: a soft
+       light gradient in light mode, deep space easing into a faint blue toward
+       the horizon in dark mode. Stars themselves take the theme-aware grid
+       mark colour (dark on light, pale on dark) in js/grid.js. */
+    body.starfield-mode {
+      background:
+        radial-gradient(135% 108% at 50% 120%,
+          color-mix(in oklab, #eef0f4 calc((1 - var(--theme-blend)) * 100%), #13243f calc(var(--theme-blend) * 100%)) 0%,
+          color-mix(in oklab, #f1f1f0 calc((1 - var(--theme-blend)) * 100%), #070b16 calc(var(--theme-blend) * 100%)) 46%,
+          color-mix(in oklab, #ebedf1 calc((1 - var(--theme-blend)) * 100%), #03040a calc(var(--theme-blend) * 100%)) 100%)
+        fixed;
+    }
+
+    /* Middle of the hero: avatar sits just above the intro copy; the animated
+       dial phrase and its "I'm a…" greeting line are dropped. */
+    body.starfield-mode .clock-hero-wrap {
+      display: flex !important;
+      order: -1;
+      margin: 0 0 20px;
+    }
+    body.starfield-mode .clock-hero-scale { display: none; }
+    body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
+
+    /* Earthy planetary limb at the horizon — a Tatooine twin-sunset spread
+       (sand → amber → terracotta → mauve-plum → umber) instead of one flat
+       tan-to-brown sweep. Same five-blob + screen-blend approach as the
+       aurora's .hero-glow: separate colored blobs staggered left-to-right so
+       their overlaps brighten into warm in-between tones instead of the
+       muddy blend a single multi-stop gradient produces. Retints the hero
+       glow away from the aurora pastels. */
+    body.starfield-mode .hero-glow {
+      background:
+        radial-gradient(ellipse 46% 96% at 14% 100%, rgba(222,190,148,0.55) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 32% 100%, rgba(214,142,74,0.5) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 50% 100%, rgba(192,148,104,0.5) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 68% 100%, rgba(196,108,96,0.45) 0%, transparent 75%),
+        radial-gradient(ellipse 46% 96% at 86% 100%, rgba(150,96,104,0.4) 0%, transparent 75%);
+      background-blend-mode: screen;
+      filter: blur(26px) saturate(1);
+    }
+    body.starfield-mode .hero-glow::after {
+      /* Fade pushed out to 88% (was 62%) so the color trails off gradually
+         instead of running out partway and leaving flat black beneath it. */
+      background:
+        radial-gradient(ellipse 50% 100% at 18% 0%, rgba(222,190,148,0.26) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 36% 0%, rgba(214,142,74,0.22) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 54% 0%, rgba(192,148,104,0.22) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 72% 0%, rgba(196,108,96,0.2) 0%, transparent 88%),
+        radial-gradient(ellipse 50% 100% at 90% 0%, rgba(150,96,104,0.18) 0%, transparent 90%);
+      background-blend-mode: screen;
+    }
+
+    /* Shrink the dial phrase ~24% while anchoring its top edge, so the greeting
+       above it stays "just above the first line." transform-origin:top keeps the
+       first word row where it lays out; the wrap's negative margin below reclaims
+       the whitespace the scale leaves under the shrunk phrase. */
+    .clock-hero-scale {
+      transform: scale(0.76);
+      transform-origin: top center;
+      margin-bottom: -6%;
+    }
+
+    .clock-hero {
+      position: relative;
+    }
+    .clock-hero canvas {
+      display: block;
+    }
+
+    /* Lift the whole lockup so it sits vertically centred between the top of the
+       viewport and the top of the aurora glow (which occupies the bottom ~17vh),
+       i.e. its midpoint moves from 50vh up to ~41.5vh. Scoped to the lockup itself
+       so it never shifts the shared hero centring used by other views. */
+    .clock-hero-wrap {
+      transform: translateY(-8.5vh);
+    }
+
+    /* ── Hero greeting (avatar + welcome), sits just above the dial phrase ── */
+    .clock-hero-wrap .intro-greeting-bar {
+      display: block;
+      width: 100%;
+      /* One grid cell of breathing room down to the phrase's first row. */
+      margin: 0 0 var(--grid-sp);
+      padding: 0;
+      pointer-events: none;
+      opacity: var(--intro-greeting-reveal, 1);
+    }
+    body.work-mode .clock-hero-wrap .intro-greeting-bar {
+      display: none;
+    }
+    /* Avatar on the left, two stacked text lines on the right; the whole group is
+       centred on the viewport (greeting-life is full-width with justify-content:center). */
+    .clock-hero-wrap .intro-greeting-life {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      /* Geist Mono echoes the constructed, on-grid geometry of the dial letters. */
+      font-family: 'Geist Mono', ui-monospace, monospace;
+      font-size: clamp(23px, 3.5vw, 34px);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+    .clock-hero-wrap .greet-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .clock-hero-wrap .greet-line { display: block; }
+    .clock-hero-wrap .intro-greeting-bar .avatar--inline {
       flex-shrink: 0;
+      /* Same height as the two text lines (2 × line-height), square + rounded. */
+      height: 2.4em;
+      width: 2.4em;
+      object-fit: cover;
+      object-position: center 28%;
+      border-radius: 22%;
+      box-shadow: inset 0 0 0 1px var(--glass-border);
+    }
+
+    /* ══ Starfield hero lockup ═════════════════════════════════════════════
+       A single left-justified block: avatar + "Hi, I'm Luke!" on the first
+       row, the intro description on the second. The whole hero column is
+       vertically centred in the band ABOVE the horizon glow (the gradient),
+       not the full viewport — we reserve the glow's ~17vh at the bottom so the
+       lockup's midpoint lands ~41.5vh. */
+    body.starfield-mode:not(.work-mode) .hero {
+      justify-content: center;
+      padding-bottom: 19vh;
+    }
+
+    /* Greeting row shares the intro column's width + padding so the avatar's
+       left edge lines up with the description's left edge below it. */
+    body.starfield-mode .clock-hero-wrap {
+      width: 760px;
+      max-width: calc(100vw - 40px);
+      margin: 0 auto 14px;   /* tight gap down to the description */
+      padding: 0 12px;
+      transform: none;       /* drop the old lift; .hero padding centres it now */
+      align-items: flex-start;
+    }
+    /* Avatar hard-left, greeting beside it, matching the description's style. */
+    body.starfield-mode .clock-hero-wrap .intro-greeting-life {
+      justify-content: flex-start;
+      gap: 18px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: clamp(24px, 5vw, 34px);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--text-body);
+    }
+    /* Gap to the description is owned solely by .clock-hero-wrap's margin. */
+    body.starfield-mode .clock-hero-wrap .intro-greeting-bar { margin: 0; }
+    /* Show just the greeting line (drop the "I'm a…" second line). */
+    body.starfield-mode .clock-hero-wrap .greet-text { display: flex; }
+    body.starfield-mode .clock-hero-wrap .greet-line + .greet-line { display: none; }
+
+    /* Description: left-justified, same column + left edge as the greeting row. */
+    body.starfield-mode .intro {
+      width: 760px;
+      max-width: calc(100vw - 40px);
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    body.starfield-mode .intro-copy { text-align: left; }
+
+    /* Combined lockup: the greeting joins the description as one paragraph (the
+       h1 already holds both inline), the enlarged avatar sits above it, and the
+       duplicate greeting beside the avatar is dropped. */
+    body.starfield-mode:not(.work-mode) .intro .intro-headline-content {
+      display: inline;
+      margin-right: 0.35em; /* the greeting/description spans have no whitespace between them */
+    }
+    body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
+    body.starfield-mode .clock-hero-wrap .intro-greeting-bar .avatar--inline {
+      height: clamp(84px, 13vw, 128px);
+      width: clamp(84px, 13vw, 128px);
+      border-radius: 22%;
+    }
+    body.starfield-mode .clock-hero-wrap { margin-bottom: 18px; }
+
+    /* ── Starfield lockup: avatar LEFT of the copy ────────────────────────────
+       Lay the wrapper out as a single centred row: the enlarged avatar on the
+       left, the "Hi, I'm Luke! …" paragraph on the right. Overrides the stacked
+       (avatar-above-copy) rules above, whose widths/margins we neutralise here. */
+    body.starfield-mode:not(.work-mode) .hero-lockup {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(12px, 1.6vw, 22px);
+      width: 620px;
+      max-width: calc(100vw - 40px);
+      margin: 0 auto;
+    }
+    /* Avatar column: shrink to the image (drop the old 760px column + margins);
+       order:-1 (set above) keeps it to the left of the copy. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap {
+      width: auto;
+      flex: 0 0 auto;
+      margin: 0;
+    }
+    /* Copy column: take the remaining width, stay left-justified beside the avatar. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro {
+      width: auto;
+      flex: 0 1 auto;
+      align-items: flex-start;
+      margin: 0;
+    }
+    /* Constrain the measure so the "Hi, I'm Luke! …" paragraph wraps to three
+       lines (~44 chars/line for the ~133-char copy — Satoshi fits ~1.5 chars per
+       ch, so 36ch ≈ 50 chars). Tune this if the copy ever changes length. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy {
+      font-size: clamp(19px, 3.4vw, 26px);
+      width: 32ch;
+      max-width: 100%;
+    }
+    /* Lock the measure on .intro-text (not just the copy) so the AI answer
+       that takes the copy's place wraps at the same width — without this the
+       column shrink-wraps the answer and it renders narrower. The font-size
+       here exists only so 32ch resolves identically; .intro-copy re-declares
+       the same clamp for its own text. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-text {
+      font-size: clamp(19px, 3.4vw, 26px);
+      width: 32ch;
+      max-width: 100%;
+    }
+    /* Match the avatar's height to those three text lines so its top and bottom
+       align with the copy and the two read as equal-height. The copy's font
+       size is clamp(19px,3.4vw,26px) and line-height gives ~3 lines, so we tie
+       the avatar to 4.8 × font-size; aspect-ratio keeps it square at that height. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-bar .avatar--inline {
+      height: calc(4.8 * clamp(19px, 3.4vw, 26px));
+      width: auto;
+      aspect-ratio: 1 / 1;
+    }
+
+    /* Below the width where the avatar + 3-line (42ch) copy fit side-by-side,
+       fall back to the stacked layout so the copy keeps a readable measure and
+       the height-match assumption (exactly 3 lines) still holds. */
+    @media (max-width: 1024px) {
+      body.starfield-mode:not(.work-mode) .hero-lockup {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      body.starfield-mode:not(.work-mode) .hero-lockup .intro { align-items: center; }
+      body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy { text-align: center; }
+    }
+
+    /* ── Dedicated overflow-menu pages (Bookshelf / My Gear / App Stack / Places) ──
+       These render standalone: no home-feed content bleeding in, and the page's
+       own (often tall) grid scrolls from the top of the hero.
+       • Hide the below-the-fold home feed + its scroll spacer so Case Studies /
+         Experiments don't slide up over — or fade the bottom of — the grid.
+       • Drop the hero's intro lockup (invisible avatar/greeting) so it doesn't
+         reserve blank space above the grid.
+       • Switch the hero from vertical-centering to top-aligned, so a grid taller
+         than the viewport isn't clipped at the top (the fixed hero's own
+         overflow-y then scrolls it). Mirrors the work-mode treatment. */
+    body.overflow-mode .below-fold,
+    body.overflow-mode .hero-spacer { display: none; }
+
+    body.overflow-mode .hero-lockup,
+    body.overflow-mode.starfield-mode:not(.work-mode) .hero-lockup { display: none; }
+
+    body.overflow-mode .hero,
+    body.overflow-mode.starfield-mode:not(.work-mode) .hero {
+      justify-content: flex-start;
+      padding-bottom: 0;
     }
 
     /* ── Now strip ── */
     .now-strip {
+      display: none !important;
       position: fixed;
       bottom: 20px;
       left: 50%;
@@ -1270,22 +2641,6 @@
       color: rgba(232, 234, 240, 0.5);
     }
 
-    /* ── Custom cursor (desktop / fine pointer only) ── */
-    #customCursor {
-      display: none;
-      position: fixed;
-      pointer-events: none;
-      z-index: 9999;
-      top: 0; left: 0;
-      /* Position is driven by translate3d in grid.js so it stays on the GPU
-         compositor; will-change keeps it on its own layer. */
-      will-change: transform;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-    }
-    @media (hover: hover) and (pointer: fine) {
-      #customCursor { display: block; }
-    }
-
     /* ── Magnifying lens ── */
     #lens {
       display: none;
@@ -1323,9 +2678,9 @@
     }
     #lensCanvas { display: block; width: 100%; height: 100%; }
 
-    /* Work mode — body scrolls from top, intro anchored to match life-mode centered position */
-    body.work-mode {
-      overflow-y: auto;
+    /* Work mode — hero scrolls from top instead of centering, since portfolio
+       content can grow taller than one viewport (avoids the flexbox center-clip quirk). */
+    body.work-mode .hero {
       justify-content: flex-start;
       /* mirrors the centering offset of life mode: (50vh - half of ~469px content) */
       padding-top: max(72px, calc(50vh - 209px));
@@ -1337,19 +2692,6 @@
       z-index: 4;
     }
 
-/* Bottom fade — only visible in chat mode */
-    #chatBottomFade {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 140px;
-      background: linear-gradient(to bottom, transparent, var(--bg));
-      pointer-events: none;
-      z-index: 5;
-    }
-    body.chat-mode #chatBottomFade { display: block; }
 
     /* ── Portfolio case study cards ── */
     .portfolio {
@@ -2948,7 +4290,7 @@
     .book-card:hover { transform: translateY(-5px); }
 
     @media (hover: hover) and (pointer: fine) {
-      .book-card { cursor: none !important; }
+      .book-card { cursor: pointer; }
     }
 
     .book-cover {
@@ -3116,7 +4458,7 @@
       transition: background 0.15s, color 0.15s;
     }
     #bookModalClose:hover { background: var(--hover-fill-soft); color: var(--text-primary); }
-    @media (hover: hover) and (pointer: fine) { #bookModalClose { cursor: none !important; } }
+    @media (hover: hover) and (pointer: fine) { #bookModalClose { cursor: pointer; } }
     #bookModalContent {
       display: flex;
       gap: 40px;
@@ -3265,7 +4607,7 @@
       opacity: 0.92;
     }
     @media (hover: hover) and (pointer: fine) {
-      .book-modal-btn { cursor: none !important; }
+      .book-modal-btn { cursor: pointer; }
     }
 
     @media (max-width: 700px) {
@@ -3315,7 +4657,7 @@
     .gear-card:hover { transform: translateY(-5px); }
 
     @media (hover: hover) and (pointer: fine) {
-      .gear-card { cursor: none !important; }
+      .gear-card { cursor: default; }
     }
 
     .gear-img {
@@ -3433,7 +4775,7 @@
     .app-stack-card:hover { transform: translateY(-5px); }
 
     @media (hover: hover) and (pointer: fine) {
-      .app-stack-card { cursor: none !important; }
+      .app-stack-card { cursor: pointer; }
     }
 
     .app-stack-img {
@@ -3479,13 +4821,12 @@
 
     #placesView {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      height: 99vh;
-      width: 99vw;
+      inset: 0;
+      transform: none;
+      height: 100dvh;
+      width: 100vw;
       z-index: 5;
-      border-radius: 16px;
+      border-radius: 0;
       overflow: hidden;
     }
 
@@ -3641,7 +4982,7 @@
     }
 
     @media (max-width: 600px) {
-      #placesView { height: 92vh; width: 98vw; border-radius: 12px; }
+      #placesView { height: 100dvh; width: 100vw; border-radius: 0; }
       .mapboxgl-popup-content { min-width: 180px; max-width: 260px; }
     }
 
@@ -3649,32 +4990,46 @@
     @media (max-width: 640px) {
       /* Switch from vertically-centered flex to top-aligned so content can scroll.
          justify-content:center clips overflow at the top on mobile (flexbox quirk). */
-      body {
+      .hero {
         justify-content: flex-start;
         padding-top: max(72px, calc(50vh - 209px));
+        border-radius: 0 0 36px 36px;
       }
 
-      /* Hero: avatar stacks above description */
+      /* Hero: centered copy */
       .intro {
-        flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 16px;
         padding: 0;
         margin-bottom: 12px;
       }
-      .intro-text h1,
+      .intro-copy,
       .description {
         text-align: center;
+        line-height: 1.25;
       }
-      .avatar {
-        width: 140px;
-        height: 140px;
+      .intro-greeting-bar {
+        gap: 10px;
+        max-width: calc(100vw - 112px);
+      }
+      .intro-greeting-life {
+        font-size: clamp(19px, 5.4vw, 26px);
+      }
+      .intro-greeting-bar .avatar--inline {
+        height: clamp(42px, 11vw, 50px);
+      }
+      .topBar-center { max-width: calc(100vw - 96px); }
+      .avatar--inline {
+        height: 2em;
       }
 
-      /* Now strip: reserve side margins so centered bar doesn’t run under #socialBtn / #powerBtn */
+      .tab-opt { padding: 7px 10px; font-size: 13px; }
+      .topBar-center { max-width: calc(100vw - 96px); }
+      #modeTab { max-width: 100%; }
+
+      /* Now strip: reserve side margins so centered bar doesn’t run under corner widgets */
       .now-strip {
-        max-width: calc(100vw - 40px - 120px);
+        max-width: calc(100vw - 80px);
       }
 
       /* Section modal — video list: hide thumbnails so titles use full width */
@@ -4107,6 +5462,36 @@ a.portfolio-img-item:hover img {
   .photos-masonry { column-count: 2; }
 }
 
+/* Home-feed photos teaser: denser masonry (more per row), count-capped in
+   home-feed.js to keep it ~2-3 rows tall. */
+.home-photos-masonry {
+  columns: 4;
+  column-gap: 10px;
+}
+
+.home-photo {
+  display: block;
+  break-inside: avoid;
+  margin: 0 0 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.home-photo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .home-photos-masonry { columns: 3; }
+}
+
+@media (max-width: 480px) {
+  .home-photos-masonry { columns: 2; column-gap: 8px; }
+}
+
 .photo-item {
   break-inside: avoid;
   margin: 0 0 6px;
@@ -4395,29 +5780,364 @@ a.portfolio-img-item:hover img {
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-/* ── Chat view ── */
-body.chat-mode #mainPanel {
-  width: 760px;
-  max-width: calc(100vw - 40px);
+/* ── Hero answer: the dock streams its reply straight into the home intro copy
+   (no modal). The intro copy is hidden and the answer takes its slot. The
+   FIRST 4 lines pin in the focus band (centered on the photo) so the visitor
+   reads from the start at their own pace — streaming is faster than reading,
+   so we never auto-follow the newest line. New text accumulates below the
+   band behind a bottom fade that signals "scroll for more"; scrolling down
+   is the reading gesture, and each line grows/solidifies as it rises into
+   the band. ── */
+.intro-text.is-answering .intro-copy { display: none; }
+
+.hero-answer {
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: clamp(17px, 3.4vw, 23px);
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--text-body);
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.28s ease, transform 0.35s ease;
+  scrollbar-width: none;
+  /* .intro is pointer-events:none (it sits over the canvas); re-enable here or
+     the answer can never be scrolled and its links can't be clicked. */
+  pointer-events: auto;
+}
+.hero-answer::-webkit-scrollbar { width: 0; height: 0; }
+.hero-answer.is-in { opacity: 1; }
+
+/* Flat per-line recede: JS (applyHeroRecede in main.js) wraps every word in a
+   .hw span, groups spans into visual lines, and scales each line about its own
+   center — no perspective tilt, so left edges stay put. Recomputed on scroll,
+   so a line grows smoothly back to full size as it rises into the band.
+   inline-block is what makes the spans transformable; text-decoration:inherit
+   keeps underlines on words inside links (inline-block otherwise drops the
+   parent's underline). */
+.hero-answer .hw {
+  display: inline-block;
+  text-decoration: inherit;
 }
 
-#chatView {
-  width: 760px;
+/* ── Static lockup + read line aligned to the photo top (desktop starfield) ──
+   The welcome copy keeps its layout box while answering (visibility:hidden,
+   not display:none), so the lockup row never changes size and the photo does
+   not move. The answer is an absolutely positioned overlay anchored to the
+   copy's box: short answers (≤ 4 lines) center on the photo; once the answer
+   outgrows the band (JS sets .is-overflowing) it becomes a fixed-height
+   window with a read line HERO_RECEDE below its top edge, sat near the photo
+   top. The first 4 lines read DOWN from there behind a subtle bottom fade;
+   already-read lines rise into the recede zone above the read line, where the
+   top mask fades them off (JS shrinks them to match). Keep --hero-recede in
+   sync with HERO_RECEDE_EM in main.js. */
+@media (min-width: 1025px) {
+  body.starfield-mode:not(.work-mode) .intro-text { position: relative; }
+  body.starfield-mode:not(.work-mode) .intro-text.is-answering .intro-copy {
+    display: block;
+    visibility: hidden;
+  }
+  body.starfield-mode:not(.work-mode) .hero-answer {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+  }
+  body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing {
+    --hero-recede: 4.5em;            /* recede zone above the read line (3 lines) */
+    --hero-window: min(15em, 44vh);
+    height: var(--hero-window);
+    max-height: none;
+    /* Read line = window top + --hero-recede. Offset the window up so the read
+       line sits ~photo top (photo-center − ~2.2em). */
+    transform: translateY(calc(-1 * var(--hero-recede) - 2.2em));
+    /* Faded above the read line (read lines shrink + fade off the top), solid
+       through the 4-line reading band, then a subtle fade below = the "there's
+       more, scroll" signal. Fixed to the window, so scrolling pulls read lines
+       up into the top fade and fresh lines up into the band. */
+    -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0,
+      rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
+      #000 var(--hero-recede),
+      #000 calc(var(--hero-recede) + 6em),
+      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + 8.5em),
+      transparent var(--hero-window));
+            mask-image: linear-gradient(to bottom,
+      transparent 0,
+      rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
+      #000 var(--hero-recede),
+      #000 calc(var(--hero-recede) + 6em),
+      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + 8.5em),
+      transparent var(--hero-window));
+  }
+  /* Padding-top = the recede zone, so at scrollTop 0 the first line lands on the
+     read line (nothing above it yet). Bottom tail-room lets the last lines
+     scroll up to the read line so the whole answer can be read; sized to the
+     space below the band (window − recede − 6em band). */
+  body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing .hero-answer__body {
+    padding-top: var(--hero-recede);
+    margin-bottom: calc(var(--hero-window) - var(--hero-recede) - 6em);
+  }
+}
+
+.hero-answer p { margin: 0 0 0.5em; }
+.hero-answer p:last-child { margin-bottom: 0; }
+.hero-answer a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+.hero-answer a:hover { text-decoration-color: currentColor; }
+.hero-answer code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.88em;
+  background: rgba(128, 128, 128, 0.16);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Classic (non-starfield) layout centers the hero copy. */
+body:not(.starfield-mode) .hero-answer { text-align: center; }
+
+/* ── Chat dock: floating "Ask me anything" trigger, dynamic-island style ──
+   Fixed bottom-center pill, visible on every mode/page. Grows in place
+   (wider + a few rows tall) while typing; only expands into the full
+   #chatOverlay modal (see below) once the first message is sent. */
+#chatDock {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 340px;
   max-width: calc(100vw - 40px);
-  margin: 0 auto;
+  padding: 8px 8px 8px 20px;
+  background: var(--glass-bg);
+  border: none;
+  border-radius: 999px;
+  color: var(--text-muted, #888);
+  font-family: inherit;
+  font-size: 15px;
+  text-align: left;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.28)),
+    0 1px 1px rgba(0, 0, 0, calc(0.03 + var(--theme-blend) * 0.08)),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease,
+    width 0.2s cubic-bezier(0.16,1,0.3,1), border-radius 0.2s ease, padding 0.2s ease;
+}
+#chatDock.is-expanded {
+  align-items: flex-end;
+  width: 480px;
+  max-width: calc(100vw - 40px);
+  border-radius: 24px;
+  padding: 12px 12px 12px 16px;
+}
+#chatDockSend {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  box-sizing: border-box;
+  background: var(--accent, #3a3d45);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#chatDockSend svg { width: 100%; height: 100%; }
+#chatDockInput {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary, inherit);
+  font: inherit;
+  line-height: 20px;
+  padding: 0;
+  height: 20px;
+  overflow: hidden;
+  transition: height 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease;
+}
+#chatDockInput::placeholder { color: var(--text-secondary, #888); opacity: 0.9; }
+#chatDock.is-expanded #chatDockInput {
+  height: 60px;
+  overflow-y: auto;
+}
+
+/* ── Dock entrance ──
+   On the home page the dock starts as just the circular send button and blooms
+   outward from the center into the full pill, timed to land as the hero copy
+   finishes typing. Applied + released by js/hero-entrance.js, so pages without
+   the entrance (and reduced-motion) keep the dock at its resting state. Width
+   grows while the pill stays center-anchored (left:50% + translateX(-50%)), so
+   it expands symmetrically from the middle. */
+#chatDock.dock-enter {
+  width: 56px;
+  padding: 8px;
+  gap: 0;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.85);
+}
+#chatDock.dock-enter #chatDockInput { opacity: 0; }
+/* Dock fades/shrinks out while the overlay is open (and is unreachable behind
+   its backdrop anyway); reappears once the overlay closes. */
+body.chat-overlay-open #chatDock {
+  opacity: 0;
+  transform: translateX(-50%) scale(0.92);
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  #chatDock {
+    width: auto;
+    left: 20px;
+    right: 20px;
+    transform: none;
+  }
+  #chatDock.is-expanded {
+    width: auto;
+  }
+  body.chat-overlay-open #chatDock {
+    transform: scale(0.92);
+  }
+  /* The mobile dock is full-width (width:auto can't animate a bloom), so the
+     entrance degrades to a soft fade + scale from center. */
+  #chatDock.dock-enter {
+    width: auto;
+    padding: 8px 8px 8px 20px;
+    gap: 12px;
+    transform: scale(0.9);
+  }
+}
+
+/* ── Chat overlay: the dock expands into this centered modal ── */
+#chatOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--backdrop-modal);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+#chatOverlay.is-open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Prevent the page behind the overlay from scrolling while it's open. */
+body.chat-overlay-open {
+  overflow: hidden;
+}
+
+#chatOverlayPanel {
+  width: 90vw;
+  height: 90vh;
   display: flex;
   flex-direction: column;
   position: relative;
-  z-index: 2;
+  background: var(--glass-bg);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.40)),
+    0 8px 24px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.20)),
+    inset 0 1.5px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  /* Reveal via clip-path instead of scaling the whole panel — the box itself
+     stays pinned at its final 90vw/90vh the entire time, so #chatInputBar
+     (already flex-shrink:0, anchored at the bottom) never changes size. Only
+     the clipped region grows upward from the bottom edge, so the transcript
+     and header appear to rise up around the already-settled input bar. */
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 0.34s cubic-bezier(0.16,1,0.3,1);
+}
+#chatOverlay.is-open #chatOverlayPanel {
+  clip-path: inset(0% 0 0 0);
+}
+
+#chatOverlayTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--modal-top-border);
+  flex-shrink: 0;
+}
+#chatOverlayTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+#chatOverlayClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+#chatOverlayClose:hover { color: var(--text-primary); }
+
+/* Fades the transcript's bottom edge into the panel background just above
+   the input row, echoing the old page-level #chatBottomFade. */
+#chatOverlayFade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--glass-bg));
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  #chatOverlayPanel {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
 }
 
 #chatTranscript {
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 24px 8px 140px;
+  padding: 20px 24px 24px;
   overflow-y: auto;
-  max-height: calc(100vh - 220px);
   scroll-behavior: smooth;
 }
 
@@ -4496,6 +6216,28 @@ body.chat-mode #mainPanel {
   text-decoration-color: currentColor;
 }
 
+.chat-mock-badge {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 99999;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 170, 60, 0.5);
+  background: rgba(255, 170, 60, 0.12);
+  color: #e69a3c;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.chat-mock-badge:hover {
+  background: rgba(255, 170, 60, 0.22);
+}
+
 @keyframes chat-dot-bounce {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-4px); opacity: 1; }
@@ -4514,19 +6256,18 @@ body.chat-mode #mainPanel {
 .chat-dot:nth-child(2) { animation-delay: 0.15s; }
 .chat-dot:nth-child(3) { animation-delay: 0.30s; }
 
-/* ── Chat input bar (floating, sibling to .now-strip) ── */
+/* ── Chat input bar — docked at the bottom of #chatOverlayPanel ── */
 #chatInputBar {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 6;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 560px;
-  max-width: calc(100vw - 40px);
+  width: calc(100% - 48px);
+  max-width: 760px;
+  margin: 0 auto 20px;
   padding: 8px 10px 8px 16px;
+  box-sizing: border-box;
   background: var(--glass-bg-medium);
   border-radius: 14px;
   box-shadow:
@@ -4576,13 +6317,7 @@ body.chat-mode #mainPanel {
 
 @media (max-width: 640px) {
   #chatInputBar {
-    width: auto;
-    left: 20px;
-    right: 20px;
-    transform: none;
-  }
-  #chatTranscript {
-    max-height: calc(100vh - 200px);
+    width: calc(100% - 32px);
   }
 }
 
@@ -4616,7 +6351,7 @@ body.chat-mode #mainPanel {
 .book-modal-btn--notes,
 #bookModalClose,
 .resume-download-btn,
-body.places-mode #themeToggle,
+body.places-mode .topBar-actions,
 .photo-detail-nav,
 .mapboxgl-ctrl-group {
   backdrop-filter: none !important;
@@ -4688,12 +6423,15 @@ body.places-mode #themeToggle,
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  /* Shadow only when focused — while parked off-screen via translateY, a
+     box-shadow isn't clipped by the transform and its blur bleeds back down
+     past the viewport's top edge (a stray dark band above the clock). */
   transform: translateY(-150%);
   transition: transform 0.18s ease;
 }
 .skip-link:focus {
   transform: translateY(0);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   outline: 2px solid var(--link, #4a7ab5);
   outline-offset: 2px;
 }

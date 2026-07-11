@@ -16,7 +16,22 @@
     let gridLogicalW = 0;
     let gridLogicalH = 0;
     let gridDpr = 1;
-    const SP = 28;
+    // ── Starfield lattice ──
+    // A uniform, centred grid of 4-point sparkles (a "star chart"), with a
+    // Death Star top-left and Tatooine-style twin suns on the right. Deep-space
+    // palette (pale stars on a dark sky) per the reference; celestial bodies and
+    // a fraction of stars breathe subtly. The pitch also drives the content
+    // hole-clearing reach below.
+    const SP = 40;                    // star pitch (uniform) — denser field
+    const STAR_R = SP * 0.085;        // base star radius — small crisp points
+    // Stars take the theme-aware grid mark colour (see gridDotRgb below): dark
+    // marks on a light sky, pale marks on a dark sky.
+    // Convert #rrggbb → rgba() with alpha.
+    function hexA(hex, a) {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+    let bodies = null; // { deathStar, sunBig, sunSmall } — set per layout
     const useFinePointer = typeof matchMedia !== 'undefined' &&
       matchMedia('(hover: hover) and (pointer: fine)').matches;
     // Respect the user's reduced-motion preference: keep the dot grid static
@@ -28,13 +43,22 @@
     const GRID_RGB_LIGHT = [58, 61, 69];
     const GRID_RGB_DARK = [178, 186, 202];
     let gridDotRgb = '58,61,69';
+    // 1 = dark (constellation as authored), 0 = light (half-turned sky). The
+    // theme wipe ramps this 0↔1, so the celestial swing animates with it.
+    let themeBlend = 1;
+    let bodyPivot = { cx: 0, cy: 0 }; // centre the sky rotates about
+    let frameBodies = null;           // per-frame rotated body positions
 
     function setGridDotBlend(blend) {
       const t = Math.max(0, Math.min(1, blend));
+      themeBlend = t;
       const r = Math.round(GRID_RGB_LIGHT[0] + (GRID_RGB_DARK[0] - GRID_RGB_LIGHT[0]) * t);
       const g = Math.round(GRID_RGB_LIGHT[1] + (GRID_RGB_DARK[1] - GRID_RGB_LIGHT[1]) * t);
       const b = Math.round(GRID_RGB_LIGHT[2] + (GRID_RGB_DARK[2] - GRID_RGB_LIGHT[2]) * t);
       gridDotRgb = `${r},${g},${b}`;
+      // Expose the exact grid mark color as a CSS var so DOM-based effects
+      // (e.g. the clock-dial hero) can visually match the canvas pattern.
+      document.documentElement.style.setProperty('--grid-mark-rgb', gridDotRgb);
     }
 
     function readGridDotRgb() {
@@ -49,43 +73,122 @@
 
     let ambientAnim = false;
 
+    // Anchor the twin suns and Death Star relative to the viewport (snapped to
+    // the lattice so they nestle among the stars rather than floating off-grid).
+    function buildBodies(w, h) {
+      const sunBig = { cx: w - SP * 3.4, cy: h * 0.66, r: SP * 0.95 };
+      bodies = {
+        deathStar: { cx: SP * 2.8, cy: SP * 2.8, r: SP * 0.66 },
+        sunBig,
+        sunSmall: { cx: sunBig.cx - SP * 1.9, cy: sunBig.cy - SP * 2.15, r: SP * 0.42 },
+      };
+      // Pivot sits above the viewport midline so the bodies swung in from the
+      // far side land tucked up toward the top corners (matching how the moon
+      // nestles into the top-left in dark mode) rather than sagging low.
+      bodyPivot = { cx: w / 2, cy: h * 0.42 };
+    }
+
+    // Snappy ease for the celestial swing: near-flat and slow at both ends, a
+    // fast whip through the middle — reads as a slow wind-up, an abrupt spin,
+    // then a soft landing. Symmetric, so it mirrors cleanly on the way back.
+    function easeInOutExpo(x) {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      return x < 0.5
+        ? Math.pow(2, 20 * x - 10) / 2
+        : (2 - Math.pow(2, -20 * x + 10)) / 2;
+    }
+
+    // The night sky rotates a half-turn between themes. In dark mode the bodies
+    // sit where they're authored (moon top-left, twin suns lower-right); as the
+    // theme wipes to light the whole constellation swings 180° about the
+    // viewport centre — the big sun rises over the top to the upper-left, the
+    // smaller sun trails down-and-right of it, and the moon sets toward the
+    // bottom-right. The negative angle sweeps the right-side suns up over the
+    // top (a sunrise arc) rather than down under. themeBlend drives the swing
+    // (1 = dark/authored, 0 = light/half-turned), so it animates with the
+    // toggle at no extra cost.
+    function computeFrameBodies() {
+      if (!bodies) return null;
+      // Ease the swing fraction (0 dark → 1 light) rather than the raw blend, so
+      // the rotation whips through the middle and settles slowly at each end.
+      const a = -easeInOutExpo(1 - themeBlend) * Math.PI;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const out = {};
+      for (const key in bodies) {
+        const b = bodies[key];
+        const dx = b.cx - bodyPivot.cx, dy = b.cy - bodyPivot.cy;
+        out[key] = {
+          cx: bodyPivot.cx + dx * ca - dy * sa,
+          cy: bodyPivot.cy + dx * sa + dy * ca,
+          r: b.r,
+        };
+      }
+      return out;
+    }
+
+    // Is a cell centre covered by any body at its current (rotated) position?
+    // Tested per-frame in the draw loop so the cleared disc follows the swing.
+    function cellUnderBody(bx, by, fb) {
+      for (const key in fb) {
+        const b = fb[key];
+        const clearR = b.r + SP * 0.5;
+        const dx = bx - b.cx, dy = by - b.cy;
+        if (dx * dx + dy * dy <= clearR * clearR) return true;
+      }
+      return false;
+    }
+
     function buildCells(w, h) {
       const r = prng(8675309);
       cells = [];
-      for (let bx = SP / 2; bx < w + SP; bx += SP) {
-        for (let by = SP / 2; by < h + SP; by += SP) {
-          const rv = r(), al = (0.20 + r() * 0.12) * 0.9;
-          const tp = rv < 0.50 ? 0 : rv < 0.78 ? 1 : 2; // 0=dot 1=sq 2=slash
-          const cell = { bx, by, tp, al, sz: tp === 0 ? 0.8 + r() * 0.7 : 1.6 + r() * 1.0, slash: '/' };
-          if (tp === 2) cell.slashHalf = 3.6 + r() * 3.2;
-          // Slow opacity drift on a few slashes — 0 → up to (peak × base alpha)
-          if (tp === 2 && r() < 0.16 && !prefersReducedMotion) {
-            cell.fadeBreath = {
-              phase: r() * 90000,
-              period: 16000 + r() * 22000,
-              peak: 0.5 + r() * 0.5
-            };
+      // Uniform, centred lattice so the field reads as a symmetric star chart:
+      // whole columns/rows fill the viewport with equal margins on each side.
+      // Carry one extra ring vs. what fits with a half-cell margin so the
+      // outermost dots sit ~one pitch from the edge — i.e. the gap to the
+      // viewport edge matches the gap between dots, instead of the wider
+      // (~1.5·pitch) inset the half-cell centring used to leave.
+      const cols = Math.max(1, Math.round(w / SP));
+      const rows = Math.max(1, Math.round(h / SP));
+      const offX = (w - cols * SP) / 2;
+      const offY = (h - rows * SP) / 2;
+      // The outermost ring hugs the very edge (reads as the margin), so the
+      // first *visible* row is one pitch in. Expose its Y so fixed UI (the top
+      // bar) can centre on it — keeping the clock/weather + icons on the first
+      // star row. Recomputed here on every (re)build, i.e. on resize.
+      let firstRowY = offY;
+      while (firstRowY < SP * 0.5) firstRowY += SP;
+      document.documentElement.style.setProperty('--grid-first-row-y', firstRowY.toFixed(1) + 'px');
+      // Same for the first visible column. The lattice is centred, so the last
+      // visible column is its mirror (w − inset) — the top bar uses this one
+      // value to sit the clock's left edge on the left dot and the power
+      // button's right edge on the right dot.
+      let firstColX = offX;
+      while (firstColX < SP * 0.5) firstColX += SP;
+      document.documentElement.style.setProperty('--grid-col-inset', firstColX.toFixed(1) + 'px');
+      for (let ci = 0; ci <= cols; ci++) {
+        for (let ri = 0; ri <= rows; ri++) {
+          const bx = offX + ci * SP;
+          const by = offY + ri * SP;
+          // Size tiers give a natural distant-starfield spread: mostly tiny
+          // pinpoints, some a touch larger, a rare few brighter still.
+          const t = r();
+          const sz = STAR_R * (t < 0.7 ? 0.28 + r() * 0.24
+                             : t < 0.93 ? 0.55 + r() * 0.3
+                             :            0.9 + r() * 0.45);
+          const cell = { bx, by, sz, al: 0.3 + r() * 0.24 };
+          // Most stars twinkle — deep enough that they fade nearly to nothing
+          // and swell back, like real stars blinking in and out.
+          if (!prefersReducedMotion && r() < 0.62) {
+            cell.twinkle = { phase: r() * 90000, period: 2200 + r() * 4200, depth: 0.55 + r() * 0.4 };
           }
-          // Gentle opacity drift on a small fraction of dots and squares
-          if ((tp === 0 || tp === 1) && r() < 0.065 && !prefersReducedMotion) {
-            cell.fadeBreath = {
-              phase: r() * 90000,
-              period: 22000 + r() * 34000,
-              peak: 0.35 + r() * 0.45
-            };
-          }
-          // Slow pendulum rotation on a few slashes — like leaves swaying in wind
-          if (tp === 2 && r() < 0.12 && !prefersReducedMotion) {
-            cell.rotateDrift = {
-              phase: r() * 90000,
-              period: 19000 + r() * 26000,
-              range: 0.28 + r() * 0.22
-            };
-          }
+          // A few of those get a brief bloom at their brightest instant only.
+          if (cell.twinkle && r() < 0.13) cell.bright = true;
           cells.push(cell);
         }
       }
-      ambientAnim = cells.some(c => c.fadeBreath || c.rotateDrift);
+      buildBodies(w, h);
+      ambientAnim = !prefersReducedMotion; // twinkle + celestial pulse
     }
 
     /* ── Ripples ── */
@@ -112,18 +215,32 @@
     //     right of short lines instead of a big dead rectangle.
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
-    const TEXT_HOLE_SELECTORS = ['.intro-text'];
-    const BOX_HOLE_SELECTORS  = ['.avatar-col', '.app-icon', '.study-card'];
+    const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text'];
+    // .corner-status (clock + weather) and the top-right action buttons cut into
+    // the field the same way — each cleared by its own box so the pattern
+    // displaces around them and texture survives in the gaps between the icons.
+    // Clear around each icon's 20px SVG rather than its padded button box, so an
+    // icon only knocks out the one star row it sits on (the taller button box
+    // would reach into the row below).
+    const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card',
+                                 '.corner-status', '.topBar-actions button svg:not([hidden])'];
+    // The clock-dial hero replaces background cells 1:1 (its dial lattice is
+    // snapped onto this same 28px grid by js/clock-hero.js), so its cells are
+    // hidden by exact center-in-rect cover — no pad, no AABB reach. The
+    // surrounding texture runs right up to the dial field with no cleared
+    // border, which is what lets the dials read as the background itself.
+    const EXACT_HOLE_SELECTORS = ['.clock-hero'];
 
     let holeRects = [];
 
-    function pushRect(out, r) {
+    function pushRect(out, r, exact) {
       if (r.width < 1 || r.height < 1) return; // hidden / collapsed / empty line
       out.push({
         cx: r.left + r.width / 2,
         cy: r.top + r.height / 2,
         hw: r.width / 2,
         hh: r.height / 2,
+        exact: !!exact,
       });
     }
 
@@ -151,6 +268,9 @@
       for (const sel of BOX_HOLE_SELECTORS) {
         for (const el of document.querySelectorAll(sel)) pushRect(next, el.getBoundingClientRect());
       }
+      for (const sel of EXACT_HOLE_SELECTORS) {
+        for (const el of document.querySelectorAll(sel)) pushRect(next, el.getBoundingClientRect(), true);
+      }
       holeRects = next;
       computeCellMask();
     }
@@ -166,22 +286,94 @@
       for (const cl of cells) {
         let hidden = false;
         for (const r of holeRects) {
-          if (Math.abs(cl.bx - r.cx) <= r.hw + reach &&
-              Math.abs(cl.by - r.cy) <= r.hh + reach) {
+          // Exact rects (clock hero) hide a cell only when its CENTER falls
+          // inside — the dial grid replaces those cells one-for-one.
+          const rx = r.exact ? 0 : reach;
+          if (Math.abs(cl.bx - r.cx) <= r.hw + rx &&
+              Math.abs(cl.by - r.cy) <= r.hh + rx) {
             hidden = true;
             break;
           }
         }
+        // NB: stars sitting under a celestial body are cleared per-frame in
+        // the draw loop (see cellUnderBody), not here — the bodies rotate with
+        // the theme swing, so their cleared discs must follow them each frame.
         cl.hidden = hidden;
       }
+    }
+
+    /* ── Genie collapse ──────────────────────────────────────────────
+       As you scroll off the hero, the pattern gets "sucked" toward the
+       bottom-center of the glow — but NOT all at once: the bottom rows go
+       first and each row above follows slightly later, so the collapse
+       sweeps upward like a genie. Driven per-cell here (a single CSS
+       transform on the canvas can't stagger rows). Home view only. */
+    const GENIE = {
+      range:   0.5,   // fraction of one viewport of scroll over which it completes
+                      // (lower = warp triggers sooner, with less scrolling)
+      stagger: 0.5,   // bottom→top delay spread (0 = all together, →1 = very sequential)
+      scale:   0.5,   // mark shrink at full collapse (marks halve, then vanish)
+      funnel:  0.25,  // horizontal migration toward center at full collapse (0..1)
+      drop:    0.35,  // downward migration into the glow at full collapse (0..1)
+      fade:    1.0,   // alpha falloff (1 = fully gone by the end)
+    };
+
+    function genieProgress() {
+      if (prefersReducedMotion) return 0;
+      const b = document.body.classList;
+      if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) return 0;
+      const vh = gridLogicalH || innerHeight || 1;
+      const sy = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const p = sy / (vh * GENIE.range);
+      return p < 0 ? 0 : p > 1 ? 1 : p;
+    }
+
+    /* ── Hyperspace entrance ──────────────────────────────────────────
+       On first landing the field starts fully collapsed at the genie's
+       vanishing point (bottom-center) and flies back out to rest — the scroll
+       collapse run in reverse, so the page arrives like a ship dropping out of
+       hyperspace. One-shot: it disarms itself once the stars have settled, and
+       never fires if we didn't load into the home view. */
+    const ENTRANCE = {
+      armed: !prefersReducedMotion,
+      hold:  160,    // ms held fully collapsed before release
+      dur:   2100,   // ms to fly out from collapsed → resting
+    };
+    let entranceStart = -1;   // ts of the first frame after arming; -1 = not yet
+    function entranceProgress(ts) {
+      if (!ENTRANCE.armed) return 0;
+      // If the page came up in another mode, the entrance would fly over the
+      // wrong layout — skip it entirely rather than play it hidden.
+      const b = document.body.classList;
+      if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) {
+        ENTRANCE.armed = false; return 0;
+      }
+      if (entranceStart < 0) entranceStart = ts;
+      const t = ts - entranceStart - ENTRANCE.hold;
+      if (t <= 0) return 1;                                 // held fully collapsed
+      const p = t / ENTRANCE.dur;
+      if (p >= 1) { ENTRANCE.armed = false; return 0; }     // settled — disarm
+      // Smootherstep (eases in AND out) so the field glides out — no hard burst
+      // at the start, a soft settle at the end.
+      const e = p * p * p * (p * (p * 6 - 15) + 10);
+      return 1 - e;                                          // collapse amount 1 → 0
     }
 
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
+      // The scroll collapse and the one-shot hyperspace entrance share the same
+      // geometry, so the larger of the two drives the frame: on landing the
+      // entrance holds it near 1 and eases to 0 (stars fly out); afterwards it's
+      // purely scroll-driven.
+      const genieP = Math.max(genieProgress(), entranceProgress(ts));
+      frameBodies = computeFrameBodies();
       for (const cl of cells) {
         if (cl.hidden) continue; // grid-snapped binary hole — cell fully off
         if (cl.bx > w + SP || cl.by > h + SP) continue;
+        // Clear stars under a body so it reads as a solid disc, not sparkles
+        // poking through — using the body's rotated position for this frame.
+        if (frameBodies && cellUnderBody(cl.bx, cl.by, frameBodies)) continue;
         let x = cl.bx, y = cl.by;
         for (const rp of ripples) {
           const dt = (ts - rp.t0) / 1000;
@@ -195,56 +387,205 @@
             y += Math.sin(ang) * str;
           }
         }
-        let breathMult = 1;
-        if (cl.fadeBreath) {
-          const { phase, period, peak } = cl.fadeBreath;
-          const u = ((performance.now() + phase) % period) / period;
-          breathMult = peak * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
-        }
-        const alpha = cl.al * breathMult;
-        if (alpha < 0.004) continue;
-        c.fillStyle = `rgba(${gridDotRgb},${alpha})`;
-        if (cl.tp === 0) {
-          c.beginPath();
-          c.arc(x, y, cl.sz, 0, 6.2832);
-          c.fill();
-        } else if (cl.tp === 1) {
-          c.fillRect(x - cl.sz / 2, y - cl.sz / 2, cl.sz, cl.sz);
-        } else {
-          const h = cl.slashHalf;
-          const k = 0.72;
-          c.strokeStyle = `rgba(${gridDotRgb},${alpha})`;
-          c.lineWidth = 1.25;
-          c.lineCap = 'round';
-          if (cl.rotateDrift) {
-            const { phase, period, range } = cl.rotateDrift;
-            const u = ((performance.now() + phase) % period) / period;
-            const dAngle = range * Math.sin(u * 2 * Math.PI);
-            c.save();
-            c.translate(x, y);
-            c.rotate(dAngle);
-            c.beginPath();
-            if (cl.slash === '/') {
-              c.moveTo(-h * k, h * k);
-              c.lineTo(h * k, -h * k);
-            } else {
-              c.moveTo(-h * k, -h * k);
-              c.lineTo(h * k, h * k);
-            }
-            c.stroke();
-            c.restore();
-          } else {
-            c.beginPath();
-            if (cl.slash === '/') {
-              c.moveTo(x - h * k, y + h * k);
-              c.lineTo(x + h * k, y - h * k);
-            } else {
-              c.moveTo(x - h * k, y - h * k);
-              c.lineTo(x + h * k, y + h * k);
-            }
-            c.stroke();
+        // ── Genie collapse (bottom rows lead, each row above follows) ──
+        let markScale = 1, genieAlpha = 1;
+        if (genieP > 0) {
+          const vb = h > 0 ? cl.by / h : 0;                 // 0 = top row … 1 = bottom row
+          const delay = (1 - vb) * GENIE.stagger;           // bottom rows ≈ no delay
+          let cp = (genieP - delay) / (1 - GENIE.stagger);
+          cp = cp < 0 ? 0 : cp > 1 ? 1 : cp;
+          if (cp > 0) {
+            const e = cp * cp;                              // ease-in: linger, then draw in
+            x += (w / 2 - x) * e * GENIE.funnel;            // migrate toward horizontal center
+            y += (h - y) * e * GENIE.drop;                  // sink toward the bottom / glow
+            markScale = 1 - e * (1 - GENIE.scale);
+            genieAlpha = 1 - e * GENIE.fade;
+            if (genieAlpha <= 0.004) continue;              // fully sucked in
           }
         }
+        // ── Twinkle (opacity + size breathe) + a slow diagonal shimmer wave
+        //    sweeping across the whole field, so the sky gently glimmers. ──
+        let tw = 1;
+        if (cl.twinkle) {
+          const { phase, period, depth } = cl.twinkle;
+          const u = ((ts + phase) % period) / period;
+          tw = 1 - depth * (0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
+        }
+        const shimmer = prefersReducedMotion ? 1
+          : 1 + 0.07 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
+        const alpha = Math.min(1, cl.al * tw * shimmer * genieAlpha);
+        if (alpha < 0.004) continue;
+        const R = cl.sz * markScale;
+        // Transient bloom: only near a twinkle's brightest instant does a bright
+        // star flare a soft halo — it grows and vanishes with the peak, so it's
+        // never a permanent border. Below the threshold there's no halo at all.
+        if (cl.bright && tw > 0.74) {
+          const b = (tw - 0.74) / 0.26;            // 0 → 1 across the peak
+          const gr = R * (2.4 + b * 1.8);
+          const g = c.createRadialGradient(x, y, R * 0.5, x, y, gr);
+          g.addColorStop(0, `rgba(${gridDotRgb},${(alpha * 0.42 * b).toFixed(3)})`);
+          g.addColorStop(1, `rgba(${gridDotRgb},0)`);
+          c.fillStyle = g;
+          c.beginPath(); c.arc(x, y, gr, 0, 6.2832); c.fill();
+        }
+        // The star itself is always a crisp anti-aliased point.
+        c.fillStyle = `rgba(${gridDotRgb},${alpha.toFixed(3)})`;
+        c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
+      }
+      // Celestial bodies sit above the stars and fade out as the field collapses.
+      if (frameBodies) drawBodies(c, ts, genieP);
+      // Ship lift-offs ride above everything. Schedule the first lazily, then
+      // fire on cadence — only when the moon is actually on-screen (not fading
+      // out under a scroll/entrance collapse).
+      if (!prefersReducedMotion) {
+        if (nextLaunchTs < 0) {
+          scheduleLaunch(ts);
+        } else if (ts >= nextLaunchTs) {
+          if (frameBodies && (1 - genieP) > 0.5) spawnLaunch(ts);
+          scheduleLaunch(ts);
+        }
+        drawLaunches(c, ts, genieP);
+      }
+    }
+
+    /* ── Celestial bodies (Death Star + Tatooine twin suns) ── */
+    function drawBodies(c, ts, genieP) {
+      const fb = frameBodies;
+      if (!fb) return;
+      const fade = 1 - genieP;
+      if (fade <= 0.01) return;
+      const bob = prefersReducedMotion ? 0 : Math.sin(ts / 4200) * 2;
+      // Two out-of-phase shimmer signals in 0..1 so each body breathes its own way.
+      const shimA = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 2600);
+      const shimB = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 3300 + 1.5);
+      // Dial the bodies back so they read as distant scenery, not spotlights
+      // competing with the hero copy: suns to ~55%, the (already muted) grey
+      // Death Star a touch less.
+      drawSun(c, fb.sunBig, '#efd23f', '#e6a028', fade * 0.55, shimA);
+      drawSun(c, fb.sunSmall, '#f0a032', '#df7d1c', fade * 0.55, shimB);
+      drawDeathStar(c, fb.deathStar, fade * 0.72, bob, shimB);
+    }
+
+    // Twin suns: a shaded orb whose rim feathers into the sky (no hard circle),
+    // wrapped in a soft corona that breathes with the shimmer.
+    function drawSun(c, b, core, edge, fade, shim) {
+      const cx = b.cx, cy = b.cy, r = b.r * (1 + (shim - 0.5) * 0.04);
+      c.save();
+      // Outer corona that breathes in radius + intensity.
+      const cr = r * (2.0 + shim * 0.5);
+      const glow = c.createRadialGradient(cx, cy, r * 0.5, cx, cy, cr);
+      glow.addColorStop(0, hexA(core, 0.42 * (0.62 + shim * 0.38) * fade));
+      glow.addColorStop(1, hexA(core, 0));
+      c.fillStyle = glow;
+      c.beginPath(); c.arc(cx, cy, cr, 0, 6.2832); c.fill();
+      // Disc, lit from the upper-left, feathering to transparent at the rim.
+      c.globalAlpha = fade;
+      const g = c.createRadialGradient(cx - r * 0.28, cy - r * 0.28, r * 0.1, cx, cy, r * 1.06);
+      g.addColorStop(0, core);
+      g.addColorStop(0.55, edge);
+      g.addColorStop(0.82, hexA(edge, 0.85));
+      g.addColorStop(1, hexA(edge, 0));
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, r * 1.06, 0, 6.2832); c.fill();
+      c.restore();
+    }
+
+    // Death Star: grey sphere lit from the upper-left, rim feathered into the
+    // sky, with a faint cool halo and the superlaser dish inset.
+    function drawDeathStar(c, b, fade, bob, shim) {
+      const cx = b.cx, cy = b.cy + bob, r = b.r;
+      c.save();
+      // Faint cool halo that gently shimmers.
+      const hr = r * (1.7 + shim * 0.2);
+      const halo = c.createRadialGradient(cx, cy, r * 0.8, cx, cy, hr);
+      halo.addColorStop(0, 'rgba(150,170,205,' + ((0.09 + shim * 0.06) * fade).toFixed(3) + ')');
+      halo.addColorStop(1, 'rgba(150,170,205,0)');
+      c.fillStyle = halo;
+      c.beginPath(); c.arc(cx, cy, hr, 0, 6.2832); c.fill();
+      c.globalAlpha = fade;
+      const dx = cx + r * 0.34, dy = cy - r * 0.3, dr = r * 0.24;
+      // Sphere, feathering to transparent at the rim.
+      const g = c.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.1, cx, cy, r * 1.06);
+      g.addColorStop(0, '#c3c7ce');
+      g.addColorStop(0.5, '#888d96');
+      g.addColorStop(0.82, 'rgba(65,69,77,0.85)');
+      g.addColorStop(1, 'rgba(65,69,77,0)');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, r * 1.06, 0, 6.2832); c.fill();
+      // Superlaser dish — a smaller, darker inset disc toward the upper-right.
+      const dg = c.createRadialGradient(dx - dr * 0.35, dy - dr * 0.35, dr * 0.1, dx, dy, dr);
+      dg.addColorStop(0, 'rgba(112,116,124,0.9)');
+      dg.addColorStop(1, 'rgba(47,50,58,0)');
+      c.fillStyle = dg;
+      c.beginPath(); c.arc(dx, dy, dr, 0, 6.2832); c.fill();
+      c.restore();
+    }
+
+    /* ── Ship lift-offs (blurred shimmers peeling off the moon) ──────────
+       Every ~15–30s a small soft shimmer lifts off the moon's surface and
+       shoots away into open sky — quick off the pad, then easing out and
+       fading as it coasts, like a ship breaking orbit. Deliberately subtle
+       background scenery: a faint blurred streak, never a spotlight. Skipped
+       entirely under reduced-motion. */
+    const launches = [];
+    const LAUNCH_MIN_GAP = 15000, LAUNCH_MAX_GAP = 30000; // ms between lift-offs
+    const LAUNCH_DUR = 2600;                              // ms lift-off → gone
+    let nextLaunchTs = -1;                                // scheduled next one; set lazily
+
+    function scheduleLaunch(ts) {
+      nextLaunchTs = ts + LAUNCH_MIN_GAP + Math.random() * (LAUNCH_MAX_GAP - LAUNCH_MIN_GAP);
+    }
+
+    function spawnLaunch(ts) {
+      const m = frameBodies && frameBodies.deathStar;
+      if (!m) return;
+      // Fly away from the moon toward the open interior of the sky, with a bit
+      // of spread so successive ships don't all trace the same line.
+      const toCenter = Math.atan2(gridLogicalH * 0.5 - m.cy, gridLogicalW * 0.5 - m.cx);
+      const ang = toCenter + (Math.random() - 0.5) * 1.1;
+      launches.push({
+        t0: ts,
+        // Lift off the surface, not the dead centre of the disc.
+        x0: m.cx + Math.cos(ang) * m.r,
+        y0: m.cy + Math.sin(ang) * m.r,
+        ang,
+        dist: SP * (4.2 + Math.random() * 4.6),          // how far it coasts before fading
+        size: SP * (0.10 + Math.random() * 0.06),
+      });
+    }
+
+    function drawLaunches(c, ts, genieP) {
+      if (prefersReducedMotion || !launches.length) return;
+      const fade = 1 - genieP;
+      for (let i = launches.length - 1; i >= 0; i--) {
+        const L = launches[i];
+        const p = (ts - L.t0) / LAUNCH_DUR;
+        if (p >= 1) { launches.splice(i, 1); continue; }
+        // Fast off the pad, easing out as it coasts (ease-out cubic on distance).
+        const e = 1 - Math.pow(1 - p, 3);
+        const x = L.x0 + Math.cos(L.ang) * L.dist * e;
+        const y = L.y0 + Math.sin(L.ang) * L.dist * e;
+        // Quick bloom on, long fade off — and it never gets loud (peak ~0.5).
+        const a = (p < 0.14 ? p / 0.14 : 1 - (p - 0.14) / 0.86) * fade * 0.55;
+        if (a <= 0.01) continue;
+        const gr = L.size * 3.4;
+        // Elongate the soft glow along the travel axis so it reads as a blurred
+        // streak trailing back toward the moon rather than a round dot. Build
+        // the gradient in the rotated/scaled local frame (origin at the head).
+        c.save();
+        c.translate(x, y);
+        c.rotate(L.ang);
+        c.scale(1.9, 0.68);
+        const g = c.createRadialGradient(0, 0, 0, 0, 0, gr);
+        g.addColorStop(0,   `rgba(${gridDotRgb},${(a * 0.9).toFixed(3)})`);
+        g.addColorStop(0.4, `rgba(${gridDotRgb},${(a * 0.32).toFixed(3)})`);
+        g.addColorStop(1,   `rgba(${gridDotRgb},0)`);
+        c.fillStyle = g;
+        c.beginPath(); c.arc(0, 0, gr, 0, 6.2832); c.fill();
+        c.restore();
+        // Bright little core at the head of the streak.
+        c.fillStyle = `rgba(${gridDotRgb},${a.toFixed(3)})`;
+        c.beginPath(); c.arc(x, y, L.size * 0.75, 0, 6.2832); c.fill();
       }
     }
 
@@ -283,7 +624,7 @@
       curOffX = mode === 'cross' ? -12 : -8;
       curOffY = mode === 'cross' ? -12 : -9;
     }
-    if (useFinePointer) {
+    if (useFinePointer && cursorEl) {
       setCursor('pointer');
       cursorEl.style.transform = 'translate3d(-100px,-100px,0)';
     }
@@ -348,12 +689,17 @@
 
     function tick(ts) {
       ripples = ripples.filter(r => ts - r.t0 < RPDUR);
-      const ripplesActive = ripples.length > 0;
-      if (ripplesActive || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
+      // Ripples and ship lift-offs move fast enough to want the full refresh
+      // rate; the slow ambient breathing is fine at the capped 30fps. The
+      // one-shot hyperspace entrance also flies out fast, so it must run at the
+      // full rate while armed — otherwise the 30fps cap makes it look choppy.
+      const ripplesActive = ripples.length > 0 || launches.length > 0;
+      const fullRate = ripplesActive || ENTRANCE.armed;
+      if (fullRate || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
         lastDrawTs = ts;
         drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
       }
-      if (ripplesActive || ambientAnim) {
+      if (fullRate || ambientAnim) {
         requestAnimationFrame(tick);
       } else {
         animating = false;
@@ -393,26 +739,23 @@
       holeRaf = requestAnimationFrame(() => { holeRaf = 0; refreshHoles(); });
     }
     window.addEventListener('scroll', scheduleHoleRefresh, { passive: true });
+    // Drive the genie collapse: force a redraw each frame while scrolling so the
+    // staggered per-row shrink stays smooth even when the ambient loop is idle.
+    let genieRaf = 0;
+    function scheduleGenieDraw() {
+      if (genieRaf) return;
+      genieRaf = requestAnimationFrame(() => {
+        genieRaf = 0;
+        if (gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
+      });
+    }
+    window.addEventListener('scroll', scheduleGenieDraw, { passive: true });
     // Mode switches toggle classes on <body>; re-measure when they do.
     new MutationObserver(scheduleHoleRefresh)
       .observe(document.body, { attributes: true, attributeFilter: ['class'] });
     // Re-measure once fonts/async content (e.g. post counts) settle.
     window.addEventListener('load', refreshHoles);
     setTimeout(refreshHoles, 600);
-
-    /* ── Slash flipper ── */
-    function flipSlashes() {
-      const slashCells = cells.filter(c => c.tp === 2 && !c.rotateDrift);
-      if (!slashCells.length) return;
-      const count = 1 + Math.floor(Math.random() * 2); // flip 1–2 at a time
-      for (let i = 0; i < count; i++) {
-        const cell = slashCells[Math.floor(Math.random() * slashCells.length)];
-        cell.slash = cell.slash === '/' ? '\\' : '/';
-      }
-      if (gridLogicalW) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
-      setTimeout(flipSlashes, 18000 + Math.random() * 8000); // every 18–26s
-    }
-    setTimeout(flipSlashes, 18000 + Math.random() * 8000);
 
     resize();
     window.addEventListener('resize', () => { clearTimeout(canvas._rt); canvas._rt = setTimeout(resize, 100); });
