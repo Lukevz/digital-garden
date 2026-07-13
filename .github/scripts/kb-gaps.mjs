@@ -33,11 +33,47 @@ function escapeInline(s) {
   return String(s || '').replace(/\r?\n/g, ' ').trim();
 }
 
-function buildBody(gaps) {
+// Parse a previous issue body to recover the order gaps were listed in and
+// whether each was manually checked off, keyed by the `Resolves-KB-Gap: <key>`
+// line that sits under each checklist item. Lets the digest merge additively
+// instead of overwriting — your ticked boxes and item order survive each run.
+function parseExistingState(body) {
+  const order = [];
+  const checked = {};
+  if (!body) return { order, checked };
+  let lastChecked = null;
+  for (const line of body.split(/\r?\n/)) {
+    const cb = line.match(/^\s*- \[([ xX])\]/);
+    if (cb) { lastChecked = cb[1].toLowerCase() === 'x'; continue; }
+    const key = line.match(/Resolves-KB-Gap:\s*(.+?)\s*$/);
+    if (key) {
+      const k = key[1].trim().replace(/[`"']/g, '');
+      if (k && !(k in checked)) { order.push(k); checked[k] = lastChecked === true; }
+      lastChecked = null;
+    }
+  }
+  return { order, checked };
+}
+
+function buildBody(gaps, prev = { order: [], checked: {} }) {
+  const byKey = new Map(gaps.map(g => [g.key, g]));
+  // Keep previously-listed gaps that are still unresolved in their original
+  // order, then append any brand-new gaps at the end. Resolved gaps (gone from
+  // KV) drop off naturally because they're no longer in `byKey`.
+  const seen = new Set();
+  const orderedKeys = [];
+  for (const k of prev.order) {
+    if (byKey.has(k) && !seen.has(k)) { orderedKeys.push(k); seen.add(k); }
+  }
+  for (const g of gaps) {
+    if (!seen.has(g.key)) { orderedKeys.push(g.key); seen.add(g.key); }
+  }
+
+  const openCount = orderedKeys.filter(k => !prev.checked[k]).length;
   const lines = [
     MARKER,
     '',
-    `**${gaps.length} unanswered question${gaps.length === 1 ? '' : 's'} about you.** These came up in chat but aren't covered by your knowledge base.`,
+    `**${openCount} open question${openCount === 1 ? '' : 's'} about you** (of ${orderedKeys.length} tracked). These came up in chat but aren't covered by your knowledge base.`,
     '',
     '### How to answer (from Claude Code mobile)',
     '1. Open this repo in the code tab and say: *"Answer these KB gaps."*',
@@ -48,9 +84,11 @@ function buildBody(gaps) {
     ''
   ];
 
-  for (const g of gaps) {
+  for (const k of orderedKeys) {
+    const g = byKey.get(k);
+    const box = prev.checked[k] ? 'x' : ' ';
     const q = escapeInline(g.suggestion || g.topic || g.key);
-    lines.push(`- [ ] **${q}** _(asked ${g.count || 1}×)_`);
+    lines.push(`- [${box}] **${q}** _(asked ${g.count || 1}×)_`);
     lines.push(`  - \`Resolves-KB-Gap: ${g.key}\``);
     const examples = Array.isArray(g.examples) ? g.examples.slice(0, 3) : [];
     for (const ex of examples) {
@@ -58,7 +96,7 @@ function buildBody(gaps) {
     }
   }
 
-  lines.push('', '---', '_Auto-generated daily from `/api/chat-insights`. Edits will be overwritten on the next run._');
+  lines.push('', '---', '_Auto-updated daily from `/api/chat-insights`. New gaps are appended; your checkboxes and notes are preserved. An item clears when its gap-answering PR merges._');
   return lines.join('\n');
 }
 
@@ -109,8 +147,9 @@ async function main() {
     return;
   }
 
+  const prev = parseExistingState(existing?.body || '');
   const title = `🧠 KB gaps to fill (${gaps.length})`;
-  const body = buildBody(gaps);
+  const body = buildBody(gaps, prev);
 
   if (existing) {
     const r = await gh(`/repos/${REPO}/issues/${existing.number}`, {
@@ -129,4 +168,10 @@ async function main() {
   }
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+export { parseExistingState, buildBody };
+
+// Only hit the network / GitHub when run directly (node kb-gaps.mjs), so the
+// pure helpers above can be imported in tests without triggering a live run.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(e => { console.error(e); process.exit(1); });
+}
