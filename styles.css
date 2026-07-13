@@ -573,6 +573,264 @@
       color: var(--text-secondary);
     }
 
+    /* ==========================================================================
+       Career timeline — vertical, scroll-lit. The left rail is a live progress
+       indicator (js/timeline.js): .tl-rail__fill grows to the viewport-center
+       line and dots gain .is-lit + a soft blue glow as the beam passes them.
+       ========================================================================== */
+    .timeline {
+      --tl-glow: 96, 156, 255;           /* soft blue */
+      position: relative;
+      margin-top: 8px;
+    }
+
+    /* Base rail + fill both centered on x = 15px (dots align to this). */
+    .tl-rail {
+      position: absolute;
+      left: 14px;
+      top: 6px;
+      bottom: 6px;
+      width: 2px;
+      border-radius: 2px;
+      background: color-mix(in oklab, var(--text-secondary) 24%, transparent);
+      overflow: visible;
+    }
+    .tl-rail__fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 0;                          /* set by JS */
+      border-radius: 2px;
+      background: linear-gradient(
+        to bottom,
+        color-mix(in oklab, rgb(var(--tl-glow)) 55%, transparent) 0%,
+        rgb(var(--tl-glow)) 100%);
+      box-shadow: 0 0 8px 1px rgba(var(--tl-glow), 0.45);
+    }
+    /* Glowing "head" that rides the leading edge of the fill. */
+    .tl-rail__fill::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 7px;
+      height: 7px;
+      transform: translate(-50%, 50%);
+      border-radius: 50%;
+      background: rgb(var(--tl-glow));
+      box-shadow: 0 0 10px 2px rgba(var(--tl-glow), 0.7);
+    }
+
+    /* One company = one group. Head (logo + name) sits on the main rail; its
+       roles are indented below on their own gently curved sub-rail. */
+    .tl-group {
+      position: relative;
+      padding: 0 0 30px 44px;
+    }
+    .tl-group:last-child { padding-bottom: 4px; }
+
+    .tl-group__head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 44px;
+    }
+
+    /* Company node sits on the main rail (center x = 15px). Dot 16px → left 7px. */
+    .tl-node {
+      position: absolute;
+      left: 7px;
+      top: 14px;
+    }
+    .tl-node-dot {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--text-secondary) 40%, transparent);
+      transition: box-shadow 0.4s ease, background 0.4s ease;
+    }
+    .tl-node.is-lit .tl-node-dot {
+      background: color-mix(in oklab, rgb(var(--tl-glow)) 22%, var(--surface-raised));
+      box-shadow:
+        inset 0 0 0 2px rgb(var(--tl-glow)),
+        0 0 12px 2px rgba(var(--tl-glow), 0.55);
+    }
+
+    /* Grayscale company logo, with a monogram fallback when the image is
+       missing (onerror removes the <img>, leaving .tl-logo__mono). */
+    .tl-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      flex-shrink: 0;
+    }
+    .tl-logo__img {
+      max-height: 34px;
+      max-width: 132px;
+      width: auto;
+      object-fit: contain;
+      filter: grayscale(1) contrast(0.98);
+      opacity: 0.82;
+      transition: filter 0.4s ease, opacity 0.4s ease;
+    }
+    /* Image present → hide the monogram; image removed on error → show it. */
+    .tl-logo__img + .tl-logo__mono { display: none; }
+    .tl-logo__mono {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: color-mix(in oklab, var(--text-secondary) 8%, var(--surface-raised));
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .tl-group.is-lit .tl-logo__img { opacity: 1; }
+
+    .tl-company {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    /* Indented roles block. Each role BRANCHES off the main trunk with a curved
+       elbow (see .tl-position::before) — one connected tree, not a parallel rail. */
+    .tl-positions {
+      position: relative;
+      margin-top: 12px;
+    }
+
+    .tl-position {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(140px, 165px) minmax(0, 1fr);
+      gap: 12px 26px;
+      padding: 4px 0 22px 30px;
+      align-items: start;
+    }
+    .tl-position:last-child { padding-bottom: 0; }
+
+    /* Curved branch from the trunk (timeline x≈15) out to this role's marker
+       (marker center at position-local x≈6). Drawn as a rounded quarter-elbow:
+       left+bottom borders + a full corner radius = a smooth curve that leaves
+       the trunk vertically and arrives at the marker horizontally. */
+    .tl-position::before {
+      content: "";
+      position: absolute;
+      left: -29px;               /* trunk center, relative to .tl-position */
+      top: -4px;
+      width: 35px;               /* trunk → marker center (x = 6) */
+      height: 16px;              /* branch point → marker center (y = 12) */
+      border-left: 1.5px solid color-mix(in oklab, var(--text-secondary) 26%, transparent);
+      border-bottom: 1.5px solid color-mix(in oklab, var(--text-secondary) 26%, transparent);
+      border-bottom-left-radius: 35px 16px;
+      pointer-events: none;
+    }
+    /* When a role lights up, its branch warms toward the glow colour. */
+    .tl-position.is-lit::before {
+      border-color: color-mix(in oklab, rgb(var(--tl-glow)) 55%, transparent);
+    }
+
+    /* Role marker sits where the branch meets it. */
+    .tl-pos-marker {
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 45%, transparent);
+      transition: box-shadow 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+    }
+    .tl-position.is-lit .tl-pos-marker {
+      background: rgb(var(--tl-glow));
+      box-shadow: 0 0 10px 2px rgba(var(--tl-glow), 0.6);
+    }
+
+    .tl-pos-meta { min-width: 0; padding-top: 2px; }
+    .tl-role {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    .tl-period {
+      margin: 5px 0 0;
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.01em;
+      color: var(--text-muted);
+    }
+    .tl-now {
+      color: rgb(var(--tl-glow));
+      font-weight: 600;
+    }
+
+    /* Right column — minimal card. */
+    .tl-card {
+      min-width: 0;
+      padding: 18px 20px;
+      border-radius: 14px;
+      background: color-mix(in oklab, var(--text-secondary) 5%, var(--surface-raised));
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    }
+    .tl-summary {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--text-body);
+    }
+
+    .tl-highlights {
+      list-style: none;
+      margin: 14px 0 0;
+      padding: 0;
+    }
+    .tl-hl {
+      position: relative;
+      padding: 6px 0 6px 20px;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      color: var(--text-secondary);
+    }
+    .tl-hl-dot {
+      position: absolute;
+      left: 2px;
+      top: 12px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: color-mix(in oklab, rgb(var(--tl-glow)) 65%, var(--text-secondary));
+      box-shadow: 0 0 6px 0 rgba(var(--tl-glow), 0.4);
+    }
+
+    @media (max-width: 720px) {
+      .tl-position {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tl-node-dot,
+      .tl-pos-marker,
+      .tl-logo__img { transition: none; }
+    }
+
     /* Experiments — full-width glass "coming soon" panel at the foot of the feed. */
     .experiments-cta {
       display: flex;
