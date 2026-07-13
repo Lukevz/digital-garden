@@ -449,6 +449,154 @@
         </div>
       </section>
 
+      <!-- TIMELINE DISABLED FOR NOW — remove `hidden` here + uncomment the js/timeline.js script tag below to restore. -->
+      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle" hidden>
+        <header class="home-section-header">
+          <span class="home-section-icon" data-clone-icon="Career" aria-hidden="true"></span>
+          <h2 class="home-section-title" id="homeTimelineTitle">Experience</h2>
+        </header>
+
+        <!-- Vertical career timeline. The left rail is a "live" scroll indicator:
+             js/timeline.js fills .tl-rail__fill to your viewport-center position
+             and adds .is-lit to each node/highlight dot the beam has passed. -->
+        <div class="timeline" id="careerTimeline">
+          <div class="tl-rail" aria-hidden="true">
+            <div class="tl-rail__fill" id="tlRailFill"></div>
+          </div>
+
+          <!-- 2025 — Instinct Science -->
+          <section class="tl-group" aria-label="Instinct Science">
+            <div class="tl-group__head">
+              <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
+              <span class="tl-logo">
+                <img class="tl-logo__img" src="/images/logos/instinct.svg" alt="" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono" aria-hidden="true">IS</span>
+              </span>
+              <h3 class="tl-company">Instinct Science</h3>
+            </div>
+            <div class="tl-positions">
+              <article class="tl-position">
+                <span class="tl-pos-marker" aria-hidden="true"></span>
+                <div class="tl-pos-meta">
+                  <p class="tl-role">Senior Product Designer</p>
+                  <p class="tl-period">Oct 2025 – <span class="tl-now">Present</span></p>
+                </div>
+                <div class="tl-card">
+                  <p class="tl-summary">Now designing veterinary software that clinical teams rely on every day. Blending deep product thinking with hands-on craft to make high-stakes, complex workflows feel effortless.</p>
+                  <ul class="tl-highlights">
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Driving end-to-end product design for core clinical workflows</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Working closely with users to simplify high-stakes tasks</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Shaping the design foundations of a fast-growing product</span></li>
+                  </ul>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- 2021–2025 — PwC (two roles) -->
+          <section class="tl-group" aria-label="PwC">
+            <div class="tl-group__head">
+              <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
+              <span class="tl-logo">
+                <img class="tl-logo__img" src="/images/logos/pwc.svg" alt="" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono" aria-hidden="true">PwC</span>
+              </span>
+              <h3 class="tl-company">PwC</h3>
+            </div>
+            <div class="tl-positions">
+              <article class="tl-position">
+                <span class="tl-pos-marker" aria-hidden="true"></span>
+                <div class="tl-pos-meta">
+                  <p class="tl-role">UX Design Manager</p>
+                  <p class="tl-period">Jun 2023 – Oct 2025</p>
+                </div>
+                <div class="tl-card">
+                  <p class="tl-summary">Stepped up to lead and mentor a team of designers while still shaping strategy and craft. Focused on raising the quality bar and growing the designers around me.</p>
+                  <ul class="tl-highlights">
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Managed and mentored a team of UX designers</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Set design direction and standards across multiple product lines</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Partnered with product and engineering leadership on the roadmap</span></li>
+                  </ul>
+                </div>
+              </article>
+              <article class="tl-position">
+                <span class="tl-pos-marker" aria-hidden="true"></span>
+                <div class="tl-pos-meta">
+                  <p class="tl-role">Senior UX Designer</p>
+                  <p class="tl-period">Dec 2021 – Jun 2023</p>
+                </div>
+                <div class="tl-card">
+                  <p class="tl-summary">Moved into enterprise UX, designing complex internal products and client-facing tools inside a global consultancy. Learned to navigate ambiguity, stakeholders, and scale all at once.</p>
+                  <ul class="tl-highlights">
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Led UX for enterprise platforms used by thousands of employees</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Ran research and workshops to align cross-functional teams</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Shipped design systems that kept large product suites consistent</span></li>
+                  </ul>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- 2021 — Blue Corona -->
+          <section class="tl-group" aria-label="Blue Corona">
+            <div class="tl-group__head">
+              <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
+              <span class="tl-logo">
+                <img class="tl-logo__img" src="/images/logos/bluecorona.svg" alt="" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono" aria-hidden="true">BC</span>
+              </span>
+              <h3 class="tl-company">Blue Corona</h3>
+            </div>
+            <div class="tl-positions">
+              <article class="tl-position">
+                <span class="tl-pos-marker" aria-hidden="true"></span>
+                <div class="tl-pos-meta">
+                  <p class="tl-role">Senior Digital Designer</p>
+                  <p class="tl-period">Feb 2021 – Dec 2021</p>
+                </div>
+                <div class="tl-card">
+                  <p class="tl-summary">Joined an agency to design conversion-focused websites for home-service brands at scale. Balanced hard marketing goals with clean, usable interfaces across dozens of concurrent builds.</p>
+                  <ul class="tl-highlights">
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Designed high-converting landing pages and full-site redesigns</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Partnered with strategists and developers to ship on tight timelines</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Raised the visual bar on templated builds without slowing delivery</span></li>
+                  </ul>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- 2015 — Inovo -->
+          <section class="tl-group" aria-label="Inovo">
+            <div class="tl-group__head">
+              <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
+              <span class="tl-logo">
+                <img class="tl-logo__img" src="/images/logos/inovo.svg" alt="" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono" aria-hidden="true">IN</span>
+              </span>
+              <h3 class="tl-company">Inovo</h3>
+            </div>
+            <div class="tl-positions">
+              <article class="tl-position">
+                <span class="tl-pos-marker" aria-hidden="true"></span>
+                <div class="tl-pos-meta">
+                  <p class="tl-role">Freelance Designer</p>
+                  <p class="tl-period">Jun 2015 – Feb 2021</p>
+                </div>
+                <div class="tl-card">
+                  <p class="tl-summary">Cut my teeth as an independent designer, partnering directly with founders and small teams to ship brand identities, marketing sites, and product interfaces. Learned to own a project end-to-end — from the first conversation to final handoff.</p>
+                  <ul class="tl-highlights">
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Delivered 40+ client projects across branding, web, and product design</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Turned one-off gigs into long-term retainers through trust and delivery</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Built a repeatable discovery-to-delivery process running solo</span></li>
+                  </ul>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <section class="home-section" id="homeExperiments" aria-labelledby="homeExperimentsTitle">
         <div class="experiments-cta">
           <span class="experiments-cta__icon" data-clone-icon="Labs" aria-hidden="true"></span>
@@ -761,6 +909,7 @@
   <script src="/js/main.js?v=5"></script>
   <script src="/js/hero-entrance.js?v=1"></script>
   <script src="/js/home-feed.js?v=1"></script>
+  <!-- <script src="/js/timeline.js?v=1"></script> TIMELINE DISABLED FOR NOW -->
   <script src="/js/chat.js?v=1"></script>
 
   <!-- Now strip population -->
