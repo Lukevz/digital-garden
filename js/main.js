@@ -3120,9 +3120,7 @@
 
     // ── Energy board — "energy investment portfolio" Kanban on the homepage ──
     // Real cards come from energy.js (built from energy.md, same pipeline as
-    // flights). Visitors can also suggest their own goal cards; those live
-    // only in localStorage (never sent anywhere) and quietly expire after
-    // ENERGY_TTL_MS so the board stays fresh without any backend.
+    // flights). Icon names in energy.md map to Lucide SVG paths below.
     function fetchEnergyBoard() {
       return fetch('/energy.js')
         .then(r => r.text())
@@ -3133,31 +3131,33 @@
         .catch(() => []);
     }
 
-    const ENERGY_STORAGE_KEY = 'energyBoardSuggestions';
-    const ENERGY_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+    // Lucide icon paths (https://lucide.dev/icons/) — keyed by the name used
+    // in energy.md's first pipe segment, e.g. `- brain | Title`.
+    const ENERGY_ICONS = {
+      brain: '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.337 7.5a3 3 0 0 0-.237-.5"/><path d="M20.9 7a3 3 0 0 0-.237.5"/><path d="M12 18v4"/>',
+      languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+      globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+      video: '<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+      camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+      'book-open': '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+      sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>'
+    };
+
+    function energyIconSVG(name) {
+      const paths = ENERGY_ICONS[name];
+      if (!paths) return '';
+      return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+    }
 
     const ENERGY_COLUMNS = [
-      { key: 'bucket',  label: 'Bucket List', icon: '💭', placeholder: 'Suggest a bucket-list idea…' },
-      { key: 'active',  label: 'Active',      icon: '⚡', placeholder: "What's actively on your plate?" },
-      { key: 'passive', label: 'Passive',     icon: '🌱', placeholder: 'A slow-burn goal you\u2019re chipping away at…' },
-      { key: 'done',    label: 'Completed',   icon: '✅', placeholder: 'Something you finished this year…' }
+      { key: 'bucket',  label: 'Bucket List' },
+      { key: 'active',  label: 'Active' },
+      { key: 'passive', label: 'Passive' },
+      { key: 'done',    label: 'Completed' }
     ];
 
     let energyBoardCards = null;
-
-    function loadEnergySuggestions() {
-      let list = [];
-      try { list = JSON.parse(localStorage.getItem(ENERGY_STORAGE_KEY) || '[]'); } catch (e) { list = []; }
-      if (!Array.isArray(list)) list = [];
-      const now = Date.now();
-      const fresh = list.filter(c => c && typeof c.createdAt === 'number' && (now - c.createdAt) < ENERGY_TTL_MS);
-      if (fresh.length !== list.length) saveEnergySuggestions(fresh);
-      return fresh;
-    }
-
-    function saveEnergySuggestions(list) {
-      try { localStorage.setItem(ENERGY_STORAGE_KEY, JSON.stringify(list)); } catch (e) { /* storage unavailable — degrade silently */ }
-    }
 
     function energyCardHTML(card) {
       let progressHtml = '';
@@ -3169,30 +3169,23 @@
         </div>`;
       }
       const descHtml = card.description ? `<p class="energy-card__desc">${escHtml(card.description)}</p>` : '';
-      const isVisitor = !!card.isVisitor;
-      return `<article class="energy-card${isVisitor ? ' energy-card--visitor' : ''}">
-        <span class="energy-card__icon" aria-hidden="true">${card.icon ? escHtml(card.icon) : ''}</span>
+      const iconHtml = energyIconSVG(card.icon);
+      return `<article class="energy-card">
+        ${iconHtml ? `<span class="energy-card__icon" aria-hidden="true">${iconHtml}</span>` : ''}
         <div class="energy-card__body">
-          ${isVisitor ? '<span class="energy-card__badge">Your suggestion</span>' : ''}
           <h4 class="energy-card__title">${escHtml(card.title)}</h4>
           ${descHtml}
           ${progressHtml}
         </div>
-        ${isVisitor ? `<button type="button" class="energy-card__remove" aria-label="Remove your suggestion" data-remove-id="${escHtml(card.id)}">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 1.5L10.5 10.5M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-        </button>` : ''}
       </article>`;
     }
 
     function renderEnergyBoardUI() {
       const el = document.getElementById('energyBoard');
       if (!el) return;
-      const suggestions = loadEnergySuggestions();
 
       el.innerHTML = ENERGY_COLUMNS.map(col => {
-        const real = (energyBoardCards || []).filter(c => c.column === col.key);
-        const visitor = suggestions.filter(s => s.column === col.key).map(s => ({ ...s, icon: col.icon, isVisitor: true }));
-        const items = [...real, ...visitor];
+        const items = (energyBoardCards || []).filter(c => c.column === col.key);
         const cardsHtml = items.length ? items.map(energyCardHTML).join('') : '<p class="energy-col__empty">Nothing here yet.</p>';
         return `<div class="energy-col" data-col="${col.key}">
           <div class="energy-col__head">
@@ -3201,66 +3194,8 @@
             <span class="energy-col__count">${items.length}</span>
           </div>
           <div class="energy-col__cards">${cardsHtml}</div>
-          <div class="energy-col__add" data-add-col="${col.key}">
-            <button type="button" class="energy-add-btn" data-open-add="${col.key}">+ Add your own goal</button>
-          </div>
         </div>`;
       }).join('');
-
-      wireEnergyBoardEvents();
-    }
-
-    function wireEnergyBoardEvents() {
-      const el = document.getElementById('energyBoard');
-      if (!el) return;
-
-      el.querySelectorAll('[data-remove-id]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.removeId;
-          saveEnergySuggestions(loadEnergySuggestions().filter(s => s.id !== id));
-          renderEnergyBoardUI();
-        });
-      });
-
-      el.querySelectorAll('[data-open-add]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const col = ENERGY_COLUMNS.find(c => c.key === btn.dataset.openAdd);
-          const wrap = btn.closest('.energy-col__add');
-          if (!wrap || !col) return;
-          wrap.innerHTML = `
-            <form class="energy-add-form" data-add-form="${col.key}">
-              <input type="text" maxlength="70" placeholder="${escHtml(col.placeholder)}" data-field="title" required>
-              <textarea maxlength="160" rows="2" placeholder="A short note (optional)" data-field="description"></textarea>
-              <p class="energy-add-hint">Visible only to you · clears in 30 days</p>
-              <div class="energy-add-form-actions">
-                <button type="button" class="energy-add-cancel" data-cancel-add>Cancel</button>
-                <button type="submit" class="energy-add-submit">Add</button>
-              </div>
-            </form>`;
-          const input = wrap.querySelector('input[data-field="title"]');
-          if (input) input.focus();
-
-          wrap.querySelector('[data-cancel-add]').addEventListener('click', () => renderEnergyBoardUI());
-
-          wrap.querySelector('form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const form = e.target;
-            const title = form.querySelector('[data-field="title"]').value.trim();
-            const description = form.querySelector('[data-field="description"]').value.trim();
-            if (!title) return;
-            const list = loadEnergySuggestions();
-            list.push({
-              id: 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-              column: col.key,
-              title: title.slice(0, 70),
-              description: description.slice(0, 160),
-              createdAt: Date.now()
-            });
-            saveEnergySuggestions(list);
-            renderEnergyBoardUI();
-          });
-        });
-      });
     }
 
     fetchEnergyBoard().then(cards => {

@@ -6,28 +6,28 @@
 export default [
   {
     "column": "bucket",
-    "icon": "🧠",
+    "icon": "brain",
     "title": "Build an agentic second brain",
     "description": "",
     "progress": null
   },
   {
     "column": "active",
-    "icon": "🇮🇹",
+    "icon": "languages",
     "title": "Learn conversational Italian",
     "description": "",
     "progress": null
   },
   {
     "column": "active",
-    "icon": "🌐",
+    "icon": "globe",
     "title": "Build a new portfolio site",
     "description": "",
     "progress": null
   },
   {
     "column": "active",
-    "icon": "🎥",
+    "icon": "video",
     "title": "Publish 1 YouTube video a month",
     "description": "",
     "progress": {
@@ -37,7 +37,7 @@ export default [
   },
   {
     "column": "passive",
-    "icon": "📸",
+    "icon": "camera",
     "title": "Go on 12 photo walks",
     "description": "",
     "progress": {
@@ -47,7 +47,7 @@ export default [
   },
   {
     "column": "passive",
-    "icon": "📚",
+    "icon": "book-open",
     "title": "Read 12 books",
     "description": "",
     "progress": {
