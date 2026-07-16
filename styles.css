@@ -7313,12 +7313,6 @@ body.places-mode .topBar-actions,
   border-radius: 14px;
   background: var(--surface-raised);
   box-shadow: inset 0 0 0 1px var(--border-subtle);
-  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease;
-}
-
-.energy-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover-card), inset 0 0 0 1px var(--border-medium);
 }
 
 .energy-card__icon {
