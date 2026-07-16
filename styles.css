@@ -502,6 +502,10 @@
       margin: 0;
     }
 
+    #homeTimeline > .home-section-header {
+      justify-content: center;
+    }
+
     .home-loading,
     .home-empty {
       color: var(--text-secondary);
@@ -931,6 +935,7 @@
       top: -28px;
       width: calc(var(--tl-gap) + 8px);
       height: 40px;
+      display: block;
       overflow: visible;
       pointer-events: none;
     }
@@ -950,6 +955,9 @@
     .tl-branch__trace {
       stroke: color-mix(in oklab, rgb(var(--tl-glow)) 70%, transparent);
       filter: drop-shadow(0 0 3px rgba(var(--tl-glow), 0.45));
+      stroke-dasharray: 100;
+      stroke-dashoffset: calc(100 - (var(--tl-branch-p, 0) * 100));
+      transition: stroke-dashoffset 0.05s linear;
     }
 
     /* Role marker sits where the branch meets it. Glows in as the trace completes. */
@@ -7236,11 +7244,11 @@ body.places-mode .topBar-actions,
   min-width: 0;
   padding: 16px 14px;
   border-radius: 16px;
-  /* Fade from a soft accent tint at the top into a light wash at the bottom. */
+  /* Soft accent tint at the top, fading into a near-neutral wash at the bottom. */
   background: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--col-accent) 28%, var(--surface-raised)),
-    color-mix(in oklab, var(--col-accent) 4%, var(--surface-raised))
+    color-mix(in oklab, var(--col-accent) 14%, var(--surface-raised)),
+    color-mix(in oklab, var(--col-accent) 3%, var(--surface-raised))
   );
   box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
