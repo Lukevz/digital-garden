@@ -1,9 +1,142 @@
     @font-face {
-      font-family: 'Chillax';
-      src: url('/fonts/chillax/Chillax-Variable.woff2') format('woff2');
-      font-weight: 200 700;
-      font-display: swap;
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-thin-webfont.woff2') format('woff2');
+      font-weight: 100;
       font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-thin-italic-webfont.woff2') format('woff2');
+      font-weight: 100;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-extralight-webfont.woff2') format('woff2');
+      font-weight: 200;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-extralight-italic-webfont.woff2') format('woff2');
+      font-weight: 200;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-light-webfont.woff2') format('woff2');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-light-italic-webfont.woff2') format('woff2');
+      font-weight: 300;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-regular-webfont.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-regular-italic-webfont.woff2') format('woff2');
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-book-webfont.woff2') format('woff2');
+      font-weight: 450;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-book-italic-webfont.woff2') format('woff2');
+      font-weight: 450;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-medium-webfont.woff2') format('woff2');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-medium-italic-webfont.woff2') format('woff2');
+      font-weight: 500;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-medium-webfont.woff2') format('woff2');
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-medium-italic-webfont.woff2') format('woff2');
+      font-weight: 600;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-bold-webfont.woff2') format('woff2');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-bold-italic-webfont.woff2') format('woff2');
+      font-weight: 700;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-black-webfont.woff2') format('woff2');
+      font-weight: 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-black-italic-webfont.woff2') format('woff2');
+      font-weight: 800;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-ultra-webfont.woff2') format('woff2');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geomanist';
+      src: url('/fonts/geomanist/geomanist-ultra-italic-webfont.woff2') format('woff2');
+      font-weight: 900;
+      font-style: italic;
+      font-display: swap;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -237,7 +370,7 @@
     body {
       min-height: 100vh;
       background: transparent;
-      font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+      font-family: 'Geomanist', system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: stretch;
@@ -574,23 +707,26 @@
     }
 
     /* ==========================================================================
-       Career timeline — vertical, scroll-lit. The left rail is a live progress
-       indicator (js/timeline.js): .tl-rail__fill grows to the viewport-center
-       line and dots gain .is-lit + a soft blue glow as the beam passes them.
+       Career timeline — centered, scroll-lit. Companies alternate left/right
+       (roles stay with their company). js/timeline.js grows .tl-rail__fill to
+       the viewport-center beam; dots gain .is-lit + a soft blue glow as it
+       passes them.
        ========================================================================== */
     .timeline {
       --tl-glow: 96, 156, 255;           /* soft blue */
+      --tl-gap: 40px;                   /* space from center rail to content */
       position: relative;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
-    /* Base rail + fill both centered on x = 15px (dots align to this). */
+    /* Center rail — top/bottom pinned to first/last node centers by js/timeline.js. */
     .tl-rail {
       position: absolute;
-      left: 14px;
-      top: 6px;
-      bottom: 6px;
+      left: 50%;
+      top: 15px;                        /* fallback until JS measures */
+      bottom: 15px;
       width: 2px;
+      transform: translateX(-50%);
       border-radius: 2px;
       background: color-mix(in oklab, var(--text-secondary) 24%, transparent);
       overflow: visible;
@@ -622,31 +758,51 @@
       box-shadow: 0 0 10px 2px rgba(var(--tl-glow), 0.7);
     }
 
-    /* One company = one group. Head (logo + name) sits on the main rail; its
-       roles are indented below on their own gently curved sub-rail. */
+    /* One company = one group on one side. Half-width column flush to center. */
     .tl-group {
       position: relative;
-      padding: 0 0 30px 44px;
+      width: calc(50% - var(--tl-gap));
+      padding: 0 0 72px;
+      box-sizing: border-box;
     }
-    .tl-group:last-child { padding-bottom: 4px; }
+    .tl-group:last-child { padding-bottom: 2px; }
+
+    .tl-group--right {
+      margin-left: calc(50% + var(--tl-gap));
+    }
+    .tl-group--left {
+      margin-right: calc(50% + var(--tl-gap));
+      text-align: right;
+    }
 
     .tl-group__head {
       display: flex;
       align-items: center;
-      gap: 14px;
-      min-height: 44px;
+      gap: 10px;
+      min-height: 40px;
+    }
+    .tl-group--left .tl-group__head {
+      flex-direction: row-reverse;
     }
 
-    /* Company node sits on the main rail (center x = 15px). Dot 16px → left 7px. */
+    /* Company node sits on the center rail. */
     .tl-node {
       position: absolute;
-      left: 7px;
-      top: 14px;
+      top: 8px;
+      z-index: 1;
+    }
+    .tl-group--right .tl-node {
+      left: calc(-1 * var(--tl-gap));
+      transform: translateX(-50%);
+    }
+    .tl-group--left .tl-node {
+      right: calc(-1 * var(--tl-gap));
+      transform: translateX(50%);
     }
     .tl-node-dot {
       display: block;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: var(--surface-raised);
       box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--text-secondary) 40%, transparent);
@@ -659,22 +815,53 @@
         0 0 12px 2px rgba(var(--tl-glow), 0.55);
     }
 
+    /* Present / top node — pulsing radar. Always lit; rings expand outward. */
+    .tl-node--radar .tl-node-dot {
+      background: color-mix(in oklab, rgb(var(--tl-glow)) 28%, var(--surface-raised));
+      box-shadow:
+        inset 0 0 0 2px rgb(var(--tl-glow)),
+        0 0 12px 2px rgba(var(--tl-glow), 0.55);
+    }
+    .tl-node--radar::before,
+    .tl-node--radar::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid rgb(var(--tl-glow));
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+      pointer-events: none;
+      animation: tl-radar 2.6s cubic-bezier(0.15, 0.6, 0.3, 1) infinite;
+    }
+    .tl-node--radar::after {
+      animation-delay: 1.3s;
+    }
+    @keyframes tl-radar {
+      0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+      70%  { opacity: 0.2; }
+      100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+    }
+
     /* Grayscale company logo, with a monogram fallback when the image is
        missing (onerror removes the <img>, leaving .tl-logo__mono). */
     .tl-logo {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 44px;
+      height: 40px;
       flex-shrink: 0;
     }
     .tl-logo__img {
       max-height: 34px;
-      max-width: 132px;
+      max-width: 140px;
       width: auto;
       object-fit: contain;
       filter: grayscale(1) contrast(0.98);
-      opacity: 0.82;
+      opacity: 0.88;
       transition: filter 0.4s ease, opacity 0.4s ease;
     }
     /* Image present → hide the monogram; image removed on error → show it. */
@@ -683,10 +870,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 44px;
-      height: 40px;
+      min-width: 40px;
+      height: 34px;
       padding: 0 12px;
-      border-radius: 10px;
+      border-radius: 8px;
       background: color-mix(in oklab, var(--text-secondary) 8%, var(--surface-raised));
       box-shadow: inset 0 0 0 1px var(--glass-border-medium);
       font-size: 0.78rem;
@@ -697,80 +884,95 @@
     }
     .tl-group.is-lit .tl-logo__img { opacity: 1; }
 
-    .tl-company {
-      margin: 0;
-      font-size: 1.08rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.2;
-    }
+    .tl-company { margin: 0; }
 
-    /* Indented roles block. Each role BRANCHES off the main trunk with a curved
-       elbow (see .tl-position::before) — one connected tree, not a parallel rail. */
+    /* Roles stack under the company head. Each branches off the center trunk. */
     .tl-positions {
       position: relative;
-      margin-top: 12px;
+      margin-top: 8px;
     }
 
     .tl-position {
       position: relative;
-      display: grid;
-      grid-template-columns: minmax(140px, 165px) minmax(0, 1fr);
-      gap: 12px 26px;
-      padding: 4px 0 22px 30px;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 2px 0 64px 22px;
+      align-items: stretch;
+    }
+    .tl-group--left .tl-position {
+      padding: 2px 22px 64px 0;
+      align-items: flex-end;
     }
     .tl-position:last-child { padding-bottom: 0; }
 
-    /* Curved branch from the trunk (timeline x≈15) out to this role's marker
-       (marker center at position-local x≈6). Drawn as a rounded quarter-elbow:
-       left+bottom borders + a full corner radius = a smooth curve that leaves
-       the trunk vertically and arrives at the marker horizontally. */
-    .tl-position::before {
-      content: "";
+    /* Organic branch from the trunk out to this role's marker.
+       SVG cubic curves (injected by js/timeline.js) peel softly off the rail
+       and ease into the marker — traced by scroll. */
+    .tl-position::before { content: none; }
+
+    .tl-branch {
       position: absolute;
-      left: -29px;               /* trunk center, relative to .tl-position */
-      top: -4px;
-      width: 35px;               /* trunk → marker center (x = 6) */
-      height: 16px;              /* branch point → marker center (y = 12) */
-      border-left: 1.5px solid color-mix(in oklab, var(--text-secondary) 26%, transparent);
-      border-bottom: 1.5px solid color-mix(in oklab, var(--text-secondary) 26%, transparent);
-      border-bottom-left-radius: 35px 16px;
+      /* Tall enough for a natural peel; bottom edge meets the marker center. */
+      top: -28px;
+      width: calc(var(--tl-gap) + 8px);
+      height: 40px;
+      overflow: visible;
       pointer-events: none;
     }
-    /* When a role lights up, its branch warms toward the glow colour. */
-    .tl-position.is-lit::before {
-      border-color: color-mix(in oklab, rgb(var(--tl-glow)) 55%, transparent);
+    .tl-group--right .tl-branch { left: calc(-1 * var(--tl-gap)); }
+    .tl-group--left .tl-branch { right: calc(-1 * var(--tl-gap)); }
+
+    .tl-branch__track,
+    .tl-branch__trace {
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+    .tl-branch__track {
+      stroke: color-mix(in oklab, var(--text-secondary) 26%, transparent);
+    }
+    .tl-branch__trace {
+      stroke: color-mix(in oklab, rgb(var(--tl-glow)) 70%, transparent);
+      filter: drop-shadow(0 0 3px rgba(var(--tl-glow), 0.45));
     }
 
-    /* Role marker sits where the branch meets it. */
+    /* Role marker sits where the branch meets it. Glows in as the trace completes. */
     .tl-pos-marker {
       position: absolute;
-      left: 0;
       top: 6px;
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: var(--surface-raised);
-      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 45%, transparent);
-      transition: box-shadow 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+      background: color-mix(
+        in oklab,
+        rgb(var(--tl-glow)) calc(var(--tl-branch-p, 0) * 100%),
+        var(--surface-raised)
+      );
+      box-shadow:
+        inset 0 0 0 1.5px color-mix(
+          in oklab,
+          rgb(var(--tl-glow)) calc(var(--tl-branch-p, 0) * 100%),
+          color-mix(in oklab, var(--text-secondary) 45%, transparent)
+        ),
+        0 0 calc(var(--tl-branch-p, 0) * 10px) calc(var(--tl-branch-p, 0) * 2px) rgba(var(--tl-glow), calc(var(--tl-branch-p, 0) * 0.6));
     }
-    .tl-position.is-lit .tl-pos-marker {
-      background: rgb(var(--tl-glow));
-      box-shadow: 0 0 10px 2px rgba(var(--tl-glow), 0.6);
-    }
+    .tl-group--right .tl-pos-marker { left: 0; }
+    .tl-group--left .tl-pos-marker { right: 0; }
 
-    .tl-pos-meta { min-width: 0; padding-top: 2px; }
+    .tl-pos-meta { min-width: 0; }
+    .tl-group--left .tl-pos-meta { text-align: right; }
     .tl-role {
       margin: 0;
-      font-size: 0.92rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: var(--text-primary);
-      line-height: 1.3;
+      line-height: 1.25;
     }
     .tl-period {
-      margin: 5px 0 0;
-      font-size: 0.78rem;
+      margin: 4px 0 0;
+      font-size: 0.82rem;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.01em;
       color: var(--text-muted);
@@ -780,55 +982,166 @@
       font-weight: 600;
     }
 
-    /* Right column — minimal card. */
-    .tl-card {
-      min-width: 0;
-      padding: 18px 20px;
-      border-radius: 14px;
-      background: color-mix(in oklab, var(--text-secondary) 5%, var(--surface-raised));
-      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    .tl-blurb {
+      margin: 2px 0 0;
+      max-width: 34em;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: var(--text-secondary);
     }
+    .tl-group--left .tl-blurb { text-align: right; }
+
+    .tl-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 10.5rem;
+      margin: 8px 0 0;
+      padding: 8px 14px;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 42%, transparent);
+      transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .tl-cta:hover {
+      background: var(--text-primary);
+      color: var(--panel-bg, var(--bg));
+      box-shadow: inset 0 0 0 1.5px var(--text-primary);
+    }
+    .tl-cta:focus-visible {
+      outline: 2px solid color-mix(in oklab, rgb(var(--tl-glow)) 70%, transparent);
+      outline-offset: 3px;
+    }
+    /* Case study links disabled for now — keep the markup/data-study wiring
+       intact so re-enabling later is just removing this attribute. */
+    .tl-cta:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 24%, transparent);
+    }
+    .tl-cta:disabled:hover {
+      background: transparent;
+      color: var(--text-primary);
+      box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-secondary) 24%, transparent);
+    }
+
+    /* Modal body (cloned from .tl-detail) */
     .tl-summary {
       margin: 0;
-      font-size: 0.92rem;
+      font-size: 0.95rem;
       line-height: 1.55;
       color: var(--text-body);
     }
-
     .tl-highlights {
       list-style: none;
-      margin: 14px 0 0;
+      margin: 16px 0 0;
       padding: 0;
     }
     .tl-hl {
       position: relative;
-      padding: 6px 0 6px 20px;
-      font-size: 0.86rem;
+      padding: 6px 0 6px 18px;
+      font-size: 0.88rem;
       line-height: 1.45;
       color: var(--text-secondary);
     }
     .tl-hl-dot {
       position: absolute;
-      left: 2px;
+      left: 1px;
       top: 12px;
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: color-mix(in oklab, rgb(var(--tl-glow)) 65%, var(--text-secondary));
       box-shadow: 0 0 6px 0 rgba(var(--tl-glow), 0.4);
     }
 
+    /* Narrow: collapse to a single left-rail column. */
     @media (max-width: 720px) {
-      .tl-position {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 10px;
+      .timeline { --tl-gap: 28px; }
+
+      /* Rail center sits at x = 8px; nodes + branch starts lock to it. */
+      .tl-rail {
+        left: 7px;
+        transform: none;
       }
+
+      .tl-group,
+      .tl-group--right,
+      .tl-group--left {
+        width: 100%;
+        margin: 0;
+        padding: 0 0 72px 32px;
+        text-align: left;
+      }
+
+      .tl-group__head,
+      .tl-group--left .tl-group__head {
+        flex-direction: row;
+      }
+
+      .tl-node,
+      .tl-group--right .tl-node,
+      .tl-group--left .tl-node {
+        left: 8px;
+        right: auto;
+        transform: translateX(-50%);
+      }
+
+      .tl-position,
+      .tl-group--left .tl-position {
+        padding: 2px 0 64px 20px;
+        align-items: stretch;
+      }
+
+      .tl-position::before,
+      .tl-group--right .tl-position::before,
+      .tl-group--left .tl-position::before {
+        content: none;
+      }
+
+      /* Branch: peel from rail (x=8) → marker center (group pad 32 + 5).
+         left = 8 − 32 = −24; width ≈ 29. Desktop branch geometry unchanged. */
+      .tl-branch,
+      .tl-group--right .tl-branch,
+      .tl-group--left .tl-branch {
+        left: -24px;
+        right: auto;
+        width: 29px;
+        /* Bottom edge meets marker center (~10px into the position). */
+        top: -26px;
+        height: 36px;
+      }
+
+      .tl-pos-marker,
+      .tl-group--right .tl-pos-marker,
+      .tl-group--left .tl-pos-marker {
+        left: 0;
+        right: auto;
+        top: 5px;
+      }
+
+      .tl-pos-meta,
+      .tl-group--left .tl-pos-meta { text-align: left; }
+
+      .tl-blurb,
+      .tl-group--left .tl-blurb { text-align: left; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .tl-node-dot,
       .tl-pos-marker,
       .tl-logo__img { transition: none; }
+      .tl-node--radar::before,
+      .tl-node--radar::after { animation: none; opacity: 0; }
     }
 
     /* Experiments */
@@ -1430,6 +1743,20 @@
       height: 135%;
       pointer-events: none;
       transform: translateX(-50%);
+      /* Blur and animation stay on this outer compositor so the masked surface,
+         shimmer, and below-fold bleed remain one soft, moving atmosphere. */
+      filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
+      opacity: calc(0.85 + var(--theme-blend) * 0.15);
+      animation: heroGlowDrift 13s ease-in-out infinite, heroGlowShimmerPulse 6.2s ease-in-out infinite;
+    }
+
+    .hero-glow__surface {
+      position: absolute;
+      inset: 0;
+      /* Shape only the color source, then let the parent blur soften its edge.
+         The crest sits ~48px above the viewport sides, implying a huge sphere. */
+      -webkit-mask-image: radial-gradient(ellipse 62% 85% at 50% 115%, #000 0 96%, transparent 100%);
+      mask-image: radial-gradient(ellipse 62% 85% at 50% 115%, #000 0 96%, transparent 100%);
       /* Five separate colored blobs (blue/teal/purple/violet/pink) staggered
          left-to-right and composited with `screen`, instead of one gradient
          sweeping through all the hues in sequence. Sequential stops mixed
@@ -1450,12 +1777,6 @@
          (--theme-blend → 1) resolves to 1× / full opacity, exactly as before.
          Lower blur (vs. the original 28px) plus the tighter per-blob falloff
          above give the limb a more distinct edge instead of a wide soft fade. */
-      filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
-      opacity: calc(0.85 + var(--theme-blend) * 0.15);
-      /* Two animations on different periods (13s / 6.2s) so the drift and the
-         shimmer never fall into lockstep — keeps the aurora feeling like it's
-         rippling rather than mechanically looping. */
-      animation: heroGlowDrift 13s ease-in-out infinite, heroGlowShimmerPulse 6.2s ease-in-out infinite;
     }
 
     /* Extends the fade further down into the content below the seam, so the
@@ -1489,20 +1810,16 @@
     .hero-glow::before {
       content: '';
       position: absolute;
-      top: 6%;
-      left: 10%;
-      right: 10%;
-      height: 2px;
-      border-radius: 999px;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        transparent 30%,
-        color-mix(in oklab, #fff 75%, transparent) 50%,
-        transparent 70%,
-        transparent 100%
-      );
-      background-size: 260% 100%;
+      top: 33%;
+      left: 8%;
+      right: 8%;
+      height: 18%;
+      border-top: 2px solid color-mix(in oklab, #fff 75%, transparent);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      -webkit-mask-image: linear-gradient(90deg, transparent 24%, #000 50%, transparent 76%);
+      mask-image: linear-gradient(90deg, transparent 24%, #000 50%, transparent 76%);
+      -webkit-mask-size: 260% 100%;
+      mask-size: 260% 100%;
       opacity: calc(0.4 + var(--theme-blend) * 0.3);
       animation: heroGlowShimmer 7.5s ease-in-out infinite alternate;
     }
@@ -1528,8 +1845,14 @@
     }
 
     @keyframes heroGlowShimmer {
-      0%   { background-position: -40% 0; }
-      100% { background-position: 140% 0; }
+      0% {
+        -webkit-mask-position: -40% 0;
+        mask-position: -40% 0;
+      }
+      100% {
+        -webkit-mask-position: 140% 0;
+        mask-position: 140% 0;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1635,7 +1958,7 @@
     }
 
     .intro-greeting-life {
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
       font-size: clamp(22px, 3.6vw, 32px);
       font-weight: 700;
       color: var(--text-primary);
@@ -2028,11 +2351,11 @@
 
     /* Heading */
     h1, h2, h3, h4, h5, h6 {
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
     }
 
     h1 {
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
       font-size: clamp(1.4rem, 3vw, 1.6rem);
       font-weight: 800;
       color: var(--text-primary);
@@ -2568,7 +2891,7 @@
        their overlaps brighten into warm in-between tones instead of the
        muddy blend a single multi-stop gradient produces. Retints the hero
        glow away from the aurora pastels. */
-    body.starfield-mode .hero-glow {
+    body.starfield-mode .hero-glow__surface {
       background:
         radial-gradient(ellipse 46% 96% at 14% 100%, rgba(222,190,148,0.55) 0%, transparent 75%),
         radial-gradient(ellipse 46% 96% at 32% 100%, rgba(214,142,74,0.5) 0%, transparent 75%),
@@ -2576,6 +2899,8 @@
         radial-gradient(ellipse 46% 96% at 68% 100%, rgba(196,108,96,0.45) 0%, transparent 75%),
         radial-gradient(ellipse 46% 96% at 86% 100%, rgba(150,96,104,0.4) 0%, transparent 75%);
       background-blend-mode: screen;
+    }
+    body.starfield-mode .hero-glow {
       filter: blur(26px) saturate(1);
     }
     body.starfield-mode .hero-glow::after {
@@ -2688,7 +3013,7 @@
     body.starfield-mode .clock-hero-wrap .intro-greeting-life {
       justify-content: flex-start;
       gap: 18px;
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
       font-size: clamp(24px, 5vw, 34px);
       font-weight: 400;
       letter-spacing: -0.01em;
@@ -2727,14 +3052,18 @@
     /* ── Starfield lockup: avatar LEFT of the copy ────────────────────────────
        Lay the wrapper out as a single centred row: the enlarged avatar on the
        left, the "Hi, I'm Luke! …" paragraph on the right. Overrides the stacked
-       (avatar-above-copy) rules above, whose widths/margins we neutralise here. */
+       (avatar-above-copy) rules above, whose widths/margins we neutralise here.
+       Shared --hero-copy-* tokens keep avatar height = exactly 3 text lines. */
     body.starfield-mode:not(.work-mode) .hero-lockup {
+      --hero-copy-size: clamp(19px, 3.4vw, 26px);
+      --hero-copy-lh: 1.6;
+      --hero-lines: 3;
       display: flex;
       flex-direction: row;
       align-items: center;
       justify-content: center;
       gap: clamp(12px, 1.6vw, 22px);
-      width: 620px;
+      width: 780px;
       max-width: calc(100vw - 40px);
       margin: 0 auto;
     }
@@ -2744,43 +3073,64 @@
       width: auto;
       flex: 0 0 auto;
       margin: 0;
+      align-self: center;
     }
     /* Copy column: take the remaining width, stay left-justified beside the avatar. */
     body.starfield-mode:not(.work-mode) .hero-lockup .intro {
       width: auto;
       flex: 0 1 auto;
       align-items: flex-start;
+      align-self: center;
+      margin: 0;
+      padding: 0;
+    }
+    /* Three-line lockup. The description has no manual line breaks — natural
+       word-wrap at this measure lands it on 3 lines that fill the width evenly. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy {
+      font-size: var(--hero-copy-size);
+      line-height: var(--hero-copy-lh);
+      width: 44ch;
+      max-width: 100%;
       margin: 0;
     }
-    /* Constrain the measure so the "Hi, I'm Luke! …" paragraph wraps to three
-       lines (~44 chars/line for the ~133-char copy — Satoshi fits ~1.5 chars per
-       ch, so 36ch ≈ 50 chars). Tune this if the copy ever changes length. */
-    body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy {
-      font-size: clamp(19px, 3.4vw, 26px);
-      width: 32ch;
-      max-width: 100%;
+    /* Kill the base .description line-height (1.6) so every line shares the
+       lockup's leading — otherwise the block grows taller than the avatar. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy .description,
+    body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy .intro-greeting {
+      font-size: inherit;
+      line-height: inherit;
     }
     /* Lock the measure on .intro-text (not just the copy) so the AI answer
        that takes the copy's place wraps at the same width — without this the
        column shrink-wraps the answer and it renders narrower. The font-size
-       here exists only so 32ch resolves identically; .intro-copy re-declares
-       the same clamp for its own text. */
+       here exists only so 44ch resolves identically; .intro-copy re-declares
+       the same size for its own text. */
     body.starfield-mode:not(.work-mode) .hero-lockup .intro-text {
-      font-size: clamp(19px, 3.4vw, 26px);
-      width: 32ch;
+      font-size: var(--hero-copy-size);
+      line-height: var(--hero-copy-lh);
+      width: 44ch;
       max-width: 100%;
     }
-    /* Match the avatar's height to those three text lines so its top and bottom
-       align with the copy and the two read as equal-height. The copy's font
-       size is clamp(19px,3.4vw,26px) and line-height gives ~3 lines, so we tie
-       the avatar to 4.8 × font-size; aspect-ratio keeps it square at that height. */
+    /* Avatar = exactly 3 line-boxes tall so its top/bottom flush with the copy. */
     body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-bar .avatar--inline {
-      height: calc(4.8 * clamp(19px, 3.4vw, 26px));
-      width: auto;
-      aspect-ratio: 1 / 1;
+      height: calc(var(--hero-lines) * var(--hero-copy-lh) * var(--hero-copy-size));
+      width: calc(var(--hero-lines) * var(--hero-copy-lh) * var(--hero-copy-size));
+      aspect-ratio: auto;
+      margin: 0;
+      vertical-align: top;
+    }
+    /* Greeting-life is just a flex shell for the photo now — don't let its
+       display-size font inflate em-based leftovers around the avatar. */
+    body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-life {
+      font-size: var(--hero-copy-size);
+      line-height: 1;
+      gap: 0;
+    }
+    body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-bar {
+      line-height: 0;
     }
 
-    /* Below the width where the avatar + 3-line (42ch) copy fit side-by-side,
+    /* Below the width where the avatar + 3-line (44ch) copy fit side-by-side,
        fall back to the stacked layout so the copy keeps a readable measure and
        the height-match assumption (exactly 3 lines) still holds. */
     @media (max-width: 1024px) {
@@ -3842,7 +4192,7 @@
     }
     .sm-row:hover { background: var(--hover-fill-soft); }
     .sm-row-title {
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
       font-size: 0.95rem;
       font-weight: 600;
       color: var(--text-primary);
@@ -4697,7 +5047,7 @@
     }
 
     .book-cover-author {
-      font-family: 'Satoshi', sans-serif;
+      font-family: 'Geomanist', sans-serif;
       font-size: 8px;
       font-weight: 600;
       letter-spacing: 0.1em;
@@ -4718,7 +5068,7 @@
       padding: 4px 0;
     }
     .book-cover-series {
-      font-family: 'Satoshi', sans-serif;
+      font-family: 'Geomanist', sans-serif;
       font-size: 7px;
       font-weight: 400;
       letter-spacing: 0.05em;
@@ -4731,7 +5081,7 @@
       text-align: center;
     }
     .book-cover-title {
-      font-family: 'Satoshi', sans-serif;
+      font-family: 'Geomanist', sans-serif;
       font-size: 13px;
       font-weight: 700;
       line-height: 1.25;
@@ -4883,14 +5233,14 @@
     #bookModalStars { display: flex; gap: 4px; }
     #bookModalStars svg { width: 22px; height: 22px; }
     #bookModalTitle {
-      font-family: 'Satoshi', sans-serif;
+      font-family: 'Geomanist', sans-serif;
       font-size: 26px;
       font-weight: 700;
       color: var(--text-primary);
       line-height: 1.2;
     }
     #bookModalDesc {
-      font-family: 'Satoshi', sans-serif;
+      font-family: 'Geomanist', sans-serif;
       font-size: 16px;
       font-weight: 400;
       color: var(--text-body);
@@ -4920,7 +5270,7 @@
       justify-content: center;
       padding: 12px 16px;
       border-radius: 12px;
-      font-family: 'Satoshi', sans-serif;
+      font-family: 'Geomanist', sans-serif;
       font-size: 14px;
       font-weight: 600;
       text-decoration: none;
@@ -5505,7 +5855,7 @@
     /* ── Headline lines ───────────────────────────────────── */
 
     .intro-line {
-      font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+      font-family: 'Geomanist', system-ui, -apple-system, sans-serif;
       font-weight: 600;
       font-size: clamp(1.2rem, 3vw, 1.85rem);
       color: var(--text-primary);
@@ -5666,7 +6016,7 @@
     /* ── Enter button ─────────────────────────────────────── */
 
     .intro-enter-btn {
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
       font-weight: 500;
       font-size: 0.78rem;
       letter-spacing: 0.07em;
@@ -5698,7 +6048,7 @@
     /* ── Final headline ───────────────────────────────────── */
 
     .intro-final-headline {
-      font-family: 'Satoshi', system-ui, sans-serif;
+      font-family: 'Geomanist', system-ui, sans-serif;
       font-weight: 400;
       font-size: clamp(1rem, 2.4vw, 1.45rem);
       color: var(--text-muted);
@@ -6174,8 +6524,9 @@ a.portfolio-img-item:hover img {
    window with a read line HERO_RECEDE below its top edge, sat near the photo
    top. The first 4 lines read DOWN from there behind a subtle bottom fade;
    already-read lines rise into the recede zone above the read line, where the
-   top mask fades them off (JS shrinks them to match). Keep --hero-recede in
-   sync with HERO_RECEDE_EM in main.js. */
+   top mask fades them off (JS shrinks them to match). At max scroll the last
+   4 lines settle centered on the photo (not pinned to the photo top). Keep
+   --hero-recede in sync with HERO_RECEDE_EM in main.js. */
 @media (min-width: 1025px) {
   body.starfield-mode:not(.work-mode) .intro-text { position: relative; }
   body.starfield-mode:not(.work-mode) .intro-text.is-answering .intro-copy {
@@ -6191,12 +6542,14 @@ a.portfolio-img-item:hover img {
   }
   body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing {
     --hero-recede: 4.5em;            /* recede zone above the read line (3 lines) */
+    --hero-band: 6em;                /* 4 lines at line-height 1.5 */
+    --hero-photo-half: 2.2em;        /* read line → photo center (matches transform) */
     --hero-window: min(15em, 44vh);
     height: var(--hero-window);
     max-height: none;
     /* Read line = window top + --hero-recede. Offset the window up so the read
-       line sits ~photo top (photo-center − ~2.2em). */
-    transform: translateY(calc(-1 * var(--hero-recede) - 2.2em));
+       line sits ~photo top (photo-center − --hero-photo-half). */
+    transform: translateY(calc(-1 * var(--hero-recede) - var(--hero-photo-half)));
     /* Faded above the read line (read lines shrink + fade off the top), solid
        through the 4-line reading band, then a subtle fade below = the "there's
        more, scroll" signal. Fixed to the window, so scrolling pulls read lines
@@ -6205,24 +6558,29 @@ a.portfolio-img-item:hover img {
       transparent 0,
       rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
       #000 var(--hero-recede),
-      #000 calc(var(--hero-recede) + 6em),
-      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + 8.5em),
+      #000 calc(var(--hero-recede) + var(--hero-band)),
+      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + var(--hero-band) + 2.5em),
       transparent var(--hero-window));
             mask-image: linear-gradient(to bottom,
       transparent 0,
       rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
       #000 var(--hero-recede),
-      #000 calc(var(--hero-recede) + 6em),
-      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + 8.5em),
+      #000 calc(var(--hero-recede) + var(--hero-band)),
+      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + var(--hero-band) + 2.5em),
       transparent var(--hero-window));
   }
   /* Padding-top = the recede zone, so at scrollTop 0 the first line lands on the
-     read line (nothing above it yet). Bottom tail-room lets the last lines
-     scroll up to the read line so the whole answer can be read; sized to the
-     space below the band (window − recede − 6em band). */
+     read line. Padding-bottom (not margin — end margins often don't extend
+     scroll height) lets the last 4 lines rise until their block is vertically
+     centered on the photo: band center = read line + --hero-photo-half. */
   body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing .hero-answer__body {
     padding-top: var(--hero-recede);
-    margin-bottom: calc(var(--hero-window) - var(--hero-recede) - 6em);
+    padding-bottom: calc(
+      var(--hero-window)
+      - var(--hero-recede)
+      - var(--hero-photo-half)
+      - (var(--hero-band) / 2)
+    );
   }
 }
 
@@ -6582,23 +6940,59 @@ body.chat-overlay-open {
   background: rgba(255, 170, 60, 0.22);
 }
 
-@keyframes chat-dot-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-4px); opacity: 1; }
+/* AICSS Thinking State — shimmering label before the first token */
+.chat-row--thinking {
+  padding: 4px 2px;
 }
 
-.chat-dot {
+.chat-thinking {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: linear-gradient(
+    90deg,
+    #a1a1a1 0%, #a1a1a1 30%,
+    rgba(161, 161, 161, 0.45) 45%, rgba(161, 161, 161, 0.45) 55%,
+    #a1a1a1 70%, #a1a1a1 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: chat-thinking-shine 2.25s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+@keyframes chat-thinking-shine {
+  0%, 18% { background-position: 100% 0; }
+  82%, 100% { background-position: 0% 0; }
+}
+
+/* AICSS Streaming Text — solid caret while revealing, blinks only if left idle */
+.chat-stream-caret {
   display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin: 0 2px;
-  border-radius: 50%;
-  background: var(--text-muted, #888);
-  animation: chat-dot-bounce 1.2s infinite ease-in-out;
+  width: 8px;
+  height: 1.05em;
+  margin-left: 2px;
+  background: currentColor;
+  vertical-align: text-bottom;
+  animation: chat-caret-blink 1s step-end infinite;
 }
 
-.chat-dot:nth-child(2) { animation-delay: 0.15s; }
-.chat-dot:nth-child(3) { animation-delay: 0.30s; }
+.chat-stream-caret--steady {
+  animation: none;
+  opacity: 1;
+}
+
+@keyframes chat-caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-thinking { animation: none; color: #a1a1a1; -webkit-text-fill-color: #a1a1a1; background: none; }
+  .chat-stream-caret { animation: none; }
+}
 
 /* ── Chat input bar — docked at the bottom of #chatOverlayPanel ── */
 #chatInputBar {
