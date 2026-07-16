@@ -11,7 +11,7 @@ import { createServer } from 'http';
 import { readFile } from 'fs/promises';
 import { extname } from 'path';
 import { URL } from 'url';
-import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest } from '../v1/js/build/manifest-builder.js';
+import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest, buildEnergyManifest } from '../v1/js/build/manifest-builder.js';
 import chatHandler from '../api/chat.js';
 import chatInsightsHandler from '../api/chat-insights.js';
 
@@ -34,6 +34,7 @@ const soundsDir = join(v1Dir, 'sounds');
 const galleryDir = join(v1Dir, 'gallery');
 const coversDir = join(v1Dir, 'covers');
 const flightsPath = join(rootDir, 'flights.md');
+const energyPath = join(rootDir, 'energy.md');
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT) || 3000;
 const devPublicHost = HOST === '127.0.0.1' || HOST === '0.0.0.0' ? 'localhost' : HOST;
@@ -183,6 +184,19 @@ export default ${JSON.stringify(flights, null, 2)};
   console.log(`\x1b[32m✓\x1b[0m Rebuilt flights.js (${flights.length} flights)`);
 }
 
+function buildEnergy() {
+  const energy = buildEnergyManifest(energyPath);
+  const content = `/**
+ * Energy Board Manifest (auto-generated)
+ * Run 'node build/build.js' to regenerate after editing energy.md
+ */
+
+export default ${JSON.stringify(energy, null, 2)};
+`;
+  writeFileSync(join(rootDir, 'energy.js'), content);
+  console.log(`\x1b[32m✓\x1b[0m Rebuilt energy.js (${energy.length} cards)`);
+}
+
 const v1Mode = process.argv.includes('--v1');
 
 if (v1Mode) {
@@ -259,6 +273,15 @@ if (existsSync(flightsPath)) {
   watch(flightsPath, () => {
     console.log(`\x1b[90m  Changed: flights.md\x1b[0m`);
     buildFlights();
+  });
+}
+
+if (existsSync(energyPath)) {
+  buildEnergy();
+  console.log(`\x1b[90m◉ Watching energy.md for changes...\x1b[0m`);
+  watch(energyPath, () => {
+    console.log(`\x1b[90m  Changed: energy.md\x1b[0m`);
+    buildEnergy();
   });
 }
 
