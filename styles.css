@@ -7244,9 +7244,9 @@ body.places-mode .topBar-actions,
   min-width: 0;
   padding: 16px 14px;
   border-radius: 16px;
-  /* Soft accent tint at the top, fading into a near-neutral wash at the bottom. */
+  /* Soft accent tint at the bottom, fading into a near-neutral wash at the top. */
   background: linear-gradient(
-    to bottom,
+    to top,
     color-mix(in oklab, var(--col-accent) 14%, var(--surface-raised)),
     color-mix(in oklab, var(--col-accent) 3%, var(--surface-raised))
   );
