@@ -505,7 +505,8 @@ export function buildFlightsManifest(flightsPath) {
  * Build energy board manifest from energy.md
  * Parses "## Column Heading" sections into a flat list of goal cards for the
  * homepage "energy investment portfolio" Kanban board.
- * Line format: - Icon | Title | Description   (icon + description optional)
+ * Line format: - icon | Title | Description   (icon + description optional)
+ * Icon is a Lucide icon name (e.g. brain, camera) rendered as SVG on the board.
  * A trailing "(x/y)" in the title is pulled out as a progress fraction.
  * @param {string} energyPath - Path to energy.md
  * @returns {Array} Array of {column, icon, title, description, progress} objects
