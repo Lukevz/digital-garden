@@ -7236,11 +7236,11 @@ body.places-mode .topBar-actions,
   min-width: 0;
   padding: 16px 14px;
   border-radius: 16px;
-  /* Fade from the former accent-border color at the top into a light wash at the bottom. */
+  /* Fade from a soft accent tint at the top into a light wash at the bottom. */
   background: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--col-accent) 55%, var(--surface-raised)),
-    color-mix(in oklab, var(--col-accent) 6%, var(--surface-raised))
+    color-mix(in oklab, var(--col-accent) 28%, var(--surface-raised)),
+    color-mix(in oklab, var(--col-accent) 4%, var(--surface-raised))
   );
   box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
