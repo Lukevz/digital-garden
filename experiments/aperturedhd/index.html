@@ -43,10 +43,24 @@
     </article>
   </main>
 
-  <div class="focus-layer" aria-hidden="true">
-    <div class="blur-zone blur-zone--top"></div>
-    <div class="focus-frame"></div>
-    <div class="blur-zone blur-zone--bottom"></div>
+  <div class="focus-layer">
+    <div class="blur-zone blur-zone--top" aria-hidden="true"></div>
+    <div class="focus-frame" aria-hidden="true"></div>
+    <div
+      class="focus-grip"
+      id="focusGrip"
+      role="slider"
+      tabindex="0"
+      aria-label="Focus region vertical position"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="40"
+      aria-valuetext="Focus region near the upper center of the screen"
+    >
+      <span></span>
+      <span></span>
+    </div>
+    <div class="blur-zone blur-zone--bottom" aria-hidden="true"></div>
   </div>
 
   <div class="dial-wrap">

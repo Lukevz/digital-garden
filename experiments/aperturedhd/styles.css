@@ -6,6 +6,7 @@
   --ink: #171714;
   --muted: #77736b;
   --focus-height: 38vh;
+  --focus-center: 40vh;
   --feather: 96px;
   --dial-rotation: -8deg;
 }
@@ -152,36 +153,84 @@ blockquote {
   position: absolute;
   left: 0;
   width: 100%;
-  background: rgba(244, 242, 237, 0.12);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-  will-change: height;
+  background: rgba(244, 242, 237, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  will-change: height, top;
 }
 
 .blur-zone--top {
   top: 0;
-  height: calc((100vh - var(--focus-height)) / 2 + var(--feather));
+  height: calc(var(--focus-center) - var(--focus-height) / 2);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
 }
 
 .blur-zone--bottom {
   bottom: 0;
-  height: calc((100vh - var(--focus-height)) / 2 + var(--feather));
+  top: calc(var(--focus-center) + var(--focus-height) / 2);
   -webkit-mask-image: linear-gradient(to top, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
   mask-image: linear-gradient(to top, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
 }
 
 .focus-frame {
   position: absolute;
-  top: 50%;
+  top: var(--focus-center);
   left: 0;
   width: 100%;
   height: var(--focus-height);
   transform: translateY(-50%);
-  border-top: 1px solid rgba(23, 23, 20, 0.045);
-  border-bottom: 1px solid rgba(23, 23, 20, 0.045);
-  transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  border-top: 1px solid rgba(23, 23, 20, 0.035);
+  border-bottom: 1px solid rgba(23, 23, 20, 0.035);
+  transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1), top 160ms ease-out;
+}
+
+.focus-grip {
+  position: absolute;
+  z-index: 1;
+  top: var(--focus-center);
+  left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 30px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border-radius: 9px;
+  outline: none;
+  background: rgba(244, 242, 237, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(23, 23, 20, 0.11);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: top 160ms ease-out, opacity 180ms ease;
+}
+
+.focus-grip span {
+  width: 10px;
+  height: 1px;
+  background: rgba(23, 23, 20, 0.48);
+}
+
+.focus-grip:hover,
+.focus-grip.is-dragging {
+  background: rgba(244, 242, 237, 0.94);
+}
+
+.focus-grip:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--ink),
+    0 0 0 2px var(--paper),
+    0 0 0 3px var(--ink);
+}
+
+.focus-layer.is-positioning .focus-frame,
+.focus-layer.is-positioning .focus-grip {
+  transition: none;
 }
 
 .dial-wrap {
@@ -372,6 +421,7 @@ body.has-adjusted .dial-hint {
   }
 
   .focus-frame,
+  .focus-grip,
   .dial-scale,
   .dial-hint {
     transition: none;
