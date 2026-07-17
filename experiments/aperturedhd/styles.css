@@ -362,7 +362,7 @@ body.has-adjusted .dial-hint {
   }
 
   .dial-hint {
-    right: 14px;
+    display: none;
   }
 }
 
