@@ -20,6 +20,9 @@ Thumbs.db
 *.swo
 *~
 
+# Obsidian vault workspace config (personal, machine-specific)
+content/second-brain/.obsidian/
+
 # Logs
 *.log
 npm-debug.log*

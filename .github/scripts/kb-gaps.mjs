@@ -77,8 +77,9 @@ function buildBody(gaps, prev = { order: [], checked: {} }) {
     '',
     '### How to answer (from Claude Code mobile)',
     '1. Open this repo in the code tab and say: *"Answer these KB gaps."*',
-    '2. Claude creates a branch, writes your answers into the right `content/about/*.md` file(s), and opens a PR.',
-    `3. For each gap it answers, Claude adds a \`Resolves-KB-Gap: <key>\` line to the PR description. When the PR merges, that gap is auto-cleared from the to-do list.`,
+    '2. Claude creates a branch and writes your answers as notes in the `content/second-brain/` vault, following its `AGENTS.md` conventions (one claim per note, first-person voice, inline wikilinks to a MOC and a sibling).',
+    '3. Claude re-runs `npm run index` to regenerate the committed `src/data/brain-index.json` so the chat can actually retrieve the new notes, then opens a PR.',
+    `4. For each gap it answers, Claude adds a \`Resolves-KB-Gap: <key>\` line to the PR description. When the PR merges, that gap is auto-cleared from the to-do list.`,
     '',
     '---',
     ''

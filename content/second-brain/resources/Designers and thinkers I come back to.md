@@ -7,6 +7,6 @@ type: source
 status: settled
 ---
 
-Designers I admire: Dan Petty, Tobias van Schneider, Tobias Renstrom.
+Designers I admire: Dan Petty, Tobias van Schneider, Tobias Renstrom, and I'm a huge fan of Ryo Lu.
 
 Creators and thinkers: Ali Abdaal for the productivity mindset, and Olivier from Ultra Links. Then the classic answers: Steve Jobs, Bob Iger, Ed Catmull. Catmull's [[Creativity Inc and The Speed of Trust are my two book recommendations|Creativity, Inc.]] is required reading. Honestly there are probably hundreds I could list, but those are the ones I come back to most. The Apple admiration thread continues at [[I have a soft spot for skeuomorphism]]. Hub: [[Design MOC]].

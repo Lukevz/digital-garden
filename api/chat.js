@@ -13,7 +13,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { kv } from '@vercel/kv';
-import { searchNotes, countNotes, loadIndex } from './lib/retrieve.js';
+import { searchNotes, countNotes, loadIndex } from './_lib/retrieve.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
