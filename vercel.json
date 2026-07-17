@@ -10,12 +10,10 @@
   ],
   "functions": {
     "api/chat.js": {
-      "memory": 1024,
-      "maxDuration": 10,
-      "includeFiles": "{content/about/**,src/data/now.json}"
+      "maxDuration": 30,
+      "includeFiles": "{content/about/**,src/data/now.json,src/data/brain-index.json}"
     },
     "api/**/*.js": {
-      "memory": 1024,
       "maxDuration": 10
     }
   }

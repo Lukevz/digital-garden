@@ -501,3 +501,72 @@ export function buildFlightsManifest(flightsPath) {
   return flights;
 }
 
+/**
+ * Build energy board manifest from energy.md
+ * Parses "## Column Heading" sections into a flat list of goal cards for the
+ * homepage "energy investment portfolio" Kanban board.
+ * Line format: - icon | Title | Description   (icon + description optional)
+ * Icon is a Lucide icon name (e.g. brain, camera) rendered as SVG on the board.
+ * A trailing "(x/y)" in the title is pulled out as a progress fraction.
+ * @param {string} energyPath - Path to energy.md
+ * @returns {Array} Array of {column, icon, title, description, progress} objects
+ */
+export function buildEnergyManifest(energyPath) {
+  if (!existsSync(energyPath)) {
+    console.warn('energy.md not found, skipping energy manifest');
+    return [];
+  }
+
+  const COLUMN_MAP = {
+    'BUCKET LIST': 'bucket',
+    'ACTIVE': 'active',
+    'PASSIVE': 'passive',
+    'COMPLETED': 'done'
+  };
+
+  const content = readFileSync(energyPath, 'utf-8');
+  const cards = [];
+  let currentColumn = null;
+
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    const headingMatch = trimmed.match(/^##\s+(.+)$/);
+    if (headingMatch) {
+      currentColumn = COLUMN_MAP[headingMatch[1].trim().toUpperCase()] || null;
+      continue;
+    }
+
+    if (!trimmed.startsWith('-') || !currentColumn) continue;
+
+    const listItem = trimmed.substring(1).trim();
+    if (!listItem) continue;
+
+    const parts = listItem.split(/\s*\|\s*/).map(p => p.trim());
+    let icon = '';
+    let title = '';
+    let description = '';
+
+    if (parts.length >= 2) {
+      icon = parts[0];
+      title = parts[1];
+      description = parts.slice(2).join(' | ');
+    } else {
+      title = parts[0];
+    }
+    if (!title) continue;
+
+    let progress = null;
+    const progressMatch = title.match(/\(\s*(\d+)\s*\/\s*(\d+)\s*\)\s*$/);
+    if (progressMatch) {
+      progress = { current: parseInt(progressMatch[1], 10), total: parseInt(progressMatch[2], 10) };
+      title = title.slice(0, progressMatch.index).trim();
+    }
+
+    cards.push({ column: currentColumn, icon, title, description, progress });
+  }
+
+  return cards;
+}
+

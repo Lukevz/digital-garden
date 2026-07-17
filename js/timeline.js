@@ -23,6 +23,15 @@
     lightables.push({ el: pos.querySelector('.tl-pos-marker') || pos, group: pos });
   });
 
+  // Branches: the trace path draws in (0 → 1) as the beam sweeps down over
+  // the branch's own span, so the line visibly "grows" from rail to marker
+  // right as that role settles into view.
+  const branches = [];
+  timeline.querySelectorAll('.tl-position').forEach(pos => {
+    const branch = pos.querySelector('.tl-branch');
+    if (branch) branches.push({ pos, branch });
+  });
+
   // Beam sits at 52% of the viewport height — a touch below center so items
   // light up right as they settle into the comfortable reading zone.
   const BEAM_RATIO = 0.52;
@@ -49,6 +58,13 @@
         item.el.classList.toggle('is-lit', lit);
         if (item.group) item.group.classList.toggle('is-lit', lit);
       }
+    }
+
+    for (const { pos, branch } of branches) {
+      const rect = branch.getBoundingClientRect();
+      const top = rect.top + window.scrollY;
+      const p = rect.height ? (beamY - top) / rect.height : 0;
+      pos.style.setProperty('--tl-branch-p', Math.max(0, Math.min(1, p)).toFixed(3));
     }
   }
 

@@ -26,7 +26,6 @@
   <link rel="preconnect" href="https://api.mapbox.com" crossorigin>
   <link rel="dns-prefetch" href="https://events.mapbox.com">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
   <link rel="stylesheet" href="/styles.css">
@@ -287,9 +286,7 @@
   <!-- Intro -->
   <div class="intro">
     <div class="intro-text">
-      <h1 class="intro-copy">
-        <span class="intro-headline-content"><span class="intro-greeting">Hi, I'm Luke!</span></span><span class="description">I'm a product designer, digital tinker, and systems thinker. Currently building software for veterinarians at Instinct.</span>
-      </h1>
+      <h1 class="intro-copy"><span class="intro-headline-content"><span class="intro-greeting">Hi, I'm Luke!</span></span><span class="description">I'm a product designer, digital tinker, and systems thinker. Currently building software for veterinarians at Instinct.</span></h1>
     </div>
 
     <!-- ClockClock-style dial hero: a fixed dot-matrix of dials rotates its
@@ -435,11 +432,13 @@
          content appears to accelerate up through the gradient — a transition
          "event horizon" moment rather than a static divider. -->
     <div class="hero-glow-track" aria-hidden="true">
-      <div class="hero-glow"></div>
+      <div class="hero-glow">
+        <div class="hero-glow__surface"></div>
+      </div>
     </div>
     <div class="below-fold-inner home-feed">
 
-      <section class="home-section" id="homeCaseStudies" aria-labelledby="homeCaseStudiesTitle">
+      <section class="home-section" id="homeCaseStudies" aria-labelledby="homeCaseStudiesTitle" hidden>
         <header class="home-section-header">
           <span class="home-section-icon" data-clone-icon="Case Studies" aria-hidden="true"></span>
           <h2 class="home-section-title" id="homeCaseStudiesTitle">Case Studies</h2>
@@ -449,88 +448,111 @@
         </div>
       </section>
 
-      <!-- TIMELINE DISABLED FOR NOW — remove `hidden` here + uncomment the js/timeline.js script tag below to restore. -->
-      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle" hidden>
+      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle">
         <header class="home-section-header">
           <span class="home-section-icon" data-clone-icon="Career" aria-hidden="true"></span>
-          <h2 class="home-section-title" id="homeTimelineTitle">Experience</h2>
+          <h2 class="home-section-title" id="homeTimelineTitle">Where I’ve Shipped</h2>
         </header>
 
-        <!-- Vertical career timeline. The left rail is a "live" scroll indicator:
-             js/timeline.js fills .tl-rail__fill to your viewport-center position
-             and adds .is-lit to each node/highlight dot the beam has passed. -->
+        <!-- Centered career timeline. Companies alternate left/right (roles stay
+             with their company). js/timeline.js fills .tl-rail__fill to the
+             viewport-center beam and lights nodes the beam has passed. -->
         <div class="timeline" id="careerTimeline">
           <div class="tl-rail" aria-hidden="true">
             <div class="tl-rail__fill" id="tlRailFill"></div>
           </div>
 
           <!-- 2025 — Instinct Science -->
-          <section class="tl-group" aria-label="Instinct Science">
+          <section class="tl-group tl-group--right" aria-label="Instinct Science">
             <div class="tl-group__head">
-              <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
+              <div class="tl-node tl-node--radar" aria-hidden="true"><span class="tl-node-dot"></span></div>
               <span class="tl-logo">
-                <img class="tl-logo__img" src="/images/logos/instinct.svg" alt="" loading="lazy" onerror="this.remove()">
-                <span class="tl-logo__mono" aria-hidden="true">IS</span>
+                <img class="tl-logo__img" src="/images/logos/instinct.svg" alt="Instinct Science" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono">Instinct</span>
               </span>
-              <h3 class="tl-company">Instinct Science</h3>
+              <h3 class="tl-company sr-only">Instinct Science</h3>
             </div>
             <div class="tl-positions">
               <article class="tl-position">
+                <svg class="tl-branch" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <path class="tl-branch__track" pathLength="100" d="M0,0 C0,60 60,97 100,97"/>
+                  <path class="tl-branch__trace" pathLength="100" d="M0,0 C0,60 60,97 100,97"/>
+                </svg>
                 <span class="tl-pos-marker" aria-hidden="true"></span>
+                <figure class="tl-media" aria-hidden="true"><div class="tl-media__ph"></div></figure>
                 <div class="tl-pos-meta">
                   <p class="tl-role">Senior Product Designer</p>
                   <p class="tl-period">Oct 2025 – <span class="tl-now">Present</span></p>
                 </div>
-                <div class="tl-card">
-                  <p class="tl-summary">Now designing veterinary software that clinical teams rely on every day. Blending deep product thinking with hands-on craft to make high-stakes, complex workflows feel effortless.</p>
+                <p class="tl-blurb">Lead designer on veterinary software — clinical product work plus the design system that keeps a small team shipping at product speed.</p>
+                <button type="button" class="tl-cta" disabled>View Case Study</button>
+                <div class="tl-detail" hidden>
+                  <p class="tl-summary">Lead designer on Instinct’s veterinary software, working close to the live product. Alongside day-to-day product design I own the internal design system and a code-prototyping workflow that keeps iteration fast — so craft and delivery don’t trade off against each other.</p>
                   <ul class="tl-highlights">
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Driving end-to-end product design for core clinical workflows</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Working closely with users to simplify high-stakes tasks</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Shaping the design foundations of a fast-growing product</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Lead designer across Instinct’s core veterinary product surfaces</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Own the internal design system that underpins product UI</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Built a code-prototyping workflow that compressed iteration from weeks to hours</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Focus: cut admin burden by meeting vets in their real workflow</span></li>
                   </ul>
                 </div>
               </article>
             </div>
           </section>
 
-          <!-- 2021–2025 — PwC (two roles) -->
-          <section class="tl-group" aria-label="PwC">
+          <!-- 2021–2025 — PwC (two roles, same side) -->
+          <section class="tl-group tl-group--left" aria-label="PwC">
             <div class="tl-group__head">
               <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
               <span class="tl-logo">
-                <img class="tl-logo__img" src="/images/logos/pwc.svg" alt="" loading="lazy" onerror="this.remove()">
-                <span class="tl-logo__mono" aria-hidden="true">PwC</span>
+                <img class="tl-logo__img" src="/images/logos/pwc.svg" alt="PwC" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono">PwC</span>
               </span>
-              <h3 class="tl-company">PwC</h3>
+              <h3 class="tl-company sr-only">PwC</h3>
             </div>
             <div class="tl-positions">
               <article class="tl-position">
+                <svg class="tl-branch" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <path class="tl-branch__track" pathLength="100" d="M100,0 C100,60 40,97 0,97"/>
+                  <path class="tl-branch__trace" pathLength="100" d="M100,0 C100,60 40,97 0,97"/>
+                </svg>
                 <span class="tl-pos-marker" aria-hidden="true"></span>
+                <figure class="tl-media" aria-hidden="true"><div class="tl-media__ph"></div></figure>
                 <div class="tl-pos-meta">
                   <p class="tl-role">UX Design Manager</p>
                   <p class="tl-period">Jun 2023 – Oct 2025</p>
                 </div>
-                <div class="tl-card">
-                  <p class="tl-summary">Stepped up to lead and mentor a team of designers while still shaping strategy and craft. Focused on raising the quality bar and growing the designers around me.</p>
+                <p class="tl-blurb">Owned the design system behind 3,000+ products, shipped GenAI tooling that gave managers ~30% of their week back, and led design on the firm’s flagship AI product.</p>
+                <button type="button" class="tl-cta" data-study="Automating UX Workflows for 30% Time Savings" disabled>View Case Study</button>
+                <div class="tl-detail" hidden>
+                  <p class="tl-summary">Promoted to manage craft and people at once: a team of designers, a design system serving thousands of products, and hands-on leadership on AI work the firm pitched to Fortune 500 clients. Built a suite of custom GPTs that automated the busywork — release notes, copy, tasks, reviews — so managers and designers could spend time on judgment, not formatting.</p>
                   <ul class="tl-highlights">
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Managed and mentored a team of UX designers</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Set design direction and standards across multiple product lines</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Partnered with product and engineering leadership on the roadmap</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Managed and mentored a team of three designers while owning craft standards across product lines</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Ran the design system that serviced 3,000+ products globally</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Led GenAI workflow tooling that freed managers up to ~30% of their week</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Lead designer on SDLC Canvas — took the firm’s flagship AI product from POC to Fortune 500 pitches</span></li>
                   </ul>
                 </div>
               </article>
               <article class="tl-position">
+                <svg class="tl-branch" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <path class="tl-branch__track" pathLength="100" d="M100,0 C100,60 40,97 0,97"/>
+                  <path class="tl-branch__trace" pathLength="100" d="M100,0 C100,60 40,97 0,97"/>
+                </svg>
                 <span class="tl-pos-marker" aria-hidden="true"></span>
+                <figure class="tl-media" aria-hidden="true"><div class="tl-media__ph"></div></figure>
                 <div class="tl-pos-meta">
                   <p class="tl-role">Senior UX Designer</p>
                   <p class="tl-period">Dec 2021 – Jun 2023</p>
                 </div>
-                <div class="tl-card">
-                  <p class="tl-summary">Moved into enterprise UX, designing complex internal products and client-facing tools inside a global consultancy. Learned to navigate ambiguity, stakeholders, and scale all at once.</p>
+                <p class="tl-blurb">Pitched and led a Figma migration for 120+ designers, rebuilt the design system, and launched a pattern library that stopped 50+ teams from reinventing the same screens.</p>
+                <button type="button" class="tl-cta" data-study="Upskilling 120+ Designers: Leading a High-Impact Migration to Figma" disabled>View Case Study</button>
+                <div class="tl-detail" hidden>
+                  <p class="tl-summary">Came into a Sketch / Abstract / InVision stack that was burning hours on versioning fights and blocking remote collaboration. Built the business case, piloted Figma, rebuilt 30+ system components natively, wrote 100+ pages of docs, and ran months of office hours until the whole department was on one tool — cutting ~3.5 hours/week of lost-work thrash to near zero and killing three redundant licenses.</p>
                   <ul class="tl-highlights">
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Led UX for enterprise platforms used by thousands of employees</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Ran research and workshops to align cross-functional teams</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Shipped design systems that kept large product suites consistent</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Led the org-wide Figma migration and upskilled 120+ designers with curriculum, docs, and office hours</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Audited and rebuilt the design system in Figma (atomic components, variants, real interaction states)</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Led a UX pattern library for 50+ product teams — 86+ fewer one-off requests, 12 patterns shipped to the system site</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Cut prototype cycles from weeks to days and unblocked concurrent, conflict-free collaboration</span></li>
                   </ul>
                 </div>
               </article>
@@ -538,28 +560,35 @@
           </section>
 
           <!-- 2021 — Blue Corona -->
-          <section class="tl-group" aria-label="Blue Corona">
+          <section class="tl-group tl-group--right" aria-label="Blue Corona">
             <div class="tl-group__head">
               <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
               <span class="tl-logo">
-                <img class="tl-logo__img" src="/images/logos/bluecorona.svg" alt="" loading="lazy" onerror="this.remove()">
-                <span class="tl-logo__mono" aria-hidden="true">BC</span>
+                <img class="tl-logo__img" src="/images/logos/bluecorona.svg" alt="Blue Corona" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono">Blue Corona</span>
               </span>
-              <h3 class="tl-company">Blue Corona</h3>
+              <h3 class="tl-company sr-only">Blue Corona</h3>
             </div>
             <div class="tl-positions">
               <article class="tl-position">
+                <svg class="tl-branch" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <path class="tl-branch__track" pathLength="100" d="M0,0 C0,60 60,97 100,97"/>
+                  <path class="tl-branch__trace" pathLength="100" d="M0,0 C0,60 60,97 100,97"/>
+                </svg>
                 <span class="tl-pos-marker" aria-hidden="true"></span>
+                <figure class="tl-media" aria-hidden="true"><div class="tl-media__ph"></div></figure>
                 <div class="tl-pos-meta">
                   <p class="tl-role">Senior Digital Designer</p>
                   <p class="tl-period">Feb 2021 – Dec 2021</p>
                 </div>
-                <div class="tl-card">
-                  <p class="tl-summary">Joined an agency to design conversion-focused websites for home-service brands at scale. Balanced hard marketing goals with clean, usable interfaces across dozens of concurrent builds.</p>
+                <p class="tl-blurb">Designed 80+ client sites and built a modular Figma page system that cut design time from 8–10 hours down to under 2.</p>
+                <button type="button" class="tl-cta" data-study="Cutting Design Time by 80% with Modular Generators" disabled>View Case Study</button>
+                <div class="tl-detail" hidden>
+                  <p class="tl-summary">Agency pace, marketing pressure, dozens of concurrent home-service brands. Instead of redrawing the same site structure every time, I built a modular Figma block system with client theming so designers could ship faster without tanking craft — some smaller projects dropped from a full day to ~30 minutes.</p>
                   <ul class="tl-highlights">
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Designed high-converting landing pages and full-site redesigns</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Partnered with strategists and developers to ship on tight timelines</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Raised the visual bar on templated builds without slowing delivery</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Designed and shipped custom sites for 80+ home-service companies</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Led the Rapid Page Template Builder — ~80% less time on repeat layout work</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Raised visual quality on templated builds without slowing delivery</span></li>
                   </ul>
                 </div>
               </article>
@@ -567,33 +596,59 @@
           </section>
 
           <!-- 2015 — Inovo -->
-          <section class="tl-group" aria-label="Inovo">
+          <section class="tl-group tl-group--left" aria-label="Inovo">
             <div class="tl-group__head">
               <div class="tl-node" aria-hidden="true"><span class="tl-node-dot"></span></div>
               <span class="tl-logo">
-                <img class="tl-logo__img" src="/images/logos/inovo.svg" alt="" loading="lazy" onerror="this.remove()">
-                <span class="tl-logo__mono" aria-hidden="true">IN</span>
+                <img class="tl-logo__img" src="/images/logos/inovo.svg" alt="Inovo" loading="lazy" onerror="this.remove()">
+                <span class="tl-logo__mono">Inovo</span>
               </span>
-              <h3 class="tl-company">Inovo</h3>
+              <h3 class="tl-company sr-only">Inovo</h3>
             </div>
             <div class="tl-positions">
               <article class="tl-position">
+                <svg class="tl-branch" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <path class="tl-branch__track" pathLength="100" d="M100,0 C100,60 40,97 0,97"/>
+                  <path class="tl-branch__trace" pathLength="100" d="M100,0 C100,60 40,97 0,97"/>
+                </svg>
                 <span class="tl-pos-marker" aria-hidden="true"></span>
+                <figure class="tl-media" aria-hidden="true"><div class="tl-media__ph"></div></figure>
                 <div class="tl-pos-meta">
                   <p class="tl-role">Freelance Designer</p>
                   <p class="tl-period">Jun 2015 – Feb 2021</p>
                 </div>
-                <div class="tl-card">
-                  <p class="tl-summary">Cut my teeth as an independent designer, partnering directly with founders and small teams to ship brand identities, marketing sites, and product interfaces. Learned to own a project end-to-end — from the first conversation to final handoff.</p>
+                <p class="tl-blurb">Built the craft from scratch — a 30k-subscriber YouTube channel into a solo studio shipping 40+ brand, web, and product projects end to end.</p>
+                <button type="button" class="tl-cta" disabled>View Case Study</button>
+                <div class="tl-detail" hidden>
+                  <p class="tl-summary">Years of owning the whole job: discovery, brand, web, product UI, and handoff — first as freelance, then as a formalized creative studio. Learned how to sell work, keep clients, and ship without a team to hide behind. The foundation under everything that came after.</p>
                   <ul class="tl-highlights">
                     <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Delivered 40+ client projects across branding, web, and product design</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Turned one-off gigs into long-term retainers through trust and delivery</span></li>
-                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Built a repeatable discovery-to-delivery process running solo</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Grew a self-taught Mac tutorial channel to 30k+ subscribers and multi-million views</span></li>
+                    <li class="tl-hl"><span class="tl-hl-dot" aria-hidden="true"></span><span class="tl-hl-text">Turned one-off gigs into retainers and formalized the practice into a creative studio</span></li>
                   </ul>
                 </div>
               </article>
             </div>
           </section>
+        </div>
+      </section>
+
+      <section class="home-section" id="homeEnergyBoard" aria-labelledby="homeEnergyBoardTitle">
+        <header class="home-section-header energy-board-header">
+          <span class="home-section-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="12" cy="12" r="1.4" fill="currentColor"/>
+            </svg>
+          </span>
+          <div class="energy-board-heading">
+            <h2 class="home-section-title" id="homeEnergyBoardTitle">Goals This Year</h2>
+            <p class="energy-board-subtitle">How I'm spending my energy in <span class="energy-board-year">2026</span></p>
+          </div>
+        </header>
+        <div class="energy-board" id="energyBoard">
+          <p class="home-loading">Loading board…</p>
         </div>
       </section>
 
@@ -860,7 +915,7 @@
               </li>
               <li class="tm-credit-item">
                 <span class="tm-credit-key">Font</span>
-                <a href="https://www.fontshare.com/fonts/satoshi" class="tm-credit-val tm-credit-outlink" target="_blank" rel="noopener noreferrer">Satoshi — Indian Type Foundry</a>
+                <a href="https://www.geomanist.com" class="tm-credit-val tm-credit-outlink" target="_blank" rel="noopener noreferrer">Geomanist — atipo</a>
               </li>
               <li class="tm-credit-item">
                 <span class="tm-credit-key">Built with</span>
@@ -918,10 +973,10 @@
   </div><!-- /#introOverlay -->
 
   <!-- <script src="/js/intro.js"></script> preloader off for now -->
-  <script src="/js/main.js?v=5"></script>
+  <script src="/js/main.js?v=7"></script>
   <script src="/js/hero-entrance.js?v=1"></script>
   <script src="/js/home-feed.js?v=1"></script>
-  <!-- <script src="/js/timeline.js?v=1"></script> TIMELINE DISABLED FOR NOW -->
+  <script src="/js/timeline.js?v=6"></script>
   <script src="/js/chat.js?v=1"></script>
 
   <!-- Now strip population -->

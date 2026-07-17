@@ -2,6 +2,7 @@
 # IMPORTANT: Keep your API keys private!
 music-config.js
 books-config.js
+gemini-config.js
 movies-config.js
 mapbox-config.js
 

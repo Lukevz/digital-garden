@@ -100,7 +100,7 @@ The core is a notes surface where you capture meetings and ideas. Those can be t
 
 ## Q — Who do you admire? Designers, creators, thinkers?
 
-Designers: Dan Petty, Tobias van Schneider, Tobias Renstrom. Victor Hernandez is a colleague I worked with at PwC who I admire a lot.
+Designers: Dan Petty, Tobias van Schneider, Tobias Renstrom.
 
 Creators and thinkers: Ali Abdaal for the productivity mindset, Olivier from Ultra Links. And then the classic answers — Steve Jobs, Bob Iger, Ed Catmull. *Creativity, Inc.* is basically Ed Catmull's memoir and it's required reading.
 
