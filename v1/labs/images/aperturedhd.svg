@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">ApertureDHD preview</title>
+  <desc id="desc">Editorial text with a sharp horizontal focus band and a semicircular aperture dial.</desc>
+  <defs>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <clipPath id="top"><path d="M0 0h1200v245H0z"/></clipPath>
+    <clipPath id="bottom"><path d="M0 430h1200v245H0z"/></clipPath>
+  </defs>
+  <rect width="1200" height="675" fill="#f4f2ed"/>
+  <g fill="#1a1a17">
+    <text x="130" y="148" font-family="Georgia,serif" font-size="68">The shape of focus</text>
+    <g opacity=".58">
+      <rect x="132" y="202" width="640" height="8" rx="4"/>
+      <rect x="132" y="233" width="700" height="8" rx="4"/>
+      <rect x="132" y="264" width="660" height="8" rx="4"/>
+      <rect x="132" y="315" width="740" height="8" rx="4"/>
+      <rect x="132" y="346" width="690" height="8" rx="4"/>
+      <rect x="132" y="377" width="720" height="8" rx="4"/>
+      <rect x="132" y="428" width="620" height="8" rx="4"/>
+      <rect x="132" y="459" width="735" height="8" rx="4"/>
+      <rect x="132" y="490" width="676" height="8" rx="4"/>
+    </g>
+  </g>
+  <g filter="url(#blur)" opacity=".58">
+    <g clip-path="url(#top)">
+      <rect x="132" y="202" width="640" height="8" rx="4" fill="#1a1a17"/>
+      <rect x="132" y="233" width="700" height="8" rx="4" fill="#1a1a17"/>
+    </g>
+    <g clip-path="url(#bottom)">
+      <rect x="132" y="459" width="735" height="8" rx="4" fill="#1a1a17"/>
+      <rect x="132" y="490" width="676" height="8" rx="4" fill="#1a1a17"/>
+    </g>
+  </g>
+  <path d="M1200 218a120 120 0 0 0 0 240z" fill="#efede8" stroke="#1a1a17" stroke-opacity=".35" stroke-width="2"/>
+  <text x="1118" y="350" fill="#77736b" font-family="Arial,sans-serif" font-size="16">f /</text>
+  <text x="1143" y="352" fill="#1a1a17" font-family="Arial,sans-serif" font-size="38">4</text>
+</svg>
