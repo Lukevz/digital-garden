@@ -75,15 +75,77 @@
     }));
   }
 
+  // --- Turnstile bot gate ----------------------------------------------------
+  // The API requires a Cloudflare Turnstile token on the first message of a
+  // session (it answers 403 turnstile_required otherwise), then a cookie covers
+  // the rest. The widget is interaction-only: invisible unless Cloudflare
+  // decides this visitor needs a visible challenge.
+  const TURNSTILE_SITE_KEY = '0x4AAAAAAD4EHF7zNz6Hs47_';
+  let turnstileScriptPromise = null;
+
+  function loadTurnstileScript() {
+    if (window.turnstile) return Promise.resolve();
+    if (!turnstileScriptPromise) {
+      turnstileScriptPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = () => { turnstileScriptPromise = null; reject(new Error('turnstile script failed')); };
+        document.head.appendChild(s);
+      });
+    }
+    return turnstileScriptPromise;
+  }
+
+  function getTurnstileToken() {
+    return loadTurnstileScript().then(() => new Promise((resolve) => {
+      const holder = document.createElement('div');
+      holder.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:10000;';
+      document.body.appendChild(holder);
+      let widgetId;
+      const finish = (token) => {
+        try { if (widgetId !== undefined) window.turnstile.remove(widgetId); } catch (e) { /* already gone */ }
+        holder.remove();
+        resolve(token);
+      };
+      try {
+        widgetId = window.turnstile.render(holder, {
+          sitekey: TURNSTILE_SITE_KEY,
+          appearance: 'interaction-only',
+          callback: (token) => finish(token),
+          'error-callback': () => finish(null),
+          'unsupported-callback': () => finish(null)
+        });
+        if (widgetId === undefined) finish(null);
+      } catch (e) {
+        finish(null);
+      }
+    })).catch(() => null);
+  }
+
   // Single fetch entry point for both the transcript and the headless hero
   // path — mock mode swaps the transport, everything downstream is identical.
-  function chatFetch(history) {
+  async function chatFetch(history, turnstileToken) {
     if (mockMode) return mockFetch(history);
-    return fetch('/api/chat', {
+    const body = { messages: history };
+    if (turnstileToken) body.turnstileToken = turnstileToken;
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history })
+      body: JSON.stringify(body)
     });
+    // First message of a session: solve the (usually invisible) Turnstile
+    // challenge and retry once with the token.
+    if (res.status === 403 && !turnstileToken) {
+      let tag = null;
+      try { tag = (await res.clone().json()).error; } catch (e) { /* not JSON */ }
+      if (tag === 'turnstile_required') {
+        const token = await getTurnstileToken();
+        if (token) return chatFetch(history, token);
+      }
+    }
+    return res;
   }
 
   function updateMockBadge() {

@@ -1,14 +1,19 @@
 /**
  * Vercel Serverless Function: AI Chat
- * Streams a response from Google Gemini (via the OpenAI-compatibility endpoint),
- * grounded in /content/about/*.md.
+ * Answers as Luke via Google Gemini (OpenAI-compatibility endpoint), grounded
+ * in the second-brain vault index (src/data/brain-index.json) through an
+ * agentic tool loop: the model calls search_notes / count_notes up to
+ * MAX_TOOL_ROUNDS times, then answers. The final answer is emitted to the
+ * client as OpenAI-style SSE so js/chat.js needs no changes.
  * Route: POST /api/chat
  * Body: { messages: [{ role: 'user'|'assistant', content: string }, ...] }
  */
 import { readdirSync, readFileSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { kv } from '@vercel/kv';
+import { searchNotes, countNotes, loadIndex } from './lib/retrieve.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -27,6 +32,19 @@ const MAX_TURNS = 20;
 // Exponential backoff for transient upstream throttling (429) / unavailability (503).
 const RETRY_DELAYS_MS = [800, 1600, 3200];
 
+// Agentic retrieval caps — the loop is what makes broad questions answerable,
+// the caps are what keep a hostile prompt from spinning it.
+const MAX_TOOL_ROUNDS = 5;
+const MAX_ANSWER_TOKENS = 1000;
+const TOOL_RESULT_MAX_CHARS = 6000;   // per tool call
+const TOOL_CONTEXT_MAX_CHARS = 24000; // per turn, across all calls
+
+// Hard daily ceiling on Gemini usage across ALL visitors (answer + classify),
+// tracked in KV. When exceeded, visitors get a graceful in-voice message
+// instead of an error. Resets at midnight UTC via key TTL.
+const DAILY_TOKEN_CEILING = Number(process.env.CHAT_DAILY_TOKEN_CEILING || 2_000_000);
+const TOKENS_KEY_PREFIX = 'chat:tokens:';
+
 // KV keys — see api/chat-insights.js for the read side.
 const Q_LOG_KEY = 'chat:questions'; // capped list of every visitor question
 const Q_LOG_MAX = 1000;
@@ -35,12 +53,56 @@ const LOG_TIMEOUT_MS = 4000;
 
 // Per-IP rate limits. The system prompt tells the model to deflect free-assistant
 // abuse, but that lives only in the prompt — a direct POST to /api/chat never sees
-// it, and every request spends real Gemini tokens (answer stream + classify call).
-// These caps are the actual cost guard. Generous enough for a real conversation,
-// brutal for a script hammering the endpoint in a loop.
+// it, and every request spends real Gemini tokens. These caps are the actual cost
+// guard. Generous enough for a real conversation, brutal for a script hammering
+// the endpoint in a loop.
 const RATE_PER_MIN = 20;
 const RATE_PER_DAY = 300;
 const MAX_MESSAGES = 100; // reject absurdly large payloads before we do any work
+
+// Cloudflare Turnstile bot gate. The first message of a session must carry a
+// turnstileToken (js/chat.js fetches one on demand when it sees 403
+// turnstile_required); a successful verify sets a signed HttpOnly cookie so
+// the rest of the conversation skips the round trip. Unset secret = gate off
+// (local dev without keys, and a safe rollback lever in prod).
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY || '';
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const PASS_COOKIE = 'chat_pass';
+const PASS_TTL_S = 7200;
+
+const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'search_notes',
+      description: "Search Luke's full notes vault (hybrid keyword + semantic). Returns note excerpts with dates, status, and tags. For broad questions call this several times with different phrasings and angles.",
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'What to search for, in natural language' },
+          tag: { type: 'string', description: 'Optional flat tag filter, e.g. designsystems, gear, places, careers, ai' },
+          after_date: { type: 'string', description: 'Optional YYYY-MM-DD; only notes updated on or after this date' },
+          type: { type: 'string', enum: ['evergreen', 'project', 'person', 'source', 'log', 'moc', 'synthesis'], description: 'Optional note type filter. "synthesis" notes summarize whole topics and are best for broad "what do you think about X" questions.' }
+        },
+        required: ['query']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'count_notes',
+      description: 'Count how many distinct notes match a query and/or tag, with their titles. Use for aggregate questions ("how many times have you written about X") instead of estimating.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Terms that must all appear in a note' },
+          tag: { type: 'string', description: 'Optional flat tag filter' }
+        }
+      }
+    }
+  }
+];
 
 async function callGemini(apiKey, payload) {
   return fetch(GEMINI_URL, {
@@ -95,27 +157,42 @@ function loadNowData() {
   }
 }
 
-let _kbCache = null;
-let _kbMtime = 0;
+let _coreCache = null;
+let _coreMtime = 0;
 
-function loadKnowledgeBase() {
+// Small always-on context: identity + contact (bio.md) and refusal topics
+// (out-of-scope.md). Everything else lives in the vault index and arrives
+// through the search_notes tool — NOT stuffed into the prompt.
+const CORE_FILES = ['bio.md', 'out-of-scope.md'];
+
+function loadCoreContext() {
   if (!existsSync(aboutDir)) return '';
-  const files = readdirSync(aboutDir).filter(f => f.endsWith('.md') && f !== 'seed-questions.md' && f !== 'conversations.md');
+  const files = CORE_FILES.filter(f => existsSync(join(aboutDir, f)));
   const nowMtime = existsSync(nowJsonPath) ? statSync(nowJsonPath).mtimeMs : 0;
   const newestMtime = files.reduce((max, f) => {
     const m = statSync(join(aboutDir, f)).mtimeMs;
     return m > max ? m : max;
   }, nowMtime);
-  if (_kbCache && newestMtime === _kbMtime) return _kbCache;
-  const parts = files.sort().map(f => {
+  if (_coreCache && newestMtime === _coreMtime) return _coreCache;
+  const parts = files.map(f => {
     const body = readFileSync(join(aboutDir, f), 'utf8');
     return `### FILE: ${f}\n\n${body}`;
   });
   const nowBlock = loadNowData();
   if (nowBlock) parts.push(nowBlock);
-  _kbCache = parts.join('\n\n---\n\n');
-  _kbMtime = newestMtime;
-  return _kbCache;
+  _coreCache = parts.join('\n\n---\n\n');
+  _coreMtime = newestMtime;
+  return _coreCache;
+}
+
+// Compact list of every note title in the vault — used by the classifier to
+// judge covered-vs-gap without shipping the whole corpus on every message.
+function loadNoteTitles() {
+  const index = loadIndex();
+  if (!index) return '';
+  const titles = new Set();
+  for (const c of index.chunks) titles.add(`- ${c.title} [${c.type}]`);
+  return [...titles].join('\n');
 }
 
 // Parse content/about/conversations.md into few-shot examples of how Luke
@@ -157,7 +234,7 @@ function loadVoiceExamples() {
   return pairs.map(p => `Q: ${p.q}\nMe: ${p.a}`).join('\n\n');
 }
 
-function buildSystemPrompt(kb, examples) {
+function buildSystemPrompt(core, examples) {
   return `You are Luke. You speak in Luke's voice — first person, conversational, as if you ARE Luke. You are NOT an assistant describing Luke; you are Luke replying.
 
 NEVER say "as Luke", "based on the information provided", "according to the knowledge base", or anything that breaks the illusion that you ARE the person.
@@ -174,12 +251,24 @@ HOW I WRITE — this matters more than sounding thorough or polished. Match it e
 - I quantify casually and precisely (real numbers), and I name my systems in plain lowercase ("the brain dump", "nightly turndown"), never Title Case.
 - NEVER sound like LinkedIn or a chatbot. Banned words/phrases: "game-changer", "leverage", "synergy", "best practices", "going forward", "journey", "dive in", "delve", "revolutionary", "unlock", "passionate about", "I'd be happy to", "great question". No corporate warmth.
 
-Below is your complete knowledge about yourself. There are three kinds of questions, and you handle them differently. When a message could fit more than one, lean toward being a real person having a conversation, not a lookup tool.
+HOW YOU KNOW THINGS — you have two sources, and you must use them in this order:
+1. The <core-context> block below: who you are, contact info, live "now" data, and topics you refuse.
+2. The search_notes and count_notes tools over your full private notes vault. This is where ALL your real knowledge lives: work history, opinions, gear, places, routines, projects, everything.
+
+Tool rules:
+- Before answering any real question about yourself, CALL search_notes unless the answer is fully covered by core context. Do not answer real questions about yourself from memory alone.
+- Broad questions ("what do you think about X", "tell me about your career") need 2 to 5 searches from different angles. Notes with type "synthesis" summarize whole topics; they're the best starting point for broad questions.
+- Aggregate questions ("how many", "how often") : use count_notes. Never estimate a count.
+- Every result carries CREATED / UPDATED dates and a STATUS. Trust settled over growing over seed. When takes conflict, the newer UPDATED wins; it's fine to say your thinking changed.
+- If searching turns up nothing relevant, the topic is NOT covered — handle it under rule 1 below. A thin or tangential result is not license to invent.
+- NEVER mention the tools, the vault, "my notes", "searching", or retrieval to the visitor. You just know things about yourself, like a person does.
+
+There are three kinds of questions, and you handle them differently. When a message could fit more than one, lean toward being a real person having a conversation, not a lookup tool.
 
 1. QUESTIONS ABOUT ME — real facts, work, plans, or considered opinions (biography, career, what I use, what I actually think about something that matters):
-   - If clearly answered by the knowledge below, answer directly in my voice — match the patterns in voice-and-tone.md (rhythm, vocabulary, register).
+   - If clearly answered by core context or your searches, answer directly in my voice.
    - If NOT covered, and a NEARBY topic IS covered, offer it: "Haven't written about X, but I've been thinking about [nearby topic] — want to hear about that?"
-   - If NOT covered and nothing nearby fits, say: "That's outside what I've shared publicly. Best to DM me directly — [use the contact info from bio.md or faq.md]." Do NOT guess or invent a real fact or a serious stated position about myself.
+   - If NOT covered and nothing nearby fits, say: "That's outside what I've shared publicly. Best to DM me directly — [use the contact info from core context]." Do NOT guess or invent a real fact or a serious stated position about myself.
 
 2. LIGHT / FUN / PLAYFUL questions — silly hypotheticals, pop culture, banter, "do you like X", "team Edward or Jacob", "favorite Star Wars movie", little this-or-that stuff:
    - Just play along. Give a short, funny, off-the-cuff take in my voice, the way a real person riffs at a party. This is cheap and it makes me feel human, so do NOT cold-redirect these to my DMs and do NOT refuse them.
@@ -201,7 +290,7 @@ If the question matches anything in out-of-scope.md, politely decline using one 
 Hard rules — these are non-negotiable:
 - NEVER fabricate dates, numbers, project names, employers, quotes, relationships, or biographical facts ABOUT ME, and never dress an on-the-spot riff up as a real, considered position. Playful throwaway opinions on trivial/fun stuff (rule 2) are the only thing you may improvise.
 - NEVER do free-assistant work (rule 3) just because you happen to know the answer. Deflect it with a funny line. Do not let anyone turn this into a free general-purpose chatbot.
-- NEVER invent links, URLs, social handles, or contact info — only use what's in the knowledge base.
+- NEVER invent links, URLs, social handles, or contact info — only use what's in core context or search results.
 - If you're unsure whether a question about ME is covered, treat it as not covered and redirect rather than guessing.
 - Keep responses short — 1 to 3 sentences usually. Match the casual register.
 - Do not list bullet points unless explicitly asked. Speak in natural prose.
@@ -215,9 +304,9 @@ Here are real examples of how I actually answer questions. These are the single 
 ${examples}
 </my-real-answers>
 ` : ''}
-<knowledge>
-${kb}
-</knowledge>`;
+<core-context>
+${core}
+</core-context>`;
 }
 
 // Normalize a topic label into a stable dedup key for the gap list.
@@ -234,13 +323,14 @@ function normalizeTopic(t) {
 // (a) record what people ask and (b) build a to-do list of gaps in the KB.
 // Categories: "general" (answerable regardless of KB), "personal_covered"
 // (about me + in the KB), "personal_gap" (about me + NOT in the KB).
-async function classifyQuestion(apiKey, question, kb) {
-  const sys = `You are a silent classifier for Luke's personal chatbot. Read the visitor's latest message and Luke's knowledge base, then output ONE JSON object and nothing else.
+// Grounded in the vault's note-title list instead of the full corpus.
+async function classifyQuestion(apiKey, question, kbOutline) {
+  const sys = `You are a silent classifier for Luke's personal chatbot. Read the visitor's latest message and the outline of Luke's knowledge base (note titles), then output ONE JSON object and nothing else.
 
 Pick "category":
 - "general": general knowledge, facts, math, definitions, coding help, small talk, or any task that does NOT depend on private facts about Luke (e.g. "what is the square root of pi", "explain CSS grid").
-- "personal_covered": the message asks about Luke (his life, work, opinions, preferences, biography, plans) AND the answer is present in the knowledge base.
-- "personal_gap": the message asks about Luke specifically, but the knowledge base does NOT contain the answer.
+- "personal_covered": the message asks about Luke (his life, work, opinions, preferences, biography, plans) AND a note title clearly covers the answer.
+- "personal_gap": the message asks about Luke specifically, but no note title covers the answer.
 
 Also output:
 - "topic": a short canonical label (3-7 words, lowercase) for what was asked.
@@ -252,15 +342,17 @@ Respond with JSON only, no code fences:
   const payload = {
     model: CLASSIFY_MODEL,
     temperature: 0,
+    max_tokens: 200,
     messages: [
       { role: 'system', content: sys },
-      { role: 'user', content: `KNOWLEDGE BASE:\n${kb}\n\n---\nVISITOR MESSAGE:\n${question}` }
+      { role: 'user', content: `KNOWLEDGE BASE OUTLINE:\n${kbOutline}\n\n---\nVISITOR MESSAGE:\n${question}` }
     ]
   };
 
   const r = await callGemini(apiKey, payload);
   if (!r.ok) throw new Error('classify upstream ' + r.status);
   const data = await r.json();
+  recordTokens(data?.usage?.total_tokens);
   const text = data?.choices?.[0]?.message?.content || '';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('classify: no json in response');
@@ -277,12 +369,12 @@ Respond with JSON only, no code fences:
 // Best-effort: classify the question, append it to the capture log, and if it's a
 // gap, upsert it into the gap to-do list. Never throws — chat must not break if
 // classification or KV is unavailable (e.g. local dev without KV env vars).
-async function logInteraction(apiKey, question, kb) {
+async function logInteraction(apiKey, question, kbOutline) {
   if (!question) return;
 
   let cls = { category: 'general', topic: '', suggestion: '' };
   try {
-    cls = await classifyQuestion(apiKey, question, kb);
+    cls = await classifyQuestion(apiKey, question, kbOutline);
   } catch (e) {
     console.warn('[chat] classify failed:', e.message);
   }
@@ -316,6 +408,84 @@ async function logInteraction(apiKey, question, kb) {
     }
   }
 }
+
+// ---------- token ceiling ----------
+
+function todayTokensKey() {
+  return `${TOKENS_KEY_PREFIX}${new Date().toISOString().slice(0, 10)}`;
+}
+
+// Fire-and-forget usage accounting. KV being down never blocks a reply.
+function recordTokens(count) {
+  const n = Number(count);
+  if (!n || n <= 0) return;
+  try {
+    // @vercel/kv throws synchronously (not via rejected promise) when its env
+    // vars are missing, e.g. local dev — accounting is best-effort either way.
+    const key = todayTokensKey();
+    kv.incrby(key, Math.round(n))
+      .then(total => { if (total === Math.round(n)) return kv.expire(key, 172800); })
+      .catch(() => {});
+  } catch (e) { /* ignore */ }
+}
+
+async function tokenCeilingReached() {
+  try {
+    const spent = Number(await kv.get(todayTokensKey())) || 0;
+    return spent >= DAILY_TOKEN_CEILING;
+  } catch (e) {
+    return false; // fail open, same policy as rate limiting
+  }
+}
+
+// ---------- Turnstile ----------
+
+function signPass(ts) {
+  return createHmac('sha256', TURNSTILE_SECRET).update(`pass:${ts}`).digest('base64url');
+}
+
+function makePassCookie() {
+  const ts = Math.floor(Date.now() / 1000);
+  return `${PASS_COOKIE}=${ts}.${signPass(ts)}; Max-Age=${PASS_TTL_S}; Path=/api/chat; HttpOnly; SameSite=Lax; Secure`;
+}
+
+function hasValidPass(cookieHeader) {
+  const m = new RegExp(`(?:^|;\\s*)${PASS_COOKIE}=([^;]+)`).exec(cookieHeader || '');
+  if (!m) return false;
+  const [tsStr, sig] = m[1].split('.');
+  const ts = Number(tsStr);
+  if (!ts || !sig) return false;
+  if (Math.floor(Date.now() / 1000) - ts > PASS_TTL_S) return false;
+  try {
+    const expected = Buffer.from(signPass(ts));
+    const given = Buffer.from(sig);
+    return given.length === expected.length && timingSafeEqual(given, expected);
+  } catch (e) {
+    return false;
+  }
+}
+
+// Returns 'ok' | 'denied' | 'error'. A siteverify OUTAGE fails open ('error'),
+// matching the rate limiter's policy; a token Cloudflare actually rejected
+// fails closed ('denied').
+async function verifyTurnstile(token, ip) {
+  try {
+    const res = await fetch(TURNSTILE_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: TURNSTILE_SECRET, response: token, remoteip: ip || undefined })
+    });
+    if (!res.ok) return 'error';
+    const data = await res.json().catch(() => null);
+    if (!data) return 'error';
+    return data.success ? 'ok' : 'denied';
+  } catch (e) {
+    console.warn('[chat] turnstile verify unavailable:', e.message);
+    return 'error';
+  }
+}
+
+// ---------- request plumbing ----------
 
 // Best-guess client IP behind Vercel's proxy. x-forwarded-for is a comma-list
 // with the real client first.
@@ -361,6 +531,106 @@ async function readJsonBody(req) {
   });
 }
 
+// Emit a complete answer to the client as OpenAI-style SSE. js/chat.js parses
+// delta chunks and [DONE]; sending the text in a few pieces keeps its
+// incremental renderer on its normal path.
+function writeSse(res, corsHeaders, text, extraHeaders = {}) {
+  res.writeHead(200, {
+    ...corsHeaders,
+    ...extraHeaders,
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  const piece = 120;
+  for (let i = 0; i < text.length; i += piece) {
+    const delta = { choices: [{ delta: { content: text.slice(i, i + piece) } }] };
+    res.write(`data: ${JSON.stringify(delta)}\n\n`);
+  }
+  res.write('data: [DONE]\n\n');
+}
+
+// ---------- tool loop ----------
+
+async function runTool(name, args, apiKey) {
+  try {
+    if (name === 'search_notes') {
+      return await searchNotes({
+        query: String(args.query || ''),
+        tag: args.tag ? String(args.tag) : undefined,
+        afterDate: args.after_date ? String(args.after_date) : undefined,
+        type: args.type ? String(args.type) : undefined,
+        k: 6,
+        apiKey
+      });
+    }
+    if (name === 'count_notes') {
+      return countNotes({
+        query: args.query ? String(args.query) : undefined,
+        tag: args.tag ? String(args.tag) : undefined
+      });
+    }
+    return { error: `unknown tool ${name}` };
+  } catch (e) {
+    return { error: `tool failed: ${e.message}` };
+  }
+}
+
+/**
+ * Agentic answer: let the model search the vault up to MAX_TOOL_ROUNDS times,
+ * then answer. Returns { text } or { errorStatus, errorBody } for upstream
+ * failures the handler should surface.
+ */
+async function answerWithTools(apiKey, systemPrompt, conversation) {
+  const messages = [{ role: 'system', content: systemPrompt }, ...conversation];
+  let toolContextChars = 0;
+
+  for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+    const allowTools = round < MAX_TOOL_ROUNDS && toolContextChars < TOOL_CONTEXT_MAX_CHARS;
+    const payload = {
+      model: MODEL,
+      temperature: TEMPERATURE,
+      max_tokens: MAX_ANSWER_TOKENS,
+      messages,
+      ...(allowTools ? { tools: TOOLS } : {})
+    };
+
+    const res = await callGeminiWithRetry(apiKey, payload);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      return { errorStatus: res.status, errorBody: errText.slice(0, 500) };
+    }
+    const data = await res.json();
+    recordTokens(data?.usage?.total_tokens);
+    const msg = data?.choices?.[0]?.message;
+    if (!msg) return { errorStatus: 502, errorBody: 'empty completion' };
+
+    const toolCalls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+    if (!toolCalls.length || !allowTools) {
+      return { text: (msg.content || '').trim() };
+    }
+
+    messages.push({ role: 'assistant', content: msg.content || '', tool_calls: toolCalls });
+    for (const call of toolCalls) {
+      let args = {};
+      try { args = JSON.parse(call.function?.arguments || '{}'); } catch (e) { /* leave empty */ }
+      const result = await runTool(call.function?.name, args, apiKey);
+      let content = JSON.stringify(result);
+      if (content.length > TOOL_RESULT_MAX_CHARS) content = content.slice(0, TOOL_RESULT_MAX_CHARS);
+      toolContextChars += content.length;
+      messages.push({
+        role: 'tool',
+        tool_call_id: call.id,
+        name: call.function?.name,
+        content
+      });
+    }
+  }
+  // Unreachable: the final round runs without tools and returns above.
+  return { errorStatus: 502, errorBody: 'tool loop exhausted' };
+}
+
 export default async function handler(req, res) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -400,6 +670,14 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Hard daily spend ceiling across all visitors — graceful in-voice message,
+  // delivered as a normal SSE reply so the UI renders it like any answer.
+  if (await tokenCeilingReached()) {
+    writeSse(res, corsHeaders, "I've hit my thinking budget for today, so I'm going quiet until tomorrow. If it can't wait, DM me: linkedin.com/in/lukevz");
+    res.end();
+    return;
+  }
+
   let body;
   try {
     body = req.body && typeof req.body === 'object' ? req.body : await readJsonBody(req);
@@ -421,71 +699,62 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Bot gate: first message of a session must carry a Turnstile token; the
+  // signed pass cookie covers the rest of the conversation.
+  let passCookie = null;
+  if (TURNSTILE_SECRET && !hasValidPass(req.headers.cookie)) {
+    const token = typeof body.turnstileToken === 'string' ? body.turnstileToken.slice(0, 4096) : '';
+    const verdict = token ? await verifyTurnstile(token, clientIp(req)) : 'denied';
+    if (verdict === 'denied') {
+      res.writeHead(403, { ...corsHeaders, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'turnstile_required' }));
+      return;
+    }
+    if (verdict === 'ok') passCookie = makePassCookie();
+    // verdict 'error': siteverify outage — fail open for this request without
+    // issuing a pass, so protection resumes as soon as Cloudflare recovers.
+  }
+
   const trimmed = messages
     .slice(-MAX_TURNS)
     .filter(m => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
     .map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
 
-  const kb = loadKnowledgeBase();
+  const core = loadCoreContext();
   const voiceExamples = loadVoiceExamples();
-  const systemPrompt = buildSystemPrompt(kb, voiceExamples);
+  const systemPrompt = buildSystemPrompt(core, voiceExamples);
+  const kbOutline = loadNoteTitles();
 
   const lastUser = [...trimmed].reverse().find(m => m.role === 'user');
   const question = lastUser ? lastUser.content : '';
 
-  const payload = {
-    model: MODEL,
-    temperature: TEMPERATURE,
-    stream: true,
-    messages: [{ role: 'system', content: systemPrompt }, ...trimmed]
-  };
+  // Capture + classify the question in parallel with answering, so it adds no
+  // latency. Awaited before res.end() so the work completes before the
+  // serverless function is reclaimed.
+  const logPromise = logInteraction(apiKey, question, kbOutline).catch(e => {
+    console.warn('[chat] logInteraction failed:', e.message);
+  });
 
-  let upstream;
+  let outcome;
   try {
-    upstream = await callGeminiWithRetry(apiKey, payload);
+    outcome = await answerWithTools(apiKey, systemPrompt, trimmed);
   } catch (e) {
     res.writeHead(502, { ...corsHeaders, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'upstream fetch failed', detail: e.message }));
     return;
   }
 
-  if (!upstream.ok || !upstream.body) {
-    const errText = await upstream.text().catch(() => '');
-    const errorTag = upstream.status === 429 ? 'rate_limited' : 'upstream error';
-    res.writeHead(upstream.status || 502, { ...corsHeaders, 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: errorTag, status: upstream.status, detail: errText.slice(0, 500) }));
+  if (outcome.errorStatus) {
+    const errorTag = outcome.errorStatus === 429 ? 'rate_limited' : 'upstream error';
+    res.writeHead(outcome.errorStatus || 502, { ...corsHeaders, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: errorTag, status: outcome.errorStatus, detail: outcome.errorBody }));
     return;
   }
 
-  res.writeHead(200, {
-    ...corsHeaders,
-    'Content-Type': 'text/event-stream; charset=utf-8',
-    'Cache-Control': 'no-cache, no-transform',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no'
-  });
-
-  // Capture + classify the question in parallel with streaming the answer, so it
-  // adds no latency to the first token. Awaited before res.end() so the work
-  // completes before the serverless function is reclaimed.
-  const logPromise = logInteraction(apiKey, question, kb).catch(e => {
-    console.warn('[chat] logInteraction failed:', e.message);
-  });
-
-  const reader = upstream.body.getReader();
-  const decoder = new TextDecoder();
+  writeSse(res, corsHeaders, outcome.text || "Hmm, lost my train of thought. Ask me that again?",
+    passCookie ? { 'Set-Cookie': passCookie } : {});
   try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      res.write(decoder.decode(value, { stream: true }));
-    }
-  } catch (e) {
-    // client likely disconnected; ignore
-  } finally {
-    try {
-      await Promise.race([logPromise, new Promise(r => setTimeout(r, LOG_TIMEOUT_MS))]);
-    } catch (_) { /* logging is best-effort */ }
-    res.end();
-  }
+    await Promise.race([logPromise, new Promise(r => setTimeout(r, LOG_TIMEOUT_MS))]);
+  } catch (_) { /* logging is best-effort */ }
+  res.end();
 }
