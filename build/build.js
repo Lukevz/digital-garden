@@ -7,7 +7,7 @@
 import { writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest } from '../v1/js/build/manifest-builder.js';
+import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest, buildEnergyManifest } from '../v1/js/build/manifest-builder.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -20,6 +20,7 @@ const soundsDir = join(v1Dir, 'sounds');
 const galleryDir = join(v1Dir, 'gallery');
 const coversDir = join(v1Dir, 'covers');
 const flightsPath = join(rootDir, 'flights.md');
+const energyPath = join(rootDir, 'energy.md');
 
 
 async function build() {
@@ -118,6 +119,18 @@ export default ${JSON.stringify(flights, null, 2)};
 `;
   writeFileSync(join(rootDir, 'flights.js'), flightsContent);
   console.log(`✓ Generated flights.js with ${flights.length} flights`);
+
+  // Build energy board manifest
+  const energy = buildEnergyManifest(energyPath);
+  const energyContent = `/**
+ * Energy Board Manifest (auto-generated)
+ * Run 'node build/build.js' to regenerate after editing energy.md
+ */
+
+export default ${JSON.stringify(energy, null, 2)};
+`;
+  writeFileSync(join(rootDir, 'energy.js'), energyContent);
+  console.log(`✓ Generated energy.js with ${energy.length} cards`);
 }
 
 build().catch(console.error);

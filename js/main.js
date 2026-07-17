@@ -3118,6 +3118,91 @@
       });
     }
 
+    // ── Energy board — "energy investment portfolio" Kanban on the homepage ──
+    // Real cards come from energy.js (built from energy.md, same pipeline as
+    // flights). Icon names in energy.md map to Lucide SVG paths below.
+    function fetchEnergyBoard() {
+      return fetch('/energy.js')
+        .then(r => r.text())
+        .then(t => {
+          const m = t.match(/export default (\[[\s\S]*\]);?\s*$/);
+          return m ? JSON.parse(m[1]) : [];
+        })
+        .catch(() => []);
+    }
+
+    // Lucide icon paths (https://lucide.dev/icons/) — keyed by the name used
+    // in energy.md's first pipe segment, e.g. `- brain | Title`.
+    const ENERGY_ICONS = {
+      brain: '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.337 7.5a3 3 0 0 0-.237-.5"/><path d="M20.9 7a3 3 0 0 0-.237.5"/><path d="M12 18v4"/>',
+      languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+      globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+      video: '<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+      camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+      'book-open': '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+      sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>'
+    };
+
+    function energyIconSVG(name) {
+      const paths = ENERGY_ICONS[name];
+      if (!paths) return '';
+      return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+    }
+
+    const ENERGY_COLUMNS = [
+      { key: 'bucket',  label: 'Bucket List' },
+      { key: 'active',  label: 'Active' },
+      { key: 'passive', label: 'Passive' },
+      { key: 'done',    label: 'Completed' }
+    ];
+
+    let energyBoardCards = null;
+
+    function energyCardHTML(card) {
+      let progressHtml = '';
+      if (card.progress && card.progress.total) {
+        const pct = Math.max(0, Math.min(100, Math.round((card.progress.current / card.progress.total) * 100)));
+        progressHtml = `<div class="energy-card__progress">
+          <div class="energy-card__progress-bar"><div class="energy-card__progress-fill" style="width:${pct}%"></div></div>
+          <span class="energy-card__progress-label">${escHtml(card.progress.current)}/${escHtml(card.progress.total)}</span>
+        </div>`;
+      }
+      const descHtml = card.description ? `<p class="energy-card__desc">${escHtml(card.description)}</p>` : '';
+      const iconHtml = energyIconSVG(card.icon);
+      return `<article class="energy-card">
+        ${iconHtml ? `<span class="energy-card__icon" aria-hidden="true">${iconHtml}</span>` : ''}
+        <div class="energy-card__body">
+          <h4 class="energy-card__title">${escHtml(card.title)}</h4>
+          ${descHtml}
+          ${progressHtml}
+        </div>
+      </article>`;
+    }
+
+    function renderEnergyBoardUI() {
+      const el = document.getElementById('energyBoard');
+      if (!el) return;
+
+      el.innerHTML = ENERGY_COLUMNS.map(col => {
+        const items = (energyBoardCards || []).filter(c => c.column === col.key);
+        const cardsHtml = items.length ? items.map(energyCardHTML).join('') : '<p class="energy-col__empty">Nothing here yet.</p>';
+        return `<div class="energy-col" data-col="${col.key}">
+          <div class="energy-col__head">
+            <span class="energy-col__dot" aria-hidden="true"></span>
+            <span class="energy-col__title">${escHtml(col.label)}</span>
+            <span class="energy-col__count">${items.length}</span>
+          </div>
+          <div class="energy-col__cards">${cardsHtml}</div>
+        </div>`;
+      }).join('');
+    }
+
+    fetchEnergyBoard().then(cards => {
+      energyBoardCards = cards;
+      renderEnergyBoardUI();
+    });
+
     function parseCareerMd(md) {
       const body = md.replace(/^---[\s\S]*?---\n?/, '');
       const sections = body.split(/^## /m).filter(s => s.trim());
