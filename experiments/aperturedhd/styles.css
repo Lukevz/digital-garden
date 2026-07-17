@@ -1,0 +1,433 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  color-scheme: light;
+  --paper: #f4f2ed;
+  --ink: #171714;
+  --muted: #77736b;
+  --focus-height: 38vh;
+  --focus-center: 40vh;
+  --feather: 96px;
+  --dial-rotation: -8deg;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.82), transparent 34rem),
+    var(--paper);
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.site-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: min(100% - 48px, 1160px);
+  margin: 0 auto;
+  padding: 28px 0;
+  border-bottom: 1px solid rgba(23, 23, 20, 0.13);
+}
+
+.site-header p,
+.wordmark {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.wordmark {
+  color: inherit;
+  text-decoration: none;
+}
+
+.wordmark span {
+  color: var(--muted);
+}
+
+.site-header p {
+  color: var(--muted);
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+article {
+  width: min(100% - 48px, 680px);
+  margin: 0 auto;
+  padding: clamp(84px, 13vh, 150px) 0 35vh;
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+blockquote {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+}
+
+h1 {
+  max-width: 620px;
+  margin: 0 0 28px;
+  font-size: clamp(64px, 10vw, 112px);
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+}
+
+.dek {
+  margin-bottom: 72px;
+  color: #494740;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.18;
+}
+
+article p {
+  margin: 0 0 30px;
+  font-size: clamp(17px, 1.7vw, 19px);
+  line-height: 1.82;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  margin: 76px 0 24px;
+  font-size: clamp(38px, 6vw, 54px);
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+blockquote {
+  margin: 78px -7vw;
+  padding: 8px 7vw;
+  text-align: center;
+  font-size: clamp(40px, 7vw, 66px);
+  font-style: italic;
+  line-height: 1.08;
+}
+
+.ending {
+  margin-top: 78px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.focus-layer {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blur-zone {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: rgba(244, 242, 237, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  will-change: height, top;
+}
+
+.blur-zone--top {
+  top: 0;
+  height: calc(var(--focus-center) - var(--focus-height) / 2);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
+}
+
+.blur-zone--bottom {
+  bottom: 0;
+  top: calc(var(--focus-center) + var(--focus-height) / 2);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 calc(100% - var(--feather)), transparent 100%);
+}
+
+.focus-frame {
+  position: absolute;
+  top: var(--focus-center);
+  left: 0;
+  width: 100%;
+  height: var(--focus-height);
+  transform: translateY(-50%);
+  border-top: 1px solid rgba(23, 23, 20, 0.035);
+  border-bottom: 1px solid rgba(23, 23, 20, 0.035);
+  transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1), top 160ms ease-out;
+}
+
+.focus-grip {
+  position: absolute;
+  z-index: 1;
+  top: var(--focus-center);
+  left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 30px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border-radius: 9px;
+  outline: none;
+  background: rgba(244, 242, 237, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(23, 23, 20, 0.11);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: top 160ms ease-out, opacity 180ms ease;
+}
+
+.focus-grip span {
+  width: 10px;
+  height: 1px;
+  background: rgba(23, 23, 20, 0.48);
+}
+
+.focus-grip:hover,
+.focus-grip.is-dragging {
+  background: rgba(244, 242, 237, 0.94);
+}
+
+.focus-grip:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--ink),
+    0 0 0 2px var(--paper),
+    0 0 0 3px var(--ink);
+}
+
+.focus-layer.is-positioning .focus-frame,
+.focus-layer.is-positioning .focus-grip {
+  transition: none;
+}
+
+.dial-wrap {
+  position: fixed;
+  z-index: 20;
+  top: 50%;
+  right: 0;
+  width: 112px;
+  height: 208px;
+  transform: translateY(-50%);
+}
+
+.dial-hint {
+  position: absolute;
+  right: 28px;
+  bottom: calc(100% + 16px);
+  width: max-content;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+body.has-adjusted .dial-hint {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+.dial {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid rgba(23, 23, 20, 0.24);
+  border-right: 0;
+  border-radius: 208px 0 0 208px;
+  outline: none;
+  background: rgba(244, 242, 237, 0.88);
+  box-shadow:
+    inset 1px 0 0 rgba(255, 255, 255, 0.8),
+    -4px 0 24px rgba(23, 23, 20, 0.055);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.dial:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--paper),
+    inset 0 0 0 4px var(--ink),
+    -4px 0 24px rgba(23, 23, 20, 0.07);
+}
+
+.dial::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 12px;
+  height: 1px;
+  background: var(--ink);
+}
+
+.dial-scale {
+  position: absolute;
+  top: 50%;
+  right: -100px;
+  width: 200px;
+  height: 200px;
+  transform: translateY(-50%) rotate(var(--dial-rotation));
+  transition: transform 210ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dial-scale span {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 13px;
+  height: 1px;
+  background: rgba(23, 23, 20, 0.38);
+  transform-origin: 100px 50%;
+}
+
+.dial-scale span:nth-child(1) { transform: rotate(-72deg); }
+.dial-scale span:nth-child(2) { transform: rotate(-54deg); }
+.dial-scale span:nth-child(3) { transform: rotate(-36deg); }
+.dial-scale span:nth-child(4) { transform: rotate(-18deg); }
+.dial-scale span:nth-child(5) { transform: rotate(0deg); width: 18px; }
+.dial-scale span:nth-child(6) { transform: rotate(18deg); }
+.dial-scale span:nth-child(7) { transform: rotate(36deg); }
+.dial-scale span:nth-child(8) { transform: rotate(54deg); }
+.dial-scale span:nth-child(9) { transform: rotate(72deg); }
+
+.dial-readout {
+  position: absolute;
+  top: 50%;
+  right: 19px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  transform: translateY(-50%);
+  font-variant-numeric: tabular-nums;
+}
+
+.dial-prefix {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.dial-value {
+  min-width: 36px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+}
+
+.dial.is-clicking .dial-readout {
+  animation: settle 180ms ease-out;
+}
+
+@keyframes settle {
+  0% { transform: translateY(-50%) scale(1); }
+  45% { transform: translateY(-50%) scale(0.94); }
+  100% { transform: translateY(-50%) scale(1); }
+}
+
+@media (max-width: 700px) {
+  :root {
+    --feather: 68px;
+  }
+
+  .site-header {
+    width: calc(100% - 36px);
+    padding: 20px 0;
+  }
+
+  .site-header p {
+    display: none;
+  }
+
+  article {
+    width: calc(100% - 52px);
+    padding-top: 70px;
+  }
+
+  blockquote {
+    margin-inline: -10px;
+    padding-inline: 10px;
+  }
+
+  .dial-wrap {
+    width: 86px;
+    height: 168px;
+  }
+
+  .dial-scale {
+    right: -82px;
+    width: 164px;
+    height: 164px;
+  }
+
+  .dial-scale span {
+    transform-origin: 82px 50%;
+  }
+
+  .dial-readout {
+    right: 12px;
+  }
+
+  .dial-value {
+    min-width: 30px;
+    font-size: 24px;
+  }
+
+  .dial-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .focus-frame,
+  .focus-grip,
+  .dial-scale,
+  .dial-hint {
+    transition: none;
+  }
+
+  .dial.is-clicking .dial-readout {
+    animation: none;
+  }
+}

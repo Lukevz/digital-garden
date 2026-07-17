@@ -5,6 +5,10 @@
 
 export default [
   {
+    "file": "ApertureDHD.md",
+    "created": "2026-07-17"
+  },
+  {
     "file": "GymBud.md",
     "created": "2025-12-24"
   },

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f2ed">
+  <meta name="description" content="ApertureDHD is a reading focus experiment that lets you dial in how much of the page stays in focus.">
+  <title>ApertureDHD — Reading focus experiment</title>
+  <link rel="stylesheet" href="/experiments/aperturedhd/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="/" aria-label="Back to home">Aperture<span>DHD</span></a>
+    <p>Reading focus experiment</p>
+  </header>
+
+  <main>
+    <article>
+      <p class="eyebrow">Attention, by design</p>
+      <h1>The shape of focus</h1>
+      <p class="dek">We read with our eyes, but attention behaves more like a lens. It narrows, widens, and constantly decides what deserves to remain clear.</p>
+
+      <p>Modern screens are very good at presenting information and less good at helping us stay with it. Every edge is an invitation: another tab, another alert, another path away from the sentence in front of us. The page may be still, yet our attention is always moving.</p>
+
+      <h2>A smaller field</h2>
+      <p>Good reading has a rhythm. A line enters view, meaning gathers, and the eye moves on. When everything asks to be seen at once, that rhythm gets harder to find. Reducing the visible field is not about hiding the page. It is about giving one part of it permission to matter more.</p>
+
+      <p>ApertureDHD borrows a familiar idea from photography. A camera aperture changes the depth of field: how much of a scene appears sharp. Here, the dial changes the depth of attention. A low setting holds only a few lines in focus. A higher setting lets the surrounding argument come into view.</p>
+
+      <blockquote>Clarity is not the absence of information. It is knowing where to look.</blockquote>
+
+      <h2>Reading at your own depth</h2>
+      <p>There is no perfect setting. Dense writing may benefit from a narrow window that slows the eye. A story may feel better with more context visible around each paragraph. The useful aperture is the one that matches the way you want to read right now.</p>
+
+      <p>The control stays at the edge because it should remain available without becoming another object to manage. Drag it upward to widen the field. Pull it down to tighten your view. Each stop lands with a small click, making the adjustment deliberate rather than continuous and slippery.</p>
+
+      <h2>Attention can be quiet</h2>
+      <p>Focus tools often add dashboards, timers, scores, and streaks. Those systems can help, but they can also become another layer between a reader and the thing they came to read. This experiment asks less. It changes the page, then gets out of the way.</p>
+
+      <p>When the periphery softens, the center feels calmer. The words have more room. The next line becomes the obvious place to go, and for a moment the screen stops behaving like a collection of possibilities. It becomes a page again.</p>
+
+      <p class="ending">Keep reading. Adjust when the shape of your attention changes.</p>
+    </article>
+  </main>
+
+  <div class="focus-layer">
+    <div class="blur-zone blur-zone--top" aria-hidden="true"></div>
+    <div class="focus-frame" aria-hidden="true"></div>
+    <div
+      class="focus-grip"
+      id="focusGrip"
+      role="slider"
+      tabindex="0"
+      aria-label="Focus region vertical position"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="40"
+      aria-valuetext="Focus region near the upper center of the screen"
+    >
+      <span></span>
+      <span></span>
+    </div>
+    <div class="blur-zone blur-zone--bottom" aria-hidden="true"></div>
+  </div>
+
+  <div class="dial-wrap">
+    <p class="dial-hint" id="dialHint">Drag up or down</p>
+    <div
+      class="dial"
+      id="apertureDial"
+      role="slider"
+      tabindex="0"
+      aria-label="Reading focus aperture"
+      aria-describedby="dialHint"
+      aria-valuemin="1"
+      aria-valuemax="8"
+      aria-valuenow="4"
+      aria-valuetext="f/4, medium focus region"
+    >
+      <div class="dial-scale" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="dial-readout">
+        <span class="dial-prefix">f /</span>
+        <span class="dial-value">4</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/experiments/aperturedhd/app.js"></script>
+</body>
+</html>

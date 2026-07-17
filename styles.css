@@ -831,53 +831,139 @@
       .tl-logo__img { transition: none; }
     }
 
-    /* Experiments — full-width glass "coming soon" panel at the foot of the feed. */
-    .experiments-cta {
+    /* Experiments */
+    .experiment-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(260px, 1.1fr) minmax(240px, 0.9fr) auto;
+      align-items: center;
+      gap: clamp(24px, 5vw, 64px);
+      min-height: 300px;
+      overflow: hidden;
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 20px;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .experiment-card:hover {
+      transform: translateY(-3px);
+      box-shadow: inset 0 0 0 1px var(--glass-border-strong);
+    }
+    .experiment-card:focus-visible {
+      outline: 2px solid var(--text-primary);
+      outline-offset: 3px;
+    }
+    .experiment-card__preview {
+      position: relative;
+      align-self: stretch;
+      min-height: 300px;
+      overflow: hidden;
+      background: #f2f0eb;
+      border-right: 1px solid rgba(23, 23, 20, 0.08);
+    }
+    .experiment-card__copy {
+      position: absolute;
+      top: 54px;
+      left: 12%;
+      width: 68%;
+      height: 190px;
+      opacity: 0.55;
+      background: repeating-linear-gradient(
+        to bottom,
+        #3c3b37 0 2px,
+        transparent 2px 15px
+      );
+    }
+    .experiment-card__focus {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 88px;
+      transform: translateY(-50%);
+      border-block: 1px solid rgba(23, 23, 20, 0.08);
+      box-shadow: 0 -70px 45px rgba(242, 240, 235, 0.88), 0 70px 45px rgba(242, 240, 235, 0.88);
+    }
+    .experiment-card__dial {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      right: 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      width: 72px;
+      height: 132px;
+      padding-left: 10px;
+      transform: translateY(-50%);
+      color: #171714;
+      border: 1px solid rgba(23, 23, 20, 0.26);
+      border-right: 0;
+      border-radius: 132px 0 0 132px;
+      background: rgba(242, 240, 235, 0.9);
+      font-size: 9px;
+      font-weight: 500;
+    }
+    .experiment-card__dial b {
+      margin-left: 3px;
+      font-size: 21px;
+      font-weight: 500;
+    }
+    .experiment-card__body {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      width: 100%;
-      min-height: 250px;
-      padding: 48px 24px;
-      border-radius: 20px;
-      text-align: center;
-      background: var(--glass-bg);
-      box-shadow: inset 0 0 0 1px var(--glass-border);
-      backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
-      -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      gap: 9px;
     }
-    .experiments-cta__icon {
-      width: 52px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .experiment-card__body strong {
+      font-size: clamp(26px, 4vw, 38px);
+      line-height: 1;
+      letter-spacing: -0.04em;
     }
-    .experiments-cta__icon svg {
-      display: block;
-      width: 52px;
-      height: 52px;
+    .experiment-card__body > span:last-child {
+      max-width: 320px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.55;
     }
-    .experiments-cta__title {
-      margin: 0;
-      font-size: clamp(24px, 4vw, 30px);
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.15;
-    }
-    .experiments-cta__badge {
-      font-size: 11px;
+    .experiment-card__meta {
+      color: var(--text-secondary);
+      font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+    .experiment-card__arrow {
+      align-self: start;
+      margin: 28px 28px 0 0;
       color: var(--text-secondary);
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 6px;
-      padding: 4px 10px;
-      user-select: none;
+      font-size: 18px;
+      transition: transform 0.25s ease, color 0.25s ease;
+    }
+    .experiment-card:hover .experiment-card__arrow {
+      color: var(--text-primary);
+      transform: translate(2px, -2px);
+    }
+    @media (max-width: 680px) {
+      .experiment-card {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+      .experiment-card__preview {
+        min-height: 230px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(23, 23, 20, 0.08);
+      }
+      .experiment-card__body {
+        padding: 28px;
+      }
+      .experiment-card__arrow {
+        position: absolute;
+        right: 0;
+        bottom: 38px;
+      }
     }
 
     /* Writing — minimal table */
