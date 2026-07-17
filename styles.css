@@ -1013,6 +1013,51 @@
     }
     .tl-group--left .tl-blurb { text-align: right; }
 
+    /* Opposite-side media — sits across the rail from each role card.
+       Right-side text → image on the left; left-side text → image on the right.
+       Height tracks the card content (stops above the inter-role gap) so
+       placeholders never spill into the next job. */
+    .tl-media {
+      position: absolute;
+      top: 0;
+      bottom: 64px;                     /* matches .tl-position padding-bottom */
+      width: calc(100% - 8px);
+      margin: 0;
+      pointer-events: none;
+    }
+    .tl-position:last-child .tl-media {
+      bottom: 0;
+    }
+    .tl-group--right .tl-media {
+      right: calc(100% + (2 * var(--tl-gap)));
+    }
+    .tl-group--left .tl-media {
+      left: calc(100% + (2 * var(--tl-gap)));
+    }
+    .tl-media__ph {
+      height: 100%;
+      width: 100%;
+      border-radius: 14px;
+      background:
+        linear-gradient(
+          145deg,
+          color-mix(in oklab, var(--text-secondary) 10%, var(--surface-raised)) 0%,
+          color-mix(in oklab, var(--text-secondary) 18%, var(--surface-raised)) 100%);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    }
+    .tl-media__ph::after {
+      content: "Image";
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: color-mix(in oklab, var(--text-secondary) 55%, transparent);
+    }
+
     .tl-cta {
       display: inline-flex;
       align-items: center;
@@ -1089,6 +1134,8 @@
     /* Narrow: collapse to a single left-rail column. */
     @media (max-width: 720px) {
       .timeline { --tl-gap: 28px; }
+
+      .tl-media { display: none; }
 
       /* Rail center sits at x = 8px; nodes + branch starts lock to it. */
       .tl-rail {
@@ -6634,7 +6681,7 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
    #chatOverlay modal (see below) once the first message is sent. */
 #chatDock {
   position: fixed;
-  bottom: 20px;
+  bottom: 36px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9000;
