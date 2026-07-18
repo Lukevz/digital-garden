@@ -9,13 +9,22 @@
   <link rel="stylesheet" href="/experiments/aperturedhd/styles.css">
 </head>
 <body>
+  <div class="sample-tabs-bar">
+    <div class="sample-tabs" role="tablist" aria-label="Writing sample">
+      <button type="button" class="sample-tab is-active" role="tab" id="tab-focus" aria-selected="true" aria-controls="panel-focus" data-sample="focus">The Shape of Focus</button>
+      <button type="button" class="sample-tab" role="tab" id="tab-crazy-ones" aria-selected="false" aria-controls="panel-crazy-ones" tabindex="-1" data-sample="crazy-ones">Here's to the Crazy Ones</button>
+      <button type="button" class="sample-tab" role="tab" id="tab-creativity-inc" aria-selected="false" aria-controls="panel-creativity-inc" tabindex="-1" data-sample="creativity-inc">Creativity, Inc.</button>
+      <button type="button" class="sample-tab" role="tab" id="tab-man-in-arena" aria-selected="false" aria-controls="panel-man-in-arena" tabindex="-1" data-sample="man-in-arena">The Man in the Arena</button>
+    </div>
+  </div>
+
   <header class="site-header">
     <a class="wordmark" href="/" aria-label="Back to home">Aperture<span>DHD</span></a>
     <p>Reading focus experiment</p>
   </header>
 
   <main>
-    <article>
+    <article id="panel-focus" class="sample-panel is-active" role="tabpanel" aria-labelledby="tab-focus">
       <p class="eyebrow">Attention, by design</p>
       <h1>The shape of focus</h1>
       <p class="dek">We read with our eyes, but attention behaves more like a lens. It narrows, widens, and constantly decides what deserves to remain clear.</p>
@@ -41,6 +50,75 @@
 
       <p class="ending">Keep reading. Adjust when the shape of your attention changes.</p>
     </article>
+
+    <article id="panel-crazy-ones" class="sample-panel" role="tabpanel" aria-labelledby="tab-crazy-ones" hidden>
+      <p class="eyebrow">Ad copy, revisited</p>
+      <h1>Here's to the crazy ones</h1>
+      <p class="dek">In the fall of 1997, Apple aired a commercial that sold nothing. No product appeared on screen. The company simply said who it believed in, and let the rest follow.</p>
+
+      <p>Steve Jobs had just returned to the company he co-founded, and its product line at the time was a confusing lineup of look-alike machines that even loyal customers struggled to tell apart. Before he changed a single product, he commissioned an ad. It ran during football games and awards shows: sixty seconds of black-and-white footage of Einstein, Gandhi, Amelia Earhart, and Muhammad Ali, cut together under a single voice reading a single paragraph.</p>
+
+      <h2>A statement of values, not features</h2>
+      <p>Most advertising sells a feature: faster, cheaper, easier. This one made an argument about who deserved admiration in the first place. It told the misfits watching at home that the qualities which got them labeled difficult — stubbornness, a refusal to see things the accepted way — were exactly the qualities the world eventually thanks people for. That is a strange thing for a computer company to say. It also turned out to be the thing that mattered most.</p>
+
+      <p>The words weren't written to be remembered forever. They were written to get a struggling company through one difficult year. They outlasted the year by a couple of decades, mostly because the sentiment inside them was never really about computers.</p>
+
+      <blockquote>Here's to the crazy ones. The misfits. The rebels. The troublemakers. The round pegs in the square holes. The ones who see things differently. They're not fond of rules. And they have no respect for the status quo. You can quote them, disagree with them, glorify or vilify them. About the only thing you can't do is ignore them. Because they change things. They push the human race forward. And while some may see them as the crazy ones, we see genius. Because the people who are crazy enough to think they can change the world, are the ones who do.</blockquote>
+      <p class="sample-attribution">— Apple, "Think Different" campaign (1997), narrated by Steve Jobs</p>
+
+      <h2>Why it still gets repeated</h2>
+      <p>Quotes get worn smooth by overuse, and this one has been printed on more posters and slide decks than almost any paragraph in modern business writing. That kind of repetition usually kills a piece of writing. This one seems to survive it, maybe because the underlying claim is hard to argue with: the people who do get remembered are, disproportionately, the ones who wouldn't stop pushing on an idea everyone else had already dismissed.</p>
+
+      <p>It also helps that it was never trying to be literature. It was a script, written to be read aloud in sixty seconds flat, which is part of why it moves the way it does on the page — short clauses, almost no subordination, built for momentum rather than nuance.</p>
+
+      <p class="ending">Read it again slowly. It was written to be read at speed, and slowing down changes what it says.</p>
+    </article>
+
+    <article id="panel-creativity-inc" class="sample-panel" role="tabpanel" aria-labelledby="tab-creativity-inc" hidden>
+      <p class="eyebrow">Book extract, with context</p>
+      <h1>From suck to not-suck</h1>
+      <p class="dek">Ed Catmull co-founded Pixar and then spent decades trying to explain, mostly to himself, why so many good ideas turn out to be bad in the room and only become good again after being taken apart in public.</p>
+
+      <p>Every Pixar film, according to the people who make them, is terrible for most of its production. Not slightly rough — terrible. Early cuts of Toy Story were, by the studio's own later account, unpleasant to watch, and the project came close to being shut down entirely before it found its shape. That is not the origin story most people assume for a studio known for films that work.</p>
+
+      <h2>The ugly baby problem</h2>
+      <p>Catmull's writing keeps returning to one image: the ugly baby. A new idea, in its first form, is fragile and strange-looking, the way a newborn is fragile and strange-looking to everyone except its parents. Criticize it too early and too bluntly, and it dies before it has a chance to become what it might become. Protect it too long, shielding it from any scrutiny, and it never gets the correction it needs either. The job of a good creative culture, in his account, is holding both truths at the same time.</p>
+
+      <p>That balancing act is why Pixar built what it calls the Braintrust — a small group of directors who review each other's films in progress, under a single rule: no authority, only opinions. Nobody can order a change. A director can sit through five hours of blunt feedback and walk out having accepted none of it, and that has to be acceptable, because the alternative — feedback with teeth, feedback that must be obeyed — teaches people to avoid giving it honestly.</p>
+
+      <blockquote>Early on, all of our movies suck. That is a blunt assessment, I know, but I make a point of repeating it, over and over, to reassure my colleagues who are worried about the current, in-process films that we're making. Pixar films are not good at first, and our job is to make them so — to go, as I say, from suck to not-suck. We are true believers in the power of bracing, candid feedback and the iterative process — reworking, reworking, and reworking again, until a flawed story finds its throughline or a hollow character finds its soul.</blockquote>
+      <p class="sample-attribution">— Ed Catmull with Amy Wallace, <em>Creativity, Inc.</em> (2014)</p>
+
+      <h2>Iteration as the actual plan</h2>
+      <p>What Catmull is describing isn't a trick for getting to a good draft faster. It's an admission that there is no shortcut around the bad draft. Every film starts confused about what it's actually about, and the only way through is enough honest passes that the real story — the one hiding underneath the pitch — has room to surface.</p>
+
+      <p>The same is true of most things worth finishing. The version in your head is never the version on the page, not on the first try, and treating the gap between them as failure instead of process is how good ideas get abandoned early.</p>
+
+      <p class="ending">Not-suck is not a finish line. It's just the point where the reworking starts to show.</p>
+    </article>
+
+    <article id="panel-man-in-arena" class="sample-panel" role="tabpanel" aria-labelledby="tab-man-in-arena" hidden>
+      <p class="eyebrow">Speech, in context</p>
+      <h1>The man in the arena</h1>
+      <p class="dek">In April 1910, a former U.S. president stood up at the Sorbonne in Paris and gave a speech ostensibly about citizenship. One paragraph of it outlived nearly everything else he said that day.</p>
+
+      <p>Theodore Roosevelt had left office a year earlier and was touring Europe when he delivered "Citizenship in a Republic," a long, dense address about civic duty that most people have never read past its most famous stretch. The line everyone quotes was, in the original speech, one argument buried in the middle of a much longer one: that a republic is judged less by its critics than by the people actually attempting things in public, where failure is visible to everyone watching.</p>
+
+      <h2>Criticism is cheap because it's safe</h2>
+      <p>Roosevelt wasn't arguing that critics are always wrong. He was arguing that criticism carries no risk for the person offering it, and that this asymmetry — commentary without exposure, judgment without a scoreboard — deserves to be weighed accordingly. The doer stumbles in front of everyone. The critic never has to.</p>
+
+      <p>It's a specific, almost narrow claim, and it gets flattened in modern use into something closer to "don't listen to your critics." The original is more demanding than that. It doesn't say critics are wrong. It says their position is easier, and that comfort is not the same thing as being right.</p>
+
+      <blockquote>It is not the critic who counts; not the man who points out how the strong man stumbles, or where the doer of deeds could have done them better. The credit belongs to the man who is actually in the arena, whose face is marred by dust and sweat and blood; who strives valiantly; who errs, who comes short again and again, because there is no effort without error and shortcoming; but who does actually strive to do the deeds; who knows great enthusiasms, the great devotions; who spends himself in a worthy cause; who at the best knows in the end the triumph of high achievement, and who at the worst, if he fails, at least fails while daring greatly, so that his place shall never be with those cold and timid souls who neither know victory nor defeat.</blockquote>
+      <p class="sample-attribution">— Theodore Roosevelt, "Citizenship in a Republic" (1910)</p>
+
+      <h2>Why it still lands</h2>
+      <p>Every field has its version of the arena: the draft published before it's ready, the venture that might fail in full view, the argument made in a room where you could be shown wrong. What Roosevelt is describing is the tax on visibility — the fact that trying costs something the sideline never has to pay.</p>
+
+      <p>Whatever you're building right now, somebody watching has better footing to criticize it than you have to build it. That was true in 1910. It hasn't stopped being true since.</p>
+
+      <p class="ending">The arena doesn't care whether the crowd is right. It only cares whether you stayed in it.</p>
+    </article>
   </main>
 
   <div class="focus-layer">
@@ -52,6 +130,7 @@
       role="slider"
       tabindex="0"
       aria-label="Focus region vertical position"
+      aria-describedby="dialHint"
       aria-valuemin="0"
       aria-valuemax="100"
       aria-valuenow="40"
@@ -60,18 +139,17 @@
       <span></span>
       <span></span>
     </div>
+    <p class="dial-hint" id="dialHint">Drag up or down</p>
     <div class="blur-zone blur-zone--bottom" aria-hidden="true"></div>
   </div>
 
   <div class="dial-wrap">
-    <p class="dial-hint" id="dialHint">Drag up or down</p>
     <div
       class="dial"
       id="apertureDial"
       role="slider"
       tabindex="0"
       aria-label="Reading focus aperture"
-      aria-describedby="dialHint"
       aria-valuemin="1"
       aria-valuemax="8"
       aria-valuenow="4"

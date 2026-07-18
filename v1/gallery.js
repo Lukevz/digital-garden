@@ -51,7 +51,7 @@ export default [
       "gallery/2023 Snaps/thumbs/IMG_7193.jpeg",
       "gallery/2023 Snaps/thumbs/IMG_7198.jpeg"
     ],
-    "created": "2023-01-28"
+    "created": "2026-03-21"
   },
   {
     "folder": "2024 Snaps",
@@ -137,7 +137,7 @@ export default [
       "gallery/2024 Snaps/thumbs/IMG_8943.JPG",
       "gallery/2024 Snaps/thumbs/IMG_9287.JPG"
     ],
-    "created": "2024-01-07"
+    "created": "2026-03-21"
   },
   {
     "folder": "2025 Snaps",
@@ -171,7 +171,7 @@ export default [
       "gallery/2025 Snaps/thumbs/IMG_9825.JPG",
       "gallery/2025 Snaps/thumbs/IMG_9921.JPG"
     ],
-    "created": "2025-02-23"
+    "created": "2026-03-21"
   },
   {
     "folder": "Cloudland Canyon October 2025",
@@ -259,7 +259,7 @@ export default [
       "gallery/Cloudland Canyon October 2025/thumbs/IMG_6859.jpeg",
       "gallery/Cloudland Canyon October 2025/thumbs/IMG_8070.jpeg"
     ],
-    "created": "2025-03-05"
+    "created": "2026-03-21"
   },
   {
     "folder": "Disney World December 2024",
@@ -559,7 +559,7 @@ export default [
       "gallery/Disney World December 2024/thumbs/IMG_9100.JPG",
       "gallery/Disney World December 2024/thumbs/IMG_9101.JPG"
     ],
-    "created": "2024-12-01"
+    "created": "2026-03-21"
   },
   {
     "folder": "Gibsons, B.C. December 2025",
@@ -895,7 +895,7 @@ export default [
       "gallery/Gibsons, B.C. December 2025/thumbs/IMG_8051.jpeg",
       "gallery/Gibsons, B.C. December 2025/thumbs/IMG_8104.jpeg"
     ],
-    "created": "2025-12-29"
+    "created": "2026-03-21"
   },
   {
     "folder": "Gibsons, B.C. July 2022",
@@ -965,7 +965,7 @@ export default [
       "gallery/Gibsons, B.C. July 2022/thumbs/DSC03613.jpg",
       "gallery/Gibsons, B.C. July 2022/thumbs/DSC03628.jpg"
     ],
-    "created": "2026-01-02"
+    "created": "2026-03-21"
   },
   {
     "folder": "Montana October 2024",
@@ -1183,7 +1183,7 @@ export default [
       "gallery/Montana October 2024/thumbs/IMG_9698.jpeg",
       "gallery/Montana October 2024/thumbs/IMG_9701.jpeg"
     ],
-    "created": "2024-10-07"
+    "created": "2026-03-21"
   },
   {
     "folder": "NYC September 2022",
@@ -1281,6 +1281,6 @@ export default [
       "gallery/NYC September 2022/thumbs/DSC05831.jpg",
       "gallery/NYC September 2022/thumbs/DSC05839.jpg"
     ],
-    "created": "2025-12-29"
+    "created": "2026-03-21"
   }
 ];

@@ -141,6 +141,80 @@ blockquote {
   font-size: 14px;
 }
 
+.sample-attribution {
+  margin-top: -6px;
+  color: var(--muted);
+  font-size: 14px;
+  font-style: normal;
+}
+
+blockquote + .sample-attribution {
+  margin-top: -58px;
+  margin-bottom: 56px;
+  text-align: center;
+}
+
+.sample-tabs-bar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  width: 100%;
+  background: rgba(244, 242, 237, 0.72);
+  border-bottom: 1px solid rgba(23, 23, 20, 0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.sample-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 8px;
+  width: min(100% - 48px, 900px);
+  margin: 0 auto;
+  padding: 26px 0;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sample-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sample-tab {
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sample-tab:hover {
+  color: var(--ink);
+}
+
+.sample-tab.is-active {
+  background: rgba(23, 23, 20, 0.06);
+  color: var(--ink);
+}
+
+.sample-tab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.sample-panel[hidden] {
+  display: none;
+}
+
 .focus-layer {
   position: fixed;
   z-index: 10;
@@ -192,13 +266,13 @@ blockquote {
   left: 18px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  width: 30px;
-  height: 18px;
+  gap: 5px;
+  width: 42px;
+  height: 28px;
   align-items: center;
   justify-content: center;
   transform: translateY(-50%);
-  border-radius: 9px;
+  border-radius: 14px;
   outline: none;
   background: rgba(244, 242, 237, 0.72);
   box-shadow: inset 0 0 0 1px rgba(23, 23, 20, 0.11);
@@ -211,8 +285,8 @@ blockquote {
 }
 
 .focus-grip span {
-  width: 10px;
-  height: 1px;
+  width: 16px;
+  height: 2px;
   background: rgba(23, 23, 20, 0.48);
 }
 
@@ -229,7 +303,8 @@ blockquote {
 }
 
 .focus-layer.is-positioning .focus-frame,
-.focus-layer.is-positioning .focus-grip {
+.focus-layer.is-positioning .focus-grip,
+.focus-layer.is-positioning .dial-hint {
   transition: none;
 }
 
@@ -245,21 +320,22 @@ blockquote {
 
 .dial-hint {
   position: absolute;
-  right: 28px;
-  bottom: calc(100% + 16px);
+  z-index: 1;
+  top: var(--focus-center);
+  left: 70px;
   width: max-content;
   margin: 0;
+  transform: translateY(-50%);
   color: var(--muted);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: opacity 400ms ease, transform 400ms ease;
+  transition: top 160ms ease-out, opacity 400ms ease, transform 400ms ease;
 }
 
 body.has-adjusted .dial-hint {
   opacity: 0;
-  transform: translateY(5px);
 }
 
 .dial {
@@ -379,6 +455,18 @@ body.has-adjusted .dial-hint {
   article {
     width: calc(100% - 52px);
     padding-top: 70px;
+  }
+
+  .sample-tabs {
+    justify-content: flex-start;
+    width: calc(100% - 52px);
+    gap: 4px;
+    padding: 18px 0;
+  }
+
+  .sample-tab {
+    padding: 8px 14px;
+    font-size: 12px;
   }
 
   blockquote {

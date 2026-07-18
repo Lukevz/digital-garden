@@ -619,7 +619,9 @@
     // starts typing; it only hands off to the full overlay once they send.
     function updateDockExpansion() {
       if (!chatDock || !chatDockInput) return;
-      chatDock.classList.toggle('is-expanded', chatDockInput.value.trim().length > 0);
+      const hasText = chatDockInput.value.trim().length > 0;
+      chatDock.classList.toggle('is-expanded', hasText);
+      if (chatDockSend) chatDockSend.disabled = !hasText;
     }
 
     // ── Hero answer: on the home page the dock streams its answer straight
@@ -813,6 +815,7 @@
       if (!text) return;
       chatDockInput.value = '';
       chatDock.classList.remove('is-expanded');
+      if (chatDockSend) chatDockSend.disabled = true;
       chatDockInput.blur();
       if (heroAvailable()) {
         askInHero(text);
@@ -2750,7 +2753,8 @@
 
           const mdCount = mdResult.status === 'fulfilled' ? mdResult.value.length : 0;
           const videoCount = videosResult.status === 'fulfilled' ? videosResult.value.length : 0;
-          const total = mdCount + videoCount;
+          // Videos is imports-only, so its count excludes any written posts.
+          const total = slug === 'videos' ? videoCount : mdCount + videoCount;
           const label = handles.length ? 'item' : 'post';
 
           setSectionCount(appName, total, label);
@@ -2772,11 +2776,12 @@
       }, 140);
     }
 
-    function renderMixedIndex(section) {
+    function renderMixedIndex(section, videosOnly = false) {
       fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
 
       const videosFetch = fetchSectionVideos(section);
-      const mdFetch = fetch(`/api/content/list?category=${section}`)
+      // videosOnly sections (e.g. Videos) show imported clips only, no written posts.
+      const mdFetch = videosOnly ? Promise.resolve([]) : fetch(`/api/content/list?category=${section}`)
         .then(r => r.json())
         .then(({ items, files }) => items || (files || []).map(f => ({ file: f, date: '1970-01-01' })))
         .catch(() => []);
@@ -3321,7 +3326,7 @@
       if (section === 'logbook')   { renderLogbook(); return; }
 
       if (section === 'videos') {
-        renderMixedIndex(section);
+        renderMixedIndex(section, true);
         return;
       }
 
@@ -3753,6 +3758,7 @@
       const belowFold = document.getElementById('belowFold');
       const glowTrack = document.querySelector('.hero-glow-track');
       const topBar = document.getElementById('topBar');
+      const heroEl = document.getElementById('heroSection');
       if (!belowFold || !glowTrack) return;
 
       const reduced = typeof matchMedia === 'function'
@@ -3805,6 +3811,14 @@
         document.body.style.setProperty('--intro-greeting-reveal', clamped.toFixed(3));
       }
 
+      // The timeline ("My Career") holds hidden until the aurora has cleared,
+      // then fades in as it rises into view — so it doesn't show through the
+      // hero glow. Read as opacity via --timeline-reveal on #homeTimeline.
+      function setTimelineReveal(reveal) {
+        const clamped = Math.max(0, Math.min(1, reveal));
+        document.body.style.setProperty('--timeline-reveal', clamped.toFixed(3));
+      }
+
       // Smooth 0 → 1 ramp as p travels from `start` to `end` (outside → clamped).
       function fadeBetween(p, start, end) {
         if (p <= start) return 0;
@@ -3818,10 +3832,19 @@
         if (navPinnedOpen()) {
           setNavReveal(1);
           setGreetingReveal(0);
+          setTimelineReveal(1);
           return;
         }
 
-        const vh = window.innerHeight || document.documentElement.clientHeight;
+        // "One screen" of scroll is the HERO's own rendered height, not the raw
+        // window height — they're only the same when the hero is exactly 100vh.
+        // With a shorter hero (variant B, see body.hero-v2 in styles.css) the
+        // below-fold seam sits well above the window's bottom at scroll 0, and
+        // keying this off window.innerHeight read that as "already scrolled
+        // partway," fading the aurora out (and mistiming the greeting/nav
+        // hand-off) before the user ever scrolled.
+        const vh = (heroEl && heroEl.getBoundingClientRect().height)
+          || window.innerHeight || document.documentElement.clientHeight;
         const seam = belowFold.getBoundingClientRect().top; // viewport-y of the gradient seam
         const travel = Math.max(0, vh - seam);              // px the seam has risen from the bottom
         const progress = vh > 0 ? Math.min(1, travel / vh) : 0;
@@ -3843,6 +3866,9 @@
         const greetOut = fadeBetween(scrollProgress, GREET_OUT_START, GREET_OUT_END);
         setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : (1 - greetOut));
         setNavReveal(fadeBetween(scrollProgress, NAV_IN_START, NAV_IN_END));
+        // Reveal the timeline once past the aurora (fully faded by GLOW_FADE_END
+        // ≈ 0.55), ramping in just after so it never bleeds through the glow.
+        setTimelineReveal(fadeBetween(scrollProgress, 0.62, 0.92));
       }
 
       function onScroll() {

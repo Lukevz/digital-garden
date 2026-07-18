@@ -13,6 +13,7 @@
     /* ── Grid canvas ── */
     const canvas = document.getElementById('dotGrid');
     const ctx    = canvas.getContext('2d');
+    const heroEl = document.getElementById('heroSection');
     let gridLogicalW = 0;
     let gridLogicalH = 0;
     let gridDpr = 1;
@@ -47,6 +48,7 @@
     // theme wipe ramps this 0↔1, so the celestial swing animates with it.
     let themeBlend = 1;
     let bodyPivot = { cx: 0, cy: 0 }; // centre the sky rotates about
+    let deathStarPivot = { cx: 0, cy: 0 }; // Death Star's own (higher) pivot — see buildBodies
     let frameBodies = null;           // per-frame rotated body positions
 
     function setGridDotBlend(blend) {
@@ -86,6 +88,15 @@
       // far side land tucked up toward the top corners (matching how the moon
       // nestles into the top-left in dark mode) rather than sagging low.
       bodyPivot = { cx: w / 2, cy: h * 0.42 };
+      // The Death Star gets its own, higher pivot: swinging it about the
+      // shared bodyPivot would land it ~75-85% down the viewport in light
+      // mode, right inside the .hero-glow-track band — which paints above
+      // the star canvas (z-index 8 vs. 1), hiding it completely behind the
+      // gradient. A higher pivot keeps its light-mode landing spot well
+      // clear of the glow while leaving the dark-mode (authored) position
+      // untouched — the rotation is identity at themeBlend=1 regardless of
+      // pivot.
+      deathStarPivot = { cx: w / 2, cy: h * 0.30 };
     }
 
     // Snappy ease for the celestial swing: near-flat and slow at both ends, a
@@ -117,10 +128,11 @@
       const out = {};
       for (const key in bodies) {
         const b = bodies[key];
-        const dx = b.cx - bodyPivot.cx, dy = b.cy - bodyPivot.cy;
+        const pivot = key === 'deathStar' ? deathStarPivot : bodyPivot;
+        const dx = b.cx - pivot.cx, dy = b.cy - pivot.cy;
         out[key] = {
-          cx: bodyPivot.cx + dx * ca - dy * sa,
-          cy: bodyPivot.cy + dx * sa + dy * ca,
+          cx: pivot.cx + dx * ca - dy * sa,
+          cy: pivot.cy + dx * sa + dy * ca,
           r: b.r,
         };
       }
@@ -322,7 +334,10 @@
       if (prefersReducedMotion) return 0;
       const b = document.body.classList;
       if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) return 0;
-      const vh = gridLogicalH || innerHeight || 1;
+      // Scaled to the hero's own rendered height (not the raw window height)
+      // so the collapse stays in sync with the content rise/glow fade driven
+      // by heroParallax() in main.js — the two match only when hero=100vh.
+      const vh = (heroEl && heroEl.getBoundingClientRect().height) || gridLogicalH || innerHeight || 1;
       const sy = window.pageYOffset || document.documentElement.scrollTop || 0;
       const p = sy / (vh * GENIE.range);
       return p < 0 ? 0 : p > 1 ? 1 : p;

@@ -1,83 +1,192 @@
 /**
- * Career timeline — scroll-lit rail.
+ * Career timeline — horizontal scroll-jacked rail.
  *
- * The left rail (.tl-rail__fill) behaves like a live scroll indicator: it fills
- * down to a "beam" line pinned near the viewport center. Every node dot and
- * highlight dot whose center the beam has passed gets `.is-lit` (a soft blue
- * glow). Purely scroll-driven — no looping animation — so it stays calm and
- * plays nicely with prefers-reduced-motion (only CSS transitions are gated).
+ * #tlScroll is a tall wrapper; #tlPin is its sticky (position: sticky) child.
+ * While the wrapper scrolls past, the pin stays stuck in the viewport and
+ * #tlTrack is translated horizontally in lockstep with how far the wrapper
+ * has scrolled — so ordinary vertical scrolling reads as the rail sweeping
+ * left, most-recent-role-first. Progress is derived purely from
+ * #tlScroll's own getBoundingClientRect().top, so it doesn't matter what
+ * else on the page is scrolling or how tall anything above it is.
+ *
+ * A fixed focus point ("beam") sits near the left of the pin's viewport.
+ * Once a node/card's center has scrolled past it, it gains `.is-lit` (glow +
+ * logo reveal on the node, a fade/rise-in on the card) — same idea as the
+ * old vertical version, just read off horizontal rects instead of vertical
+ * ones (no scrollY math needed: while pinned, elements' viewport-relative
+ * rects already reflect their true on-screen position).
+ *
+ * On narrow viewports or prefers-reduced-motion, the pin never engages —
+ * #tlPin instead stays a plain native horizontally-scrollable strip (see
+ * the default, non-`.tl-scroll--pinned` rules in styles.css) that users
+ * swipe through directly, and lighting is driven off its native `scroll`
+ * event instead of the pin/translate math.
  */
 (function () {
-  const timeline = document.getElementById('careerTimeline');
-  if (!timeline) return;
+  const scrollWrap = document.getElementById('tlScroll');
+  if (!scrollWrap) return;
 
-  const fill = document.getElementById('tlRailFill');
-  const rail = timeline.querySelector('.tl-rail');
-  // Everything that lights up, paired with the "group" element that should also
-  // gain .is-lit (a company node also brightens its whole group / logo).
-  const lightables = [];
-  timeline.querySelectorAll('.tl-node').forEach(node => {
-    lightables.push({ el: node, group: node.closest('.tl-group') });
-  });
-  timeline.querySelectorAll('.tl-position').forEach(pos => {
-    lightables.push({ el: pos.querySelector('.tl-pos-marker') || pos, group: pos });
-  });
+  const pin = document.getElementById('tlPin');
+  const track = document.getElementById('tlTrack');
+  const railFill = document.getElementById('tlRailFill');
+  const rail = pin ? pin.querySelector('.tl-rail') : null;
+  if (!pin || !track || !railFill || !rail) return;
 
-  // Branches: the trace path draws in (0 → 1) as the beam sweeps down over
-  // the branch's own span, so the line visibly "grows" from rail to marker
-  // right as that role settles into view.
-  const branches = [];
-  timeline.querySelectorAll('.tl-position').forEach(pos => {
-    const branch = pos.querySelector('.tl-branch');
-    if (branch) branches.push({ pos, branch });
-  });
+  // Minimum sticky offset (clears the fixed topBar; the CSS default for
+  // --tl-pin-top). measure() then raises pinTop to vertically center the frozen
+  // heading+rail block in the viewport, so it doesn't sit top-heavy with dead
+  // space beneath while you scroll through it.
+  const PIN_TOP_MIN = 88;
+  let pinTop = PIN_TOP_MIN;
+  // How far into the pin's width the focus point sits — a bit left of
+  // center so a company settles into a comfortable reading zone once lit.
+  const BEAM_RATIO = 0.3;
 
-  // Beam sits at 52% of the viewport height — a touch below center so items
-  // light up right as they settle into the comfortable reading zone.
-  const BEAM_RATIO = 0.52;
+  const nodeGroups = Array.from(track.querySelectorAll('.tl-group')).map(group => ({
+    group,
+    node: group.querySelector('.tl-node'),
+  })).filter(g => g.node);
 
-  let ticking = false;
+  const cards = Array.from(track.querySelectorAll('.tl-position'));
 
-  function update() {
-    ticking = false;
-    const beamY = window.scrollY + window.innerHeight * BEAM_RATIO;
+  // Brand-color glow: same crossfade-between-companies approach as before,
+  // just measured along X instead of Y.
+  const glowGroups = Array.from(track.querySelectorAll('.tl-group[data-glow]')).map(el => ({
+    el,
+    color: el.dataset.glow.split(',').map(Number),
+  }));
 
-    // Rail fill: clamp the beam to the rail's own span.
-    if (fill && rail) {
-      const railRect = rail.getBoundingClientRect();
-      const railTop = railRect.top + window.scrollY;
-      const filled = Math.max(0, Math.min(railRect.height, beamY - railTop));
-      fill.style.height = filled + 'px';
-    }
+  function lerpColor(a, b, t) {
+    return [0, 1, 2].map(i => Math.round(a[i] + (b[i] - a[i]) * t));
+  }
 
-    for (const item of lightables) {
-      const rect = item.el.getBoundingClientRect();
-      const center = rect.top + window.scrollY + rect.height / 2;
-      const lit = center <= beamY;
-      if (item.el.classList.contains('is-lit') !== lit) {
-        item.el.classList.toggle('is-lit', lit);
-        if (item.group) item.group.classList.toggle('is-lit', lit);
+  function updateGlow(beamX) {
+    if (!glowGroups.length) return;
+    const spans = glowGroups.map(g => {
+      const r = g.el.getBoundingClientRect();
+      return { left: r.left, right: r.left + r.width };
+    });
+    let color = glowGroups[0].color;
+    for (let i = 0; i < spans.length; i++) {
+      if (beamX < spans[i].left) {
+        if (i > 0) {
+          const gapLeft = spans[i - 1].right;
+          const gapRight = spans[i].left;
+          const t = gapRight > gapLeft
+            ? Math.max(0, Math.min(1, (beamX - gapLeft) / (gapRight - gapLeft)))
+            : 0;
+          color = lerpColor(glowGroups[i - 1].color, glowGroups[i].color, t);
+        }
+        break;
       }
+      color = glowGroups[i].color;
+      if (beamX <= spans[i].right) break;
+    }
+    scrollWrap.style.setProperty('--tl-glow', color.join(', '));
+  }
+
+  function lightAll() {
+    const pinRect = pin.getBoundingClientRect();
+    const beamX = pinRect.left + pinRect.width * BEAM_RATIO;
+
+    updateGlow(beamX);
+
+    const railRect = rail.getBoundingClientRect();
+    const filled = Math.max(0, Math.min(railRect.width, beamX - railRect.left));
+    railFill.style.width = filled + 'px';
+
+    for (const { node, group } of nodeGroups) {
+      const r = node.getBoundingClientRect();
+      const lit = r.left + r.width / 2 <= beamX;
+      if (group.classList.contains('is-lit') !== lit) group.classList.toggle('is-lit', lit);
     }
 
-    for (const { pos, branch } of branches) {
-      const rect = branch.getBoundingClientRect();
-      const top = rect.top + window.scrollY;
-      const p = rect.height ? (beamY - top) / rect.height : 0;
-      pos.style.setProperty('--tl-branch-p', Math.max(0, Math.min(1, p)).toFixed(3));
+    for (const card of cards) {
+      const r = card.getBoundingClientRect();
+      const lit = r.left + r.width / 2 <= beamX;
+      if (card.classList.contains('is-lit') !== lit) card.classList.toggle('is-lit', lit);
     }
   }
 
-  function onScroll() {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
+  const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const wideQuery = window.matchMedia('(min-width: 641px)');
+
+  let maxTranslate = 0;
+  let pinned = false;
+
+  function measure() {
+    // Translate far enough that the LAST node sweeps all the way to the focus
+    // beam — so the rail fills 100% (and every card lights) before the pin
+    // releases and vertical scroll resumes. offsetLeft is layout-based, so it's
+    // unaffected by the track's current translate.
+    const last = nodeGroups.length ? nodeGroups[nodeGroups.length - 1] : null;
+    if (last) {
+      const beamLocal = pin.clientWidth * BEAM_RATIO;
+      const lastNodeLocal = last.group.offsetLeft + last.node.offsetLeft + last.node.offsetWidth / 2;
+      maxTranslate = Math.max(0, lastNodeLocal - beamLocal);
+    } else {
+      maxTranslate = Math.max(0, track.scrollWidth - pin.clientWidth);
     }
+    if (pinned) {
+      // Center the frozen block vertically: raise the sticky offset so the
+      // heading+cards sit mid-viewport instead of hugging the top. offsetHeight
+      // is the block's own height (heading + tallest card), independent of the
+      // offset, so there's no circularity.
+      pinTop = Math.max(PIN_TOP_MIN, Math.round((window.innerHeight - pin.offsetHeight) / 2));
+      scrollWrap.style.setProperty('--tl-pin-top', pinTop + 'px');
+      scrollWrap.style.height = (maxTranslate + pin.offsetHeight) + 'px';
+    }
+  }
+
+  function setPinned(on) {
+    if (on === pinned) return;
+    pinned = on;
+    scrollWrap.classList.toggle('tl-scroll--pinned', on);
+    if (on) {
+      pin.scrollLeft = 0;
+    } else {
+      track.style.transform = '';
+      scrollWrap.style.height = '';
+    }
+    measure();
+  }
+
+  function updatePinnedProgress() {
+    if (!pinned) return;
+    const wrapRect = scrollWrap.getBoundingClientRect();
+    const progress = maxTranslate > 0
+      ? Math.max(0, Math.min(1, (pinTop - wrapRect.top) / maxTranslate))
+      : 0;
+    track.style.transform = `translate3d(${(-progress * maxTranslate).toFixed(1)}px, 0, 0)`;
+  }
+
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      updatePinnedProgress();
+      lightAll();
+    });
+  }
+
+  // Fallback mode: the browser does the real scrolling on #tlPin itself —
+  // just recompute lighting whenever that happens.
+  pin.addEventListener('scroll', () => requestAnimationFrame(lightAll), { passive: true });
+
+  function applyMode() {
+    setPinned(wideQuery.matches && !reduceMotionQuery.matches);
+    lightAll();
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  // Recompute once fonts/layout settle.
-  window.addEventListener('load', update);
-  update();
+  window.addEventListener('resize', () => { measure(); onScroll(); });
+  window.addEventListener('load', () => { measure(); lightAll(); });
+  if (wideQuery.addEventListener) {
+    wideQuery.addEventListener('change', applyMode);
+    reduceMotionQuery.addEventListener('change', applyMode);
+  }
+
+  applyMode();
 })();

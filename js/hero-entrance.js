@@ -12,6 +12,24 @@
 (function () {
   'use strict';
 
+  /* ── Hero variant B toggle ──
+   * Shorter (65vh) hero + a perspective-style starfield (see body.hero-v2 in
+   * styles.css and the perspective branch in grid.js), kept alongside the
+   * original so the two can be compared live. `hero.variant(true)` switches
+   * to the short/perspective version, `hero.variant(false)` back to the
+   * original; both persist via localStorage and reload (the class is read at
+   * load by grid.js's cell build, so it isn't hot-swappable in place). Matches
+   * the ?chatmock=1 / chat.mock() pattern in js/chat.js. */
+  window.hero = {
+    variant: function (v2) {
+      try {
+        if (v2) localStorage.setItem('heroVariant', 'v2');
+        else localStorage.removeItem('heroVariant');
+      } catch (e) {}
+      location.reload();
+    },
+  };
+
   /* ── Tunables ─────────────────────────────────────────── */
   const CFG = {
     startDelay: 60,    // ms after DOM ready before the reveal kicks off
@@ -135,11 +153,11 @@
         seg.span.textContent = seg.text.slice(0, i);
         seg.span.appendChild(caret);
         if (isLast && i >= seg.text.length - NEAR_LEAD) fireNearDone();
-        if (i >= seg.text.length) { si += 1; setTimeout(typeSeg, 140); return; }
+        if (i >= seg.text.length) { si += 1; setTimeout(typeSeg, 60); return; }
         const ch = seg.text.charAt(i - 1);
-        let d = 14 + Math.random() * 24;
-        if (ch === ',') d += 110;
-        if (ch === '.' || ch === '!' || ch === '?') d += 200;
+        let d = 4 + Math.random() * 8;
+        if (ch === ',') d += 40;
+        if (ch === '.' || ch === '!' || ch === '?') d += 70;
         setTimeout(tick, d);
       })();
     })();

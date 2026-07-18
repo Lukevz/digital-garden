@@ -191,4 +191,46 @@
   if (reducedMotion) {
     dial.classList.remove("is-clicking");
   }
+
+  const sampleTabs = Array.from(document.querySelectorAll(".sample-tab"));
+  const samplePanels = Array.from(document.querySelectorAll(".sample-panel"));
+
+  function selectSample(name) {
+    sampleTabs.forEach((tab) => {
+      const isActive = tab.dataset.sample === name;
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-selected", String(isActive));
+      tab.tabIndex = isActive ? 0 : -1;
+    });
+
+    samplePanels.forEach((panel) => {
+      const isActive = panel.id === `panel-${name}`;
+      panel.classList.toggle("is-active", isActive);
+      panel.hidden = !isActive;
+    });
+
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+  }
+
+  sampleTabs.forEach((tab) => {
+    tab.addEventListener("click", () => selectSample(tab.dataset.sample));
+  });
+
+  const sampleTabList = document.querySelector(".sample-tabs");
+  if (sampleTabList) {
+    sampleTabList.addEventListener("keydown", (event) => {
+      const currentIndex = sampleTabs.findIndex((tab) => tab.classList.contains("is-active"));
+      let nextIndex = currentIndex;
+
+      if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % sampleTabs.length;
+      if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + sampleTabs.length) % sampleTabs.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = sampleTabs.length - 1;
+      if (nextIndex === currentIndex) return;
+
+      event.preventDefault();
+      sampleTabs[nextIndex].focus();
+      selectSample(sampleTabs[nextIndex].dataset.sample);
+    });
+  }
 })();
