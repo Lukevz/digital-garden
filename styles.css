@@ -891,9 +891,9 @@
        js/timeline.js pins #tlPin (via position: sticky) while its tall
        #tlScroll wrapper scrolls past, and translates #tlTrack horizontally
        in lockstep — converting ordinary vertical scroll into the rail
-       sweeping left. .tl-rail__fill grows to a fixed focus point near the
-       left of the viewport; nodes/cards gain .is-lit + a soft glow once the
-       focus point has swept past them.
+       sweeping left. .tl-rail__fill grows to a fixed focus point at the
+       viewport's horizontal center; nodes/cards gain .is-lit + a soft glow
+       once their center reaches that point.
 
        On narrow viewports or prefers-reduced-motion, JS never engages the
        pin — .tl-pin instead becomes a plain native horizontally-scrollable
@@ -906,12 +906,17 @@
       --tl-col-gap: 88px;                /* space between companies */
       --tl-card-gap: 28px;               /* space between roles within a company (e.g. PwC's two cards, side by side) */
       --tl-track-pad: clamp(20px, 6vw, 120px);
+      /* How far into the strip the focus beam sits, as a fraction of its width.
+         0.5 = dead center, so a card lights the moment it's horizontally
+         centered on screen. js/timeline.js reads this same variable (see
+         BEAM_RATIO) — change it here only. */
+      --tl-beam-ratio: 0.5;
       /* Empty runway before the first node so the rail starts UNlit on the far
          left: at rest the first node sits just right of the focus beam
-         (BEAM_RATIO ≈ 30% of the strip ≈ 30vw), by an ~80px margin, so nothing
-         is lit until you scroll. Derived so the gap is only as big as it needs
-         to be (0 on narrow widths where the node already clears the beam). */
-      --tl-lead-in: max(0px, calc(30vw - var(--tl-track-pad) - var(--tl-card-w) / 2 + 80px));
+         (100vw * --tl-beam-ratio), by an ~80px margin, so nothing is lit until
+         you scroll. Derived so the gap is only as big as it needs to be (0 on
+         narrow widths where the node already clears the beam). */
+      --tl-lead-in: max(0px, calc(100vw * var(--tl-beam-ratio) - var(--tl-track-pad) - var(--tl-card-w) / 2 + 80px));
       position: relative;
       margin-top: 32px;
       /* Breakout to full viewport width — the horizontal strip needs more

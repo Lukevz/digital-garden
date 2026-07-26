@@ -9,8 +9,8 @@
  * #tlScroll's own getBoundingClientRect().top, so it doesn't matter what
  * else on the page is scrolling or how tall anything above it is.
  *
- * A fixed focus point ("beam") sits near the left of the pin's viewport.
- * Once a node/card's center has scrolled past it, it gains `.is-lit` (glow +
+ * A fixed focus point ("beam") sits at the pin's horizontal center.
+ * Once a node/card's center has reached it, it gains `.is-lit` (glow +
  * logo reveal on the node, a fade/rise-in on the card) — same idea as the
  * old vertical version, just read off horizontal rects instead of vertical
  * ones (no scrollY math needed: while pinned, elements' viewport-relative
@@ -38,9 +38,13 @@
   // space beneath while you scroll through it.
   const PIN_TOP_MIN = 88;
   let pinTop = PIN_TOP_MIN;
-  // How far into the pin's width the focus point sits — a bit left of
-  // center so a company settles into a comfortable reading zone once lit.
-  const BEAM_RATIO = 0.3;
+  // How far into the pin's width the focus point sits. Sourced from the CSS
+  // custom property so the lead-in runway (--tl-lead-in) stays derived from the
+  // same number. 0.5 = the strip's horizontal center, i.e. a node/card lights
+  // exactly when it's centered on screen.
+  const beamRatio = parseFloat(
+    getComputedStyle(scrollWrap).getPropertyValue('--tl-beam-ratio'));
+  const BEAM_RATIO = Number.isFinite(beamRatio) ? beamRatio : 0.5;
 
   const nodeGroups = Array.from(track.querySelectorAll('.tl-group')).map(group => ({
     group,
