@@ -296,6 +296,18 @@ Header and body cross-fade together on the way in (`fadeHeroCopy()` + `.section-
 
 ⚠️ **js/main.js loads before js/grid.js.** On a page that comes up straight at a section route, `window.grid` doesn't exist yet, so main.js records the sky on `body[data-sky]` (`setSky()`) and grid.js reads that attribute when it initialises. Push the scene through `setSky()`, never `window.grid.scene()` directly.
 
+**Warping between skies (Career ↔ Writing ↔ Videos ↔ Photos):**
+
+`window.grid.scene()` doesn't cut from one sky to the next — the field *flies* there (`WARP` in js/grid.js, ~950ms). Every star in the outgoing sky is matched to its nearest star in the incoming one (greedy nearest-neighbour over a coarse spatial hash, each source claimable once so a star never visibly splits) and travels to it, stretching into a **streak scaled to how far it moves that frame**. The trip is eased with smootherstep, so the streaks bloom out at the midpoint and retract on their own — the hyperspace look falls out of the easing rather than being a separate sequenced state.
+
+- **Unmatched stars never pop.** The section skies are thinner and half as tall as home, so hundreds are always left over: they streak *outward past the viewer* from the warp focus and fade, while the incoming sky's extra stars stream in along the same axis. Both directions point away from the focus, so the mismatch reads as flying forward instead of a cross-fade.
+- **Planets travel too.** Bodies are paired biggest-to-biggest and interpolate position, radius and colour, so home's twin suns *become* Videos' lamp pair. A pair that changes `kind` (moon ↔ sun) cross-fades the two renderings over one shared travelling position — that's what `parts` on a frame-body entry is for, and `wmax` shrinks the star-clearing disc of a body that's only partly there.
+- Three pieces of state make this work: `makeCells()` / `makeBodies()` build a scene's field **without installing it**, so the outgoing bundle stays alive alongside the incoming one; `snapshotCells()` freezes the field as it currently looks — *including mid-warp*, so clicking a third tab while the second is still flying picks up from where the stars actually are; and `drawList` is what the draw loop iterates (`cells`, plus the outgoing sky's partnerless stars while a warp runs).
+- The content hole (`cl.hidden`) **ramps** during a warp instead of switching, so a star that ends up under the incoming page's copy fades out over the jump rather than vanishing the instant the new hole rects are measured.
+- A warp forces the loop off its 30fps ambient cap (`fullRate`) — at 30fps the streaks strobe instead of trailing. Reduced-motion skips the warp entirely and swaps instantly.
+
+Tune it live from the console: `grid.warp.dur = 1400`, `grid.warp.streak`, or `grid.warp.enabled = false` to compare against a hard cut.
+
 ## Development Workflow
 
 1. Add new markdown files to `/posts` folder
