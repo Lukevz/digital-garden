@@ -32,7 +32,12 @@
       const n = parseInt(hex.slice(1), 16);
       return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
     }
-    let bodies = null; // { <name>: body } for the active scene — set per layout
+    // The active scene's field bundle — bodies + the pivots their theme swing
+    // turns about, plus the height they were laid out against. Held as ONE
+    // object (rather than three loose module vars) so a scene warp can keep the
+    // outgoing bundle alive alongside the incoming one and interpolate between
+    // the two. See makeBodies().
+    let bodySet = null;
     const useFinePointer = typeof matchMedia !== 'undefined' &&
       matchMedia('(hover: hover) and (pointer: fine)').matches;
     // Respect the user's reduced-motion preference: keep the dot grid static
@@ -47,9 +52,21 @@
     // 1 = dark (constellation as authored), 0 = light (half-turned sky). The
     // theme wipe ramps this 0↔1, so the celestial swing animates with it.
     let themeBlend = 1;
-    let bodyPivot = { cx: 0, cy: 0 }; // centre the sky rotates about
-    let deathStarPivot = { cx: 0, cy: 0 }; // Death Star's own (higher) pivot — see buildBodies
     let frameBodies = null;           // per-frame rotated body positions
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    // Blend two #rrggbb colours. Used to morph one scene's sun into another's
+    // during a warp, so the planets change colour as they travel rather than
+    // cross-fading through each other.
+    function mixHex(a, b, t) {
+      if (!a || !b) return a || b;
+      const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+      const r = Math.round(lerp((x >> 16) & 255, (y >> 16) & 255, t));
+      const g = Math.round(lerp((x >> 8) & 255, (y >> 8) & 255, t));
+      const bl = Math.round(lerp(x & 255, y & 255, t));
+      return '#' + (((1 << 24) | (r << 16) | (g << 8) | bl).toString(16)).slice(1);
+    }
 
     function setGridDotBlend(blend) {
       const t = Math.max(0, Math.min(1, blend));
@@ -144,29 +161,40 @@
     // (half-height) hero so their stars aren't sliced mid-field by the page
     // body that covers everything below it; the fraction is only a fallback for
     // before the hero has been laid out.
-    function fieldHeight(h) {
-      if (!scene.compact) return h;
+    function fieldHeightFor(sc, h) {
+      if (!sc.compact) return h;
       const hero = heroEl && heroEl.getBoundingClientRect().height;
       return hero || h * 0.52;
     }
+    function fieldHeight(h) { return fieldHeightFor(scene, h); }
 
-    // Anchor the active scene's bodies relative to the viewport (snapped to the
-    // lattice so they nestle among the stars rather than floating off-grid).
+    // Anchor a scene's bodies relative to the viewport (snapped to the lattice
+    // so they nestle among the stars rather than floating off-grid). Returns a
+    // self-contained bundle rather than writing module state, so a warp can
+    // hold the outgoing scene's bundle and blend toward the incoming one.
+    function makeBodies(sc, w, h) {
+      const fieldH = fieldHeightFor(sc, h);
+      return {
+        scene: sc,
+        bodies: sc.bodies(w, fieldH),
+        // Pivot sits above the field's midline so the bodies swung in from the
+        // far side land tucked up toward the top corners (matching how the moon
+        // nestles into the top-left in dark mode) rather than sagging low.
+        pivot: { cx: w / 2, cy: fieldH * 0.42 },
+        // The moon gets its own, higher pivot: swinging it about the shared
+        // pivot would land it ~75-85% down the viewport in light mode, right
+        // inside the .hero-glow-track band — which paints above the star canvas
+        // (z-index 8 vs. 1), hiding it completely behind the gradient. A higher
+        // pivot keeps its light-mode landing spot well clear of the glow while
+        // leaving the dark-mode (authored) position untouched — the rotation is
+        // identity at themeBlend=1 regardless of pivot.
+        moonPivot: { cx: w / 2, cy: fieldH * 0.30 },
+        fieldH,
+      };
+    }
+
     function buildBodies(w, h) {
-      const fieldH = fieldHeight(h);
-      bodies = scene.bodies(w, fieldH);
-      // Pivot sits above the field's midline so the bodies swung in from the
-      // far side land tucked up toward the top corners (matching how the moon
-      // nestles into the top-left in dark mode) rather than sagging low.
-      bodyPivot = { cx: w / 2, cy: fieldH * 0.42 };
-      // The moon gets its own, higher pivot: swinging it about the shared
-      // bodyPivot would land it ~75-85% down the viewport in light mode, right
-      // inside the .hero-glow-track band — which paints above the star canvas
-      // (z-index 8 vs. 1), hiding it completely behind the gradient. A higher
-      // pivot keeps its light-mode landing spot well clear of the glow while
-      // leaving the dark-mode (authored) position untouched — the rotation is
-      // identity at themeBlend=1 regardless of pivot.
-      deathStarPivot = { cx: w / 2, cy: fieldH * 0.30 };
+      bodySet = makeBodies(scene, w, h);
     }
 
     // Snappy ease for the celestial swing: near-flat and slow at both ends, a
@@ -189,29 +217,42 @@
     // top (a sunrise arc) rather than down under. themeBlend drives the swing
     // (1 = dark/authored, 0 = light/half-turned), so it animates with the
     // toggle at no extra cost.
-    function computeFrameBodies() {
-      if (!bodies) return null;
+    // Rotate ONE scene's bodies for the current theme blend. Each entry is a
+    // draw record: geometry, plus `parts` — what to actually paint there. It's
+    // normally a single part at full weight; a warp that swaps a moon for a sun
+    // hands back both, cross-faded. `wmax` is the strongest part's weight, used
+    // to shrink the star-clearing disc of a body that's fading in or out.
+    function sceneFrameBodies(set) {
+      if (!set) return null;
       // Ease the swing fraction (0 dark → 1 light) rather than the raw blend, so
       // the rotation whips through the middle and settles slowly at each end.
       // Compact skies DON'T swing: the section hero's copy is left-aligned and
       // fills the left half, so a half-turn would sweep the bodies straight
       // through the title. They sit in the right margin, opposite the copy, in
       // both themes — the stars still recolour with the theme either way.
-      const a = scene.compact ? 0 : -easeInOutExpo(1 - themeBlend) * Math.PI;
+      const a = set.scene.compact ? 0 : -easeInOutExpo(1 - themeBlend) * Math.PI;
       const ca = Math.cos(a), sa = Math.sin(a);
       const out = {};
-      for (const key in bodies) {
-        const b = bodies[key];
-        const pivot = b.kind === 'moon' ? deathStarPivot : bodyPivot;
+      for (const key in set.bodies) {
+        const b = set.bodies[key];
+        const pivot = b.kind === 'moon' ? set.moonPivot : set.pivot;
         const dx = b.cx - pivot.cx, dy = b.cy - pivot.cy;
         // Spread carries kind/colours/launchpad through to the draw loop.
         out[key] = {
           ...b,
           cx: pivot.cx + dx * ca - dy * sa,
           cy: pivot.cy + dx * sa + dy * ca,
+          wmax: 1,
+          parts: [{ kind: b.kind, core: b.core, edge: b.edge, w: 1 }],
         };
       }
       return out;
+    }
+
+    function computeFrameBodies() {
+      const to = sceneFrameBodies(bodySet);
+      if (!warp || !to) return to;
+      return warpFrameBodies(sceneFrameBodies(warp.fromBodies), to, warp.p, warp.e);
     }
 
     // Is a cell centre covered by any body at its current (rotated) position?
@@ -219,22 +260,25 @@
     function cellUnderBody(bx, by, fb) {
       for (const key in fb) {
         const b = fb[key];
-        const clearR = b.r + SP * 0.5;
+        // A body fading in or out during a warp clears a proportionally smaller
+        // disc, so the stars beneath it aren't switched off in one frame.
+        const clearR = (b.r + SP * 0.5) * (b.wmax === undefined ? 1 : b.wmax);
+        if (clearR <= 0) continue;
         const dx = bx - b.cx, dy = by - b.cy;
         if (dx * dx + dy * dy <= clearR * clearR) return true;
       }
       return false;
     }
 
-    function buildCells(w, h) {
-      const r = prng(scene.seed);
-      cells = [];
+    function makeCells(sc, w, h) {
+      const r = prng(sc.seed);
+      const out = [];
       // Section scenes fill only the top of the viewport (their hero is about
       // half height); everything below is covered by the page's opaque body.
       // The LATTICE is still laid out against the full viewport so the row/col
       // insets below — and the top bar that centres on them — don't shift
       // between home and a section page; only which rows get emitted changes.
-      const fieldH = fieldHeight(h);
+      const fieldH = fieldHeightFor(sc, h);
       // Uniform, centred lattice so the field reads as a symmetric star chart:
       // whole columns/rows fill the viewport with equal margins on each side.
       // Carry one extra ring vs. what fits with a half-cell margin so the
@@ -267,7 +311,7 @@
           // seeded, so a scene renders the same sky every time at a given
           // viewport size. Short-circuited on the home sky so it doesn't draw
           // from the stream at all — its field stays exactly as authored.
-          if (scene.compact && (by > fieldH || r() >= scene.density)) continue;
+          if (sc.compact && (by > fieldH || r() >= sc.density)) continue;
           // Size tiers give a natural distant-starfield spread: mostly tiny
           // pinpoints, some a touch larger, a rare few brighter still.
           const t = r();
@@ -282,9 +326,16 @@
           }
           // A few of those get a brief bloom at their brightest instant only.
           if (cell.twinkle && r() < 0.13) cell.bright = true;
-          cells.push(cell);
+          out.push(cell);
         }
       }
+      return out;
+    }
+
+    function buildCells(w, h) {
+      cells = makeCells(scene, w, h);
+      drawList = cells;
+      warp = null;
       buildBodies(w, h);
       ambientAnim = !prefersReducedMotion; // twinkle + celestial pulse
     }
@@ -466,6 +517,200 @@
       return 1 - e;                                          // collapse amount 1 → 0
     }
 
+    /* ── Scene warp (page → page) ─────────────────────────────────────
+       Switching sections doesn't cut from one sky to the next — the field
+       FLIES there. Every star in the outgoing sky is matched to its nearest
+       star in the incoming one and travels to it, stretching into a streak in
+       proportion to how fast it's moving (fastest at the midpoint, so the whole
+       field reads as a short hyperspace jump and then a settle). Stars with no
+       partner — the section skies are thinner and half as tall as home, so
+       there are always hundreds — don't pop: they streak OUTWARD past the
+       viewer from the warp focus and fade, while the incoming sky's extra stars
+       stream in along the same axis. Both directions point away from the focus,
+       so the mismatch reads as flying forward rather than as a cross-fade.
+       Planets travel too: bodies are paired biggest-to-biggest and interpolate
+       position, radius and colour, so home's twin suns become Videos' lamp pair
+       rather than being swapped for it. */
+    const WARP = {
+      enabled: true,
+      dur: 950,       // ms for the whole jump
+      streak: 2.6,    // streak length as a multiple of a star's per-frame travel
+      maxStreak: SP * 2.4,
+      spawn: 0.45,    // where a born star starts, as a fraction of focus→rest
+      exit: 2.1,      // how far past its position a partnerless star flies out
+      focusY: 0.46,   // warp focus, as a fraction of the OUTGOING field height
+    };
+    let warp = null;
+    // What the draw loop iterates: normally just `cells`, but during a warp it
+    // also carries the outgoing sky's partnerless stars on their way out.
+    let drawList = cells;
+
+    // Advance the warp for this frame and stash its progress on the warp object
+    // (so body blending can read it without threading it through). Returns the
+    // live warp, or null once it's over.
+    //   p  — raw 0→1
+    //   e  — eased position fraction (smootherstep: accelerate, then settle)
+    //   de — de/dp scaled to one frame, i.e. how far a star moves THIS frame as
+    //        a fraction of its total trip. Drives the streak length.
+    function warpTick(ts) {
+      if (!warp) return null;
+      const p = (ts - warp.t0) / WARP.dur;
+      if (p >= 1) { endWarp(); return null; }
+      warp.p = p < 0 ? 0 : p;
+      warp.e = warp.p * warp.p * warp.p * (warp.p * (warp.p * 6 - 15) + 10);
+      warp.de = 30 * warp.p * warp.p * (1 - warp.p) * (1 - warp.p) * (1000 / 60) / WARP.dur;
+      return warp;
+    }
+
+    function endWarp() {
+      if (!warp) return;
+      for (const cl of cells) cl.w = null;   // drop references to the old field
+      warp = null;
+      drawList = cells;
+    }
+
+    // Nearest-neighbour matching, greedy over a coarse spatial hash. Targets are
+    // walked top-to-bottom so the assignment is deterministic, and each source
+    // star can only be claimed once — otherwise a single star would visibly
+    // split into several. Searching keeps widening by one ring past the first
+    // hit so the winner isn't just "first bucket that happened to contain one".
+    const HASH = SP * 1.5, HASH_RINGS = 6;
+    function pairCells(from, to) {
+      const buckets = new Map();
+      for (let i = 0; i < from.length; i++) {
+        const k = Math.floor(from[i].bx / HASH) + ',' + Math.floor(from[i].by / HASH);
+        const arr = buckets.get(k);
+        if (arr) arr.push(i); else buckets.set(k, [i]);
+      }
+      const used = new Uint8Array(from.length);
+      const pair = new Int32Array(to.length).fill(-1);
+      const order = to.map((_, i) => i)
+        .sort((a, b) => (to[a].by - to[b].by) || (to[a].bx - to[b].bx));
+      for (const ti of order) {
+        const t = to[ti];
+        const ci = Math.floor(t.bx / HASH), cj = Math.floor(t.by / HASH);
+        let best = -1, bestD = Infinity, foundRing = -1;
+        for (let ring = 0; ring <= HASH_RINGS; ring++) {
+          if (foundRing >= 0 && ring > foundRing) break;
+          for (let i = ci - ring; i <= ci + ring; i++) {
+            for (let j = cj - ring; j <= cj + ring; j++) {
+              // Ring walk: only the shell, since the interior was already done.
+              if (ring > 0 && Math.abs(i - ci) !== ring && Math.abs(j - cj) !== ring) continue;
+              const arr = buckets.get(i + ',' + j);
+              if (!arr) continue;
+              for (const fi of arr) {
+                if (used[fi]) continue;
+                const dx = from[fi].bx - t.bx, dy = from[fi].by - t.by;
+                const d = dx * dx + dy * dy;
+                if (d < bestD) { bestD = d; best = fi; foundRing = ring; }
+              }
+            }
+          }
+        }
+        if (best >= 0) { used[best] = 1; pair[ti] = best; }
+      }
+      return { pair, used };
+    }
+
+    // Freeze the field exactly as it looks right now — including mid-warp, so
+    // clicking a third tab while the second is still flying picks up from where
+    // the stars actually are instead of snapping back.
+    function snapshotCells(ts) {
+      const wp = warpTick(ts);
+      const out = [];
+      for (const cl of drawList) {
+        const s = wp && cl.w;
+        out.push(s ? {
+          bx: lerp(s.fx, cl.bx, wp.e),
+          by: lerp(s.fy, cl.by, wp.e),
+          sz: lerp(s.fsz, cl.sz, wp.e),
+          al: lerp(s.fal, cl.al, wp.e),
+          hidden: wp.p < 0.5 ? s.fhid : cl.hidden,
+        } : { bx: cl.bx, by: cl.by, sz: cl.sz, al: cl.al, hidden: cl.hidden });
+      }
+      // Stars already faded to nothing are dead weight in the next pairing.
+      return out.filter(c => c.al > 0.02);
+    }
+
+    // Wire the freshly-built `cells` up to a snapshot of the old field. Every
+    // star ends up with a `.w` (its starting state) — a matched star starts
+    // where its partner was, an unmatched one starts out near the focus at zero
+    // alpha — so the draw loop has ONE interpolation path for the whole field.
+    function startWarp(fromCells, fromBodies, ts) {
+      const focus = {
+        x: gridLogicalW / 2,
+        y: (fromBodies ? fromBodies.fieldH : gridLogicalH) * WARP.focusY,
+      };
+      const { pair, used } = pairCells(fromCells, cells);
+      for (let i = 0; i < cells.length; i++) {
+        const cl = cells[i];
+        const fi = pair[i];
+        if (fi >= 0) {
+          const f = fromCells[fi];
+          cl.w = { fx: f.bx, fy: f.by, fsz: f.sz, fal: f.al, fhid: !!f.hidden };
+        } else {
+          cl.w = {
+            fx: lerp(focus.x, cl.bx, WARP.spawn),
+            fy: lerp(focus.y, cl.by, WARP.spawn),
+            fsz: cl.sz * 0.5,
+            fal: 0,
+            fhid: cl.hidden,
+          };
+        }
+      }
+      // Partnerless outgoing stars become their own draw records: same shape as
+      // a cell, but their "resting" state is out past the viewer at zero alpha.
+      const outs = [];
+      for (let i = 0; i < fromCells.length; i++) {
+        if (used[i]) continue;
+        const f = fromCells[i];
+        outs.push({
+          bx: focus.x + (f.bx - focus.x) * WARP.exit,
+          by: focus.y + (f.by - focus.y) * WARP.exit,
+          sz: f.sz * 1.15,
+          al: 0,
+          hidden: f.hidden,
+          w: { fx: f.bx, fy: f.by, fsz: f.sz, fal: f.al, fhid: !!f.hidden },
+        });
+      }
+      warp = { t0: ts, p: 0, e: 0, de: 0, fromBodies, outs };
+      drawList = outs.length ? cells.concat(outs) : cells;
+    }
+
+    // Blend the outgoing scene's bodies into the incoming ones. Paired
+    // biggest-first so the eye follows the same object across the jump; a pair
+    // of matching suns interpolates its colours, a moon↔sun pair cross-fades
+    // the two renderings over one shared travelling position, and any leftover
+    // body on either side scales and fades on its own.
+    function warpFrameBodies(fromB, toB, p, e) {
+      const byR = o => Object.keys(o).sort((x, y) => o[y].r - o[x].r);
+      const fk = byR(fromB), tk = byR(toB);
+      const n = Math.min(fk.length, tk.length);
+      const out = {};
+      for (let i = 0; i < n; i++) {
+        const f = fromB[fk[i]], t = toB[tk[i]];
+        out['p' + i] = {
+          cx: lerp(f.cx, t.cx, e), cy: lerp(f.cy, t.cy, e), r: lerp(f.r, t.r, e),
+          launchpad: t.launchpad, wmax: 1,
+          parts: f.kind === t.kind
+            ? [{ kind: t.kind, core: mixHex(f.core, t.core, e), edge: mixHex(f.edge, t.edge, e), w: 1 }]
+            : [{ kind: f.kind, core: f.core, edge: f.edge, w: 1 - p },
+               { kind: t.kind, core: t.core, edge: t.edge, w: p }],
+        };
+      }
+      for (let i = n; i < fk.length; i++) {
+        const f = fromB[fk[i]];
+        out['o' + i] = { ...f, r: f.r * (1 - 0.4 * e), wmax: 1 - p,
+                         parts: [{ ...f.parts[0], w: 1 - p }] };
+      }
+      for (let i = n; i < tk.length; i++) {
+        const t = toB[tk[i]];
+        out['i' + i] = { ...t, r: t.r * (0.6 + 0.4 * e), wmax: p,
+                         parts: [{ ...t.parts[0], w: p }] };
+      }
+      return out;
+    }
+
     /* ── Draw grid ── */
     function drawGrid(c, w, h, ts) {
       c.clearRect(0, 0, w, h);
@@ -474,14 +719,33 @@
       // entrance holds it near 1 and eases to 0 (stars fly out); afterwards it's
       // purely scroll-driven.
       const genieP = Math.max(genieProgress(), entranceProgress(ts));
+      const wp = warpTick(ts);
       frameBodies = computeFrameBodies();
-      for (const cl of cells) {
-        if (cl.hidden) continue; // grid-snapped binary hole — cell fully off
-        if (cl.bx > w + SP || cl.by > h + SP) continue;
+      for (const cl of (wp ? drawList : cells)) {
+        let x = cl.bx, y = cl.by, sz = cl.sz, al = cl.al;
+        // `vis` folds in the content hole. Outside a warp it's the binary
+        // switch it's always been; during one it RAMPS, so a star that ends up
+        // under the incoming page's copy fades out over the jump instead of
+        // vanishing the instant the new hole rects are measured.
+        let vis = cl.hidden ? 0 : 1;
+        let vx = 0, vy = 0;   // this frame's travel — drives the hyperspace streak
+        if (wp && cl.w) {
+          const s = cl.w;
+          x  = lerp(s.fx, cl.bx, wp.e);
+          y  = lerp(s.fy, cl.by, wp.e);
+          sz = lerp(s.fsz, cl.sz, wp.e);
+          al = lerp(s.fal, cl.al, wp.e);
+          vis = lerp(s.fhid ? 0 : 1, cl.hidden ? 0 : 1, wp.p);
+          vx = (cl.bx - s.fx) * wp.de;
+          vy = (cl.by - s.fy) * wp.de;
+        } else if (cl.hidden) {
+          continue; // grid-snapped binary hole — cell fully off
+        }
+        if (vis <= 0.004 || al <= 0.004) continue;
+        if (x > w + SP || y > h + SP || x < -SP || y < -SP) continue;
         // Clear stars under a body so it reads as a solid disc, not sparkles
         // poking through — using the body's rotated position for this frame.
-        if (frameBodies && cellUnderBody(cl.bx, cl.by, frameBodies)) continue;
-        let x = cl.bx, y = cl.by;
+        if (frameBodies && cellUnderBody(x, y, frameBodies)) continue;
         for (const rp of ripples) {
           const dt = (ts - rp.t0) / 1000;
           const d  = Math.hypot(x - rp.x, y - rp.y);
@@ -497,7 +761,7 @@
         // ── Genie collapse (bottom rows lead, each row above follows) ──
         let markScale = 1, genieAlpha = 1;
         if (genieP > 0) {
-          const vb = h > 0 ? cl.by / h : 0;                 // 0 = top row … 1 = bottom row
+          const vb = h > 0 ? y / h : 0;                     // 0 = top row … 1 = bottom row
           const delay = (1 - vb) * GENIE.stagger;           // bottom rows ≈ no delay
           let cp = (genieP - delay) / (1 - GENIE.stagger);
           cp = cp < 0 ? 0 : cp > 1 ? 1 : cp;
@@ -520,9 +784,27 @@
         }
         const shimmer = prefersReducedMotion ? 1
           : 1 + 0.07 * Math.sin((cl.bx + cl.by) * 0.006 - ts * 0.0007);
-        const alpha = Math.min(1, cl.al * tw * shimmer * genieAlpha);
+        const alpha = Math.min(1, al * tw * shimmer * genieAlpha * vis);
         if (alpha < 0.004) continue;
-        const R = cl.sz * markScale;
+        const R = sz * markScale;
+        // ── Hyperspace streak ──
+        // A star in flight trails back along its own travel vector, the trail
+        // scaled to how far it moved THIS frame. Since the eased trip peaks in
+        // the middle, the streaks bloom out and retract on their own — no
+        // separate "warp" state to sequence.
+        if (vx || vy) {
+          const sp = Math.hypot(vx, vy);
+          const len = Math.min(WARP.maxStreak, sp * WARP.streak);
+          if (len > R * 1.4) {
+            c.strokeStyle = `rgba(${gridDotRgb},${(alpha * 0.5).toFixed(3)})`;
+            c.lineWidth = R * 1.6;
+            c.lineCap = 'round';
+            c.beginPath();
+            c.moveTo(x - (vx / sp) * len, y - (vy / sp) * len);
+            c.lineTo(x, y);
+            c.stroke();
+          }
+        }
         // Transient bloom: only near a twinkle's brightest instant does a bright
         // star flare a soft halo — it grows and vanishes with the peak, so it's
         // never a permanent border. Below the threshold there's no halo at all.
@@ -569,11 +851,17 @@
         // scene's bodies breathe independently rather than pulsing in unison.
         const shim = prefersReducedMotion ? 0.5
           : 0.5 + 0.5 * Math.sin(ts / (2600 + i * 700) + i * 1.5);
-        // Dial the bodies back so they read as distant scenery, not spotlights
-        // competing with the hero copy: suns to ~55%, the (already muted) grey
-        // moon a touch less.
-        if (b.kind === 'moon') drawMoon(c, b, fade * 0.72, bob, shim);
-        else drawSun(c, b, b.core, b.edge, fade * 0.55, shim);
+        // Normally one part at full weight. Mid-warp a body that's changing
+        // KIND paints both renderings at the same travelling spot, cross-faded,
+        // and a body with no counterpart paints at partial weight as it goes.
+        // Suns are dialled back to ~55% and the (already muted) grey moon a
+        // touch less, so they read as distant scenery rather than spotlights
+        // competing with the hero copy.
+        for (const part of b.parts) {
+          if (part.w <= 0.01) continue;
+          if (part.kind === 'moon') drawMoon(c, b, fade * 0.72 * part.w, bob, shim);
+          else drawSun(c, b, part.core, part.edge, fade * 0.55 * part.w, shim);
+        }
         i++;
       }
     }
@@ -815,8 +1103,11 @@
       // rate; the slow ambient breathing is fine at the capped 30fps. The
       // one-shot hyperspace entrance also flies out fast, so it must run at the
       // full rate while armed — otherwise the 30fps cap makes it look choppy.
+      // A scene warp flies the whole field across the viewport in under a
+      // second, so it needs the full refresh rate too — at the 30fps ambient cap
+      // the streaks strobe instead of trailing.
       const ripplesActive = ripples.length > 0 || launches.length > 0;
-      const fullRate = ripplesActive || ENTRANCE.armed;
+      const fullRate = ripplesActive || ENTRANCE.armed || !!warp;
       if (fullRate || ts - lastDrawTs >= AMBIENT_FRAME_MS) {
         lastDrawTs = ts;
         drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
@@ -897,14 +1188,27 @@
       scene(name) {
         const next = SCENES[name] || SCENES.home;
         if (next === scene) return;
+        const ts = performance.now();
+        // Freeze the outgoing sky BEFORE the rebuild — including mid-flight if
+        // a previous warp is still running — so the new one starts from what's
+        // actually on screen.
+        const fromCells = prefersReducedMotion || !WARP.enabled ? null : snapshotCells(ts);
+        const fromBodies = bodySet;
         scene = next;
         // Full rebuild rather than just re-placing the bodies: field height,
         // density and seed all feed buildCells (which re-places the bodies
-        // itself on the way out).
+        // itself on the way out, and clears any in-flight warp).
         buildCells(gridLogicalW, gridLogicalH);
         updateHoleRects();
-        if (!animating) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
+        if (fromCells) startWarp(fromCells, fromBodies, ts);
+        // The warp animates, so the loop has to be running even if the ambient
+        // breathing had gone idle (reduced motion aside, where there's no warp).
+        if (warp) startAnim();
+        else if (!animating) drawGrid(ctx, gridLogicalW, gridLogicalH, ts);
       },
+      // Live knobs for tuning the jump from the console, e.g.
+      // grid.warp.dur = 1400, or grid.warp.enabled = false to compare.
+      warp: WARP,
     };
 
   })();
