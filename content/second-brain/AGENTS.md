@@ -56,6 +56,15 @@ status: seed           # seed | growing | settled
 - Every note links to at least one MOC and at least one sibling note. Orphans are invisible to synthesis.
 - Link people, projects, and tools by name every time, not by pronoun.
 
+## Site routes
+
+The chat can point visitors at my site, so notes carry real routes. Two rules:
+
+- `mocs/Site MOC.md` is the map: one `##` section per part of the site, each with its route. It is continuously updated, never forked into a second index note. **Anything added to the site gets added there.**
+- A note about an idea I published carries that post's route inline in prose, at the point the idea comes up: "I wrote this up at /#writing/documenting-points-vs-maneuvers." That's what lets a topical question retrieve a chunk that already contains the link.
+
+Routes are derived from filenames and are unforgiving, so copy them from the file listing rather than writing them by hand. Never invent a route for something I haven't published.
+
 ## MOCs
 
 `type: moc` notes are hub notes, one per domain, living in `/mocs`. An MOC is a paragraph of Luke's actual take on the domain with links woven through the prose, not a list of links. That prose answers "what does he think about X."
