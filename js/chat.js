@@ -34,7 +34,7 @@
     help: "Mock commands: **short**, **long**, **links**, **md**, **empty**, **error**, **429**, **netfail**. Anything else cycles a few canned replies. Toggle with `chat.mock(false)`.",
     short: "Cats, and I don't even have to think about it.",
     long: "Honestly it was a long, winding road. I started a Mac tutorial channel on YouTube as a teenager and taught myself design, video, and code from scratch, then did years of freelance and agency work before landing in UX properly.\n\nAnd so by the time I got the official title, I'd already been doing the work for a decade. The thing is, that path taught me more about shipping real things than any bootcamp could have — I was debugging my own site at 2am because nobody else was going to.\n\nAt the end of the day, I think the winding road was the point. You pick up taste from making a thousand small judgment calls, not from following a curriculum. That works for me.",
-    links: "You can find me on linkedin.com/in/lukevz or check out [my work](https://lukevz.com/work) — the side project lives at https://github.com/lukevz too. And so if you want the full story, /work has it.",
+    links: "You can find me on linkedin.com/in/lukevz or check out [my work](https://lukevz.com/work) — the side project lives at https://github.com/lukevz too. And so if you want the full story, /work has it. I wrote the whole thing up [right here](/#writing/the-search-for-the-best-todo-app), and there's a bunch more at /#photos and /bookshelf.",
     md: "The **big thing** is keeping it *plain text* — my whole setup runs on markdown and a folder called `posts`. **Bold**, *italic*, and `inline code` all show up in real answers, which means the styling has to hold up.",
   };
 
@@ -212,14 +212,64 @@
   }
 
   // Internal site paths → mode names
+  // Mode pages, which live on a query string rather than a hash route.
   const SITE_PATHS = {
-    '/bookshelf': 'bookshelf',
-    '/work': 'work',
-    '/life': 'life',
-    '/chat': 'chat',
-    '/gear': 'gear',
-    '/places': 'places',
+    '/bookshelf': { mode: 'bookshelf', href: '/?bookshelf' },
+    '/work':      { mode: 'work',      href: '/?projects' },
+    '/life':      { mode: 'life',      href: '/' },
+    '/chat':      { mode: 'chat',      href: '/?chat' },
+    '/gear':      { mode: 'gear',      href: '/?gear' },
+    '/places':    { mode: 'places',    href: '/?places' },
   };
+
+  const SECTION_LABELS = {
+    writing: 'Writing', videos: 'Videos', photos: 'Photos', career: 'Career',
+    'case-studies': 'Case Studies', resume: 'Resume', portfolio: 'Portfolio',
+    labs: 'Labs', now: 'Now', logbook: 'Logbook',
+  };
+
+  // A bare route has to read as English mid-sentence, so a section on its own
+  // uses its display name and an item uses its de-slugged title. A markdown
+  // link's own label always wins over this.
+  function routeLabel(route) {
+    const [section, ...rest] = route.split('/');
+    const item = rest.join('/');
+    if (item) return item.replace(/-+/g, ' ').trim();
+    return SECTION_LABELS[section] || section;
+  }
+
+  // Links the SPA can follow in place instead of opening a tab: a router hash
+  // route (#writing/slug), a mode path (/gear), or either written out as a full
+  // lukevz.com URL. Returns null for anything genuinely external.
+  function internalTarget(url) {
+    const rest = url.replace(/^https?:\/\/(?:www\.)?lukevz\.com/i, '');
+    if (rest === url && !/^[/#]/.test(url)) return null;
+    const hash = rest.replace(/^\/(?=#)/, '');
+    if (hash.startsWith('#')) {
+      // An empty route ("/#") means the site as a whole. Nothing generates that
+      // deliberately, but resolving it to home keeps a stray one in the app
+      // rather than opening a new tab onto the page we're already on.
+      const route = hash.slice(1).toLowerCase();
+      return { kind: 'hash', route, href: route ? `/#${route}` : '/' };
+    }
+    const path = SITE_PATHS[rest.toLowerCase()];
+    return path ? { kind: 'mode', mode: path.mode, href: path.href } : null;
+  }
+
+  function internalLink(target, label) {
+    const a = document.createElement('a');
+    a.href = target.href;
+    a.textContent = label;
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      if (target.kind === 'hash') {
+        if (window.gotoSite) window.gotoSite(target.route);
+      } else if (window.setMode) {
+        window.setMode(target.mode);
+      }
+    });
+    return a;
+  }
 
   const SOCIAL_LABELS = {
     'linkedin.com': 'LinkedIn',
@@ -247,8 +297,10 @@
   // Returns a DocumentFragment. Safe — no innerHTML.
   function renderInline(text) {
     const frag = document.createDocumentFragment();
-    // Token regex: **bold**, *italic*, `code`, [label](url), http(s) URL, bare domain URL, /site-path
-    const re = /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"']+)|([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|net|org|io|co|vet|dev|app|ai|me)(?:\/[^\s<>"'()]*[^\s<>"'().,;:!?])?(?=[^a-zA-Z0-9]|$))|(\/(?:bookshelf|work|life|chat|gear|places))(?=[^a-zA-Z0-9_-]|$)/g;
+    // Token regex: **bold**, *italic*, `code`, [label](url), http(s) URL, bare
+    // domain URL, /#hash-route, /site-path. A markdown link's target may be
+    // internal, so it accepts a leading "/" or "#" as well as a scheme.
+    const re = /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(((?:https?:\/\/|[/#])[^\s)]+)\)|(https?:\/\/[^\s<>"']+)|([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|net|org|io|co|vet|dev|app|ai|me)(?:\/[^\s<>"'()]*[^\s<>"'().,;:!?])?(?=[^a-zA-Z0-9]|$))|(\/#[A-Za-z][A-Za-z0-9-]*(?:\/[A-Za-z0-9-]+)*)|(\/(?:bookshelf|work|life|chat|gear|places))(?=[^a-zA-Z0-9_-]|$)/g;
     let last = 0, m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
@@ -265,39 +317,53 @@
         code.textContent = m[3];
         frag.appendChild(code);
       } else if (m[5] !== undefined) {
-        // markdown link [label](url)
-        const a = document.createElement('a');
-        a.href = m[5]; a.textContent = m[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        frag.appendChild(a);
+        // markdown link [label](url) — target may be internal or external
+        const internal = internalTarget(m[5]);
+        if (internal) {
+          frag.appendChild(internalLink(internal, m[4]));
+        } else {
+          const a = document.createElement('a');
+          a.href = m[5]; a.textContent = m[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+          frag.appendChild(a);
+        }
       } else if (m[6] !== undefined) {
         // bare https:// URL
         let [href, trailing] = splitTrailingPunct(m[6]);
-        const a = document.createElement('a');
-        a.href = href;
-        a.textContent = socialLabel(href.replace(/^https?:\/\//, '')) || href;
-        a.target = '_blank'; a.rel = 'noopener noreferrer';
-        frag.appendChild(a);
+        const internal = internalTarget(href);
+        if (internal) {
+          frag.appendChild(internalLink(internal, internal.kind === 'hash' ? routeLabel(internal.route) : internal.href));
+        } else {
+          const a = document.createElement('a');
+          a.href = href;
+          a.textContent = socialLabel(href.replace(/^https?:\/\//, '')) || href;
+          a.target = '_blank'; a.rel = 'noopener noreferrer';
+          frag.appendChild(a);
+        }
         if (trailing) frag.appendChild(document.createTextNode(trailing));
       } else if (m[7] !== undefined) {
         // bare domain URL e.g. linkedin.com/in/lukevz
         let [domain, trailing] = splitTrailingPunct(m[7]);
-        const a = document.createElement('a');
-        a.href = 'https://' + domain;
-        a.textContent = socialLabel(domain) || domain;
-        a.target = '_blank'; a.rel = 'noopener noreferrer';
-        frag.appendChild(a);
+        const internal = internalTarget('https://' + domain);
+        if (internal) {
+          frag.appendChild(internalLink(internal, internal.kind === 'hash' ? routeLabel(internal.route) : internal.href));
+        } else {
+          const a = document.createElement('a');
+          a.href = 'https://' + domain;
+          a.textContent = socialLabel(domain) || domain;
+          a.target = '_blank'; a.rel = 'noopener noreferrer';
+          frag.appendChild(a);
+        }
         if (trailing) frag.appendChild(document.createTextNode(trailing));
       } else if (m[8] !== undefined) {
-        // internal site path e.g. /bookshelf
-        const path = m[8];
-        const mode = SITE_PATHS[path];
-        const a = document.createElement('a');
-        a.href = '#'; a.textContent = path;
-        a.addEventListener('click', e => {
-          e.preventDefault();
-          if (window.setMode) window.setMode(mode);
-        });
-        frag.appendChild(a);
+        // bare hash route e.g. /#writing/how-to-use-bear-as-a-cms
+        const internal = internalTarget(m[8]);
+        if (internal) frag.appendChild(internalLink(internal, routeLabel(internal.route)));
+        else frag.appendChild(document.createTextNode(m[8]));
+      } else if (m[9] !== undefined) {
+        // internal mode path e.g. /bookshelf
+        const internal = internalTarget(m[9]);
+        if (internal) frag.appendChild(internalLink(internal, m[9]));
+        else frag.appendChild(document.createTextNode(m[9]));
       }
       last = m.index + m[0].length;
     }
