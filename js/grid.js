@@ -32,7 +32,7 @@
       const n = parseInt(hex.slice(1), 16);
       return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
     }
-    let bodies = null; // { deathStar, sunBig, sunSmall } — set per layout
+    let bodies = null; // { <name>: body } for the active scene — set per layout
     const useFinePointer = typeof matchMedia !== 'undefined' &&
       matchMedia('(hover: hover) and (pointer: fine)').matches;
     // Respect the user's reduced-motion preference: keep the dot grid static
@@ -75,28 +75,98 @@
 
     let ambientAnim = false;
 
-    // Anchor the twin suns and Death Star relative to the viewport (snapped to
-    // the lattice so they nestle among the stars rather than floating off-grid).
+    /* ── Skies ────────────────────────────────────────────────────────────
+       The home view keeps the authored sky: a grey moon top-left and the
+       Tatooine-style twin suns lower-right, over the full-viewport lattice.
+       Each section page (Writing / Videos / Photos) gets its OWN compact sky
+       instead — a different number of bodies in a different arrangement on its
+       own palette, over a shorter, thinner field — so the pages read as their
+       own places rather than a re-tint of home. Per scene:
+         compact — fill the compact hero instead of the whole viewport. Its
+                   height is MEASURED off the hero, so the sky tracks the
+                   responsive height rather than assuming a fraction of it
+         density — chance a lattice cell keeps its star (thins the field)
+         seed    — re-rolls star sizes/twinkle, so the thinning and the
+                   brightness spread land differently on each page
+       Body coordinates are in lattice pitches (SP) from the named edge, so
+       every sky stays snapped to the same grid at any viewport size. */
+    const SCENES = {
+      home: {
+        density: 1, seed: 8675309,
+        bodies: (w, h) => ({
+          // `launchpad` marks the body ships peel off (see spawnLaunch).
+          moon:     { kind: 'moon', cx: SP * 2.8, cy: SP * 2.8, r: SP * 0.66, launchpad: true },
+          sunBig:   { kind: 'sun', cx: w - SP * 3.4, cy: h * 0.66, r: SP * 0.95,
+                      core: '#efd23f', edge: '#e6a028' },
+          sunSmall: { kind: 'sun', cx: w - SP * 5.3, cy: h * 0.66 - SP * 2.15, r: SP * 0.42,
+                      core: '#f0a032', edge: '#df7d1c' },
+        }),
+      },
+      // Writing — one big cool planet with a small moon riding high above it.
+      // Sparsest of the three: mostly empty sky.
+      writing: {
+        compact: true, density: 0.72, seed: 20260726,
+        bodies: (w, h) => ({
+          planet: { kind: 'sun', cx: w - SP * 5.2, cy: h * 0.64, r: SP * 1.15,
+                    core: '#8f9bd6', edge: '#4a5378' },
+          moon:   { kind: 'moon', cx: w - SP * 10.6, cy: h * 0.22, r: SP * 0.44 },
+        }),
+      },
+      // Videos — two warm orbs clustered tight, like a projector lamp and its
+      // spill. Densest field of the three, so the cluster has something to sit in.
+      videos: {
+        compact: true, density: 0.85, seed: 314159,
+        bodies: (w, h) => ({
+          sunBig:   { kind: 'sun', cx: w - SP * 4.4, cy: h * 0.42, r: SP * 1.0,
+                      core: '#f4b23c', edge: '#d1591f' },
+          sunSmall: { kind: 'sun', cx: w - SP * 7.6, cy: h * 0.74, r: SP * 0.5,
+                      core: '#f08a4b', edge: '#b8431c' },
+        }),
+      },
+      // Photos — three small orbs strung along a shallow arc, reading as a
+      // contact sheet of frames rather than one focal body.
+      photos: {
+        compact: true, density: 0.78, seed: 271828,
+        bodies: (w, h) => ({
+          orbFar:  { kind: 'sun', cx: w - SP * 13.2, cy: h * 0.3, r: SP * 0.34,
+                     core: '#e58fa6', edge: '#a83f5f' },
+          orbMid:  { kind: 'sun', cx: w - SP * 8.4, cy: h * 0.68, r: SP * 0.5,
+                     core: '#5fc9c0', edge: '#1f7a76' },
+          orbNear: { kind: 'sun', cx: w - SP * 3.6, cy: h * 0.34, r: SP * 0.62,
+                     core: '#7fd0c4', edge: '#2c6f86' },
+        }),
+      },
+    };
+
+    let scene = SCENES.home;
+
+    // How tall the active sky is. Compact scenes stop at the bottom of the
+    // (half-height) hero so their stars aren't sliced mid-field by the page
+    // body that covers everything below it; the fraction is only a fallback for
+    // before the hero has been laid out.
+    function fieldHeight(h) {
+      if (!scene.compact) return h;
+      const hero = heroEl && heroEl.getBoundingClientRect().height;
+      return hero || h * 0.52;
+    }
+
+    // Anchor the active scene's bodies relative to the viewport (snapped to the
+    // lattice so they nestle among the stars rather than floating off-grid).
     function buildBodies(w, h) {
-      const sunBig = { cx: w - SP * 3.4, cy: h * 0.66, r: SP * 0.95 };
-      bodies = {
-        deathStar: { cx: SP * 2.8, cy: SP * 2.8, r: SP * 0.66 },
-        sunBig,
-        sunSmall: { cx: sunBig.cx - SP * 1.9, cy: sunBig.cy - SP * 2.15, r: SP * 0.42 },
-      };
-      // Pivot sits above the viewport midline so the bodies swung in from the
+      const fieldH = fieldHeight(h);
+      bodies = scene.bodies(w, fieldH);
+      // Pivot sits above the field's midline so the bodies swung in from the
       // far side land tucked up toward the top corners (matching how the moon
       // nestles into the top-left in dark mode) rather than sagging low.
-      bodyPivot = { cx: w / 2, cy: h * 0.42 };
-      // The Death Star gets its own, higher pivot: swinging it about the
-      // shared bodyPivot would land it ~75-85% down the viewport in light
-      // mode, right inside the .hero-glow-track band — which paints above
-      // the star canvas (z-index 8 vs. 1), hiding it completely behind the
-      // gradient. A higher pivot keeps its light-mode landing spot well
-      // clear of the glow while leaving the dark-mode (authored) position
-      // untouched — the rotation is identity at themeBlend=1 regardless of
-      // pivot.
-      deathStarPivot = { cx: w / 2, cy: h * 0.30 };
+      bodyPivot = { cx: w / 2, cy: fieldH * 0.42 };
+      // The moon gets its own, higher pivot: swinging it about the shared
+      // bodyPivot would land it ~75-85% down the viewport in light mode, right
+      // inside the .hero-glow-track band — which paints above the star canvas
+      // (z-index 8 vs. 1), hiding it completely behind the gradient. A higher
+      // pivot keeps its light-mode landing spot well clear of the glow while
+      // leaving the dark-mode (authored) position untouched — the rotation is
+      // identity at themeBlend=1 regardless of pivot.
+      deathStarPivot = { cx: w / 2, cy: fieldH * 0.30 };
     }
 
     // Snappy ease for the celestial swing: near-flat and slow at both ends, a
@@ -123,17 +193,22 @@
       if (!bodies) return null;
       // Ease the swing fraction (0 dark → 1 light) rather than the raw blend, so
       // the rotation whips through the middle and settles slowly at each end.
-      const a = -easeInOutExpo(1 - themeBlend) * Math.PI;
+      // Compact skies DON'T swing: the section hero's copy is left-aligned and
+      // fills the left half, so a half-turn would sweep the bodies straight
+      // through the title. They sit in the right margin, opposite the copy, in
+      // both themes — the stars still recolour with the theme either way.
+      const a = scene.compact ? 0 : -easeInOutExpo(1 - themeBlend) * Math.PI;
       const ca = Math.cos(a), sa = Math.sin(a);
       const out = {};
       for (const key in bodies) {
         const b = bodies[key];
-        const pivot = key === 'deathStar' ? deathStarPivot : bodyPivot;
+        const pivot = b.kind === 'moon' ? deathStarPivot : bodyPivot;
         const dx = b.cx - pivot.cx, dy = b.cy - pivot.cy;
+        // Spread carries kind/colours/launchpad through to the draw loop.
         out[key] = {
+          ...b,
           cx: pivot.cx + dx * ca - dy * sa,
           cy: pivot.cy + dx * sa + dy * ca,
-          r: b.r,
         };
       }
       return out;
@@ -152,8 +227,14 @@
     }
 
     function buildCells(w, h) {
-      const r = prng(8675309);
+      const r = prng(scene.seed);
       cells = [];
+      // Section scenes fill only the top of the viewport (their hero is about
+      // half height); everything below is covered by the page's opaque body.
+      // The LATTICE is still laid out against the full viewport so the row/col
+      // insets below — and the top bar that centres on them — don't shift
+      // between home and a section page; only which rows get emitted changes.
+      const fieldH = fieldHeight(h);
       // Uniform, centred lattice so the field reads as a symmetric star chart:
       // whole columns/rows fill the viewport with equal margins on each side.
       // Carry one extra ring vs. what fits with a half-cell margin so the
@@ -182,6 +263,11 @@
         for (let ri = 0; ri <= rows; ri++) {
           const bx = offX + ci * SP;
           const by = offY + ri * SP;
+          // Compact skies get clipped to the hero and thinned. Both cuts are
+          // seeded, so a scene renders the same sky every time at a given
+          // viewport size. Short-circuited on the home sky so it doesn't draw
+          // from the stream at all — its field stays exactly as authored.
+          if (scene.compact && (by > fieldH || r() >= scene.density)) continue;
           // Size tiers give a natural distant-starfield spread: mostly tiny
           // pinpoints, some a touch larger, a rare few brighter still.
           const t = r();
@@ -227,7 +313,7 @@
     //     right of short lines instead of a big dead rectangle.
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
-    const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text'];
+    const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text', '.section-hero__copy'];
     // .corner-status (clock + weather) and the top-right action buttons cut into
     // the field the same way — each cleared by its own box so the pattern
     // displaces around them and texture survives in the gaps between the icons.
@@ -235,7 +321,8 @@
     // icon only knocks out the one star row it sits on (the taller button box
     // would reach into the row below).
     const BOX_HOLE_SELECTORS  = ['.avatar--inline', '.app-icon', '.study-card',
-                                 '.corner-status', '.topBar-actions button svg:not([hidden])'];
+                                 '.corner-status', '.topBar-actions button svg:not([hidden])',
+                                 '.section-hero__icon'];
     // The clock-dial hero replaces background cells 1:1 (its dial lattice is
     // snapped onto this same 28px grid by js/clock-hero.js), so its cells are
     // hidden by exact center-in-rect cover — no pad, no AABB reach. The
@@ -334,6 +421,10 @@
       if (prefersReducedMotion) return 0;
       const b = document.body.classList;
       if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) return 0;
+      // Section pages have a half-height hero, so the collapse would fire
+      // almost immediately — and the field is covered by the page's opaque
+      // body a moment later anyway. Leave their sky alone.
+      if (b.contains('section-mode')) return 0;
       // Scaled to the hero's own rendered height (not the raw window height)
       // so the collapse stays in sync with the content rise/glow fade driven
       // by heroParallax() in main.js — the two match only when hero=100vh.
@@ -360,7 +451,8 @@
       // If the page came up in another mode, the entrance would fly over the
       // wrong layout — skip it entirely rather than play it hidden.
       const b = document.body.classList;
-      if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')) {
+      if (b.contains('work-mode') || b.contains('chat-overlay-open') || b.contains('places-mode')
+          || b.contains('section-mode')) {
         ENTRANCE.armed = false; return 0;
       }
       if (entranceStart < 0) entranceStart = ts;
@@ -463,22 +555,27 @@
       }
     }
 
-    /* ── Celestial bodies (Death Star + Tatooine twin suns) ── */
+    /* ── Celestial bodies — whatever the active scene declared ── */
     function drawBodies(c, ts, genieP) {
       const fb = frameBodies;
       if (!fb) return;
       const fade = 1 - genieP;
       if (fade <= 0.01) return;
       const bob = prefersReducedMotion ? 0 : Math.sin(ts / 4200) * 2;
-      // Two out-of-phase shimmer signals in 0..1 so each body breathes its own way.
-      const shimA = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 2600);
-      const shimB = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(ts / 3300 + 1.5);
-      // Dial the bodies back so they read as distant scenery, not spotlights
-      // competing with the hero copy: suns to ~55%, the (already muted) grey
-      // Death Star a touch less.
-      drawSun(c, fb.sunBig, '#efd23f', '#e6a028', fade * 0.55, shimA);
-      drawSun(c, fb.sunSmall, '#f0a032', '#df7d1c', fade * 0.55, shimB);
-      drawDeathStar(c, fb.deathStar, fade * 0.72, bob, shimB);
+      let i = 0;
+      for (const key in fb) {
+        const b = fb[key];
+        // Each body gets its own out-of-phase shimmer signal in 0..1, so a
+        // scene's bodies breathe independently rather than pulsing in unison.
+        const shim = prefersReducedMotion ? 0.5
+          : 0.5 + 0.5 * Math.sin(ts / (2600 + i * 700) + i * 1.5);
+        // Dial the bodies back so they read as distant scenery, not spotlights
+        // competing with the hero copy: suns to ~55%, the (already muted) grey
+        // moon a touch less.
+        if (b.kind === 'moon') drawMoon(c, b, fade * 0.72, bob, shim);
+        else drawSun(c, b, b.core, b.edge, fade * 0.55, shim);
+        i++;
+      }
     }
 
     // Twin suns: a shaded orb whose rim feathers into the sky (no hard circle),
@@ -505,9 +602,9 @@
       c.restore();
     }
 
-    // Death Star: grey sphere lit from the upper-left, rim feathered into the
-    // sky, with a faint cool halo and the superlaser dish inset.
-    function drawDeathStar(c, b, fade, bob, shim) {
+    // Moon (the Death Star): grey sphere lit from the upper-left, rim feathered
+    // into the sky, with a faint cool halo and the superlaser dish inset.
+    function drawMoon(c, b, fade, bob, shim) {
       const cx = b.cx, cy = b.cy + bob, r = b.r;
       c.save();
       // Faint cool halo that gently shimmers.
@@ -551,8 +648,18 @@
       nextLaunchTs = ts + LAUNCH_MIN_GAP + Math.random() * (LAUNCH_MAX_GAP - LAUNCH_MIN_GAP);
     }
 
+    // The scene names the body ships peel off (`launchpad`). Scenes without one
+    // — the section skies — simply never launch.
+    function launchpadBody() {
+      if (!frameBodies) return null;
+      for (const key in frameBodies) {
+        if (frameBodies[key].launchpad) return frameBodies[key];
+      }
+      return null;
+    }
+
     function spawnLaunch(ts) {
-      const m = frameBodies && frameBodies.deathStar;
+      const m = launchpadBody();
       if (!m) return;
       // Fly away from the moon toward the open interior of the sky, with a bit
       // of spread so successive ships don't all trace the same line.
@@ -772,7 +879,32 @@
     window.addEventListener('load', refreshHoles);
     setTimeout(refreshHoles, 600);
 
+    // js/main.js loads before this file, so if the page came up straight at a
+    // section route it has already asked for that section's sky (via
+    // body[data-sky]) at a point where window.grid didn't exist yet. Pick it up
+    // before the first layout rather than building the home sky and swapping it
+    // out a frame later.
+    scene = SCENES[document.body.dataset.sky] || SCENES.home;
+
     resize();
     window.addEventListener('resize', () => { clearTimeout(canvas._rt); canvas._rt = setTimeout(resize, 100); });
+
+    /* ── Public API ──
+       js/main.js swaps the sky when it opens or leaves a section page. Unknown
+       names fall back to home rather than throwing, so a typo degrades to the
+       default sky instead of a blank canvas. */
+    window.grid = {
+      scene(name) {
+        const next = SCENES[name] || SCENES.home;
+        if (next === scene) return;
+        scene = next;
+        // Full rebuild rather than just re-placing the bodies: field height,
+        // density and seed all feed buildCells (which re-places the bodies
+        // itself on the way out).
+        buildCells(gridLogicalW, gridLogicalH);
+        updateHoleRects();
+        if (!animating) drawGrid(ctx, gridLogicalW, gridLogicalH, performance.now());
+      },
+    };
 
   })();

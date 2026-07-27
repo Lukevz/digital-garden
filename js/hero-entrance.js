@@ -231,6 +231,9 @@
   const statusEls = [
     document.querySelector('.corner-status'),
     document.querySelector('.topBar-actions'),
+    // The mode tabs are pinned visible now (no scroll reveal), so they join the
+    // same fade-in rather than popping in fully formed.
+    document.querySelector('.topBar-center'),
   ].filter(Boolean);
   statusEls.forEach((n) => {
     n.style.transition = 'none';

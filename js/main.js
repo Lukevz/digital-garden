@@ -29,7 +29,9 @@
           .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
           .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
           .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+          .replace(/~([^~]+)~/g, '<del>$1</del>');
       }
 
       let inHTMLBlock = false;
@@ -309,6 +311,32 @@
         .replace(/"/g, '&quot;');
     }
 
+    // Plain text → HTML with bare URLs turned into links. Used for YouTube
+    // descriptions, which arrive as raw text but are full of links.
+    //
+    // Matches against the RAW text and escapes each piece on the way out, so
+    // every character the pattern excludes is still itself when the match runs.
+    // (Escaping first and linkifying the result looks equivalent and isn't: a
+    // quoted "https://x.com/a" has already become &quot;…&quot; by then, so the
+    // closing quote the pattern means to stop at no longer exists and `&quot`
+    // gets swallowed into the href.) The trailing class keeps a sentence's
+    // punctuation out of the link — "see https://x.com/a." links just the URL.
+    const LINKIFY_URL_RE = /https?:\/\/[^\s<]*[^\s<.,:;!?"')\]]/g;
+    function linkifyText(text) {
+      const src = String(text ?? '');
+      let out = '';
+      let last = 0;
+      let m;
+      LINKIFY_URL_RE.lastIndex = 0;
+      while ((m = LINKIFY_URL_RE.exec(src))) {
+        const url = escHtml(m[0]);
+        out += escHtml(src.slice(last, m.index));
+        out += `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        last = m.index + m[0].length;
+      }
+      return out + escHtml(src.slice(last));
+    }
+
     function caseStudyCardBlurb(body) {
       const t = (body || '').trim();
       if (!t) return '';
@@ -546,6 +574,10 @@
       if (hashSection === 'videos') return 'videos';
       if (hashSection === 'writing') return 'writing';
       if (mode === 'gear') return mode;
+      // The home view IS the Career tab — it's where you land, so its tab reads
+      // as the active one from first paint. #career (the timeline modal opened
+      // from the home grid) keeps it lit too, same as the other section tabs.
+      if (mode === 'life' && (!hashSection || hashSection === 'career')) return 'career';
       return null;
     }
 
@@ -571,8 +603,20 @@
       tabPill.style.transform = `translateX(${btn.offsetLeft - modeTabInset}px)`;
     }
 
-    // Init pill — hidden until a nav tab is active
-    requestAnimationFrame(() => syncNavTabs());
+    // The Career (home) tab is active from first paint, so the pill has to be
+    // placed rather than slid into place — suppress its transition for the
+    // initial measure and again once webfonts settle and the tabs re-measure.
+    function syncNavTabsInstant() {
+      tabPill.style.transition = 'none';
+      syncNavTabs();
+      requestAnimationFrame(() => { tabPill.style.transition = ''; });
+    }
+
+    requestAnimationFrame(syncNavTabsInstant);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(syncNavTabsInstant).catch(() => {});
+    }
+    window.addEventListener('resize', syncNavTabsInstant, { passive: true });
 
     // ── Bookshelf ──
     const bookshelfView  = document.getElementById('bookshelfView');
@@ -1810,6 +1854,9 @@
       // Leaving the home hero drops any in-progress answer so it isn't stranded
       // behind the intro copy when we come back.
       if (mode !== 'life') clearHeroAnswer();
+      // Work / Bookshelf / Gear / App Stack / Places all take over the same
+      // hero a section page uses, so a section page can't survive the switch.
+      if (mode !== 'life') closeSectionPage();
 
       const isBookshelfMode  = mode === 'bookshelf';
       const isGearMode       = mode === 'gear';
@@ -2025,6 +2072,17 @@
     }
 
     function onNavClick(navMode) {
+      // Career is the home view — drop any section route and come back to it.
+      if (navMode === 'career') {
+        if (modalIsOpen) closeSModal();
+        closeSectionPage();
+        if (currentMode !== 'life') setMode('life');
+        indexScrollPos = 0;
+        if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+        syncNavTabs();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
       // Writing / Videos / Photos each open their dedicated section page.
       if (navMode === 'photos' || navMode === 'videos' || navMode === 'writing') {
         if (currentMode !== 'life') setMode('life');
@@ -2525,8 +2583,14 @@
     const sModalTitle = document.getElementById('sModalTitle');
     const sModalBack  = document.getElementById('sModalBack');
     const sModalClose = document.getElementById('sModalClose');
-    const sModalBody  = document.getElementById('sModalBody');
     const sModalBg    = document.getElementById('sModalBg');
+    // Where the section renderers paint. It's the modal's body by default and
+    // the section page's body while a section page (Writing / Videos / Photos)
+    // is open — see openSectionPage() — so a single set of renderers serves
+    // both surfaces without any of them knowing which one they're on.
+    const sModalBodyEl    = document.getElementById('sModalBody');
+    const sectionPageBody = document.getElementById('sectionPageBody');
+    let sModalBody = sModalBodyEl;
     const nowStrip    = document.getElementById('nowStrip');
 
     // Capture strip rect for expansion animation
@@ -2647,6 +2711,49 @@
           .catch(() => new Set());
       }
       return gardenSlugSetPromise;
+    }
+
+    // Videos are addressed by a readable slug off their title (#videos/how-i-
+    // organise-my-notes) rather than the raw YouTube id. Kept separate from
+    // filenameToSlug because that one has to round-trip back to a filename
+    // exactly — this one is free to collapse punctuation runs and truncate.
+    // Titles are the source of truth, so a retitled video gets a new URL; the
+    // id still resolves as a fallback (see renderVideoItem), which also keeps
+    // any already-shared /#videos/<id> links working.
+    // Generous cap — long enough that real titles keep every word, short enough
+    // that a pathological one can't run away.
+    const VIDEO_SLUG_MAX = 90;
+    function videoSlugBase(video) {
+      const base = (video.title || '')
+        .toLowerCase()
+        .replace(/['’]/g, '')            // don't leave a gap where apostrophes were
+        .replace(/[^a-z0-9]+/g, '-')     // any run of punctuation/space → one hyphen
+        .replace(/^-+|-+$/g, '');
+      if (!base) return video.videoId;
+      if (base.length <= VIDEO_SLUG_MAX) return base;
+      // Truncate on a word boundary so the slug never ends mid-word.
+      const cut = base.slice(0, VIDEO_SLUG_MAX);
+      const lastDash = cut.lastIndexOf('-');
+      return (lastDash > 20 ? cut.slice(0, lastDash) : cut).replace(/-+$/, '');
+    }
+
+    // Two clips can share a title (Videos merges both channels, and a truncated
+    // slug can land on a neighbour), so slugs are assigned across the whole set
+    // rather than per video: the first keeps the plain slug, the rest get -2,
+    // -3… Ordering is by videoId, NOT by display order, so the index view and
+    // the item view — which derive this map separately — always agree.
+    function videoSlugMap(videos) {
+      const map = new Map();
+      const seen = new Map();
+      [...videos]
+        .sort((a, b) => (a.videoId < b.videoId ? -1 : a.videoId > b.videoId ? 1 : 0))
+        .forEach(v => {
+          const base = videoSlugBase(v);
+          const n = (seen.get(base) || 0) + 1;
+          seen.set(base, n);
+          map.set(v.videoId, n === 1 ? base : `${base}-${n}`);
+        });
+      return map;
     }
 
     // Reverse: find the matching filename from slug in a list of files
@@ -2776,6 +2883,12 @@
       }, 140);
     }
 
+    // Videos is imports-only and can run to hundreds of clips across two
+    // channels — page it client-side rather than dumping everything at once.
+    const VIDEOS_PAGE_SIZE = 15;
+    const channelArrow = '<svg class="sm-channel-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>';
+    const channelYoutubeIcon = '<svg class="sm-channel-icon" width="17" height="17" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true"><path d="M23.498 6.186a2.994 2.994 0 0 0-2.107-2.117C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.391.524A2.994 2.994 0 0 0 .502 6.186 31.26 31.26 0 0 0 0 12a31.26 31.26 0 0 0 .502 5.814 2.994 2.994 0 0 0 2.107 2.117c1.886.524 9.391.524 9.391.524s7.505 0 9.391-.524a2.994 2.994 0 0 0 2.107-2.117A31.26 31.26 0 0 0 24 12a31.26 31.26 0 0 0-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>';
+
     function renderMixedIndex(section, videosOnly = false) {
       fadeSwap(`<div class="sm-list sm-fade sm-loading"><span style="color:var(--text-secondary);font-size:0.85rem">Loading…</span></div>`);
 
@@ -2788,9 +2901,10 @@
 
       Promise.all([videosFetch, mdFetch]).then(([videos, mdItems]) => {
         const allItems = [];
+        const slugs = videoSlugMap(videos);
 
         videos.forEach(v => allItems.push({
-          type: 'video', slug: v.videoId, title: v.title, thumbnail: v.thumbnail, date: v.publishedAt
+          type: 'video', slug: slugs.get(v.videoId), title: v.title, thumbnail: v.thumbnail, date: v.publishedAt
         }));
 
         mdItems.forEach(({ file, date }) => {
@@ -2805,7 +2919,16 @@
           return;
         }
 
-        const rows = allItems.map(item => {
+        const pageCount = Math.ceil(allItems.length / VIDEOS_PAGE_SIZE);
+        let page = 0;
+
+        const channelLinksHtml = videosOnly ? `
+          <div class="sm-channel-links">
+            <a class="sm-channel-btn" href="https://www.youtube.com/@uxwithluke" target="_blank" rel="noopener noreferrer">${channelYoutubeIcon}<span>UX w/Luke</span>${channelArrow}</a>
+            <a class="sm-channel-btn" href="https://www.youtube.com/@lukevanzylofficial" target="_blank" rel="noopener noreferrer">${channelYoutubeIcon}<span>LDVZ</span>${channelArrow}</a>
+          </div>` : '';
+
+        function rowHtml(item) {
           if (item.type === 'video') {
             const safeTitle = item.title.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return `<button class="sm-row sm-row--video" data-section="${section}" data-slug="${item.slug}">
@@ -2816,38 +2939,74 @@
               </span>
               <div class="sm-row-thumb-wrap"><img class="sm-row-thumb" src="${item.thumbnail}" alt="" loading="lazy"></div>
             </button>`;
-          } else {
-            const safeTitle = item.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<button class="sm-row sm-row--article" data-section="${section}" data-slug="${item.slug}">
-              <span class="sm-row-title">${safeTitle}</span>
-              <span class="sm-row-sub">${item.date}</span>
-            </button>`;
           }
-        }).join('');
+          const safeTitle = item.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<button class="sm-row sm-row--article" data-section="${section}" data-slug="${item.slug}">
+            <span class="sm-row-title">${safeTitle}</span>
+            <span class="sm-row-sub">${item.date}</span>
+          </button>`;
+        }
 
-        fadeSwap(`<div class="sm-mixed-grid sm-fade">${rows}</div>`);
-        attachRowClicks();
+        function paginationHtml() {
+          if (pageCount <= 1) return '';
+          return `<div class="sm-pagination">
+            <button class="sm-page-btn" data-dir="prev" ${page === 0 ? 'disabled' : ''}>Prev</button>
+            <span class="sm-page-indicator">Page ${page + 1} of ${pageCount}</span>
+            <button class="sm-page-btn" data-dir="next" ${page === pageCount - 1 ? 'disabled' : ''}>Next</button>
+          </div>`;
+        }
+
+        function paint(scrollTop) {
+          const start = page * VIDEOS_PAGE_SIZE;
+          const rows = allItems.slice(start, start + VIDEOS_PAGE_SIZE).map(rowHtml).join('');
+          fadeSwap(`<div class="sm-videos-page sm-fade">${channelLinksHtml}<div class="sm-mixed-grid">${rows}</div>${paginationHtml()}</div>`);
+          setTimeout(() => {
+            sModalBody.scrollTop = scrollTop != null ? scrollTop : 0;
+            sModalBody.querySelectorAll('.sm-row').forEach(btn => {
+              btn.addEventListener('click', () => {
+                indexScrollPos = sModalBody.scrollTop;
+                location.hash = `#${btn.dataset.section}/${btn.dataset.slug}`;
+              });
+            });
+            sModalBody.querySelectorAll('.sm-page-btn').forEach(btn => {
+              btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                page += btn.dataset.dir === 'next' ? 1 : -1;
+                paint(0);
+              });
+            });
+          }, 140);
+        }
+
+        paint(indexScrollPos);
       });
     }
 
-    function renderVideoItem(section, videoId) {
+    // `slug` is normally a title slug; a raw YouTube id also resolves, so links
+    // shared before the switch (and any hand-written /#videos/<id>) still work.
+    function renderVideoItem(section, slug) {
       setModalLarge(true);
       fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-size:0.85rem">Loading…</p></div>`);
-      fetchSectionVideos(section).then(videos => {
-        const video = videos.find(v => v.videoId === videoId);
-        if (!video) {
-          fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Video not found.</p></div>`);
-          return;
-        }
+      return fetchSectionVideos(section).then(videos => {
+        const slugs = videoSlugMap(videos);
+        const video = videos.find(v => slugs.get(v.videoId) === slug)
+                   || videos.find(v => v.videoId === slug);
+        if (!video) return false;
+        const videoId = video.videoId;
         const safeTitle = video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // The whole description, not a clamped preview: playlistItems.snippet
+        // returns it in full (search.list is the endpoint that truncates), so
+        // there's nothing more to fetch — chapters, links and all.
         const desc = video.description
-          ? `<p style="color:var(--text-secondary);font-size:16px;line-height:1.6;white-space:pre-wrap">${video.description.replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 600)}${video.description.length > 600 ? '…' : ''}</p>`
+          ? `<div class="video-desc">${linkifyText(video.description)}</div>`
           : '';
         const iframe = `<div class="fn-video-wrap"><iframe src="https://www.youtube.com/embed/${videoId}" title="${video.title.replace(/"/g, '&quot;')}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`;
         fadeSwap(`<div class="sm-fade cs-body"><h1>${safeTitle}</h1>${iframe}${desc}</div>`);
         setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
+        return true;
       }).catch(() => {
         fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Couldn't load video.</p></div>`);
+        return true;   // handled — don't fall through to the markdown lookup
       });
     }
 
@@ -2867,7 +3026,10 @@
 
     let prevNavMode = false;
 
-    function closeSModal() {
+    // keepUrl: skip the hash-clearing pushState. Used when the modal is closing
+    // because we're navigating somewhere that owns the URL itself (a section
+    // page), where stripping the hash would undo the navigation.
+    function closeSModal(keepUrl) {
       if (!modalIsOpen) return;
       prevNavMode = false;
       sModalBack.onclick = null;
@@ -2878,8 +3040,190 @@
       sModal.classList.remove('sm-open', 'sm-now', 'sm-large', 'sm-photo');
       sModal.style.pointerEvents = 'none';
       restoreModalFocus(sModal);
-      history.pushState(null, '', location.pathname + location.search);
+      // A modal opened ON TOP of a section page (the photo detail) hands both
+      // the URL and the render target back to the page rather than clearing
+      // them — the hash belongs to the page, and it's still there underneath.
+      if (activeSectionPage) {
+        keepUrl = true;
+        sModalBody = sectionPageBody;
+      }
+      if (!keepUrl) history.pushState(null, '', location.pathname + location.search);
       syncNavTabs();
+    }
+
+    /* ── Section pages (Writing / Videos / Photos) ────────────────────────
+       These three don't open in the modal — they take over the page: the home
+       lockup and feed drop out, the fixed hero shrinks to a compact
+       left-aligned title + description (styles.css, body.section-mode), the
+       starfield swaps to that section's own sky (SCENES in js/grid.js), and
+       the section's content renders into #sectionPageBody instead of the modal
+       body. The renderers themselves are untouched — they follow sModalBody,
+       which openSectionPage() repoints. Every other section (Career, Labs,
+       Portfolio, …) still opens in the modal exactly as before. */
+    const SECTION_PAGES = new Set(['writing', 'videos', 'photos']);
+    const sectionHero      = document.getElementById('sectionHero');
+    const sectionHeroTitle = document.getElementById('sectionHeroTitle');
+    const sectionHeroDesc  = document.getElementById('sectionHeroDesc');
+    const sectionHeroIcon  = document.getElementById('sectionHeroIcon');
+    const sectionHeroBack  = document.getElementById('sectionHeroBack');
+    const sectionHeroBackLabel = document.getElementById('sectionHeroBackLabel');
+    const sectionHeroCopy  = document.querySelector('.section-hero__copy');
+    const sectionBelow     = document.getElementById('sectionBelow');
+    let activeSectionPage = null;
+
+    // Which sky the starfield should be drawing. Recorded on the body BEFORE
+    // calling window.grid, because js/grid.js loads after this file: on a page
+    // that comes up straight at a section route, grid.js isn't defined yet and
+    // reads the attribute itself when it initialises.
+    function setSky(name) {
+      if (name) document.body.dataset.sky = name;
+      else delete document.body.dataset.sky;
+      if (window.grid && window.grid.scene) window.grid.scene(name || 'home');
+    }
+
+    // The hero description is the same line the section's launchpad card
+    // carries on the home page, read straight off the card so the two can't
+    // drift apart.
+    function sectionBlurb(section) {
+      const app = SECTION_APP_BY_SLUG[section];
+      const el = app && document.querySelector(`.app[data-app="${app}"] .app-desc`);
+      return el ? el.textContent.trim() : '';
+    }
+
+    function openSectionPage(section, item) {
+      const data = SECTIONS[section];
+      if (!data) return;
+      const switching = activeSectionPage !== section;
+      activeSectionPage = section;
+
+      // Shrink the hero FIRST: the compact skies measure it to size their star
+      // field, so swapping the scene before this would size it to the tall
+      // home hero.
+      document.body.classList.add('section-mode');
+      sectionHero.hidden = false;
+      sectionBelow.hidden = false;
+
+      if (switching) {
+        sectionHeroTitle.textContent = data.label;
+        sectionHeroDesc.textContent = sectionBlurb(section);
+        sectionHeroBackLabel.textContent = `All ${data.label.toLowerCase()}`;
+        const icon = cloneLaunchpadSectionIconSvgForModal(SECTION_APP_BY_SLUG[section]);
+        sectionHeroIcon.innerHTML = '';
+        if (icon) {
+          icon.setAttribute('width', '30');
+          icon.setAttribute('height', '30');
+          icon.setAttribute('aria-hidden', 'true');
+          sectionHeroIcon.appendChild(icon);
+        }
+        setSky(section);
+      }
+
+      // Repoint the renderers at the page before calling them.
+      sModalBody = sectionPageBody;
+      window.scrollTo({ top: 0 });
+
+      if (item) renderItem(section, item);
+      else renderIndex(section);
+      syncSectionHero();
+    }
+
+    function closeSectionPage() {
+      if (!activeSectionPage) return;
+      activeSectionPage = null;
+      document.body.classList.remove('section-mode', 'section-detail');
+      sectionHero.hidden = true;
+      sectionBelow.hidden = true;
+      sectionHeroBack.hidden = true;
+      sectionPageBody.innerHTML = '';
+      sModalBack.onclick = null;
+      photoDetailNav = null;
+      sModalBody = sModalBodyEl;
+      // Forget the lockup so re-entering this same section fades in again
+      // rather than being treated as "nothing changed".
+      heroLockupKey = null;
+      setSky(null);
+    }
+
+    // The renderers signal "this view has a parent" by showing the modal's own
+    // back button — the page has no modal chrome, so that's how it knows it's
+    // showing an opened item rather than the index. Works for views the hash
+    // never sees too, like a single photo opened from the grid.
+    //
+    // On an item the hero drops to a detail lockup (body.section-detail): back
+    // button on top, no icon or blurb, and the item's OWN title at a smaller
+    // size in place of the section name. The title is hoisted out of whatever
+    // the renderer produced rather than threaded through every one of them, and
+    // the original is hidden so it doesn't read twice.
+    function syncSectionHero() {
+      if (!sectionHeroBack) return;
+      const isDetail = !!activeSectionPage && sModalBack.style.display === 'flex';
+      document.body.classList.toggle('section-detail', isDetail);
+      sectionHeroBack.hidden = !isDetail;
+
+      // `settled` = the header is showing its final content for this view. A
+      // render swaps in a "Loading…" placeholder before the real thing, and
+      // syncs on both; fading the header on the placeholder would start the
+      // transition under the OLD title and then swap it mid-fade.
+      let settled = true;
+      if (!isDetail) {
+        if (activeSectionPage) sectionHeroTitle.textContent = SECTIONS[activeSectionPage].label;
+      } else {
+        const heading = sectionPageBody.querySelector('.cs-body h1');
+        if (heading) {
+          sectionHeroTitle.textContent = heading.textContent;
+          heading.classList.add('is-hoisted');
+        } else {
+          settled = false;   // keep the previous title until the real one lands
+        }
+      }
+      if (settled) fadeHeroCopy(`${isDetail ? 'detail' : 'index'}:${sectionHeroTitle.textContent}`);
+    }
+
+    // Cross-fade the header when its lockup actually changes — entering an item,
+    // going back to the index. Keyed on what's rendered rather than fired on
+    // every call, since each navigation syncs several times on its way in.
+    // Matches the body's own fade (.sm-fade), so the two move together.
+    let heroLockupKey = null;
+    let heroFadeAnim = null;
+    function fadeHeroCopy(key) {
+      if (key === heroLockupKey) return;
+      heroLockupKey = key;
+      if (!sectionHeroCopy || typeof sectionHeroCopy.animate !== 'function') return;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      // One fade at a time: overlapping runs would compound their opacities and,
+      // if a later one is cancelled mid-flight, could strand the header dimmed.
+      if (heroFadeAnim) heroFadeAnim.cancel();
+      heroFadeAnim = sectionHeroCopy.animate(
+        [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 280, easing: 'cubic-bezier(0.16,1,0.3,1)' }
+      );
+      heroFadeAnim.finished.then(() => { heroFadeAnim = null; }).catch(() => {});
+    }
+
+    if (sectionHeroBack) {
+      // Every page item view (an article, a video) is reached by its own hash,
+      // so the way back is always the section's index. The one item view with a
+      // different parent — a single photo — opens in the modal instead and is
+      // dismissed by closing it, so it never gets here.
+      sectionHeroBack.addEventListener('click', () => {
+        if (activeSectionPage) location.hash = `#${activeSectionPage}`;
+      });
+    }
+
+    if (sectionPageBody) {
+      new MutationObserver(syncSectionHero)
+        .observe(sectionPageBody, { childList: true });
+    }
+
+    // A single photo is the one item view that stays a MODAL rather than
+    // becoming a page: the modal is what carries the blurred-photo backdrop
+    // (#sModalBg + .sm-photo, styles.css), which tints its whole chrome to the
+    // photo. The Photos grid stays put on the page behind it, so closing the
+    // modal is the whole way back — no in-modal back step.
+    function openPhotoDetail(list, thumbs, idx, metas) {
+      sModalBody = sModalBodyEl;   // render into the modal, not the page
+      openSModal();
+      renderPhotoDetail(list, thumbs, idx, metas);
     }
 
     // Keep keyboard focus inside whichever dialog is currently open.
@@ -2997,8 +3341,10 @@
             sModalBody.scrollTop = 0;
             const fulls = images.map(img => img.src);
             const thumbs = images.map(img => img.thumb || img.src);
-            sModalBody.querySelectorAll('.photo-item').forEach(btn => {
-              btn.addEventListener('click', () => renderPhotoDetail(fulls, thumbs, +btn.dataset.idx));
+            const metas = images.map(img => img.exif || null);
+            const grid = sModalBody;   // the page body; the modal repoints sModalBody
+            grid.querySelectorAll('.photo-item').forEach(btn => {
+              btn.addEventListener('click', () => openPhotoDetail(fulls, thumbs, +btn.dataset.idx, metas));
             });
           }, 140);
         })
@@ -3007,30 +3353,80 @@
         });
     }
 
+    // ── EXIF side panel ──
+    // The listing API reads the camera metadata off each file (api/_lib/exif.js).
+    // Instagram strips EXIF, so synced photos arrive with only a date (from the
+    // filename) and pixel size — the panel renders whatever it actually has.
+    const EXIF_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    function exifDateLabel(iso) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+      if (!m) return null;
+      return `${EXIF_MONTHS[+m[2] - 1]} ${+m[3]}, ${m[1]}`;
+    }
+
+    function exifPanelHtml(meta) {
+      const e = meta || {};
+      const row = (label, value) => value
+        ? `<div class="photo-exif-row"><dt>${escHtml(label)}</dt><dd>${escHtml(value)}</dd></div>`
+        : '';
+      // Focal length: the real number, with the 35mm equivalent alongside it
+      // when the body is a crop sensor and the two actually differ.
+      const focal = e.focal && e.focal35 && e.focal35 !== e.focal
+        ? `${e.focal} (${e.focal35} eq.)`
+        : (e.focal || null);
+      const shot = [e.aperture, e.shutter, e.iso].filter(Boolean);
+      const date = exifDateLabel(e.date);
+
+      const rows = [
+        row('Camera', e.camera),
+        row('Lens', e.lens),
+        row('Focal length', focal),
+        shot.length
+          ? `<div class="photo-exif-row"><dt>Exposure</dt><dd class="photo-exif-shot">${
+              shot.map(v => `<span>${escHtml(v)}</span>`).join('')
+            }</dd></div>`
+          : '',
+        row('Date', date && e.time ? `${date} · ${e.time}` : date),
+        row('Dimensions', e.dimensions),
+      ].filter(Boolean).join('');
+
+      if (!rows) return '<aside class="photo-exif"><p class="photo-exif-empty">No metadata</p></aside>';
+      return `<aside class="photo-exif" aria-label="Photo details"><dl class="photo-exif-list">${rows}</dl></aside>`;
+    }
+
     // Single photo shown inside the modal, grown to the large size, over a
     // blurred + darkened version of its own thumbnail.
-    function renderPhotoDetail(list, thumbs, startIdx) {
+    function renderPhotoDetail(list, thumbs, startIdx, metas) {
       setModalLarge(true);
       sModalTitle.textContent = 'Photos';
       clearModalSectionIcon();
-      sModalBack.style.display = 'flex';
-      sModalBack.onclick = () => renderPhotosGrid();
+      // Opened from the Photos PAGE the grid is still behind the modal, so
+      // closing it is the way back and a back arrow would be a second, weaker
+      // close. The in-modal path (grid and detail sharing one panel) keeps its
+      // step back to the grid.
+      const overPage = activeSectionPage === 'photos';
+      sModalBack.style.display = overPage ? 'none' : 'flex';
+      sModalBack.onclick = overPage ? null : () => renderPhotosGrid();
 
       const navSvg = (d) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+      // The chevrons are siblings of the photo, not children of it: they sit on
+      // the modal's own left/right edges with the photo and its metadata panel
+      // between them, so neither ever covers the image.
       fadeSwap(`<div class="sm-fade photo-detail">
+        <button class="photo-detail-nav photo-detail-prev" aria-label="Previous photo">${navSvg('m15 18-6-6 6-6')}</button>
         <div class="photo-detail-stage">
-          <button class="photo-detail-nav photo-detail-prev" aria-label="Previous photo">${navSvg('m15 18-6-6 6-6')}</button>
           <img class="photo-detail-img" alt="" decoding="async">
-          <button class="photo-detail-nav photo-detail-next" aria-label="Next photo">${navSvg('m9 18 6-6-6-6')}</button>
         </div>
-        <div class="photo-detail-count"></div>
+        ${exifPanelHtml(metas && metas[startIdx])}
+        <button class="photo-detail-nav photo-detail-next" aria-label="Next photo">${navSvg('m9 18 6-6-6-6')}</button>
       </div>`);
       sModal.classList.add('sm-photo');
 
       setTimeout(() => {
         sModalBody.scrollTop = 0;
         const img = sModalBody.querySelector('.photo-detail-img');
-        const count = sModalBody.querySelector('.photo-detail-count');
+        const detail = sModalBody.querySelector('.photo-detail');
         const prevBtn = sModalBody.querySelector('.photo-detail-prev');
         const nextBtn = sModalBody.querySelector('.photo-detail-next');
         if (!img) return;
@@ -3049,7 +3445,10 @@
           img.src = list[idx];
           img.alt = `Photo ${idx + 1} of ${list.length}`;
           setBg((thumbs && thumbs[idx]) || list[idx]);
-          if (count) count.textContent = `${idx + 1} / ${list.length}`;
+          // Swap the panel in place — it sits between the photo and the next
+          // chevron, so replacing the whole row would drop the click handlers.
+          const panel = detail && detail.querySelector('.photo-exif');
+          if (panel) panel.outerHTML = exifPanelHtml(metas && metas[idx]);
         };
         img.addEventListener('load', () => img.classList.add('is-loaded'));
         const prev = () => show(idx - 1);
@@ -3344,6 +3743,12 @@
           const rows = mdItems.map(({ file, date }) => {
             const name = file.replace(/\.md$/, '');
             const slug = filenameToSlug(name);
+            if (section === 'writing') {
+              return `<button class="sm-row sm-row--writing" data-section="${section}" data-slug="${slug}">
+                <span class="sm-row-date">${date}</span>
+                <span class="sm-row-title">${name}</span>
+              </button>`;
+            }
             return `<button class="sm-row" data-section="${section}" data-slug="${slug}">
               <span class="sm-row-title">${name}</span>
               <span class="sm-row-sub">${date}</span>
@@ -3374,27 +3779,22 @@
       sModalBack.style.display = 'flex';
 
       if (section === 'videos') {
-        // YouTube video IDs are 11 chars of base64url
-        if (/^[A-Za-z0-9_-]{11}$/.test(slug)) {
-          renderVideoItem(section, slug);
-          return;
-        }
-        // Markdown article in content/[section]/
-        fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-size:0.85rem">Loading…</p></div>`);
-        fetch(`/api/content/list?category=${section}`)
-          .then(r => r.json())
-          .then(({ items, files }) => {
-            const fileList = items ? items.map(i => i.file) : (files || []);
-            const filename = slugToFilename(slug, fileList);
-            if (!filename) { fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Not found.</p></div>`); return null; }
-            return fetch(`/content/${section}/${encodeURIComponent(filename)}`).then(r => r.text());
-          })
-          .then(md => { if (md) { fadeSwap(`<div class="sm-fade cs-body">${mdToHTML(md)}</div>`); setTimeout(() => { sModalBody.scrollTop = 0; }, 140); } })
-          .catch(() => { fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Couldn't load content.</p></div>`); });
+        // Video slugs are title-derived now, so their shape no longer tells a
+        // clip apart from a written post in content/videos/ — ask the channel
+        // feed first, and fall back to markdown when nothing matches.
+        renderVideoItem(section, slug).then(found => {
+          if (!found) renderMarkdownItem(section, slug);
+        });
         return;
       }
 
-      // Markdown-based sections: fetch file list to resolve slug → filename, then fetch markdown
+      renderMarkdownItem(section, slug);
+    }
+
+    // Resolve slug → filename against the section's listing, then render the
+    // markdown. Shared by every markdown-backed section (and by Videos, as the
+    // fallback for a slug that isn't one of the channel's clips).
+    function renderMarkdownItem(section, slug) {
       fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-size:0.85rem">Loading…</p></div>`);
       fetch(`/api/content/list?category=${section}`)
         .then(r => r.json())
@@ -3619,6 +4019,12 @@
     function handleHash() {
       const parsed = parseHash();
 
+      // Writing / Videos / Photos own the whole page rather than opening in the
+      // modal. Any other destination (including no hash at all) tears the
+      // section page back down first.
+      const isSectionPage = !!parsed && SECTION_PAGES.has(parsed.section);
+      if (!isSectionPage) closeSectionPage();
+
       if (parsed && parsed.section === 'versions' && !parsed.item) {
         closeSModal();
         showVersionScreenFromHash();
@@ -3629,6 +4035,14 @@
       hideVersionScreenIfNeeded();
 
       if (!parsed) { closeSModal(); syncNavTabs(); return; }
+
+      if (isSectionPage) {
+        // keepUrl: closeSModal would otherwise strip the hash we just arrived at.
+        closeSModal(true);
+        openSectionPage(parsed.section, parsed.item);
+        syncNavTabs();
+        return;
+      }
 
       if (parsed.section === 'now') {
         openSModal();
@@ -3721,6 +4135,23 @@
 
     window.setMode = setMode;
 
+    // Follow an internal site link out of a chat answer (either the overlay or
+    // the hero). The chat can hand back any route the router understands —
+    // "#writing/how-to-use-bear-as-a-cms", "/#photos" — so normalise it, get
+    // out of whatever surface the answer was rendered into, then let handleHash
+    // do the actual work. Re-running handleHash by hand covers the case where
+    // the visitor asks about the page they're already on: the hash doesn't
+    // change, so hashchange never fires.
+    function gotoSite(route) {
+      const hash = String(route || '').replace(/^https?:\/\/[^/]+/, '').replace(/^\/?#?/, '');
+      closeChatOverlay();
+      clearHeroAnswer();
+      if (currentMode !== 'life') setMode('life');
+      if (location.hash.slice(1) === hash) handleHash();
+      else location.hash = hash ? `#${hash}` : '';
+    }
+    window.gotoSite = gotoSite;
+
     // ── Live clock: always Atlanta / Eastern time ──
     (function startClock() {
       const timeEl = document.querySelector('.corner-status__time');
@@ -3757,7 +4188,6 @@
     (function heroParallax() {
       const belowFold = document.getElementById('belowFold');
       const glowTrack = document.querySelector('.hero-glow-track');
-      const topBar = document.getElementById('topBar');
       const heroEl = document.getElementById('heroSection');
       if (!belowFold || !glowTrack) return;
 
@@ -3769,16 +4199,14 @@
       const GLOW_FADE_END = 0.55;  // scroll progress (fraction of one viewport) by which the glow is fully gone —
                                    // once the top of the body reaches ~mid-viewport, the aurora has cleared out
       const CONTENT_BOOST = 0;     // extra content speed-up (0 = native). Small values only — >0 can poke content above the seam.
-      // Greeting fades out first; nav follows on a shorter ramp once the greeting
-      // is mostly gone — a brief gap avoids the two stacking on top of each other.
-      // Values are UNCAPPED scroll progress (scrollY / viewport-height): 0 = at
-      // the top, 1 = one screen down (the body has just covered the hero).
-      // NB: driven off scroll progress, NOT the glow limb — the glow lags behind
-      // the scroll, so keying off it snapped the swap at exactly one viewport.
+      // Hero greeting fades out as you scroll off the hero. (The top nav no
+      // longer waits for it — it's pinned visible from load, see --nav-reveal
+      // in styles.css.) Values are UNCAPPED scroll progress (scrollY /
+      // viewport-height): 0 = at the top, 1 = one screen down (the body has
+      // just covered the hero). NB: driven off scroll progress, NOT the glow
+      // limb — the glow lags behind the scroll.
       const GREET_OUT_START = 0.50; // greeting begins fading
       const GREET_OUT_END   = 0.74; // greeting fully gone
-      const NAV_IN_START    = 0.68; // nav begins once greeting is mostly faded
-      const NAV_IN_END      = 0.86; // nav fully in — still a shorter ramp than before
 
       // NB: the dot-grid "genie" collapse (bottom-up sequential shrink into the
       // glow) is driven per-cell inside grid.js, not here — a single CSS transform
@@ -3789,6 +4217,9 @@
 
       function navPinnedOpen() {
         return reduced
+          // Section pages hide #belowFold, so its rect would read as "scrolled
+          // to the top" and drive the aurora/greeting off bogus numbers.
+          || document.body.classList.contains('section-mode')
           || currentMode === 'places'
           || currentMode === 'bookshelf'
           || currentMode === 'gear'
@@ -3799,19 +4230,12 @@
         return t * t * (3 - 2 * t);
       }
 
-      function setNavReveal(reveal) {
-        if (!topBar) return;
-        const clamped = Math.max(0, Math.min(1, reveal));
-        topBar.style.setProperty('--nav-reveal', clamped.toFixed(3));
-        topBar.classList.toggle('nav-revealed', clamped > 0.04);
-      }
-
       function setGreetingReveal(reveal) {
         const clamped = Math.max(0, Math.min(1, reveal));
         document.body.style.setProperty('--intro-greeting-reveal', clamped.toFixed(3));
       }
 
-      // The timeline ("My Career") holds hidden until the aurora has cleared,
+      // The timeline ("Timeline") holds hidden until the aurora has cleared,
       // then fades in as it rises into view — so it doesn't show through the
       // hero glow. Read as opacity via --timeline-reveal on #homeTimeline.
       function setTimelineReveal(reveal) {
@@ -3830,7 +4254,6 @@
         ticking = false;
 
         if (navPinnedOpen()) {
-          setNavReveal(1);
           setGreetingReveal(0);
           setTimelineReveal(1);
           return;
@@ -3862,10 +4285,8 @@
           inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;
         }
 
-        // Brief beat between greeting out and nav in so they don't stack visibly.
         const greetOut = fadeBetween(scrollProgress, GREET_OUT_START, GREET_OUT_END);
         setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : (1 - greetOut));
-        setNavReveal(fadeBetween(scrollProgress, NAV_IN_START, NAV_IN_END));
         // Reveal the timeline once past the aurora (fully faded by GLOW_FADE_END
         // ≈ 0.55), ramping in just after so it never bleeds through the glow.
         setTimelineReveal(fadeBetween(scrollProgress, 0.62, 0.92));

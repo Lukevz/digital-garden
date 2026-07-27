@@ -552,125 +552,384 @@
       margin: 0;
     }
 
-    /* Testimonials — 2×2 colleague quote grid.
-       Note: `testi-` prefix (not `tm-`) — `tm-` belongs to the version screen. */
-    .testi-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-      gap: 20px;
+    /* Career → Testimonials → Core Principles reads as one run of big centered
+       blocks, so they get more air than the feed's default 56px gap (which the
+       pinned timeline in particular makes feel cramped), and their headers
+       center over the content instead of sitting flush left. */
+    #homeTestimonials,
+    #homePrinciples {
+      margin-top: clamp(48px, 8vh, 104px);
     }
 
-    .testi-card {
-      position: relative;
+    #homeTestimonials .home-section-header,
+    #homePrinciples .home-section-header {
+      justify-content: center;
+    }
+
+    /* Testimonials — an iMessage-style thread. An opening "sent" bubble asks
+       the question; each colleague's reply slides in from the left, on its
+       own, as it individually scrolls into view — an avatar + bouncing-dot
+       "typing" bubble first, then js/testimonials.js swaps that for the real
+       message a beat later. Each row has its own IntersectionObserver entry
+       (js drives the reveal, not pure CSS delays, since the typing pause has
+       to land BETWEEN the row appearing and its text showing).
+       Note: `testi-` prefix (not `tm-`) — `tm-` belongs to the version screen. */
+    .testi-chat {
+      max-width: 40rem;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
-      padding: 24px;
-      border-radius: 20px;
-      background: var(--surface-raised);
-      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      gap: 40px;
     }
 
-    .testi-card__head {
+    .testi-chat__row {
       display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 16px;
+      align-items: flex-end;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .testi-chat__row--out {
+      align-self: flex-end;
+      transform: translateX(18px);
+    }
+    .testi-chat__row--in {
+      align-self: flex-start;
+      max-width: 84%;
+      transform: translateX(-22px);
+    }
+    .testi-chat__row.is-in {
+      opacity: 1;
+      transform: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .testi-chat__row { opacity: 1; transform: none; transition: none; }
     }
 
-    .testi-card__avatar {
+    .testi-chat__bubble {
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    .testi-chat__bubble--out {
+      background: linear-gradient(180deg, #4fa8ff, #0b84fe);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+    .testi-chat__bubble--in {
+      background: var(--glass-bg-subtle);
+      color: var(--text-primary);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      border-bottom-left-radius: 6px;
+    }
+
+    /* Typing indicator — three dots taking turns bouncing, sized to roughly
+       match a short line of the real bubble text so the swap doesn't jump.
+       [hidden] override for the same reason as .testi-chat__more[hidden]. */
+    .testi-chat__typing[hidden] {
+      display: none !important;
+    }
+    .testi-chat__typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 15px 16px;
+    }
+    .testi-chat__dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+      opacity: 0.5;
+      animation: testiTypingBounce 1.1s ease-in-out infinite;
+    }
+    .testi-chat__dot:nth-child(2) { animation-delay: 0.15s; }
+    .testi-chat__dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes testiTypingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* The real message + its "Read More" pop in once the typing beat ends. */
+    .testi-chat__col > .testi-chat__bubble--pop,
+    .testi-chat__col > .testi-chat__more.testi-chat__bubble--pop {
+      animation: testiBubblePop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes testiBubblePop {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .testi-chat__dot { animation: none; opacity: 0.7; }
+      .testi-chat__col > .testi-chat__bubble--pop,
+      .testi-chat__col > .testi-chat__more.testi-chat__bubble--pop { animation: none; }
+    }
+
+    /* Avatar — sits at the foot of the bubble column like an iMessage group
+       thread. tabindex makes it focusable so the tooltip is keyboard-reachable. */
+    .testi-chat__avatar {
+      position: relative;
       flex-shrink: 0;
-      width: 52px;
-      height: 52px;
+      display: inline-flex;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: default;
+    }
+    .testi-chat__avatar-img {
+      width: 100%;
+      height: 100%;
       border-radius: 50%;
       object-fit: cover;
       background: var(--glass-bg-subtle);
       box-shadow: inset 0 0 0 1px var(--glass-border-medium);
     }
 
-    .testi-card__id {
-      flex: 1;
+    /* CSS-only tooltip: role/company, shown on hover or keyboard focus. */
+    .testi-chat__tip {
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 10px);
+      transform: translateY(4px);
+      width: max-content;
+      max-width: 200px;
+      padding: 8px 11px;
+      border-radius: 10px;
+      background: var(--glass-bg);
+      box-shadow:
+        0 8px 20px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.30)),
+        inset 0 1px 0 var(--glass-highlight),
+        inset 0 0 0 1px var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+      font-size: 0.76rem;
+      line-height: 1.35;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: normal;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      z-index: 3;
+    }
+    .testi-chat__avatar:hover .testi-chat__tip,
+    .testi-chat__avatar:focus-visible .testi-chat__tip {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .testi-chat__col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
       min-width: 0;
     }
-
-    .testi-card__name {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.25;
-    }
-
-    .testi-card__role {
-      margin: 3px 0 0;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      line-height: 1.35;
-    }
-
-    .testi-card__quote {
-      flex-shrink: 0;
-      align-self: flex-start;
-      width: 26px;
-      height: 26px;
-      color: var(--text-secondary);
-      opacity: 0.3;
-    }
-
-    .testi-card__body {
-      position: relative;
-      max-height: 12.5rem;
-      overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .testi-card.is-expanded .testi-card__body {
-      max-height: 240rem;
-    }
-
-    .testi-card__body p {
-      margin: 0 0 0.85em;
-      font-size: 0.94rem;
-      line-height: 1.62;
-      color: var(--text-primary);
-    }
-    .testi-card__body p:last-child { margin-bottom: 0; }
-
-    /* Fade the clamped text only while it's actually overflowing + collapsed */
-    .testi-card.testi-has-overflow:not(.is-expanded) .testi-card__body::after {
-      content: "";
-      position: absolute;
-      inset-inline: 0;
-      bottom: 0;
-      height: 4.5rem;
-      background: linear-gradient(to bottom, transparent, var(--surface-raised));
-      pointer-events: none;
-    }
-
-    .testi-card__more {
-      display: none;
-      align-self: flex-start;
-      margin-top: 14px;
-      padding: 0;
-      background: none;
-      border: none;
-      font: inherit;
-      font-size: 0.88rem;
+    .testi-chat__name {
+      font-size: 0.76rem;
       font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Our own `display` would otherwise override the HTML hidden attribute
+       (same fix as #bookModalNotes[hidden]). */
+    .testi-chat__more[hidden] {
+      display: none !important;
+    }
+
+    /* Secondary (glass-pill) button — same visual language as
+       .book-modal-btn--notes. */
+    .testi-chat__more {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5em 0.9em;
+      border-radius: 999px;
+      border: none;
+      background: var(--glass-bg-subtle);
+      box-shadow:
+        inset 0 1px 0 color-mix(in oklab, var(--glass-highlight) 50%, transparent),
+        inset 0 0 0 1px var(--glass-border-subtle),
+        0 1px 3px rgba(0, 0, 0, calc(0.03 + var(--theme-blend) * 0.10));
+      backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
       color: var(--text-primary);
       cursor: pointer;
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.18s ease, opacity 0.18s ease;
+      white-space: nowrap;
+      transition: background 0.18s ease, box-shadow 0.18s ease;
     }
-    .testi-card.testi-has-overflow .testi-card__more { display: inline-block; }
-    .testi-card__more:hover { border-bottom-color: currentColor; }
-    .testi-card__more:focus-visible {
+    .testi-chat__more:hover {
+      background: var(--glass-bg-medium);
+    }
+    .testi-chat__more:focus-visible {
       outline: 2px solid var(--text-primary);
       outline-offset: 3px;
-      border-radius: 2px;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .testi-chat__more { cursor: pointer; }
+    }
+
+    @media (max-width: 560px) {
+      .testi-chat__row--in { max-width: 92%; }
     }
 
     @media (max-width: 720px) {
-      .testi-grid { grid-template-columns: 1fr; }
+      .testi-wall { text-align: left; font-size: 1.15rem; }
+    }
+
+    /* ── Core principles — A→X lockup + 6-trait grid (see #homePrinciples) ──
+       The lockup is live Geomanist, not artwork: .pr-lockup__ux is the struck
+       -through "UX" and .pr-lockup__mark is the display-weight A → X beneath
+       it. Everything is centered (carried over from the original layout) while
+       the surfaces/tokens are the same ones the testimonial cards use, so it
+       themes light/dark for free. */
+    .pr-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: clamp(32px, 5vw, 56px) clamp(20px, 4vw, 48px);
+      border-radius: 24px;
+      background: var(--surface-raised);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+    }
+
+    .pr-lockup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--text-primary);
+    }
+
+    .pr-lockup__ux {
+      font-size: clamp(30px, 5.2vw, 52px);
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0.01em;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      text-decoration: line-through;
+      text-decoration-thickness: 0.055em;
+      /* Pulls the "UX" down so the A→X sits tight beneath it, as in the
+         original lockup, without the two colliding at small sizes. */
+      margin-bottom: -0.12em;
+    }
+
+    .pr-lockup__mark {
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 1.4vw, 18px);
+      margin: 0;
+      line-height: 1;
+    }
+
+    .pr-lockup__letter {
+      font-size: clamp(76px, 13vw, 148px);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.02em;
+    }
+
+    .pr-lockup__arrow {
+      /* Sized off the letters so the arrow tracks them as the clamp scales. */
+      width: clamp(52px, 9vw, 100px);
+      height: auto;
+      /* Nudge onto the letters' optical centerline (cap height, not em box). */
+      margin-top: -0.06em;
+    }
+
+    .pr-headline {
+      margin: clamp(14px, 2vw, 22px) 0 0;
+      font-size: clamp(21px, 3vw, 30px);
+      font-weight: 400;
+      line-height: 1.25;
+      color: var(--text-primary);
+    }
+
+    .pr-intro {
+      max-width: 60ch;
+      margin: 14px 0 0;
+      font-size: clamp(0.95rem, 1.4vw, 1.06rem);
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .pr-lead {
+      margin: clamp(28px, 4vw, 44px) 0 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
+
+    .pr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(24px, 3.5vw, 40px) clamp(20px, 3vw, 36px);
+      width: 100%;
+      margin: clamp(28px, 4vw, 44px) 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .pr-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .pr-card__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      color: var(--text-secondary);
+      transition: color 0.24s ease, transform 0.24s ease;
+    }
+    .pr-card__icon svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .pr-card__title {
+      margin: 14px 0 0;
+      font-size: clamp(1.12rem, 1.9vw, 1.35rem);
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    .pr-card__text {
+      margin: 10px 0 0;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+
+    @media (hover: hover) {
+      .pr-card:hover .pr-card__icon {
+        color: var(--text-primary);
+        transform: translateY(-2px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pr-card__icon { transition: none; }
+      .pr-card:hover .pr-card__icon { transform: none; }
+    }
+
+    @media (max-width: 860px) {
+      .pr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 520px) {
+      .pr-grid { grid-template-columns: 1fr; }
     }
 
     /* Videos — editorial news grid */
@@ -1105,7 +1364,8 @@
     .tl-logo {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      align-self: flex-start;
       height: 32px;
       flex-shrink: 0;
     }
@@ -1147,6 +1407,29 @@
     [data-theme="dark"] .tl-logo__img { filter: brightness(0) invert(0.9); opacity: 0.8; }
     @media (prefers-color-scheme: dark) {
       html:not([data-theme="light"]) .tl-logo__img { filter: brightness(0) invert(0.9); opacity: 0.8; }
+    }
+
+    /* Dark appearance, once a logo lights up to its real brand colors: most
+       source logos assume a light backdrop and would go illegible against
+       the dark card, so give just the logo a small white chip rather than
+       changing the card itself. Scoped to :has(.tl-logo__img) so the
+       monogram fallback — which already carries its own pill background —
+       doesn't get double-chipped. */
+    [data-theme="dark"] .tl-group.is-lit .tl-logo:has(.tl-logo__img) {
+      height: auto;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: #fff;
+      transition: background 0.4s ease;
+    }
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) .tl-group.is-lit .tl-logo:has(.tl-logo__img) {
+        height: auto;
+        padding: 5px 10px;
+        border-radius: 8px;
+        background: #fff;
+        transition: background 0.4s ease;
+      }
     }
 
     .tl-company { margin: 0; }
@@ -2093,12 +2376,12 @@
       padding: 0 calc(var(--grid-col-inset, 40px) - 8px) 0 var(--grid-col-inset, 40px);
       z-index: 11;
       pointer-events: none;
-      --nav-reveal: 0;
+      /* Nav is present from the first paint — it no longer fades in on scroll. */
+      --nav-reveal: 1;
     }
     #topBar > * { pointer-events: auto; }
-    #topBar:not(.nav-revealed) #modeTab { pointer-events: none; }
 
-    /* Center slot: greeting before scroll, mode tabs after */
+    /* Center slot: mode tabs (the hero greeting lives in the hero itself) */
     .topBar-center {
       grid-column: 2;
       justify-self: center;
@@ -2326,6 +2609,117 @@
     .overflow-item.active { color: var(--tab-pill-bg); font-weight: 600; }
     @media (hover: hover) and (pointer: fine) {
       .overflow-item { cursor: pointer; }
+    }
+
+    /* ── Sub nav ────────────────────────────────────────────────────────
+       Second bar under #modeTab on long pages (Career only for now). Hinges
+       down on the same rotateX fold as #overflowPanel and shows the page's
+       section anchors as a single static row, spaced across the full width.
+       left/top/width are written every frame by js/subnav.js off #modeTab's
+       rect, so the two bars match exactly — the values here are just a sane
+       pre-measure default. Sits under the top bar (z-index 11) so it reads as
+       folding out from behind it. */
+    #subNav {
+      position: fixed;
+      top: 74px;
+      left: 50%;
+      width: 0;
+      z-index: 10;
+      padding: 5px 0;
+      background: var(--glass-bg-medium);
+      border-radius: 12px;
+      transform: perspective(700px) rotateX(-92deg);
+      transform-origin: top center;
+      box-shadow:
+        inset 0 1px 0 var(--glass-highlight),
+        inset 0 0 0 1px var(--glass-border-medium);
+      backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+      transition: opacity 0.18s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #subNav.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: perspective(700px) rotateX(0deg);
+    }
+
+    .subnav__view {
+      overflow: hidden;
+      padding: 0 16px;
+    }
+
+    /* Single static row — space-between spreads the anchors across the full
+       bar width so the first sits flush left, the last flush right, and
+       there's no dead space at either edge. */
+    .subnav__track {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .subnav__item {
+      background: none;
+      border: none;
+      padding: 2px 0;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      /* Everything is the same ink — only the weight of it changes, so the
+         active section reads as "darkened" rather than a different colour. */
+      color: var(--text-primary);
+      opacity: 0.26;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+    }
+    .subnav__item:hover { opacity: 0.6; }
+    /* The section you're in — the only one that isn't greyed back. */
+    .subnav__item.active { opacity: 1; }
+    /* A flex child like the items, not decoration on them — space-between
+       gives it equal gaps on both sides, so it lands centred between the
+       two labels it separates. */
+    .subnav__sep {
+      font-size: 11.5px;
+      color: var(--text-primary);
+      opacity: 0.18;
+      user-select: none;
+    }
+
+    /* Reading progress along the bottom border. */
+    .subnav__progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1.5px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .subnav__progress-fill {
+      display: block;
+      height: 100%;
+      width: 100%;
+      transform: scaleX(0);
+      transform-origin: left center;
+      background: linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--tab-pill-bg) 8%, transparent) 0%,
+        color-mix(in oklab, var(--tab-pill-bg) 45%, transparent) 55%,
+        var(--tab-pill-bg) 100%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      /* No hinge, no ticker drift — the bar just fades in and the strip scrubs
+         straight to position (js/subnav.js drops its easing to match). */
+      #subNav,
+      #subNav.open { transform: none; }
+      .subnav__item { transition: none; }
     }
 
     /* Top-right cluster: theme · @ · power */
@@ -3379,6 +3773,209 @@
       padding-bottom: 0;
     }
 
+    /* ── Section pages (Writing / Videos / Photos) ────────────────────────
+       A stripped-back take on the home hero: same fixed hero shell, same
+       starfield canvas (on that section's own sky — see SCENES in js/grid.js),
+       but about half the height and carrying a single left-aligned title +
+       description instead of the avatar/dial lockup. The section's content
+       scrolls up over it exactly the way the home feed covers the tall hero. */
+    body.section-mode .hero-lockup,
+    body.section-mode.starfield-mode:not(.work-mode) .hero-lockup,
+    body.section-mode #mainPanel,
+    body.section-mode #belowFold { display: none; }
+
+    body.section-mode .hero,
+    body.section-mode.starfield-mode:not(.work-mode) .hero {
+      height: 52vh;
+      justify-content: flex-end;
+      /* Top pad clears the fixed top bar. The bottom pad has to clear the
+         body's blend gradient below (see #sectionBelow::before) — otherwise
+         that gradient hazes over the copy. */
+      padding: 96px 0 clamp(88px, 13vh, 140px);
+    }
+
+    /* Unlike the home view — which lets the body peek in above the aurora —
+       the section body starts exactly where the compact hero ends, so the copy
+       is never partly covered at rest. */
+    body.section-mode .hero-spacer { height: 52vh; }
+
+    /* No aurora here to blend into, so the home feed's 200px fade is both
+       unnecessary and tall enough to reach the hero copy. Keep a short one:
+       just enough to soften the starfield's cut-off at the seam. */
+    #sectionBelow::before { height: 64px; }
+
+    .section-hero {
+      width: 100%;
+      /* The hero scrolls its own overflow; nothing here should catch the
+         pointer except the back button. */
+      pointer-events: none;
+    }
+
+    /* Same column and gutter as .below-fold-inner, so the title's left edge
+       lands exactly on the left edge of the list below it. */
+    .section-hero__copy {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .section-hero__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+    .section-hero__icon svg { display: block; }
+
+    .section-hero__title {
+      margin: 0;
+      font-family: 'Geomanist', system-ui, sans-serif;
+      font-size: clamp(38px, 6.2vw, 64px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+    }
+
+    .section-hero__desc {
+      margin: 14px 0 0;
+      max-width: 46ch;
+      font-size: clamp(16px, 2vw, 20px);
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+
+    /* Stands in for the modal's back button — only present on views that have
+       a parent (an article, a single photo). */
+    .section-hero__back {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      padding: 7px 14px 7px 10px;
+      background: var(--glass-bg-medium);
+      border: none;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      box-shadow:
+        inset 0 1px 0 var(--glass-highlight),
+        inset 0 0 0 1px var(--glass-border-medium);
+      backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+      transition: opacity 0.2s ease;
+    }
+    .section-hero__back:hover { opacity: 0.75; }
+    .section-hero__back svg { display: block; }
+    .section-hero__back[hidden] { display: none; }
+
+    /* ── Detail lockup ──
+       With an item open the hero carries that item's own title instead of the
+       section name (hoisted from the rendered body by syncSectionHero() in
+       js/main.js), so the section icon and blurb come off and the back control
+       moves above the title as the way out. Smaller type: these titles are full
+       sentences, not one-word section names. */
+    body.section-detail .section-hero__icon,
+    body.section-detail .section-hero__desc { display: none; }
+
+    body.section-detail .section-hero__title {
+      max-width: 22ch;
+      font-size: clamp(26px, 3.4vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    /* Flex order rather than markup order, so the button keeps its place in the
+       tab sequence (it's the first thing you'd want to reach). */
+    body.section-detail .section-hero__back {
+      order: -1;
+      margin: 0 0 18px;
+    }
+
+    /* Narrow the header to the reading column the body uses, so the back
+       button, the title and the article's first line all share one left edge
+       instead of the header hanging out into the wider page gutter. */
+    body.section-detail .section-hero__copy {
+      max-width: calc(760px + 40px);   /* + the column's own 20px gutters */
+    }
+
+    /* The hoisted heading still renders in the body for anything that reads the
+       DOM; it's just not shown twice. */
+    .section-page .cs-body > h1.is-hoisted { display: none; }
+
+    /* .sm-fade's 0.15s is tuned for a swap inside the modal panel; across a full
+       page the same move needs a beat longer to read as a transition rather than
+       a jump. Matches the header's cross-fade (fadeHeroCopy in js/main.js) so
+       the two land together. */
+    .section-page .sm-fade {
+      animation-duration: 0.28s;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .section-page .sm-fade { animation: none; }
+    }
+
+    /* ── Video description ──
+       The video's full YouTube description, rendered as-is: pre-wrap keeps the
+       author's own line breaks and chapter lists intact (it's plain text, not
+       markdown), and long unbroken affiliate URLs wrap instead of forcing the
+       column wide. */
+    .video-desc {
+      margin-top: 24px;
+      color: var(--cs-muted, var(--text-secondary));
+      font-size: 1rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .video-desc a {
+      color: var(--link);
+      text-decoration: none;
+    }
+    .video-desc a:hover { text-decoration: underline; }
+
+    /* Body: no aurora to clear, so it starts much closer to the hero than the
+       home feed does. */
+    .below-fold-inner.section-page {
+      padding-top: clamp(48px, 8vh, 88px);
+      gap: 0;
+    }
+
+    /* The renderers are shared with the modal, where the panel itself sets the
+       measure. On the page the column is 1100px, so prose and single-line lists
+       need their own cap to stay readable; grids (videos, photos) keep the full
+       width. The rows are flush-left with the hero title, so pull back the
+       padding the modal's own gutter used to absorb. */
+    /* An opened item (article, video) centres its reading column in the page
+       rather than hanging off the left gutter — the list views stay flush-left
+       under the hero title, but a single piece of prose reads better centred. */
+    .section-page .cs-body { max-width: 760px; margin-inline: auto; }
+    .section-page .sm-list { max-width: 760px; }
+    .section-page .sm-row { padding-left: 0; padding-right: 0; }
+    .section-page .sm-row--article { padding-left: 18px; padding-right: 18px; }
+    .section-page .sm-row--video { padding-left: 12px; padding-right: 12px; }
+
+    /* Narrow screens: the copy wraps to more lines and the top bar eats more of
+       the viewport, so give the hero a little more room and tighten the type. */
+    @media (max-width: 640px) {
+      body.section-mode .hero,
+      body.section-mode.starfield-mode:not(.work-mode) .hero {
+        height: 58vh;
+        padding: 84px 0 clamp(64px, 10vh, 104px);
+      }
+      body.section-mode .hero-spacer { height: 58vh; }
+      .section-hero__title { font-size: clamp(32px, 9vw, 44px); }
+      .section-hero__desc { font-size: 15px; max-width: none; }
+    }
+
     /* ── Now strip ── */
     .now-strip {
       display: none !important;
@@ -4301,7 +4898,6 @@
     #sModal.sm-photo #sModalBack:hover,
     #sModal.sm-photo #sModalClose:hover { color: #fff; }
     #sModal.sm-photo #sModalTop { border-bottom-color: rgba(255,255,255,0.12); }
-    #sModal.sm-photo .photo-detail-count { color: rgba(255,255,255,0.7); }
     #sModalTop {
       padding: 18px 24px 14px;
       border-bottom: 1px solid var(--modal-top-border);
@@ -4417,11 +5013,30 @@
       font-size: 0.78rem;
       color: var(--text-secondary);
     }
+    /* Writing index: date column on the left, title inline to the right */
+    .sm-row--writing {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .sm-row--writing .sm-row-date {
+      flex: 0 0 25%;
+      max-width: 25%;
+      font-size: 1rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sm-row--writing .sm-row-title {
+      flex: 1;
+      min-width: 0;
+    }
     /* Mixed video + article feed — one card per row */
     .sm-mixed-grid {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 22px;
     }
     .sm-row--article {
       flex-direction: column;
@@ -4434,7 +5049,7 @@
     .sm-list--videos {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 22px;
     }
     .sm-row--video {
       position: relative;
@@ -4442,7 +5057,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 20px 18px;
+      padding: 10px 12px;
       border-radius: 10px;
       overflow: hidden;
       border: 1px solid var(--border-medium);
@@ -4470,7 +5085,7 @@
     }
     .sm-row--video:hover { background: var(--hover-fill-soft); }
     .sm-row-thumb-wrap {
-      width: 150px;
+      width: 240px;
       aspect-ratio: 16 / 9;
       align-self: center;
       flex-shrink: 0;
@@ -4496,6 +5111,65 @@
       min-width: 0;
       padding: 0;
       text-align: left;
+    }
+    /* Videos index: channel links + paged grid */
+    .sm-videos-page {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .sm-channel-links {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
+    .sm-channel-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border-medium);
+      background: var(--hover-fill-soft);
+      color: var(--text-primary);
+      font-family: 'Geomanist', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .sm-channel-btn:hover {
+      background: var(--hover-fill);
+      border-color: var(--text-secondary);
+    }
+    .sm-channel-icon,
+    .sm-channel-arrow { flex-shrink: 0; }
+    .sm-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding-top: 4px;
+    }
+    .sm-page-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-medium);
+      background: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .sm-page-btn:hover:not(:disabled) { background: var(--hover-fill-soft); }
+    .sm-page-btn:disabled { opacity: 0.35; cursor: default; }
+    .sm-page-indicator {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
     }
     /* Markdown article rows in Videos */
     .sm-section-label {
@@ -5525,6 +6199,124 @@
       #bookModalCover { width: 140px; height: 212px; }
     }
 
+    /* Testimonial detail modal — opened from a "Read more" button on the
+       testimonial wall (js/testimonials.js). Same glass-card language as
+       #bookModal, sized for a name/role header + a scrolling quote body
+       instead of a cover + actions row. */
+    #testiModal {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--backdrop-modal);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    #testiModal.tm-open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #testiModalFrame {
+      background: var(--glass-bg);
+      border-radius: 20px;
+      width: min(640px, calc(100vw - 40px));
+      max-height: min(560px, 85vh);
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 32px 80px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.40)),
+        0 8px 24px rgba(0, 0, 0, calc(0.06 + var(--theme-blend) * 0.20)),
+        inset 0 1.5px 0 var(--glass-highlight),
+        inset 0 0 0 1px var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      overflow: hidden;
+      transform: scale(0.96) translateY(8px);
+      transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+      position: relative;
+    }
+    #testiModal.tm-open #testiModalFrame {
+      transform: scale(1) translateY(0);
+    }
+    #testiModalClose {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--glass-bg-subtle);
+      box-shadow:
+        inset 0 1px 0 color-mix(in oklab, var(--glass-highlight) 50%, transparent),
+        inset 0 0 0 1px var(--glass-border-subtle),
+        0 1px 4px rgba(0, 0, 0, calc(0.04 + var(--theme-blend) * 0.12));
+      backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: background 0.15s, color 0.15s;
+    }
+    #testiModalClose:hover { background: var(--hover-fill-soft); color: var(--text-primary); }
+    @media (hover: hover) and (pointer: fine) { #testiModalClose { cursor: pointer; } }
+    #testiModalContent {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 40px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    #testiModalHead {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    #testiModalAvatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--glass-bg-subtle);
+      box-shadow: inset 0 0 0 1px var(--glass-border-medium);
+      flex-shrink: 0;
+    }
+    #testiModalId { min-width: 0; }
+    #testiModalName {
+      margin: 0;
+      font-family: 'Geomanist', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+    #testiModalRole {
+      margin: 3px 0 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+    #testiModalBody p {
+      margin: 0 0 0.9em;
+      font-family: 'Geomanist', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--text-body);
+    }
+    #testiModalBody p:last-child { margin-bottom: 0; }
+
+    @media (max-width: 700px) {
+      #testiModalContent { padding: 24px; }
+    }
+
     /* ── Gear ── */
     #gearView {
       display: flex;
@@ -5953,6 +6745,9 @@
         padding: 0;
         width: 100%;
       }
+
+      /* Narrow enough that side-by-side channel buttons would clip their labels */
+      .sm-channel-links { flex-direction: column; }
 
       /* App icons: 2×2 grid, tighter rows, bottom clearance for now-strip */
       .launchpad {
@@ -6426,16 +7221,24 @@ a.portfolio-img-item:hover img {
 .photo-item:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
 
 /* Photo lightbox */
-/* ── Photo detail: shown inside the large modal ── */
+/* ── Photo detail: shown inside the large modal ──
+   One row across the modal: [ ‹ ][ photo ][ EXIF ][ › ]. The chevrons are
+   laid-out siblings pinned to the modal's edges rather than absolute overlays,
+   so nothing sits on top of the image. */
 .photo-detail {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  justify-content: center;
+  gap: 10px;
 }
+/* The large modal centres its children in a 640px reading column; the photo
+   row is not prose and needs the full frame — the chevrons sit on its edges
+   and the metadata panel takes a slice of it. */
+#sModal.sm-large #sModalBody > .photo-detail { max-width: none; }
 .photo-detail-stage {
-  position: relative;
-  width: 100%;
+  flex: 1 1 320px;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6453,9 +7256,7 @@ a.portfolio-img-item:hover img {
 }
 .photo-detail-img.is-loaded { opacity: 1; }
 .photo-detail-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6471,15 +7272,68 @@ a.portfolio-img-item:hover img {
   transition: background 0.2s ease, transform 0.2s ease;
   z-index: 2;
 }
-.photo-detail-prev { left: 10px; }
-.photo-detail-next { right: 10px; }
-.photo-detail-nav:hover { background: rgba(20,20,24,0.72); }
-.photo-detail-prev:hover { transform: translateY(-50%) scale(1.07); }
-.photo-detail-next:hover { transform: translateY(-50%) scale(1.07); }
-.photo-detail-count {
+.photo-detail-nav:hover { background: rgba(20,20,24,0.72); transform: scale(1.07); }
+.photo-detail-nav:focus-visible { outline: 2px solid rgba(255,255,255,0.8); outline-offset: 2px; }
+
+/* ── EXIF panel beside the photo ── */
+.photo-exif {
+  flex: 0 0 210px;
+  align-self: center;
+  max-width: 210px;
+  padding: 2px 0 2px 18px;
+  border-left: 1px solid rgba(255,255,255,0.14);
+}
+.photo-exif-list { margin: 0; display: flex; flex-direction: column; gap: 13px; }
+.photo-exif-row { margin: 0; }
+.photo-exif-row dt {
+  margin: 0 0 3px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+.photo-exif-row dd {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.88);
+}
+/* Exposure triangle reads as three separate facts, not one sentence. */
+.photo-exif-shot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.photo-exif-shot span {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  font-size: 0.75rem;
+}
+.photo-exif-empty {
+  margin: 0;
   font-size: 0.8rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
+  font-style: italic;
+  color: rgba(255,255,255,0.45);
+}
+
+/* Narrow: the photo keeps the full width and the panel wraps underneath it,
+   between the two chevrons, as a single flowing row of facts. */
+@media (max-width: 760px) {
+  .photo-detail { gap: 8px; }
+  .photo-detail-nav { width: 36px; height: 36px; }
+  .photo-detail-stage { flex: 1 1 200px; }
+  .photo-exif {
+    order: 3;
+    flex: 1 0 100%;
+    max-width: none;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgba(255,255,255,0.14);
+  }
+  .photo-exif-list { flex-direction: row; flex-wrap: wrap; gap: 10px 20px; }
 }
 
 /* ── Labs: experiment cards ── */
@@ -6834,7 +7688,7 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-  width: 340px;
+  width: 290px;
   max-width: calc(100vw - 40px);
   padding: 8px 8px 8px 20px;
   background: color-mix(in oklab, var(--glass-bg) 28%, var(--bg) 72%);
@@ -6923,7 +7777,8 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
    z-index. */
 body.chat-overlay-open #chatDock,
 body:has(#sModal.sm-open) #chatDock,
-body:has(#bookModal.bm-open) #chatDock {
+body:has(#bookModal.bm-open) #chatDock,
+body:has(#testiModal.tm-open) #chatDock {
   opacity: 0;
   transform: translateX(-50%) scale(0.92);
   pointer-events: none;

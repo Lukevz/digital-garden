@@ -70,6 +70,7 @@
     <!-- Mode tab group -->
     <div id="modeTab" role="group" aria-label="View mode">
     <div class="tab-pill"></div>
+    <button class="tab-opt" data-mode="career" aria-pressed="false">Career</button>
     <button class="tab-opt" data-mode="writing" aria-pressed="false">Writing</button>
     <button class="tab-opt" data-mode="videos" aria-pressed="false">Videos</button>
     <button class="tab-opt" data-mode="photos" aria-pressed="false">Photos</button>
@@ -289,6 +290,22 @@
     </button>
   </div>
 
+  <!-- Sub nav: a second bar that hinges down under #modeTab (same fold as the
+       overflow panel) once the home feed has covered the hero. Shows this
+       page's section anchors as a single static row spaced across the full
+       width, and the section you're in is the one that's darkened. Items
+       come from js/subnav.js; its left/top/width are measured off #modeTab
+       so the two bars line up. -->
+  <div id="subNav" aria-hidden="true">
+    <nav class="subnav__view" aria-label="Sections on this page">
+      <div class="subnav__track" id="subNavTrack"></div>
+    </nav>
+    <!-- Reading progress, drawn along the bar's bottom border. -->
+    <div class="subnav__progress" aria-hidden="true">
+      <span class="subnav__progress-fill" id="subNavProgress"></span>
+    </div>
+  </div>
+
   <!-- Hero: full first-viewport section with rounded bottom corners + planetary glow -->
   <section class="hero" id="heroSection">
 
@@ -312,7 +329,7 @@
        words wide enough to stay legible. -->
   <div class="clock-hero-wrap">
     <div class="intro-greeting-bar" id="introGreetingBar" aria-label="Greeting">
-      <span class="intro-greeting-life"><img src="/src/img/headshot-work.jpg" alt="Luke van Zyl" class="avatar avatar--inline" id="avatarImg"><span class="greet-text"><span class="greet-line">Hi, I'm Luke!</span><span class="greet-line">I'm a...</span></span></span>
+      <span class="intro-greeting-life"><img src="/src/img/headshot-work.jpg" alt="Luke van Zyl" class="avatar avatar--inline" id="avatarImg" width="400" height="400" fetchpriority="high" decoding="async"><span class="greet-text"><span class="greet-line">Hi, I'm Luke!</span><span class="greet-line">I'm a...</span></span></span>
     </div>
     <!-- Scale wrapper: shrinks the dial phrase without touching #clockHero's own
          transform (JS sets a grid-snap translate on it every layout). -->
@@ -321,6 +338,26 @@
     </div>
   </div>
   </div><!-- /.hero-lockup -->
+
+  <!-- ── Section page hero (Writing / Videos / Photos) ──
+       A compact (~half height) variant of the home hero: same fixed hero shell
+       and same starfield canvas, but the copy is a single left-aligned title +
+       description instead of the avatar/dial lockup. Filled and shown by
+       openSectionPage() in js/main.js, which also swaps the starfield to that
+       section's own sky (see SCENES in js/grid.js). -->
+  <div class="section-hero" id="sectionHero" hidden>
+    <div class="section-hero__copy">
+      <span class="section-hero__icon" id="sectionHeroIcon" aria-hidden="true"></span>
+      <h1 class="section-hero__title" id="sectionHeroTitle"></h1>
+      <p class="section-hero__desc" id="sectionHeroDesc"></p>
+      <!-- Stands in for the modal's back button on the page. Shown only for
+           views that have a parent (an article, a single photo). -->
+      <button class="section-hero__back" id="sectionHeroBack" type="button" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        <span id="sectionHeroBackLabel">Back</span>
+      </button>
+    </div>
+  </div>
 
   <div id="mainPanel" role="main" tabindex="-1">
 
@@ -451,7 +488,9 @@
     </div>
     <div class="below-fold-inner home-feed">
 
-      <section class="home-section" id="homeCaseStudies" aria-labelledby="homeCaseStudiesTitle" hidden>
+      <!-- data-nav-label: the short name this section goes by in the sub-nav
+           ticker (js/subnav.js); falls back to the <h2> when absent. -->
+      <section class="home-section" id="homeCaseStudies" aria-labelledby="homeCaseStudiesTitle" data-nav-label="Case Studies" hidden>
         <header class="home-section-header">
           <span class="home-section-icon" data-clone-icon="Case Studies" aria-hidden="true"></span>
           <h2 class="home-section-title" id="homeCaseStudiesTitle">Case Studies</h2>
@@ -461,7 +500,7 @@
         </div>
       </section>
 
-      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle">
+      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle" data-nav-label="Timeline">
         <!-- Horizontal career timeline. Most recent role on the left. Scrolling
              past the hero and into this section pins it (js/timeline.js) and
              converts vertical scroll into horizontal motion across the rail —
@@ -474,7 +513,7 @@
           <div class="tl-pin" id="tlPin">
             <header class="home-section-header tl-pin-head">
               <span class="home-section-icon" data-clone-icon="Career" aria-hidden="true"></span>
-              <h2 class="home-section-title" id="homeTimelineTitle">My Career</h2>
+              <h2 class="home-section-title" id="homeTimelineTitle">Timeline</h2>
             </header>
             <div class="tl-track" id="tlTrack">
               <!-- Lives inside the track (not the pin) so it moves in lockstep
@@ -648,10 +687,12 @@
         </div>
       </section>
 
-      <!-- Testimonials — 2×2 grid of colleague quotes. Long quotes collapse to a
-           couple of paragraphs behind a fade; js/testimonials.js flags the ones
-           that overflow and wires the Read more / Show less toggle. -->
-      <section class="home-section" id="homeTestimonials" aria-labelledby="homeTestimonialsTitle">
+      <!-- Testimonials — an iMessage-style group-chat thread (.testi-chat) rather
+           than a card grid or a wall of text. Each teaser's "Read more" opens
+           #testiModal with the full quote from a matching <template data-testi-full>;
+           js/testimonials.js wires that up, the avatar hover tooltip, and the
+           scroll-triggered stagger-in of the bubbles. -->
+      <section class="home-section" id="homeTestimonials" aria-labelledby="homeTestimonialsTitle" data-nav-label="Colleagues">
         <header class="home-section-header">
           <span class="home-section-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -661,86 +702,207 @@
           <h2 class="home-section-title" id="homeTestimonialsTitle">Hear from my colleagues</h2>
         </header>
 
-        <div class="testi-grid">
-          <article class="testi-card">
-            <header class="testi-card__head">
-              <img class="testi-card__avatar" src="/images/testimonials/michael.jpg" alt="Michael Lund" width="52" height="52" loading="lazy" onerror="this.remove()">
-              <div class="testi-card__id">
-                <p class="testi-card__name">Michael Lund</p>
-                <p class="testi-card__role">Product Designer<span class="testi-card__rel" hidden> · Worked with Luke on the same team</span></p>
-              </div>
-              <svg class="testi-card__quote" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M9.5 6C6.46 6 4 8.46 4 11.5V18h6.5v-6.5H7.5c0-1.1.9-2 2-2V6zM19.5 6C16.46 6 14 8.46 14 11.5V18h6.5v-6.5H17.5c0-1.1.9-2 2-2V6z"/>
-              </svg>
-            </header>
-            <div class="testi-card__body">
-              <p>Luke is the sharpest systems thinker I've ever worked with. He thinks about how the whole thing fits together and where the edges are, and he comes prepared with reasoning that drives conversations so stakeholders can quickly make informed decisions. He's fast, insightful, and thorough. And he doesn't ask for permission to fix something—by the time you've identified a problem, he's halfway through fixing it.</p>
-              <p>What I trust most about Luke is that his systems thinking doesn't just apply to design. It's how he organizes himself across every part of the work. He puts systems in place to streamline his own processes, and he's always learning and tinkering, constantly reinventing how he approaches something the moment he finds a better way. Because of this, I haven't been able to give him a project he can't tackle. The guy is a monster.</p>
-              <p>Beyond all that, he's humble, kind, and truly a joy to work with. He will elevate any environment he's in and amplify the team he's a part of.</p>
-            </div>
-            <button type="button" class="testi-card__more" aria-expanded="false">Read more</button>
-          </article>
+        <!-- Group-chat thread: an opening "sent" bubble asks the question, then
+             each colleague's reply arrives in two beats — an avatar + bouncing-dot
+             "typing" bubble first, then it's swapped for the real message. Each
+             row is revealed independently by its own IntersectionObserver entry
+             (js/testimonials.js) as it scrolls into view, not a scripted sequence
+             that plays once. Each real bubble holds a short teaser + "Read more",
+             which opens #testiModal with the full quote from the matching
+             <template> below. -->
+        <div class="testi-chat" id="testiChat">
+          <div class="testi-chat__row testi-chat__row--out">
+            <div class="testi-chat__bubble testi-chat__bubble--out">What can you tell me about your time working with Luke?</div>
+          </div>
 
-          <article class="testi-card">
-            <header class="testi-card__head">
-              <img class="testi-card__avatar" src="/images/testimonials/jamie.jpg" alt="Jamie Sutton" width="52" height="52" loading="lazy" onerror="this.remove()">
-              <div class="testi-card__id">
-                <p class="testi-card__name">Jamie Sutton</p>
-                <p class="testi-card__role">Design Director<span class="testi-card__rel" hidden> · Senior to Luke</span></p>
+          <div class="testi-chat__row testi-chat__row--in">
+            <span class="testi-chat__avatar" tabindex="0">
+              <img class="testi-chat__avatar-img" src="/images/testimonials/michael.jpg" alt="Michael Lund" loading="lazy" onerror="this.remove()">
+              <span class="testi-chat__tip" role="tooltip">Product Designer</span>
+            </span>
+            <div class="testi-chat__col">
+              <span class="testi-chat__name">Michael Lund</span>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
+                <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
-              <svg class="testi-card__quote" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M9.5 6C6.46 6 4 8.46 4 11.5V18h6.5v-6.5H7.5c0-1.1.9-2 2-2V6zM19.5 6C16.46 6 14 8.46 14 11.5V18h6.5v-6.5H17.5c0-1.1.9-2 2-2V6z"/>
-              </svg>
-            </header>
-            <div class="testi-card__body">
-              <p>I've worked alongside Luke and have observed his impactful contributions to both projects and team dynamics. Luke consistently brings exceptional UX design expertise and excels at building strong relationships with teammates, stakeholders and clients.</p>
-              <p>He has established himself as a trusted expert, particularly when helping others to further up-skill on UX related tools like Figma and creating prototypes that help teams build a shared understanding with their stakeholders and clients.</p>
-              <p>His significant contributions to our widely adopted design system within our organization and his leadership as a key member of the team who supports it further highlights the value that he brings to what we do.</p>
-              <p>As a UX manager, Luke leads with empathy and humility, earning widespread respect from peers and executive leadership alike. He is deeply committed to his own continuous improvement and consistently supports the growth and success of those around him. Known for his creativity, technical expertise, honesty, inclusivity and integrity, Luke is very much a valuable member of our team.</p>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__text" hidden>Luke is the sharpest systems thinker I've ever worked with. He thinks about how the whole thing fits together and where the edges are, and he comes prepared with reasoning that drives conversations so stakeholders can quickly make informed decisions. He's fast, insightful, and thorough.</div>
+              <button type="button" class="testi-chat__more" data-testi="michael" hidden>Read More</button>
             </div>
-            <button type="button" class="testi-card__more" aria-expanded="false">Read more</button>
-          </article>
+          </div>
 
-          <article class="testi-card">
-            <header class="testi-card__head">
-              <img class="testi-card__avatar" src="/images/testimonials/ashley.jpg" alt="Ashley Dischinger" width="52" height="52" loading="lazy" onerror="this.remove()">
-              <div class="testi-card__id">
-                <p class="testi-card__name">Ashley Dischinger</p>
-                <p class="testi-card__role">Senior Technical Project Manager, Red Ventures<span class="testi-card__rel" hidden> · Managed Luke directly</span></p>
+          <div class="testi-chat__row testi-chat__row--in">
+            <span class="testi-chat__avatar" tabindex="0">
+              <img class="testi-chat__avatar-img" src="/images/testimonials/jamie.jpg" alt="Jamie Sutton" loading="lazy" onerror="this.remove()">
+              <span class="testi-chat__tip" role="tooltip">Design Director</span>
+            </span>
+            <div class="testi-chat__col">
+              <span class="testi-chat__name">Jamie Sutton</span>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
+                <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
-              <svg class="testi-card__quote" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M9.5 6C6.46 6 4 8.46 4 11.5V18h6.5v-6.5H7.5c0-1.1.9-2 2-2V6zM19.5 6C16.46 6 14 8.46 14 11.5V18h6.5v-6.5H17.5c0-1.1.9-2 2-2V6z"/>
-              </svg>
-            </header>
-            <div class="testi-card__body">
-              <p>I had the pleasure of bringing Luke onboard my team as a Senior Digital Designer at Blue Corona, Inc. I knew immediately from the early days of his tenure that he would play a key role in the development of our team's success. Luke certainly has a proven record of raw design talent, a forward-thinking understanding of UX/UI best practices, and an innate sense of creativity and innovation. Even more critical to the long-term success of the team, he took initiative to advocate for a software transition to Figma and successfully led subsequent team trainings to ensure the team, myself included, was well-versed on how to operate within a new system.</p>
-              <p>Luke took this one step further in working alongside another Senior Designer to develop a core set of templates, components, and design assets that would ultimately become Blue Corona's first ever Design System. This was critical in increasing operational efficiency and creating continuity in our design work, and was a great value add to the company's operations as a whole. Luke is truly a team player and always seeking ways to improve himself and his peers — all the while with a positive attitude! I'm fortunate to have had the pleasure of working with Luke, and any future employer can expect an exceptional hire in him.</p>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__text" hidden>I've worked alongside Luke and have observed his impactful contributions to both projects and team dynamics. Luke consistently brings exceptional UX design expertise and excels at building strong relationships with teammates, stakeholders and clients.</div>
+              <button type="button" class="testi-chat__more" data-testi="jamie" hidden>Read More</button>
             </div>
-            <button type="button" class="testi-card__more" aria-expanded="false">Read more</button>
-          </article>
+          </div>
 
-          <article class="testi-card">
-            <header class="testi-card__head">
-              <img class="testi-card__avatar" src="/images/testimonials/emmanuel.jpg" alt="Emmanuel Idehen" width="52" height="52" loading="lazy" onerror="this.remove()">
-              <div class="testi-card__id">
-                <p class="testi-card__name">Emmanuel Idehen</p>
-                <p class="testi-card__role">Senior Manager, PwC<span class="testi-card__rel" hidden> · Worked with Luke on the same team</span></p>
+          <div class="testi-chat__row testi-chat__row--in">
+            <span class="testi-chat__avatar" tabindex="0">
+              <img class="testi-chat__avatar-img" src="/images/testimonials/ashley.jpg" alt="Ashley Dischinger" loading="lazy" onerror="this.remove()">
+              <span class="testi-chat__tip" role="tooltip">Senior Technical Project Manager, Red Ventures</span>
+            </span>
+            <div class="testi-chat__col">
+              <span class="testi-chat__name">Ashley Dischinger</span>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
+                <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
-              <svg class="testi-card__quote" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M9.5 6C6.46 6 4 8.46 4 11.5V18h6.5v-6.5H7.5c0-1.1.9-2 2-2V6zM19.5 6C16.46 6 14 8.46 14 11.5V18h6.5v-6.5H17.5c0-1.1.9-2 2-2V6z"/>
-              </svg>
-            </header>
-            <div class="testi-card__body">
-              <p>I have had the absolute pleasure of working with Luke, an incredible design leader who knows design systems inside and out. Luke was the driving force behind our move from Sketch to Figma, guiding the team every step of the way and building out a Figma library that's both intuitive and powerful. Thanks to his leadership, we now have a design system that's been adopted across more than 40 territories worldwide—a true testament to the impact of his work.</p>
-              <p>Luke brings so much more than just technical know-how. He's a pro at managing complex AI projects, collaborating seamlessly with stakeholders, developers, and designers, and always keeping the focus on delivering the best user experience possible. He has a knack for user research and an incredible ability to unite teams around a common goal.</p>
-              <p>Luke's talent for turning user insights into real, actionable design improvements has made a huge difference in our work. I have no doubt that he'll continue to make waves and inspire teams.</p>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__text" hidden>I had the pleasure of bringing Luke onboard my team as a Senior Digital Designer at Blue Corona, Inc. I knew immediately from the early days of his tenure that he would play a key role in the development of our team's success.</div>
+              <button type="button" class="testi-chat__more" data-testi="ashley" hidden>Read More</button>
             </div>
-            <button type="button" class="testi-card__more" aria-expanded="false">Read more</button>
-          </article>
+          </div>
+
+          <div class="testi-chat__row testi-chat__row--in">
+            <span class="testi-chat__avatar" tabindex="0">
+              <img class="testi-chat__avatar-img" src="/images/testimonials/emmanuel.jpg" alt="Emmanuel Idehen" loading="lazy" onerror="this.remove()">
+              <span class="testi-chat__tip" role="tooltip">Senior Manager, PwC</span>
+            </span>
+            <div class="testi-chat__col">
+              <span class="testi-chat__name">Emmanuel Idehen</span>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
+                <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
+              </div>
+              <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__text" hidden>I have had the absolute pleasure of working with Luke, an incredible design leader who knows design systems inside and out. Luke was the driving force behind our move from Sketch to Figma, guiding the team every step of the way.</div>
+              <button type="button" class="testi-chat__more" data-testi="emmanuel" hidden>Read More</button>
+            </div>
+          </div>
+        </div>
+
+        <template data-testi-full="michael">
+          <p>Luke is the sharpest systems thinker I've ever worked with. He thinks about how the whole thing fits together and where the edges are, and he comes prepared with reasoning that drives conversations so stakeholders can quickly make informed decisions. He's fast, insightful, and thorough. And he doesn't ask for permission to fix something—by the time you've identified a problem, he's halfway through fixing it.</p>
+          <p>What I trust most about Luke is that his systems thinking doesn't just apply to design. It's how he organizes himself across every part of the work. He puts systems in place to streamline his own processes, and he's always learning and tinkering, constantly reinventing how he approaches something the moment he finds a better way. Because of this, I haven't been able to give him a project he can't tackle. The guy is a monster.</p>
+          <p>Beyond all that, he's humble, kind, and truly a joy to work with. He will elevate any environment he's in and amplify the team he's a part of.</p>
+        </template>
+        <template data-testi-full="jamie">
+          <p>I've worked alongside Luke and have observed his impactful contributions to both projects and team dynamics. Luke consistently brings exceptional UX design expertise and excels at building strong relationships with teammates, stakeholders and clients.</p>
+          <p>He has established himself as a trusted expert, particularly when helping others to further up-skill on UX related tools like Figma and creating prototypes that help teams build a shared understanding with their stakeholders and clients.</p>
+          <p>His significant contributions to our widely adopted design system within our organization and his leadership as a key member of the team who supports it further highlights the value that he brings to what we do.</p>
+          <p>As a UX manager, Luke leads with empathy and humility, earning widespread respect from peers and executive leadership alike. He is deeply committed to his own continuous improvement and consistently supports the growth and success of those around him. Known for his creativity, technical expertise, honesty, inclusivity and integrity, Luke is very much a valuable member of our team.</p>
+        </template>
+        <template data-testi-full="ashley">
+          <p>I had the pleasure of bringing Luke onboard my team as a Senior Digital Designer at Blue Corona, Inc. I knew immediately from the early days of his tenure that he would play a key role in the development of our team's success. Luke certainly has a proven record of raw design talent, a forward-thinking understanding of UX/UI best practices, and an innate sense of creativity and innovation. Even more critical to the long-term success of the team, he took initiative to advocate for a software transition to Figma and successfully led subsequent team trainings to ensure the team, myself included, was well-versed on how to operate within a new system.</p>
+          <p>Luke took this one step further in working alongside another Senior Designer to develop a core set of templates, components, and design assets that would ultimately become Blue Corona's first ever Design System. This was critical in increasing operational efficiency and creating continuity in our design work, and was a great value add to the company's operations as a whole. Luke is truly a team player and always seeking ways to improve himself and his peers — all the while with a positive attitude! I'm fortunate to have had the pleasure of working with Luke, and any future employer can expect an exceptional hire in him.</p>
+        </template>
+        <template data-testi-full="emmanuel">
+          <p>I have had the absolute pleasure of working with Luke, an incredible design leader who knows design systems inside and out. Luke was the driving force behind our move from Sketch to Figma, guiding the team every step of the way and building out a Figma library that's both intuitive and powerful. Thanks to his leadership, we now have a design system that's been adopted across more than 40 territories worldwide—a true testament to the impact of his work.</p>
+          <p>Luke brings so much more than just technical know-how. He's a pro at managing complex AI projects, collaborating seamlessly with stakeholders, developers, and designers, and always keeping the focus on delivering the best user experience possible. He has a knack for user research and an incredible ability to unite teams around a common goal.</p>
+          <p>Luke's talent for turning user insights into real, actionable design improvements has made a huge difference in our work. I have no doubt that he'll continue to make waves and inspire teams.</p>
+        </template>
+      </section>
+
+      <!-- Core principles — rebuilt from the old Framer site. The A→X lockup is
+           live type (not an image): a struck-through "UX" sitting above a
+           display-weight "A → X", so it scales, themes, and stays selectable.
+           Trait copy is verbatim from the original. Pure HTML/CSS — no JS. -->
+      <section class="home-section" id="homePrinciples" aria-labelledby="homePrinciplesTitle" data-nav-label="Principles">
+        <header class="home-section-header">
+          <span class="home-section-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <h2 class="home-section-title" id="homePrinciplesTitle">Core Principles</h2>
+        </header>
+
+        <div class="pr-block">
+          <div class="pr-lockup" role="img" aria-label="From UX to A — Ask — to X — Experience">
+            <span class="pr-lockup__ux" aria-hidden="true">UX</span>
+            <p class="pr-lockup__mark" aria-hidden="true">
+              <span class="pr-lockup__letter">A</span>
+              <svg class="pr-lockup__arrow" viewBox="0 0 100 60" fill="currentColor" aria-hidden="true">
+                <path d="M0 24 H60 V6 L100 30 L60 54 V36 H0 Z"/>
+              </svg>
+              <span class="pr-lockup__letter">X</span>
+            </p>
+          </div>
+
+          <h3 class="pr-headline">Design from the Ask to the Experience</h3>
+          <p class="pr-intro">Design today goes beyond UX. It touches everything from advocacy and alignment to accessibility and authentic experiences. In a world where mockups can be automated, it's leadership, clarity, and heart that set products apart.</p>
+          <p class="pr-lead">Here are the traits I bring to every project and every team:</p>
+
+          <ul class="pr-grid">
+            <li class="pr-card">
+              <span class="pr-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="8.6" cy="12" r="5.9" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="15.4" cy="12" r="5.9" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </span>
+              <h4 class="pr-card__title">Adaptability</h4>
+              <p class="pr-card__text">I listen deeply, adjust quickly, and thrive within shifting constraints.</p>
+            </li>
+
+            <li class="pr-card">
+              <span class="pr-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13.5 2L4 13.5h6L9 22l10-11.5h-6.2L13.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <h4 class="pr-card__title">Boldness</h4>
+              <p class="pr-card__text">I challenge assumptions, embrace new ideas, and push teams toward excellence.</p>
+            </li>
+
+            <li class="pr-card">
+              <span class="pr-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="7.2" cy="5.4" r="1.9" stroke="currentColor" stroke-width="1.4"/>
+                  <path d="M4 10.3a3.2 3.2 0 0 1 6.4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="16.8" cy="5.4" r="1.9" stroke="currentColor" stroke-width="1.4"/>
+                  <path d="M13.6 10.3a3.2 3.2 0 0 1 6.4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="7.2" cy="14.4" r="1.9" stroke="currentColor" stroke-width="1.4"/>
+                  <path d="M4 19.3a3.2 3.2 0 0 1 6.4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="16.8" cy="14.4" r="1.9" stroke="currentColor" stroke-width="1.4"/>
+                  <path d="M13.6 19.3a3.2 3.2 0 0 1 6.4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <h4 class="pr-card__title">Inclusivity</h4>
+              <p class="pr-card__text">I design with empathy, ensuring experiences are accessible and welcoming to all.</p>
+            </li>
+
+            <li class="pr-card">
+              <span class="pr-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 14.5a2 2 0 0 1-2 2H8l-5 4.5V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <h4 class="pr-card__title">Articulation</h4>
+              <p class="pr-card__text">I bring clarity to collaboration, helping teams move forward with shared understanding.</p>
+            </li>
+
+            <li class="pr-card">
+              <span class="pr-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M15.4 15.4L21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <h4 class="pr-card__title">Curiosity</h4>
+              <p class="pr-card__text">I explore relentlessly, always seeking better ways to solve problems and create value.</p>
+            </li>
+
+            <li class="pr-card">
+              <span class="pr-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 21.5c4.6-2.1 7-5.6 7-10.2V4.8L12 2.5 5 4.8v6.5c0 4.6 2.4 8.1 7 10.2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <h4 class="pr-card__title">Resilience</h4>
+              <p class="pr-card__text">I navigate ambiguity, learn from setbacks, and persist toward meaningful outcomes.</p>
+            </li>
+          </ul>
         </div>
       </section>
 
-      <section class="home-section" id="homeEnergyBoard" aria-labelledby="homeEnergyBoardTitle" hidden>
+      <section class="home-section" id="homeEnergyBoard" aria-labelledby="homeEnergyBoardTitle" data-nav-label="Goals" hidden>
         <header class="home-section-header energy-board-header">
           <span class="home-section-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -759,7 +921,7 @@
         </div>
       </section>
 
-      <section class="home-section" id="homeExperiments" aria-labelledby="homeExperimentsTitle">
+      <section class="home-section" id="homeExperiments" aria-labelledby="homeExperimentsTitle" data-nav-label="Experiments">
         <header class="home-section-header">
           <span class="home-section-icon" data-clone-icon="Labs" aria-hidden="true"></span>
           <h2 class="home-section-title" id="homeExperimentsTitle">Experiments</h2>
@@ -779,6 +941,16 @@
         </a>
       </section>
 
+    </div>
+  </section>
+
+  <!-- Below the fold — section page body (the list, or an opened item).
+       Same opaque curtain treatment as the home feed above, so it slides up
+       over the compact section hero exactly the way the home feed covers the
+       full-height one. Rendered into by js/main.js. -->
+  <section class="below-fold" id="sectionBelow" hidden>
+    <div class="below-fold-inner section-page">
+      <div class="section-page__body" id="sectionPageBody"></div>
     </div>
   </section>
 
@@ -910,6 +1082,27 @@
             <a id="bookModalAmazon" class="book-modal-btn book-modal-btn--amazon" href="#" target="_blank" rel="noopener noreferrer" aria-label="Read on Amazon">Read</a>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testimonial detail modal (js/testimonials.js) -->
+  <div id="testiModal" role="dialog" aria-modal="true" aria-labelledby="testiModalName" aria-label="Testimonial">
+    <div id="testiModalFrame">
+      <button id="testiModalClose" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div id="testiModalContent">
+        <header id="testiModalHead">
+          <img id="testiModalAvatar" src="" alt="" width="56" height="56" loading="lazy">
+          <div id="testiModalId">
+            <h2 id="testiModalName"></h2>
+            <p id="testiModalRole"></p>
+          </div>
+        </header>
+        <div id="testiModalBody"></div>
       </div>
     </div>
   </div>
@@ -1084,7 +1277,8 @@
   <script src="/js/hero-entrance.js?v=1"></script>
   <script src="/js/home-feed.js?v=1"></script>
   <script src="/js/timeline.js?v=10"></script>
-  <script src="/js/testimonials.js?v=1"></script>
+  <script src="/js/subnav.js?v=1"></script>
+  <script src="/js/testimonials.js?v=5"></script>
   <script src="/js/chat.js?v=1"></script>
 
   <!-- Now strip population -->
