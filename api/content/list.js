@@ -6,6 +6,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readExifCached } from '../_lib/exif.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '../..');
@@ -45,8 +46,15 @@ export default function handler(req, res) {
     return;
   }
 
-  // Photos: single curated grid from content/photos/ (newest by mtime first).
+  // Photos: single curated grid from content/photos/ (newest first).
   // Drop image files into content/photos/; optional matching previews in content/photos/thumbs/.
+  //
+  // Ordering: a `YYYY-MM-DD ` filename prefix wins, then mtime. Git does not
+  // preserve mtimes, so on a fresh Vercel clone every file stats within the same
+  // second and mtime alone gives arbitrary order — dated names are the only
+  // ordering that survives a deploy. The Instagram sync always writes them
+  // (.github/scripts/instagram-sync.mjs); undated legacy files fall back to
+  // mtime and sort below the dated ones.
   if (category === 'photos') {
     const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif']);
     const photosDir = join(rootDir, 'content', 'photos');
@@ -56,13 +64,36 @@ export default function handler(req, res) {
       const thumbsDir = join(photosDir, 'thumbs');
       readdirSync(photosDir)
         .filter(f => IMAGE_EXTS.has(('.' + f.split('.').pop()).toLowerCase()))
-        .map(f => ({ f, m: statSync(join(photosDir, f)).mtimeMs }))
-        .sort((a, b) => b.m - a.m)
-        .forEach(({ f }) => {
+        .map(f => {
+          // `YYYY-MM-DD ` or `YYYY-MM-DD HHMM ` — the time is optional and only
+          // matters for ordering several posts from the same day.
+          const dated = f.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ _-](\d{2})(\d{2}))?[ _-]/);
+          return {
+            f,
+            dated: dated ? 1 : 0,
+            // Parse as UTC so the ordering does not shift with the server's zone.
+            d: dated
+              ? Date.UTC(+dated[1], +dated[2] - 1, +dated[3], +(dated[4] || 0), +(dated[5] || 0))
+              : 0,
+            m: statSync(join(photosDir, f)).mtimeMs
+          };
+        })
+        .sort((a, b) =>
+          (b.dated - a.dated) ||     // dated filenames first
+          (b.d - a.d) ||             // newest date first
+          (b.m - a.m) ||             // then mtime (undated legacy files)
+          a.f.localeCompare(b.f)     // stable tiebreak for same-day posts
+        )
+        .forEach(({ f, dated, d }) => {
           const hasThumb = existsSync(join(thumbsDir, f));
+          // Camera EXIF, where the file still has it — Instagram strips it, so
+          // synced photos fall back to the date already encoded in the filename.
+          const exif = readExifCached(join(photosDir, f)) || {};
+          if (!exif.date && dated) exif.date = new Date(d).toISOString().slice(0, 10);
           images.push({
             src: base + encodeURIComponent(f),
-            thumb: hasThumb ? base + 'thumbs/' + encodeURIComponent(f) : base + encodeURIComponent(f)
+            thumb: hasThumb ? base + 'thumbs/' + encodeURIComponent(f) : base + encodeURIComponent(f),
+            exif
           });
         });
     }

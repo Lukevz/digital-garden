@@ -1,0 +1,35 @@
+{
+  "_note": "Posts already pulled into content/photos/. Keyed by Instagram shortcode; a post listed here is never downloaded again, so deleting a photo from the repo is permanent. Remove an entry to deliberately re-pull that post. Managed by .github/scripts/instagram-sync.mjs.",
+  "_seeded": "Backfilled by hand from the first manual import — the four posts below predate the sync, so they carry no Instagram media id and only their first carousel slide was taken.",
+  "syncedAt": "2026-07-26T00:00:00.000Z",
+  "posts": {
+    "DbTCiixDrP0": {
+      "id": null,
+      "timestamp": "2026-07-26T14:20:00+0000",
+      "type": "CAROUSEL_ALBUM",
+      "permalink": "https://www.instagram.com/lukevanzyl/p/DbTCiixDrP0/",
+      "files": ["2026-07-26 1420 Rain on glass.jpg"]
+    },
+    "DbQWX4LDshm": {
+      "id": null,
+      "timestamp": "2026-07-26T08:20:00+0000",
+      "type": "CAROUSEL_ALBUM",
+      "permalink": "https://www.instagram.com/lukevanzyl/p/DbQWX4LDshm/",
+      "files": ["2026-07-26 0820 Chamblee mural.jpg"]
+    },
+    "DbOa9-ShCXT": {
+      "id": null,
+      "timestamp": "2026-07-25T12:00:00+0000",
+      "type": "IMAGE",
+      "permalink": "https://www.instagram.com/lukevanzyl/p/DbOa9-ShCXT/",
+      "files": ["2026-07-25 1200 FJ Cruiser.jpg"]
+    },
+    "Da-QyqYleNP": {
+      "id": null,
+      "timestamp": "2026-07-19T12:00:00+0000",
+      "type": "CAROUSEL_ALBUM",
+      "permalink": "https://www.instagram.com/lukevanzyl/p/Da-QyqYleNP/",
+      "files": ["2026-07-19 1200 Rocket playground.jpg"]
+    }
+  }
+}

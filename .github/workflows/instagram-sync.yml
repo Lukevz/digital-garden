@@ -1,0 +1,114 @@
+name: Instagram photo sync
+
+# Daily: pull new photos from Instagram into content/photos/ and open a PR so
+# they get a visual review before they reach the site. See
+# .github/scripts/instagram-sync.mjs for the sync rules.
+on:
+  schedule:
+    - cron: '0 14 * * *' # 14:00 UTC daily (~10am ET), an hour after the KB digest
+  workflow_dispatch:
+    inputs:
+      carousel_mode:
+        description: 'Slides to take from carousel posts'
+        type: choice
+        options: [all, first]
+        default: all
+        required: false
+      max_posts:
+        description: 'How many recent posts to consider'
+        default: '50'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  # Never let two syncs race on the same manifest.
+  group: instagram-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # Mapped at job level so the optional-PAT step can test it in `if:` —
+    # the secrets context is not dependable inside a step-level condition.
+    env:
+      IG_PAT: ${{ secrets.IG_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Installed here rather than added to package.json: sharp is a ~30MB
+      # native dep only this workflow needs, and Vercel installs devDependencies
+      # during the site build.
+      - name: Install sharp
+        run: npm install --no-save sharp
+
+      - name: Sync photos from Instagram
+        id: sync
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          IG_CAROUSEL_MODE: ${{ inputs.carousel_mode || 'all' }}
+          IG_MAX_POSTS: ${{ inputs.max_posts || '50' }}
+          # Written outside the workspace so a refreshed token can never be
+          # picked up by `git add` below.
+          IG_TOKEN_OUT: ${{ runner.temp }}/ig-token.txt
+        run: node .github/scripts/instagram-sync.mjs
+
+      - name: Open pull request
+        if: steps.sync.outputs.added != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Via env rather than inline `${{ }}` so nothing is interpolated
+          # straight into the shell.
+          ADDED: ${{ steps.sync.outputs.added }}
+          BRANCH: instagram-sync/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add content/photos
+          git commit -m "Sync $ADDED new photo(s) from Instagram"
+          git push origin "$BRANCH"
+
+          cat > "$RUNNER_TEMP/pr-body.md" <<'EOF'
+          Automated pull from Instagram into `content/photos/`.
+
+          **Review by looking at the images in the Files tab.** Delete any you
+          don't want before merging — deletions are permanent, since
+          `instagram-sync.json` records each post as handled and the sync will
+          not re-add it.
+
+          See the workflow run summary for the source post of each photo.
+          EOF
+
+          gh pr create \
+            --title "Instagram: $ADDED new photo(s)" \
+            --body-file "$RUNNER_TEMP/pr-body.md" \
+            --base main \
+            --head "$BRANCH"
+
+      # Long-lived tokens expire after ~60 days. Refreshing mints a new one, which
+      # is only useful if it replaces the stored secret. Needs a PAT with
+      # `secrets: write` — without IG_PAT the sync still runs, but you must
+      # re-mint the token by hand before it lapses.
+      - name: Persist refreshed token
+        if: env.IG_PAT != ''
+        env:
+          GH_TOKEN: ${{ secrets.IG_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TOKEN_FILE="$RUNNER_TEMP/ig-token.txt"
+          if [ -s "$TOKEN_FILE" ]; then
+            gh secret set INSTAGRAM_ACCESS_TOKEN --repo "$REPO" < "$TOKEN_FILE"
+            echo "Stored refreshed token."
+          else
+            echo "No refreshed token to store." >&2
+          fi

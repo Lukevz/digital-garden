@@ -12,6 +12,7 @@ import { readFile } from 'fs/promises';
 import { extname } from 'path';
 import { URL } from 'url';
 import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest, buildEnergyManifest } from '../v1/js/build/manifest-builder.js';
+import { readExifCached } from '../api/_lib/exif.js';
 import chatHandler from '../api/chat.js';
 import chatInsightsHandler from '../api/chat-insights.js';
 
@@ -465,8 +466,11 @@ async function handleAPIProxy(req, res) {
       res.end(JSON.stringify({ error: 'invalid category' }));
       return true;
     }
-    // Photos: single curated grid from content/photos/ (newest by mtime first).
+    // Photos: single curated grid from content/photos/ (newest first).
     // Drop image files into content/photos/; optional matching previews in content/photos/thumbs/.
+    //
+    // Keep this ordering identical to api/content/list.js — that is the handler
+    // production actually runs, and a mismatch means the grid reorders on deploy.
     if (category === 'photos') {
       const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif']);
       const photosDir = join(rootDir, 'content', 'photos');
@@ -476,13 +480,31 @@ async function handleAPIProxy(req, res) {
         const thumbsDir = join(photosDir, 'thumbs');
         readdirSync(photosDir)
           .filter(f => IMAGE_EXTS.has(('.' + f.split('.').pop()).toLowerCase()))
-          .map(f => ({ f, m: statSync(join(photosDir, f)).mtimeMs }))
-          .sort((a, b) => b.m - a.m)
-          .forEach(({ f }) => {
+          .map(f => {
+            const dated = f.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ _-](\d{2})(\d{2}))?[ _-]/);
+            return {
+              f,
+              dated: dated ? 1 : 0,
+              d: dated
+                ? Date.UTC(+dated[1], +dated[2] - 1, +dated[3], +(dated[4] || 0), +(dated[5] || 0))
+                : 0,
+              m: statSync(join(photosDir, f)).mtimeMs
+            };
+          })
+          .sort((a, b) =>
+            (b.dated - a.dated) ||
+            (b.d - a.d) ||
+            (b.m - a.m) ||
+            a.f.localeCompare(b.f)
+          )
+          .forEach(({ f, dated, d }) => {
             const hasThumb = existsSync(join(thumbsDir, f));
+            const exif = readExifCached(join(photosDir, f)) || {};
+            if (!exif.date && dated) exif.date = new Date(d).toISOString().slice(0, 10);
             images.push({
               src: base + encodeURIComponent(f),
-              thumb: hasThumb ? base + 'thumbs/' + encodeURIComponent(f) : base + encodeURIComponent(f)
+              thumb: hasThumb ? base + 'thumbs/' + encodeURIComponent(f) : base + encodeURIComponent(f),
+              exif
             });
           });
       }
