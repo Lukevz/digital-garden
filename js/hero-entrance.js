@@ -171,16 +171,39 @@
     if (dockRevealed || !chatDock) return;
     dockRevealed = true;
     chatDock.style.transition =
-      'width 0.5s cubic-bezier(0.16,1,0.3,1), padding 0.5s cubic-bezier(0.16,1,0.3,1), ' +
+      'width 0.5s cubic-bezier(0.16,1,0.3,1), ' +
       'transform 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease';
+    // The pill's padding lives on the compose row, so the bloom has to slow
+    // that down too or the row snaps open in 0.2s ahead of the width.
+    const row = chatDock.querySelector('#chatDockRow');
+    if (row) row.style.transition = 'padding 0.5s cubic-bezier(0.16,1,0.3,1)';
     requestAnimationFrame(() => { chatDock.classList.remove('dock-enter'); });
-    setTimeout(() => { chatDock.style.transition = ''; }, 640);
+    setTimeout(() => {
+      chatDock.style.transition = '';
+      if (row) row.style.transition = '';
+    }, 640);
+  }
+
+  /* The hero lockup is display:none on a section page (#writing / #videos /
+   * #photos), so a deep link lands with nothing to type on — and typing into a
+   * hidden element would still hold the dock collapsed for the couple of
+   * seconds the invisible animation takes. Skip straight to the resting state
+   * and put the dock on screen. */
+  function heroHidden() {
+    return !introCopy || introCopy.getClientRects().length === 0;
   }
 
   let heroRevealed = false;
   function revealHero() {
     if (heroRevealed) return;
     heroRevealed = true;
+    if (heroHidden()) {
+      heroFadeEls.concat(typeTarget ? [typeTarget] : []).forEach((n) => {
+        n.style.transition = ''; n.style.opacity = '';
+      });
+      revealDock();
+      return;
+    }
     // hold a beat, then photo, then the copy types on (or fades, classic layout)
     setTimeout(() => {
       heroPhotoEls.forEach((n) => {

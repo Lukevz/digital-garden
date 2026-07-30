@@ -7,21 +7,28 @@ import { readdirSync, readFileSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { readExifCached } from '../_lib/exif.js';
+import { estimateReadingMinutes } from '../_lib/reading-time.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '../..');
 
-function extractDate(filePath) {
-  try {
-    const content = readFileSync(filePath, 'utf8');
-    const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-    if (fmMatch) {
-      const dateMatch = fmMatch[1].match(/^date:\s*(.+)$/m);
-      if (dateMatch) return dateMatch[1].trim();
-    }
-  } catch (e) { /* ignore */ }
-  const stat = statSync(filePath);
-  return stat.birthtime.toISOString().split('T')[0];
+// Reads frontmatter for `date` (same as before) plus a reading-time estimate
+// off the remaining body — one read serves both, since the content is
+// already in memory here.
+function extractMeta(filePath) {
+  let content = '';
+  try { content = readFileSync(filePath, 'utf8'); } catch (e) { /* ignore */ }
+  const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  let date = null;
+  if (fmMatch) {
+    const dateMatch = fmMatch[1].match(/^date:\s*(.+)$/m);
+    if (dateMatch) date = dateMatch[1].trim();
+  }
+  if (!date) {
+    try { date = statSync(filePath).birthtime.toISOString().split('T')[0]; } catch (e) { date = ''; }
+  }
+  const body = fmMatch ? content.slice(fmMatch[0].length) : content;
+  return { date, minutes: estimateReadingMinutes(body) };
 }
 
 export default function handler(req, res) {
@@ -126,7 +133,7 @@ export default function handler(req, res) {
 
   const items = readdirSync(dir)
     .filter(f => f.endsWith('.md'))
-    .map(f => ({ file: f, date: extractDate(join(dir, f)) }))
+    .map(f => ({ file: f, ...extractMeta(join(dir, f)) }))
     .sort((a, b) => b.date.localeCompare(a.date));
   res.writeHead(200, { ...corsHeaders, 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ items, files: items.map(i => i.file) }));

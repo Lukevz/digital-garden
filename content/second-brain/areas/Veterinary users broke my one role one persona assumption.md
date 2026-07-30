@@ -1,13 +1,13 @@
 ---
 title: Veterinary users broke my one role one persona assumption
 created: 2026-07-17
-updated: 2026-07-17
+updated: 2026-07-29
 tags: [instinct, design, users]
 type: evergreen
 status: growing
 ---
 
-What shocked me about designing for veterinarians is how much context switching and detail they hold while making genuinely hard calls in stressful situations. I knew being a vet was tough, but I had the happier notion that they mostly get to work with animals. Really they're seeing the heavy side of it, especially in the emergency clinics Instinct serves. That reframed a lot of my [[I design software for veterinarians at Instinct|work at Instinct]].
+The hardest part of designing veterinary software, and what shocked me most about it, is how much context switching and detail veterinarians hold while making genuinely hard calls in stressful situations. I knew being a vet was tough, but I had the happier notion that they mostly get to work with animals. Really they're seeing the heavy side of it, especially in the emergency clinics Instinct serves. That reframed a lot of my [[I design software for veterinarians at Instinct|work at Instinct]].
 
 ## One role can need three or four personas
 

@@ -9,6 +9,10 @@
   const messages = [];
   let inflight = false;
   let initialized = false;
+  // Bumped by reset(). A stream started before the reset must not push its
+  // reply onto the fresh history — dismissing the dock island mid-answer would
+  // otherwise leave a dangling assistant turn with no question in front of it.
+  let generation = 0;
 
   // --- Mock mode -------------------------------------------------------------
   // Test the chat UI (bubbles, streaming, markdown, links, error states)
@@ -124,8 +128,8 @@
     })).catch(() => null);
   }
 
-  // Single fetch entry point for both the transcript and the headless hero
-  // path — mock mode swaps the transport, everything downstream is identical.
+  // Single fetch entry point for every surface — mock mode swaps the
+  // transport, everything downstream is identical.
   async function chatFetch(history, turnstileToken) {
     if (mockMode) return mockFetch(history);
     const body = { messages: history };
@@ -408,6 +412,7 @@
     if (inflight) return;
     inflight = true;
     send.disabled = true;
+    const gen = generation;
 
     messages.push({ role: 'user', content: userText });
     const userBubble = addBubble('user', transcript);
@@ -494,7 +499,7 @@
       }
 
       if (assistantText) {
-        messages.push({ role: 'assistant', content: assistantText });
+        if (gen === generation) messages.push({ role: 'assistant', content: assistantText });
       } else {
         ensureBubble();
         assistantBubble.textContent = "Got nothing back. Try rephrasing?";
@@ -550,99 +555,29 @@
     if (input) setTimeout(() => input.focus(), 50);
   }
 
-  // Programmatic send — used by the floating dock to hand off the first
-  // message (typed before the overlay/transcript existed) once it opens.
-  function sendMessage(text) {
+  // Programmatic send. The transcript is a parameter rather than the overlay's
+  // by default because the dock's own thread (#chatDockThread) renders the same
+  // bubbles into a different container — everything downstream of streamChat()
+  // is already container-agnostic.
+  //   opts: { transcript, send, welcome }  — welcome:false skips the intro line
+  //   (the island is too short to spend four lines on it).
+  // Returns the streaming promise so callers can resync their UI when it ends.
+  function sendMessage(text, opts) {
     text = (text || '').trim();
-    const transcript = document.getElementById('chatTranscript');
-    const send = document.getElementById('chatSend');
-    if (!text || !transcript || !send || inflight) return;
-    showWelcome(transcript);
-    streamChat(text, transcript, send);
+    opts = opts || {};
+    const transcript = opts.transcript || document.getElementById('chatTranscript');
+    const send = opts.send || document.getElementById('chatSend');
+    if (!text || !transcript || !send || inflight) return Promise.resolve();
+    if (opts.welcome !== false) showWelcome(transcript);
+    return streamChat(text, transcript, send);
   }
 
-  // Headless streaming — same API/history as the transcript, but hands the
-  // accumulating text back through callbacks instead of owning any DOM. Used by
-  // the home hero, which streams the answer straight into the intro copy.
-  //   handlers: { onDelta(fullText), onDone(fullText), onError(message) }
-  async function ask(userText, handlers) {
-    userText = (userText || '').trim();
-    handlers = handlers || {};
-    if (!userText || inflight) return;
-    inflight = true;
-
-    messages.push({ role: 'user', content: userText });
-
-    let assistantText = '';
-    let renderScheduled = false;
-
-    // Batch onDelta to one call per frame — the raw text accumulates
-    // immediately, only the (caller-side) DOM rebuild is throttled.
-    function flush() {
-      if (renderScheduled) return;
-      renderScheduled = true;
-      requestAnimationFrame(() => {
-        renderScheduled = false;
-        if (handlers.onDelta) handlers.onDelta(assistantText);
-      });
-    }
-
-    try {
-      const res = await chatFetch(messages);
-
-      if (!res.ok || !res.body) {
-        const msg = res.status === 429
-          ? "I'm getting more questions than I can handle right now — give me a few seconds and try again."
-          : "Hmm — something broke on my end. Try again in a moment, or DM me directly.";
-        const errText = await res.text().catch(() => '');
-        console.error('[chat] upstream error', res.status, errText);
-        if (handlers.onError) handlers.onError(msg);
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let done = false;
-      const onDelta = (delta) => { assistantText += delta; flush(); };
-
-      while (!done) {
-        const { value, done: streamDone } = await reader.read();
-        if (streamDone) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lastNl = buffer.lastIndexOf('\n\n');
-        if (lastNl >= 0) {
-          done = parseSSE(buffer.slice(0, lastNl), onDelta);
-          buffer = buffer.slice(lastNl + 2);
-        }
-      }
-      if (buffer) parseSSE(buffer, onDelta);
-
-      if (assistantText) {
-        messages.push({ role: 'assistant', content: assistantText });
-        if (handlers.onDelta) handlers.onDelta(assistantText); // final flush
-        if (handlers.onDone) handlers.onDone(assistantText);
-      } else if (handlers.onError) {
-        handlers.onError("Got nothing back. Try rephrasing?");
-      }
-    } catch (e) {
-      console.error('[chat] ask error', e);
-      if (handlers.onError) handlers.onError("Connection hiccup. Try again?");
-    } finally {
-      inflight = false;
-    }
-  }
-
-  // Render accumulated markdown into an arbitrary element (used by the hero).
-  function renderInto(el, text) {
-    if (el) renderMarkdown(el, text);
-  }
-
-  // Drop the conversation history — the hero calls this when the visitor
-  // dismisses an answer and returns to the intro.
+  // Drop the conversation history — main.js calls this when the visitor
+  // dismisses the dock island.
   function reset() {
     messages.length = 0;
+    generation += 1;
   }
 
-  window.chat = { init, focus, sendMessage, ask, renderInto, reset, mock: setMockMode, busy: () => inflight };
+  window.chat = { init, focus, sendMessage, reset, mock: setMockMode, busy: () => inflight };
 })();
