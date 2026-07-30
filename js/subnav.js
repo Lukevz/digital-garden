@@ -23,6 +23,7 @@
   const progress      = document.getElementById('subNavProgress');
   const overflowPanel = document.getElementById('overflowPanel');
   const sModal        = document.getElementById('sModal');
+  const goo           = document.getElementById('navGoo');
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -34,6 +35,11 @@
   // i.e. the hero is mostly gone and there's a long page underneath.
   const SHOW_AT  = 0.45;
   const GAP      = 8;   // px between the bottom of #modeTab and the sub nav
+  // #navGoo's <circle> centres are fixed at local y = 6 / 10 / 14 (see
+  // _index.html) so its middle blob lands exactly halfway across GAP —
+  // these two must stay in lockstep with that markup.
+  const GOO_HALF_W     = 13;  // half of navGoo's 26px width
+  const GOO_TOP_MARGIN = 6;   // local y of its top blob's centre
 
   let sections = [];    // section elements, in document order
   let buttons  = [];    // buttons[i] = the anchor button for section i
@@ -153,6 +159,10 @@
     nav.style.left  = r.left + 'px';
     nav.style.width = r.width + 'px';
     nav.style.top   = (r.bottom + GAP) + 'px';
+    if (goo) {
+      goo.style.left = (r.left + r.width / 2 - GOO_HALF_W) + 'px';
+      goo.style.top  = (r.bottom - GOO_TOP_MARGIN) + 'px';
+    }
   }
 
   function setActive(i) {
@@ -167,6 +177,7 @@
     open = next;
     nav.classList.toggle('open', open);
     nav.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (goo) goo.classList.toggle('open', open);
   }
 
   function frame() {

@@ -239,7 +239,45 @@
       return Array.from(container.querySelectorAll(A11Y_FOCUSABLE))
         .filter(el => el.offsetWidth || el.offsetHeight || el.getClientRects().length);
     }
+    // Body-scroll lock shared by every full-viewport modal/overlay opened
+    // through activateModalFocus below (the app-view panel, chat overlay,
+    // #bookModal, #sModal) — plus #testiModal in testimonials.js, which is
+    // deliberately self-contained and can't reach this closure, so it's
+    // exposed on window. Reference-counted so one modal opening another
+    // (openChatOverlay closes #sModal first, but still nets out to 1) can't
+    // unlock a scroll a different modal still needs.
+    //
+    // Freezes the page with position:fixed rather than overflow:hidden: the
+    // timeline's position:sticky pin depends on neither <html> nor <body>
+    // becoming a scroll container (see the overflow-x: clip comments on
+    // both) — overflow-y: hidden here would do exactly that and silently
+    // break the pin.
+    let _scrollLockCount = 0;
+    let _scrollLockY = 0;
+    function lockBodyScroll() {
+      if (_scrollLockCount++ > 0) return;
+      _scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+      const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.position = 'fixed';
+      document.body.style.top = (-_scrollLockY) + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      if (scrollbarGap > 0) document.body.style.paddingRight = scrollbarGap + 'px';
+    }
+    function unlockBodyScroll() {
+      if (_scrollLockCount === 0 || --_scrollLockCount > 0) return;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.paddingRight = '';
+      window.scrollTo(0, _scrollLockY);
+    }
+    window.lockBodyScroll = lockBodyScroll;
+    window.unlockBodyScroll = unlockBodyScroll;
+
     function activateModalFocus(container, initialEl) {
+      lockBodyScroll();
       _modalReturnFocus.set(container, document.activeElement);
       // Defer so the dialog is laid out / animating in before focus moves.
       setTimeout(() => {
@@ -250,6 +288,7 @@
       }, 60);
     }
     function restoreModalFocus(container) {
+      unlockBodyScroll();
       const prev = _modalReturnFocus.get(container);
       _modalReturnFocus.delete(container);
       if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
@@ -629,6 +668,8 @@
     const chatDock          = document.getElementById('chatDock');
     const chatDockInput     = document.getElementById('chatDockInput');
     const chatDockSend      = document.getElementById('chatDockSend');
+    const chatDockThread    = document.getElementById('chatDockThread');
+    const chatDockClose     = document.getElementById('chatDockClose');
     const chatOverlay       = document.getElementById('chatOverlay');
     const chatOverlayPanel  = document.getElementById('chatOverlayPanel');
     const chatOverlayClose  = document.getElementById('chatOverlayClose');
@@ -639,6 +680,7 @@
       if (modalIsOpen) closeSModal();
       if (bookModalOpen) closeBookModal();
       if (panelOpen) closePanel();
+      closeDockThread();
       chatOverlayOpen = true;
       chatOverlay.classList.add('is-open');
       chatOverlay.setAttribute('aria-hidden', 'false');
@@ -660,12 +702,52 @@
     }
 
     // Dock grows in place (wider + a few rows tall) as soon as the visitor
-    // starts typing; it only hands off to the full overlay once they send.
+    // starts typing; sending is what unfurls it into a thread (or streams into
+    // the hero, on the home page).
     function updateDockExpansion() {
       if (!chatDock || !chatDockInput) return;
       const hasText = chatDockInput.value.trim().length > 0;
       chatDock.classList.toggle('is-expanded', hasText);
-      if (chatDockSend) chatDockSend.disabled = !hasText;
+      // Never re-enable mid-stream — streamChat() owns the button until it's
+      // finished and flips it back itself.
+      if (chatDockSend && !(window.chat && window.chat.busy && window.chat.busy())) {
+        chatDockSend.disabled = !hasText;
+      }
+    }
+
+    // ── Dock thread ("dynamic island") ──
+    // The hero answer only exists on the home page; anywhere else there's no
+    // intro copy to stream into, so the dock itself becomes the conversation
+    // rather than silently swallowing the question (or yanking the visitor off
+    // the page they were reading). See the .is-thread block in styles.css.
+    let dockThreadOpen = false;
+    let dockThreadClearTimer = null;
+
+    function openDockThread() {
+      if (!chatDock || !chatDockThread || dockThreadOpen) return;
+      dockThreadOpen = true;
+      clearTimeout(dockThreadClearTimer);
+      chatDock.classList.add('is-thread');
+      if (chatDockClose) chatDockClose.tabIndex = 0;
+    }
+
+    function closeDockThread() {
+      if (!dockThreadOpen) return;
+      dockThreadOpen = false;
+      chatDock.classList.remove('is-thread');
+      if (chatDockClose) chatDockClose.tabIndex = -1;
+      // Empty it only once the island has finished shrinking — clearing now
+      // would blank the panel while it's still visibly on screen.
+      clearTimeout(dockThreadClearTimer);
+      dockThreadClearTimer = setTimeout(() => {
+        if (dockThreadOpen) return;
+        chatDockThread.replaceChildren();
+        chatDockThread.scrollTop = 0;
+        // Don't drop the history out from under a surface that has picked the
+        // conversation up in the meantime (the overlay, or the home hero).
+        if (chatOverlayOpen || heroAnswering) return;
+        if (window.chat && window.chat.reset) window.chat.reset();
+      }, 460);
     }
 
     // ── Hero answer: on the home page the dock streams its answer straight
@@ -682,8 +764,13 @@
     let heroAnswerBody = null;
     let heroAnswering = false;
 
+    // Section pages (#writing / #videos / #photos) are still "life" mode but
+    // hide .hero-lockup, so the intro copy the answer streams into isn't on
+    // screen — those go to the dock thread like every other mode.
     function heroAvailable() {
-      return currentMode === 'life' && !!introTextEl && !!introCopyEl;
+      return currentMode === 'life'
+        && !document.body.classList.contains('section-mode')
+        && !!introTextEl && !!introCopyEl;
     }
 
     // Wrap every word of the (freshly rendered) answer in a span.hw — inside
@@ -856,22 +943,31 @@
     function submitDockMessage() {
       if (!chatDockInput) return;
       const text = chatDockInput.value.trim();
-      if (!text) return;
+      if (!text || (window.chat && window.chat.busy && window.chat.busy())) return;
       chatDockInput.value = '';
       chatDock.classList.remove('is-expanded');
       if (chatDockSend) chatDockSend.disabled = true;
-      chatDockInput.blur();
-      if (heroAvailable()) {
+      // Once the island is open it keeps the conversation, even if the visitor
+      // navigates back to a page where the hero would otherwise take over.
+      if (heroAvailable() && !dockThreadOpen) {
+        chatDockInput.blur();
         askInHero(text);
         return;
       }
-      openChatOverlay();
-      if (window.chat && typeof window.chat.sendMessage === 'function') window.chat.sendMessage(text);
+      openDockThread();
+      if (!(window.chat && typeof window.chat.sendMessage === 'function')) return;
+      // Focus stays in the field — the island is a conversation, not a handoff.
+      Promise.resolve(
+        window.chat.sendMessage(text, { transcript: chatDockThread, send: chatDockSend, welcome: false })
+      ).then(updateDockExpansion);
     }
 
     if (chatDock) chatDock.addEventListener('click', e => {
       if (e.target === chatDockInput) return;
       if (chatDockSend && chatDockSend.contains(e.target)) return;
+      if (chatDockClose && chatDockClose.contains(e.target)) return;
+      // Inside the thread, clicks are for reading and following links.
+      if (chatDockThread && chatDockThread.contains(e.target)) return;
       if (chatDockInput) chatDockInput.focus();
     });
     if (chatDockInput) {
@@ -887,9 +983,20 @@
       });
     }
     if (chatDockSend) chatDockSend.addEventListener('click', submitDockMessage);
+    if (chatDockClose) chatDockClose.addEventListener('click', closeDockThread);
+    // Click-away dismisses the island. It floats over live content rather than
+    // behind a backdrop, so a click anywhere else reads as "I'm done here".
+    document.addEventListener('pointerdown', e => {
+      if (!dockThreadOpen || !chatDock) return;
+      if (chatDock.contains(e.target)) return;
+      closeDockThread();
+    });
     if (chatOverlayClose) chatOverlayClose.addEventListener('click', closeChatOverlay);
     if (chatOverlay) chatOverlay.addEventListener('click', e => { if (e.target === chatOverlay) closeChatOverlay(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && chatOverlayOpen) closeChatOverlay(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && dockThreadOpen && !chatOverlayOpen) closeDockThread();
+    });
     document.addEventListener('keydown', e => { if (e.key === 'Tab' && chatOverlayOpen) trapModalTab(chatOverlayPanel, e); });
 
     const BOOKS = [
@@ -3740,13 +3847,17 @@
             fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic;margin-top:8px">Nothing here yet.</p></div>`);
             return;
           }
-          const rows = mdItems.map(({ file, date }) => {
+          const rows = mdItems.map(({ file, date, minutes }) => {
             const name = file.replace(/\.md$/, '');
             const slug = filenameToSlug(name);
             if (section === 'writing') {
+              const readTime = Number.isFinite(minutes) ? `<span class="sm-row-read">${minutes} min read</span>` : '';
               return `<button class="sm-row sm-row--writing" data-section="${section}" data-slug="${slug}">
                 <span class="sm-row-date">${date}</span>
-                <span class="sm-row-title">${name}</span>
+                <span class="sm-row-main">
+                  <span class="sm-row-title">${name}</span>
+                  ${readTime}
+                </span>
               </button>`;
             }
             return `<button class="sm-row" data-section="${section}" data-slug="${slug}">
@@ -3796,6 +3907,7 @@
     // fallback for a slug that isn't one of the channel's clips).
     function renderMarkdownItem(section, slug) {
       fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-size:0.85rem">Loading…</p></div>`);
+      let meta = null;
       fetch(`/api/content/list?category=${section}`)
         .then(r => r.json())
         .then(({ items, files }) => {
@@ -3805,11 +3917,22 @@
             fadeSwap(`<div class="sm-fade"><p style="color:var(--text-secondary);font-style:italic">Not found.</p></div>`);
             return;
           }
+          if (items) meta = items.find(i => i.file === filename) || null;
           return fetch(`/content/${section}/${encodeURIComponent(filename)}`).then(r => r.text());
         })
         .then(md => {
           if (!md) return;
           fadeSwap(`<div class="sm-fade cs-body">${mdToHTML(md)}</div>`);
+          // Writing only: date + reading time, spliced in right after the h1
+          // (rather than into the markdown string) so it sits under the title
+          // regardless of what mdToHTML produced around it.
+          if (section === 'writing' && meta) {
+            const h1 = sModalBody.querySelector('.cs-body h1');
+            if (h1) {
+              const readTime = Number.isFinite(meta.minutes) ? ` · ${meta.minutes} min read` : '';
+              h1.insertAdjacentHTML('afterend', `<p class="cs-meta">${meta.date}${readTime}</p>`);
+            }
+          }
           setTimeout(() => { sModalBody.scrollTop = 0; }, 140);
         })
         .catch(() => {
@@ -4145,6 +4268,7 @@
     function gotoSite(route) {
       const hash = String(route || '').replace(/^https?:\/\/[^/]+/, '').replace(/^\/?#?/, '');
       closeChatOverlay();
+      closeDockThread();
       clearHeroAnswer();
       if (currentMode !== 'life') setMode('life');
       if (location.hash.slice(1) === hash) handleHash();

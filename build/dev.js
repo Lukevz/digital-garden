@@ -13,6 +13,7 @@ import { extname } from 'path';
 import { URL } from 'url';
 import { buildPostsManifest, buildThoughtTrainsManifest, buildLabsManifest, buildSoundsManifest, buildGalleryManifest, buildCoversManifest, buildFlightsManifest, buildEnergyManifest } from '../v1/js/build/manifest-builder.js';
 import { readExifCached } from '../api/_lib/exif.js';
+import { estimateReadingMinutes } from '../api/_lib/reading-time.js';
 import chatHandler from '../api/chat.js';
 import chatInsightsHandler from '../api/chat-insights.js';
 
@@ -539,19 +540,19 @@ async function handleAPIProxy(req, res) {
       .map(f => {
         const filePath = join(dir, f);
         let date;
-        try {
-          const content = readFileSync(filePath, 'utf8');
-          const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-          if (fmMatch) {
-            const dateMatch = fmMatch[1].match(/^date:\s*(.+)$/m);
-            if (dateMatch) date = dateMatch[1].trim();
-          }
-        } catch (e) { /* ignore */ }
+        let content = '';
+        try { content = readFileSync(filePath, 'utf8'); } catch (e) { /* ignore */ }
+        const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+        if (fmMatch) {
+          const dateMatch = fmMatch[1].match(/^date:\s*(.+)$/m);
+          if (dateMatch) date = dateMatch[1].trim();
+        }
         if (!date) {
           const stat = statSync(filePath);
           date = stat.birthtime.toISOString().split('T')[0];
         }
-        return { file: f, date };
+        const body = fmMatch ? content.slice(fmMatch[0].length) : content;
+        return { file: f, date, minutes: estimateReadingMinutes(body) };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
     res.writeHead(200, { ...corsHeaders, 'Content-Type': 'application/json' });
