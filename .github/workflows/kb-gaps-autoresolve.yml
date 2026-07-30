@@ -1,0 +1,51 @@
+name: KB gaps auto-resolve
+
+# When the vault index lands on main, re-check every open gap against the new
+# index and clear the ones the vault now answers. This is the reliable half of
+# gap resolution: it doesn't depend on anyone remembering a `Resolves-KB-Gap:`
+# trailer, and it runs wherever the index was rebuilt (locally, or by Claude on
+# mobile), because the trigger is the committed index file changing.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/data/brain-index.json'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report verdicts without resolving anything'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# A second index commit landing mid-run would race the resolve call.
+concurrency:
+  group: kb-gaps-autoresolve
+  cancel-in-progress: false
+
+jobs:
+  autoresolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Re-check open gaps against the committed index
+        env:
+          CHAT_INSIGHTS_KEY: ${{ secrets.CHAT_INSIGHTS_KEY }}
+          CHAT_INSIGHTS_URL: ${{ vars.CHAT_INSIGHTS_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          # Actions runs bash with -e, so this must be an if, not `[ ] && …` —
+          # a false test on the push path would fail the whole step.
+          ARGS=""
+          if [ "$DRY_RUN" = "true" ]; then ARGS="--dry-run"; fi
+          node build/check-gaps.js $ARGS | tee gaps.log
+          echo '## KB gap re-check' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat gaps.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

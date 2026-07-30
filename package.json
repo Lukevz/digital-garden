@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node build/dev.js",
     "build": "node build/build.js",
-    "index": "node build/index-vault.js"
+    "index": "node build/index-vault.js",
+    "gaps": "node build/check-gaps.js"
   },
   "dependencies": {
     "@upstash/redis": "^1.36.0",

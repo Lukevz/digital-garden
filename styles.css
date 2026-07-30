@@ -3740,11 +3740,10 @@
       font-size: inherit;
       line-height: inherit;
     }
-    /* Lock the measure on .intro-text (not just the copy) so the AI answer
-       that takes the copy's place wraps at the same width — without this the
-       column shrink-wraps the answer and it renders narrower. The font-size
-       here exists only so 44ch resolves identically; .intro-copy re-declares
-       the same size for its own text. */
+    /* Lock the measure on .intro-text (not just the copy) so the column holds
+       44ch instead of shrink-wrapping whatever's inside it. The font-size here
+       exists only so 44ch resolves identically; .intro-copy re-declares the
+       same size for its own text. */
     body.starfield-mode:not(.work-mode) .hero-lockup .intro-text {
       font-size: var(--hero-copy-size);
       line-height: var(--hero-copy-lh);
@@ -7617,143 +7616,11 @@ a.portfolio-img-item:hover img {
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-/* ── Hero answer: the dock streams its reply straight into the home intro copy
-   (no modal). The intro copy is hidden and the answer takes its slot. The
-   FIRST 4 lines pin in the focus band (centered on the photo) so the visitor
-   reads from the start at their own pace — streaming is faster than reading,
-   so we never auto-follow the newest line. New text accumulates below the
-   band behind a bottom fade that signals "scroll for more"; scrolling down
-   is the reading gesture, and each line grows/solidifies as it rises into
-   the band. ── */
-.intro-text.is-answering .intro-copy { display: none; }
-
-.hero-answer {
-  max-height: 40vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  font-size: clamp(17px, 3.4vw, 23px);
-  line-height: 1.5;
-  font-weight: 400;
-  color: var(--text-body);
-  text-align: left;
-  opacity: 0;
-  transition: opacity 0.28s ease, transform 0.35s ease;
-  scrollbar-width: none;
-  /* .intro is pointer-events:none (it sits over the canvas); re-enable here or
-     the answer can never be scrolled and its links can't be clicked. */
-  pointer-events: auto;
-}
-.hero-answer::-webkit-scrollbar { width: 0; height: 0; }
-.hero-answer.is-in { opacity: 1; }
-
-/* Flat per-line recede: JS (applyHeroRecede in main.js) wraps every word in a
-   .hw span, groups spans into visual lines, and scales each line about its own
-   center — no perspective tilt, so left edges stay put. Recomputed on scroll,
-   so a line grows smoothly back to full size as it rises into the band.
-   inline-block is what makes the spans transformable; text-decoration:inherit
-   keeps underlines on words inside links (inline-block otherwise drops the
-   parent's underline). */
-.hero-answer .hw {
-  display: inline-block;
-  text-decoration: inherit;
-}
-
-/* ── Static lockup + read line aligned to the photo top (desktop starfield) ──
-   The welcome copy keeps its layout box while answering (visibility:hidden,
-   not display:none), so the lockup row never changes size and the photo does
-   not move. The answer is an absolutely positioned overlay anchored to the
-   copy's box: short answers (≤ 4 lines) center on the photo; once the answer
-   outgrows the band (JS sets .is-overflowing) it becomes a fixed-height
-   window with a read line HERO_RECEDE below its top edge, sat near the photo
-   top. The first 4 lines read DOWN from there behind a subtle bottom fade;
-   already-read lines rise into the recede zone above the read line, where the
-   top mask fades them off (JS shrinks them to match). At max scroll the last
-   4 lines settle centered on the photo (not pinned to the photo top). Keep
-   --hero-recede in sync with HERO_RECEDE_EM in main.js. */
-@media (min-width: 1025px) {
-  body.starfield-mode:not(.work-mode) .intro-text { position: relative; }
-  body.starfield-mode:not(.work-mode) .intro-text.is-answering .intro-copy {
-    display: block;
-    visibility: hidden;
-  }
-  body.starfield-mode:not(.work-mode) .hero-answer {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    transform: translateY(-50%);
-  }
-  body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing {
-    --hero-recede: 4.5em;            /* recede zone above the read line (3 lines) */
-    --hero-band: 6em;                /* 4 lines at line-height 1.5 */
-    --hero-photo-half: 2.2em;        /* read line → photo center (matches transform) */
-    --hero-window: min(15em, 44vh);
-    height: var(--hero-window);
-    max-height: none;
-    /* Read line = window top + --hero-recede. Offset the window up so the read
-       line sits ~photo top (photo-center − --hero-photo-half). */
-    transform: translateY(calc(-1 * var(--hero-recede) - var(--hero-photo-half)));
-    /* Faded above the read line (read lines shrink + fade off the top), solid
-       through the 4-line reading band, then a subtle fade below = the "there's
-       more, scroll" signal. Fixed to the window, so scrolling pulls read lines
-       up into the top fade and fresh lines up into the band. */
-    -webkit-mask-image: linear-gradient(to bottom,
-      transparent 0,
-      rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
-      #000 var(--hero-recede),
-      #000 calc(var(--hero-recede) + var(--hero-band)),
-      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + var(--hero-band) + 2.5em),
-      transparent var(--hero-window));
-            mask-image: linear-gradient(to bottom,
-      transparent 0,
-      rgba(0, 0, 0, 0.3) calc(var(--hero-recede) - 1.5em),
-      #000 var(--hero-recede),
-      #000 calc(var(--hero-recede) + var(--hero-band)),
-      rgba(0, 0, 0, 0.35) calc(var(--hero-recede) + var(--hero-band) + 2.5em),
-      transparent var(--hero-window));
-  }
-  /* Padding-top = the recede zone, so at scrollTop 0 the first line lands on the
-     read line. Padding-bottom (not margin — end margins often don't extend
-     scroll height) lets the last 4 lines rise until their block is vertically
-     centered on the photo: band center = read line + --hero-photo-half. */
-  body.starfield-mode:not(.work-mode) .hero-answer.is-overflowing .hero-answer__body {
-    padding-top: var(--hero-recede);
-    padding-bottom: calc(
-      var(--hero-window)
-      - var(--hero-recede)
-      - var(--hero-photo-half)
-      - (var(--hero-band) / 2)
-    );
-  }
-}
-
-.hero-answer p { margin: 0 0 0.5em; }
-.hero-answer p:last-child { margin-bottom: 0; }
-.hero-answer a {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
-  transition: text-decoration-color 0.15s ease;
-}
-.hero-answer a:hover { text-decoration-color: currentColor; }
-.hero-answer code {
-  font-family: ui-monospace, monospace;
-  font-size: 0.88em;
-  background: rgba(128, 128, 128, 0.16);
-  border-radius: 4px;
-  padding: 1px 5px;
-}
-
-/* Classic (non-starfield) layout centers the hero copy. */
-body:not(.starfield-mode) .hero-answer { text-align: center; }
-
 /* ── Chat dock: floating "Ask me anything" trigger, dynamic-island style ──
    Fixed bottom-center pill, visible on every mode/page. Grows in place
-   (wider + a few rows tall) while typing, then — off the home hero — unfurls
-   downward into the viewport edge as a full back-and-forth thread (.is-thread,
-   below). The top-nav Chat tab still opens the #chatOverlay modal instead. */
+   (wider + a few rows tall) while typing, then unfurls downward into the
+   viewport edge as a full back-and-forth thread on send (.is-thread, below).
+   The top-nav Chat tab still opens the #chatOverlay modal instead. */
 #chatDock {
   position: fixed;
   bottom: 32px;
@@ -7764,24 +7631,44 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
   flex-direction: column;
   width: 290px;
   max-width: calc(100vw - 40px);
-  background: color-mix(in oklab, var(--glass-bg) 28%, var(--bg) 72%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: none;
   border-radius: 26px;
   color: var(--text-muted, #888);
   font-family: inherit;
   font-size: 15px;
   text-align: left;
+  /* Own stacking context, so #chatDockLabel's z-index:-1 tucks behind the
+     panel below without falling behind the whole page. */
+  isolation: isolate;
+  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease,
+    width 0.32s cubic-bezier(0.16,1,0.3,1), bottom 0.42s cubic-bezier(0.16,1,0.3,1),
+    border-radius 0.32s ease;
+}
+/* The dock's glass lives on a pseudo-element rather than on #chatDock itself.
+   A parent's own background always paints *below* its negative-z-index
+   children, so with the background on the element the menubar could never get
+   behind it — as a sibling layer at z-index 0 it can. */
+#chatDock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--glass-bg) 28%, var(--bg) 72%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   box-shadow:
     0 8px 32px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.28)),
     0 1px 1px rgba(0, 0, 0, calc(0.03 + var(--theme-blend) * 0.08)),
     inset 0 1px 0 var(--glass-highlight),
     inset 0 0 0 1px var(--glass-border);
-  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease,
-    width 0.32s cubic-bezier(0.16,1,0.3,1), bottom 0.42s cubic-bezier(0.16,1,0.3,1),
-    border-radius 0.32s ease;
+  pointer-events: none;
 }
+/* …which means the real content has to be lifted above that layer. (The close
+   button isn't here — it lives in the menubar, which is deliberately behind.) */
+#chatDockThread,
+#chatDockSuggest,
+#chatDockRow { position: relative; z-index: 1; }
 /* The compose row keeps the pill's original horizontal layout; the dock itself
    is now a column so the thread can stack above it. */
 #chatDockRow {
@@ -7797,6 +7684,33 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
   align-items: flex-end;
   padding: 12px 12px 12px 16px;
 }
+
+/* ── Resume affordance ──
+   A collapsed island that still holds a conversation says so: a ⌃ appears at
+   the head of the compose row and the placeholder changes (set in main.js).
+   Hidden outright rather than animated — the pill's own width transition is
+   what carries the change. */
+#chatDockResume {
+  display: none;
+  flex-shrink: 0;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  box-sizing: border-box;
+  background: var(--glass-bg-medium);
+  border: 1px solid var(--glass-border-medium);
+  border-radius: 50%;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+#chatDockResume svg { width: 100%; height: 100%; }
+#chatDockResume:hover { color: var(--text-primary); background: var(--hover-fill-soft); }
+#chatDock.is-resumable #chatDockResume { display: flex; }
+#chatDock.is-resumable #chatDockRow { padding-left: 8px; }
+/* A little wider to pay for the ⌃ — :not(.is-expanded) so typing still wins. */
+#chatDock.is-resumable:not(.is-expanded) { width: 330px; }
 #chatDockSend {
   flex-shrink: 0;
   width: 36px;
@@ -7839,8 +7753,7 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
 }
 
 /* ── Dock thread: the island ──
-   Off the home hero there's no intro copy to stream an answer into, so the
-   dock becomes the conversation instead of handing off to a modal. It drops
+   Sending turns the dock itself into the conversation, on every page. It drops
    the last 32px to sit flush against the bottom edge (squaring off the two
    corners that leave the viewport — a notch, inverted), widens to give bubbles
    a readable measure, and unfurls #chatDockThread above the compose row.
@@ -7850,39 +7763,95 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
   max-height: 0;
   opacity: 0;
   padding: 0 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-behavior: smooth;
-  /* Messages dissolve as they scroll under the close button rather than
-     colliding with it. Anchored to the padding box, so it stays put while the
-     content scrolls beneath. */
-  mask-image: linear-gradient(to bottom, transparent 0, #000 40px);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 40px);
+  /* Messages dissolve as they scroll off the top rather than being clipped by
+     the panel's rounded corners. Anchored to the padding box, so it stays put
+     while the content scrolls beneath. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 26px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26px);
   /* No scrollbar — it would ride the island's rounded corner, and the top fade
-     already says there's more above. Matches .hero-answer. */
+     already says there's more above. */
   scrollbar-width: none;
-  transition: max-height 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.28s ease,
+  /* min-height animates alongside max-height, and it has to: min-height beats
+     max-height, so a static one would hold the panel open at full size while
+     collapsed and snap it open with no unfurl. */
+  transition: min-height 0.42s cubic-bezier(0.16,1,0.3,1),
+    max-height 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.28s ease,
     padding 0.42s cubic-bezier(0.16,1,0.3,1);
 }
 #chatDockThread::-webkit-scrollbar { width: 0; height: 0; }
 #chatDock.is-thread {
   width: 560px;
   bottom: 0;
+  /* Top corners stay rounded — the menubar behind shows through their curve,
+     which is what sells the two as layered cards. Bottom corners leave the
+     viewport. */
   border-radius: 28px 28px 0 0;
 }
 #chatDock.is-thread #chatDockThread {
-  max-height: min(58vh, 470px);
+  /* Opens at a real chat height rather than hugging the first message and
+     growing under the visitor as the answer streams in. */
+  min-height: min(52vh, 420px);
+  max-height: min(70vh, 620px);
   opacity: 1;
-  padding: 46px 18px 8px;
+  padding: 22px 18px 8px;
 }
 /* Hairline under the transcript so the compose row reads as its own surface
    once there are bubbles sitting right on top of it. */
 #chatDock.is-thread #chatDockRow {
   border-top: 1px solid var(--glass-border);
 }
+
+/* ── Suggested prompts ──
+   Chips offered when the visitor has sat on an open island without typing
+   (js/main.js, showDockSuggestions). Collapsed to nothing rather than
+   display:none so it can animate in and out under the transcript. */
+#chatDockSuggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 0;
+  padding: 0 18px;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.34s cubic-bezier(0.16,1,0.3,1), opacity 0.24s ease,
+    padding 0.34s cubic-bezier(0.16,1,0.3,1);
+}
+#chatDock.is-thread #chatDockSuggest.is-open {
+  max-height: 140px;
+  opacity: 1;
+  padding: 4px 18px 10px;
+}
+.chat-dock-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border-medium);
+  background: var(--glass-bg-medium);
+  color: var(--text-secondary, #888);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.chat-dock-chip:hover {
+  color: var(--text-primary);
+  background: var(--hover-fill-soft);
+  border-color: var(--glass-border);
+}
+/* Now that the panel opens tall, a short conversation would be stranded at the
+   top of it. Push it down to sit next to the compose row instead — via
+   margin-top:auto on the first row rather than justify-content:flex-end, which
+   can strand overflowing content above the scroll origin. */
+#chatDockThread > *:first-child { margin-top: auto; }
+
 /* Tighter than the overlay's bubbles — the island is a narrower column. */
 #chatDockThread .chat-bubble {
   max-width: 88%;
@@ -7890,12 +7859,14 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
   padding: 9px 13px;
 }
 #chatDockThread .chat-welcome { padding: 0 4px 4px; font-size: 13px; }
+/* Top-right of the menubar. margin-left:auto rather than absolute positioning
+   so it inherits the label's optical centering (the label is taller than it
+   looks — see --dock-label-tuck). */
 #chatDockClose {
-  position: absolute;
-  top: 9px;
-  right: 11px;
-  width: 26px;
-  height: 26px;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -7905,12 +7876,112 @@ body:not(.starfield-mode) .hero-answer { text-align: center; }
   background: var(--glass-bg-medium);
   color: var(--text-secondary, #888);
   cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+#chatDockClose:hover { color: var(--text-primary); background: var(--hover-fill-soft); }
+
+/* Title + status tag in their own menubar, LAYERED BEHIND the island rather
+   than inside it — it names the surface without eating a row of the
+   transcript. Same width as the panel, and its bottom --dock-label-tuck sits
+   underneath it (z-index:-1 against #chatDock::before), so only the top strip
+   shows and the panel's rounded top corners reveal the card behind. */
+#chatDockLabel {
+  --dock-label-tuck: 16px;
+  position: absolute;
+  bottom: calc(100% - var(--dock-label-tuck));
+  left: 0;
+  right: 0;
+  z-index: -1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  /* Bottom padding pays for the tucked strip, so the copy stays optically
+     centred in the part you can actually see. */
+  padding: 13px 18px calc(13px + var(--dock-label-tuck));
+  /* Square at the bottom: those corners are revealed through the panel's own
+     top curve, and a straight edge running behind it reads as a card under a
+     card. A radius there just looks like a second, smaller pill. */
+  border-radius: 18px 18px 0 0;
+  /* The dock's glass, knocked back with a flat black wash so the card behind
+     sits visibly *behind*. A wash rather than a different color-mix ratio:
+     --glass-bg is lighter than --bg in BOTH themes, so shifting the ratio
+     changes translucency more than lightness and the depth cue gets lost in
+     light mode. */
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.11), rgba(0, 0, 0, 0.11)),
+    color-mix(in oklab, var(--glass-bg) 28%, var(--bg) 72%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, calc(0.08 + var(--theme-blend) * 0.22)),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-border);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.28s ease 0.06s, transform 0.34s cubic-bezier(0.16,1,0.3,1) 0.06s;
+}
+/* pointer-events back on so the Experimental tag is hoverable. Clicks land on
+   the dock's own handler (focus the input) — it reads as part of the panel. */
+#chatDock.is-thread #chatDockLabel { opacity: 1; transform: none; pointer-events: auto; }
+.chat-dock-label__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.chat-dock-label__tag {
+  position: relative;
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border-medium);
+  background: var(--glass-bg-medium);
+  backdrop-filter: blur(var(--glass-blur-medium));
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium));
+  color: var(--text-muted, #888);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: help;
+}
+/* CSS-only tooltip saying what "experimental" actually means here. Same
+   recipe as .testi-chat__tip; tabindex on the tag makes it keyboard-reachable. */
+.chat-dock-label__tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 9px);
+  transform: translateY(4px);
+  width: max-content;
+  max-width: 230px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  /* Opaque-ish (the dock's recipe, not plain --glass-bg) — it lands over the
+     page content above the island, not over empty background. */
+  background: color-mix(in oklab, var(--glass-bg) 22%, var(--bg) 78%);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.30)),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+  font-size: 11.5px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+  white-space: normal;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease, color 0.15s ease;
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
-#chatDock.is-thread #chatDockClose { opacity: 1; pointer-events: auto; }
-#chatDockClose:hover { color: var(--text-primary); }
+.chat-dock-label__tag:hover .chat-dock-label__tip,
+.chat-dock-label__tag:focus-visible .chat-dock-label__tip {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 /* ── Dock entrance ──
    On the home page the dock starts as just the circular send button and blooms
@@ -7957,7 +8028,10 @@ body:has(#testiModal.tm-open) #chatDock {
     max-width: none;
     border-radius: 24px 24px 0 0;
   }
-  #chatDock.is-thread #chatDockThread { max-height: 52vh; }
+  #chatDock.is-thread #chatDockThread { min-height: 44vh; max-height: 62vh; }
+  /* The island goes full-bleed on phones; inset the menubar so it doesn't run
+     into the screen edges. */
+  #chatDockLabel { left: 12px; right: 12px; }
   body.chat-overlay-open #chatDock {
     transform: scale(0.92);
   }

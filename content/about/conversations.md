@@ -59,7 +59,7 @@ A: Asking better questions earlier, honestly. It's easy to go hard solving whate
 ## Playful / fun / off-the-cuff
 
 Q: do you like Darth Vader?
-A:
+A: Darth Vader? Never heard of him. My dad's name is Anakin Skywalker.
 
 Q: pineapple on pizza, yes or no?
 A:

@@ -1042,13 +1042,30 @@
        #chatDockThread unfurls above the input and the whole pill drops to the
        viewport edge, dynamic-island style (js/main.js openDockThread). -->
   <div id="chatDock" role="group" aria-label="Ask me anything">
+    <!-- Sits above the island's top edge, outside the panel — a label for the
+         thing rather than a header inside it. Only shown in thread mode. -->
+    <div id="chatDockLabel">
+      <span class="chat-dock-label__title">Luke's Second Brain</span>
+      <span class="chat-dock-label__tag" tabindex="0" role="note" aria-label="Experimental: an agentic chat that searches the notes in my digital second brain">Experimental<span class="chat-dock-label__tip" aria-hidden="true">An agentic chat that searches the notes in my digital second brain.</span></span>
+      <button id="chatDockClose" type="button" aria-label="Close chat" tabindex="-1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
     <div id="chatDockThread" role="log" aria-live="polite" aria-label="Chat transcript"></div>
-    <button id="chatDockClose" type="button" aria-label="Close chat" tabindex="-1">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
+    <!-- Prompt chips, filled in by js/main.js once the visitor has been sitting
+         on an open island without typing. -->
+    <div id="chatDockSuggest" aria-label="Suggested questions"></div>
     <div id="chatDockRow">
+      <!-- Only shown once a collapsed island has a conversation to go back to
+           (body #chatDock.is-resumable). Clicking anywhere on the pill resumes
+           too — this just makes it visible. -->
+      <button id="chatDockResume" type="button" aria-label="Reopen the conversation" tabindex="-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+      </button>
       <textarea id="chatDockInput" placeholder="Ask me anything…" rows="1" aria-label="Type your message"></textarea>
       <button id="chatDockSend" type="button" aria-label="Send" disabled>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -1318,13 +1335,13 @@
   </div><!-- /#introOverlay -->
 
   <!-- <script src="/js/intro.js"></script> preloader off for now -->
-  <script src="/js/main.js?v=8"></script>
-  <script src="/js/hero-entrance.js?v=1"></script>
+  <script src="/js/main.js?v=9"></script>
+  <script src="/js/hero-entrance.js?v=2"></script>
   <script src="/js/home-feed.js?v=1"></script>
   <script src="/js/timeline.js?v=10"></script>
   <script src="/js/subnav.js?v=1"></script>
   <script src="/js/testimonials.js?v=6"></script>
-  <script src="/js/chat.js?v=1"></script>
+  <script src="/js/chat.js?v=2"></script>
 
   <!-- Now strip population -->
   <script src="/js/now-strip.js"></script>

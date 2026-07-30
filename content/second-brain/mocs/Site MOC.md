@@ -1,7 +1,7 @@
 ---
 title: Site MOC
 created: 2026-07-26
-updated: 2026-07-26
+updated: 2026-07-29
 tags: [websites, sitemap, mocs]
 type: moc
 status: settled

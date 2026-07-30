@@ -670,6 +670,8 @@
     const chatDockSend      = document.getElementById('chatDockSend');
     const chatDockThread    = document.getElementById('chatDockThread');
     const chatDockClose     = document.getElementById('chatDockClose');
+    const chatDockResume    = document.getElementById('chatDockResume');
+    const chatDockSuggest   = document.getElementById('chatDockSuggest');
     const chatOverlay       = document.getElementById('chatOverlay');
     const chatOverlayPanel  = document.getElementById('chatOverlayPanel');
     const chatOverlayClose  = document.getElementById('chatOverlayClose');
@@ -716,26 +718,129 @@
     }
 
     // ── Dock thread ("dynamic island") ──
-    // The hero answer only exists on the home page; anywhere else there's no
-    // intro copy to stream into, so the dock itself becomes the conversation
-    // rather than silently swallowing the question (or yanking the visitor off
-    // the page they were reading). See the .is-thread block in styles.css.
+    // Sending turns the dock itself into the conversation, so the question and
+    // its answer stay where they were typed. See the .is-thread block in
+    // styles.css.
+    //
+    // Two different ways out, and the difference matters: getting out of the
+    // way (click-away, Escape, navigating) only COLLAPSES — the transcript and
+    // the history survive and the pill advertises that it can be resumed.
+    // Only the × actually throws the conversation away.
+    const DOCK_PLACEHOLDER = 'Ask me anything…';
+    const DOCK_PLACEHOLDER_RESUME = 'Keep chatting…';
     let dockThreadOpen = false;
+    let dockThreadHasHistory = false;
     let dockThreadClearTimer = null;
 
-    function openDockThread() {
-      if (!chatDock || !chatDockThread || dockThreadOpen) return;
-      dockThreadOpen = true;
-      clearTimeout(dockThreadClearTimer);
-      chatDock.classList.add('is-thread');
-      if (chatDockClose) chatDockClose.tabIndex = 0;
+    // ── Suggested prompts ──
+    // A visitor who's read the answer and stalled gets a nudge rather than a
+    // blank field. Only when the island is open, the field is empty and
+    // nothing is streaming; any keystroke takes them away again.
+    const DOCK_SUGGESTIONS = [
+      'What are you working on right now?',
+      'How do you think about design systems?',
+      "What's your note-taking setup?",
+      'What should I read first?',
+      'What did you learn building this site?',
+      'How did you get into UX?',
+      'Where do you find design inspiration?',
+    ];
+    const DOCK_SUGGEST_SHOWN = 3;
+    const DOCK_IDLE_MS = 7000;
+    let dockSuggestCursor = Math.floor(Math.random() * DOCK_SUGGESTIONS.length);
+    let dockIdleTimer = null;
+
+    function hideDockSuggestions() {
+      if (chatDockSuggest) chatDockSuggest.classList.remove('is-open');
     }
 
-    function closeDockThread() {
+    function showDockSuggestions() {
+      if (!chatDockSuggest) return;
+      // Rotate through the list rather than re-offering the same three every
+      // time the visitor pauses.
+      const chips = [];
+      for (let i = 0; i < DOCK_SUGGEST_SHOWN; i++) {
+        const text = DOCK_SUGGESTIONS[(dockSuggestCursor + i) % DOCK_SUGGESTIONS.length];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chat-dock-chip';
+        b.textContent = text;
+        b.addEventListener('click', () => {
+          hideDockSuggestions();
+          if (!chatDockInput) return;
+          chatDockInput.value = text;
+          submitDockMessage();
+        });
+        chips.push(b);
+      }
+      dockSuggestCursor = (dockSuggestCursor + DOCK_SUGGEST_SHOWN) % DOCK_SUGGESTIONS.length;
+      chatDockSuggest.replaceChildren(...chips);
+      chatDockSuggest.classList.add('is-open');
+      requestAnimationFrame(() => {
+        chatDockThread.scrollTop = chatDockThread.scrollHeight;
+      });
+    }
+
+    function armDockIdle() {
+      clearTimeout(dockIdleTimer);
+      if (!dockThreadOpen) return;
+      dockIdleTimer = setTimeout(() => {
+        if (!dockThreadOpen) return;
+        if (chatDockInput && chatDockInput.value.trim()) return;
+        // Still answering — the visitor isn't hesitating, they're reading.
+        // Come back around rather than giving up on the nudge entirely.
+        if (window.chat && window.chat.busy && window.chat.busy()) { armDockIdle(); return; }
+        showDockSuggestions();
+      }, DOCK_IDLE_MS);
+    }
+
+    function cancelDockIdle() {
+      clearTimeout(dockIdleTimer);
+      hideDockSuggestions();
+    }
+
+    function setDockResumable(on) {
+      chatDock.classList.toggle('is-resumable', on);
+      if (chatDockResume) chatDockResume.tabIndex = on ? 0 : -1;
+      if (chatDockInput) {
+        chatDockInput.placeholder = on ? DOCK_PLACEHOLDER_RESUME : DOCK_PLACEHOLDER;
+      }
+    }
+
+    function openDockThread() {
+      if (!chatDock || !chatDockThread) return;
+      clearTimeout(dockThreadClearTimer);
+      dockThreadHasHistory = true;
+      if (dockThreadOpen) return;
+      dockThreadOpen = true;
+      chatDock.classList.add('is-thread');
+      setDockResumable(false);
+      if (chatDockClose) chatDockClose.tabIndex = 0;
+      // Resuming lands at the newest message, not wherever the last read
+      // stopped — and it has to wait for the panel to have a height again.
+      requestAnimationFrame(() => {
+        chatDockThread.scrollTop = chatDockThread.scrollHeight;
+      });
+      armDockIdle();
+    }
+
+    // Fold back into the pill, keeping everything. Reopened by the resume
+    // button, by clicking the pill, or just by typing the next question.
+    function collapseDockThread() {
       if (!dockThreadOpen) return;
       dockThreadOpen = false;
       chatDock.classList.remove('is-thread');
+      cancelDockIdle();
       if (chatDockClose) chatDockClose.tabIndex = -1;
+      if (dockThreadHasHistory) setDockResumable(true);
+    }
+
+    // The × — the one exit that discards the conversation.
+    function closeDockThread() {
+      collapseDockThread();
+      if (!dockThreadHasHistory) return;
+      dockThreadHasHistory = false;
+      setDockResumable(false);
       // Empty it only once the island has finished shrinking — clearing now
       // would blank the panel while it's still visibly on screen.
       clearTimeout(dockThreadClearTimer);
@@ -743,201 +848,11 @@
         if (dockThreadOpen) return;
         chatDockThread.replaceChildren();
         chatDockThread.scrollTop = 0;
-        // Don't drop the history out from under a surface that has picked the
-        // conversation up in the meantime (the overlay, or the home hero).
-        if (chatOverlayOpen || heroAnswering) return;
+        // Don't drop the history out from under the overlay if it has picked
+        // the conversation up in the meantime.
+        if (chatOverlayOpen) return;
         if (window.chat && window.chat.reset) window.chat.reset();
       }, 460);
-    }
-
-    // ── Hero answer: on the home page the dock streams its answer straight
-    //    into the intro copy ("Hi, I'm Luke!…"), no modal. The read line sits
-    //    at the TOP (aligned with the photo); the first 4 lines read down from
-    //    it, and fresh text keeps arriving below behind a subtle bottom fade —
-    //    streaming is faster than reading, so we never auto-follow. Scrolling
-    //    down is the reading gesture: each read line rises ABOVE the read line
-    //    into the recede zone, where it shrinks and fades off the top.
-    //    Off the home hero (other modes) the dock falls back to the overlay. ──
-    const introTextEl  = document.querySelector('.intro-text');
-    const introCopyEl  = document.querySelector('.intro-copy');
-    let heroAnswerEl = null;
-    let heroAnswerBody = null;
-    let heroAnswering = false;
-
-    // Section pages (#writing / #videos / #photos) are still "life" mode but
-    // hide .hero-lockup, so the intro copy the answer streams into isn't on
-    // screen — those go to the dock thread like every other mode.
-    function heroAvailable() {
-      return currentMode === 'life'
-        && !document.body.classList.contains('section-mode')
-        && !!introTextEl && !!introCopyEl;
-    }
-
-    // Wrap every word of the (freshly rendered) answer in a span.hw — inside
-    // links/bold/code too — so applyHeroRecede can scale visual lines
-    // independently. Whitespace stays as bare text nodes between the spans, so
-    // wrapping behavior is unchanged.
-    function wordifyHero(root) {
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      const textNodes = [];
-      while (walker.nextNode()) textNodes.push(walker.currentNode);
-      textNodes.forEach(node => {
-        if (!/\S/.test(node.nodeValue)) return;
-        // Already wordified (recede pass can run twice on one render) — the
-        // word's own text node lives inside its .hw span; don't nest another.
-        if (node.parentNode.classList && node.parentNode.classList.contains('hw')) return;
-        const frag = document.createDocumentFragment();
-        node.nodeValue.split(/(\s+)/).forEach(part => {
-          if (!part) return;
-          if (/\s/.test(part)) {
-            frag.appendChild(document.createTextNode(part));
-          } else {
-            const s = document.createElement('span');
-            s.className = 'hw';
-            s.textContent = part;
-            frag.appendChild(s);
-          }
-        });
-        node.parentNode.replaceChild(frag, node);
-      });
-    }
-
-    // Flat per-line recede, viewport-relative: the read line sits HERO_RECEDE_EM
-    // below the window top (matching the CSS mask), and each line ABOVE it —
-    // i.e. already read and scrolled up past it — shrinks continuously with its
-    // depth, scaled about the LINE's center: translateX((s−1)·(wordCenter−
-    // lineCenter)) + scale(s) per word is exactly a scale of the whole line
-    // around its center. Recomputed on scroll, so a line shrinks smoothly as it
-    // rises out of the reading band. Desktop overlay only (mobile stacked keeps
-    // plain scrolling text).
-    const HERO_RECEDE_EM = 4.5;    // recede zone above the read line; matches the mask
-    const HERO_LINE_SCALE = 0.955; // shrink per line-height of depth above the read line
-    const HERO_MIN_SCALE = 0.8;
-
-    function applyHeroRecede() {
-      if (!heroAnswerEl || !heroAnswerBody) return;
-      if (!heroAnswerEl.classList.contains('is-overflowing')) return;
-      // The recede pairs with the fixed-window overlay; when that CSS isn't
-      // active (mobile stacked layout) leave the text alone.
-      if (getComputedStyle(heroAnswerEl).position !== 'absolute') return;
-      wordifyHero(heroAnswerBody);
-      const words = Array.from(heroAnswerBody.querySelectorAll('.hw'));
-      if (!words.length) return;
-      const fs = parseFloat(getComputedStyle(heroAnswerEl).fontSize) || 16;
-      const lineH = 1.5 * fs;
-      // Read line in content coordinates (offsets ignore scroll/transforms): the
-      // reading position sits HERO_RECEDE_EM below the window top, with the
-      // recede zone above it. Lines whose bottom is above the read line have
-      // been scrolled past.
-      const readLine = heroAnswerEl.scrollTop + HERO_RECEDE_EM * fs;
-      // Group words into visual lines by top offset. Tolerance of half a line
-      // absorbs metric differences within a line (e.g. smaller inline code).
-      const tolerance = lineH / 2;
-      const lines = [];
-      let line = null;
-      words.forEach(w => {
-        const top = w.offsetTop;
-        if (!line || Math.abs(top - line.top) > tolerance) {
-          line = { top, words: [] };
-          lines.push(line);
-        }
-        line.words.push(w);
-      });
-      // Measure all line extents first, then write transforms — transforms
-      // don't invalidate layout, so there's no read/write thrash.
-      lines.forEach(ln => {
-        let left = Infinity, right = -Infinity;
-        ln.words.forEach(w => {
-          left = Math.min(left, w.offsetLeft);
-          right = Math.max(right, w.offsetLeft + w.offsetWidth);
-        });
-        ln.center = (left + right) / 2;
-      });
-      lines.forEach(ln => {
-        const depth = readLine - (ln.top + lineH); // px the line sits ABOVE the read line
-        const s = depth <= 0 ? 1
-          : Math.max(HERO_MIN_SCALE, Math.pow(HERO_LINE_SCALE, depth / lineH));
-        ln.words.forEach(w => {
-          if (s === 1) { if (w.style.transform) w.style.transform = ''; return; }
-          const wc = w.offsetLeft + w.offsetWidth / 2;
-          const dx = (s - 1) * (wc - ln.center);
-          w.style.transform = 'translateX(' + dx.toFixed(2) + 'px) scale(' + s.toFixed(4) + ')';
-        });
-      });
-    }
-
-    // Answer taller than the 4-line focus band? (6em at line-height 1.5 —
-    // keep in sync with the mask in styles.css.) This is the trigger for the
-    // fixed-height window, the bottom fade, and the recede, so the effect
-    // starts the moment a 5th line exists.
-    function heroOverflowing() {
-      if (!heroAnswerEl) return false;
-      const fs = parseFloat(getComputedStyle(heroAnswerEl).fontSize) || 16;
-      return heroAnswerEl.scrollHeight > 6 * fs + 4;
-    }
-
-    function updateHeroOverflow() {
-      if (!heroAnswerEl) return;
-      heroAnswerEl.classList.toggle('is-overflowing', heroOverflowing());
-    }
-
-    // Scrolling is the reading gesture — just keep the recede in sync with
-    // the new scroll position, one pass per frame.
-    let heroRecedeScheduled = false;
-    function onHeroScroll() {
-      if (heroRecedeScheduled) return;
-      heroRecedeScheduled = true;
-      requestAnimationFrame(() => {
-        heroRecedeScheduled = false;
-        applyHeroRecede();
-      });
-    }
-
-    function clearHeroAnswer() {
-      if (!heroAnswering) return;
-      heroAnswering = false;
-      if (introTextEl) introTextEl.classList.remove('is-answering');
-      if (heroAnswerEl) { heroAnswerEl.remove(); heroAnswerEl = null; heroAnswerBody = null; }
-      if (window.chat && window.chat.reset) window.chat.reset();
-    }
-
-    function askInHero(text) {
-      if (!introTextEl || !introCopyEl) return;
-      if (window.chat && window.chat.busy && window.chat.busy()) return;
-      // Snap the hero back into view if the visitor had scrolled down.
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (window.chat && window.chat.init) window.chat.init();
-
-      heroAnswering = true;
-      introTextEl.classList.add('is-answering');
-
-      if (!heroAnswerEl) {
-        heroAnswerEl = document.createElement('div');
-        heroAnswerEl.className = 'hero-answer';
-        heroAnswerEl.setAttribute('aria-live', 'polite');
-        heroAnswerEl.addEventListener('scroll', onHeroScroll);
-        // Inner body holds the text: the outer element owns the scroll + fade
-        // mask, the body carries the per-line recede transforms. renderInto()
-        // always targets the body.
-        heroAnswerBody = document.createElement('div');
-        heroAnswerBody.className = 'hero-answer__body';
-        heroAnswerEl.appendChild(heroAnswerBody);
-        introCopyEl.insertAdjacentElement('afterend', heroAnswerEl);
-      }
-
-      heroAnswerEl.classList.remove('is-overflowing', 'is-in');
-      // The element is reused across questions — start each answer pinned to
-      // the first lines, not wherever the last read ended.
-      heroAnswerEl.scrollTop = 0;
-      heroAnswerBody.innerHTML =
-        '<span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span>';
-      requestAnimationFrame(() => heroAnswerEl && heroAnswerEl.classList.add('is-in'));
-
-      window.chat.ask(text, {
-        onDelta: (full) => { window.chat.renderInto(heroAnswerBody, full); updateHeroOverflow(); applyHeroRecede(); },
-        onDone:  () => { updateHeroOverflow(); applyHeroRecede(); },
-        onError: (msg) => { if (heroAnswerBody) heroAnswerBody.textContent = msg; }
-      });
     }
 
     function submitDockMessage() {
@@ -946,32 +861,43 @@
       if (!text || (window.chat && window.chat.busy && window.chat.busy())) return;
       chatDockInput.value = '';
       chatDock.classList.remove('is-expanded');
+      cancelDockIdle();
       if (chatDockSend) chatDockSend.disabled = true;
-      // Once the island is open it keeps the conversation, even if the visitor
-      // navigates back to a page where the hero would otherwise take over.
-      if (heroAvailable() && !dockThreadOpen) {
-        chatDockInput.blur();
-        askInHero(text);
-        return;
-      }
       openDockThread();
       if (!(window.chat && typeof window.chat.sendMessage === 'function')) return;
       // Focus stays in the field — the island is a conversation, not a handoff.
       Promise.resolve(
         window.chat.sendMessage(text, { transcript: chatDockThread, send: chatDockSend, welcome: false })
-      ).then(updateDockExpansion);
+      ).then(() => { updateDockExpansion(); armDockIdle(); });
+    }
+
+    // Any click on the collapsed pill that isn't a control puts the
+    // conversation back — the pill IS the resume affordance, the ⌃ button just
+    // makes that discoverable.
+    function resumeDockThread() {
+      if (dockThreadHasHistory && !dockThreadOpen) openDockThread();
     }
 
     if (chatDock) chatDock.addEventListener('click', e => {
-      if (e.target === chatDockInput) return;
       if (chatDockSend && chatDockSend.contains(e.target)) return;
       if (chatDockClose && chatDockClose.contains(e.target)) return;
       // Inside the thread, clicks are for reading and following links.
       if (chatDockThread && chatDockThread.contains(e.target)) return;
+      resumeDockThread();
+      if (e.target === chatDockInput) return;
       if (chatDockInput) chatDockInput.focus();
     });
+    if (chatDockResume) chatDockResume.addEventListener('click', resumeDockThread);
     if (chatDockInput) {
-      chatDockInput.addEventListener('input', updateDockExpansion);
+      chatDockInput.addEventListener('input', () => {
+        updateDockExpansion();
+        // Typing is the opposite of hesitating — pull the chips and restart
+        // the clock from this keystroke.
+        cancelDockIdle();
+        armDockIdle();
+      });
+      // Typing the next question is itself a resume — no need to reopen first.
+      chatDockInput.addEventListener('focus', resumeDockThread);
       chatDockInput.addEventListener('blur', () => {
         if (!chatDockInput.value.trim()) chatDock.classList.remove('is-expanded');
       });
@@ -984,18 +910,19 @@
     }
     if (chatDockSend) chatDockSend.addEventListener('click', submitDockMessage);
     if (chatDockClose) chatDockClose.addEventListener('click', closeDockThread);
-    // Click-away dismisses the island. It floats over live content rather than
-    // behind a backdrop, so a click anywhere else reads as "I'm done here".
+    // Click-away gets the island out of the way — it floats over live content
+    // rather than behind a backdrop, so a click elsewhere reads as "let me see
+    // the page". It only collapses; the conversation is still there.
     document.addEventListener('pointerdown', e => {
       if (!dockThreadOpen || !chatDock) return;
       if (chatDock.contains(e.target)) return;
-      closeDockThread();
+      collapseDockThread();
     });
     if (chatOverlayClose) chatOverlayClose.addEventListener('click', closeChatOverlay);
     if (chatOverlay) chatOverlay.addEventListener('click', e => { if (e.target === chatOverlay) closeChatOverlay(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && chatOverlayOpen) closeChatOverlay(); });
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && dockThreadOpen && !chatOverlayOpen) closeDockThread();
+      if (e.key === 'Escape' && dockThreadOpen && !chatOverlayOpen) collapseDockThread();
     });
     document.addEventListener('keydown', e => { if (e.key === 'Tab' && chatOverlayOpen) trapModalTab(chatOverlayPanel, e); });
 
@@ -1958,9 +1885,10 @@
       const prevMode = currentMode;
       currentMode = mode;
 
-      // Leaving the home hero drops any in-progress answer so it isn't stranded
-      // behind the intro copy when we come back.
-      if (mode !== 'life') clearHeroAnswer();
+      // The island floats over whatever's on screen, so it shouldn't stay
+      // expanded across a mode switch — but the conversation survives in the
+      // pill, ready to resume.
+      if (mode !== 'life') collapseDockThread();
       // Work / Bookshelf / Gear / App Stack / Places all take over the same
       // hero a section page uses, so a section page can't survive the switch.
       if (mode !== 'life') closeSectionPage();
@@ -4268,8 +4196,9 @@
     function gotoSite(route) {
       const hash = String(route || '').replace(/^https?:\/\/[^/]+/, '').replace(/^\/?#?/, '');
       closeChatOverlay();
-      closeDockThread();
-      clearHeroAnswer();
+      // Following a link out of an answer collapses the island but keeps it —
+      // reading the page it pointed at and then carrying on is the whole point.
+      collapseDockThread();
       if (currentMode !== 'life') setMode('life');
       if (location.hash.slice(1) === hash) handleHash();
       else location.hash = hash ? `#${hash}` : '';

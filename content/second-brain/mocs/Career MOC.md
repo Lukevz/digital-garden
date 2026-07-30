@@ -1,7 +1,7 @@
 ---
 title: Career MOC
 created: 2026-05-19
-updated: 2026-07-26
+updated: 2026-07-29
 tags: [careers, mocs]
 type: moc
 status: settled

@@ -7,4 +7,4 @@ type: source
 status: seed
 ---
 
-If work said go, the city I'd most want to move to is New York, though I'd be open to somewhere on the West Coast like Los Angeles too. That's a different itch from wanting to [[I want to live somewhere tropical for a year|live somewhere tropical for a year]], and it's all relative to the fact that [[Atlanta is home]]. Hub: [[Life MOC]].
+New York is my favorite city I've travelled to. I've only been a couple of times and I really do love that city. So if work said go, New York is the city I'd most want to move to, though I'd be open to somewhere on the West Coast like Los Angeles too. That's a different itch from wanting to [[I want to live somewhere tropical for a year|live somewhere tropical for a year]], and it's all relative to the fact that [[Atlanta is home]]. Hub: [[Life MOC]].

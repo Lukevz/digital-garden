@@ -26,8 +26,9 @@
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'fs';
 import { join, dirname, relative } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
+import { loadApiKey } from './gemini-key.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -391,21 +392,6 @@ function buildBm25(chunks) {
 
 // ---------- embeddings ----------
 
-async function loadApiKey() {
-  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-  const configPath = join(rootDir, 'gemini-config.js');
-  if (existsSync(configPath)) {
-    try {
-      const mod = await import(pathToFileURL(configPath).href);
-      const config = mod.default || mod;
-      return config.apiKey || config.GEMINI_API_KEY || null;
-    } catch (e) {
-      console.warn(`  ⚠ could not read gemini-config.js: ${e.message}`);
-    }
-  }
-  return null;
-}
-
 function loadEmbeddingCache() {
   if (!existsSync(outPath)) return new Map();
   try {
@@ -471,13 +457,39 @@ async function addEmbeddings(chunks) {
   return true;
 }
 
+// ---------- change detection ----------
+
+// A fingerprint of the index's *content*, ignoring `generatedAt` (which moves
+// every run) and embedding vectors (which are a pure function of chunk text).
+// Chunk hashes cover title/heading/body, so this changes exactly when a note or
+// a regenerated synthesis note changes — which is the signal the gap re-check
+// gates on.
+function contentSignature(chunks) {
+  const h = createHash('sha256');
+  for (const hash of chunks.map(c => c.hash).sort()) h.update(hash + '\n');
+  return h.digest('hex');
+}
+
+function previousSignature() {
+  if (!existsSync(outPath)) return null;
+  try {
+    const prev = JSON.parse(readFileSync(outPath, 'utf8'));
+    return contentSignature(prev.chunks || []);
+  } catch {
+    return null;
+  }
+}
+
 // ---------- main ----------
 
+// Returns { changed, noteCount, chunkCount }. `changed` is false only when the
+// rebuilt index is byte-for-byte equivalent in content to the one on disk.
 export async function indexVault() {
   if (!existsSync(vaultDir)) {
     console.warn('  ⚠ vault not found at content/second-brain — skipping index');
-    return;
+    return { changed: false, noteCount: 0, chunkCount: 0 };
   }
+  const before = previousSignature();
   const files = walkVault(vaultDir);
   const notes = loadNotes(files);
   const chunks = buildChunks(notes);
@@ -495,10 +507,24 @@ export async function indexVault() {
   };
   writeFileSync(outPath, JSON.stringify(index));
   const kb = Math.round(statSync(outPath).size / 1024);
-  console.log(`✓ brain-index.json: ${notes.length} notes → ${chunks.length} chunks (${kb} KB)`);
+  const after = contentSignature(chunks);
+  const changed = before !== after;
+  console.log(`✓ brain-index.json: ${notes.length} notes → ${chunks.length} chunks (${kb} KB)${changed ? '' : ' — content unchanged'}`);
+  return { changed, noteCount: notes.length, chunkCount: chunks.length };
 }
 
-// Run directly (not imported)
+// Run directly (not imported). The gap re-check runs against the index we just
+// wrote, so it must be imported lazily — retrieve.js memoizes the file on first
+// read and a static import here would be evaluated before writeFileSync.
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  indexVault().catch(e => { console.error('index-vault failed:', e); process.exit(1); });
+  indexVault()
+    .then(async ({ changed }) => {
+      if (process.argv.includes('--no-gap-check')) return;
+      const { resolveCoveredGaps } = await import('./check-gaps.js');
+      await resolveCoveredGaps({
+        indexChanged: changed,
+        dryRun: process.argv.includes('--dry-run')
+      });
+    })
+    .catch(e => { console.error('index-vault failed:', e); process.exit(1); });
 }
