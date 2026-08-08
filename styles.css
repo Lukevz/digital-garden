@@ -460,6 +460,16 @@
       z-index: 8;
       background: var(--bg);
       width: 100%;
+      /* The planet's geometry — diameter and top edge of its disc. Written here
+         every frame by heroParallax() (js/main.js), because both the planet
+         (.hero-glow-track) and the seam bleed (.hero-seam-bleed) are children
+         and need to inherit them. These defaults describe the RESTING frame — a
+         ~4.1-viewport-radius sphere whose crest clears the seam by 161px — not
+         a neutral value: js/main.js is a deferred module, so CSS paints first
+         and a placeholder disc would flash a wrong-sized blob across the hero
+         before the first measure lands. */
+      --p-d: 820vw;
+      --p-y: calc(124vh - 161px);
     }
 
     /* Soft fade above the section's hard edge so the opaque cover blends into
@@ -2176,33 +2186,77 @@
        viewport; since .hero-spacer is shorter than 100vh, the seam itself sits
        above the fold, leaving the aurora clear of the true bottom edge with a
        strip of real content peeking beneath it. */
+    /* ── The planet ──────────────────────────────────────────────────────────
+       ⚠ THE ONE RULE: the planet is a true circle in EVERY frame. Nothing here
+       ever scales the box non-uniformly, because that is the only way this can
+       come out stretched — and it did, twice, when the shape was the product of
+       a scaleX and a scaleY.
+
+       So the disc is not drawn by the element's dimensions at all. It's drawn
+       by a SQUARE gradient tile placed onto a fixed-size box:
+
+           background-size:     var(--p-d) var(--p-d)    ← the disc's diameter
+           background-position: 50% var(--p-y)           ← its top edge
+           background-repeat:   no-repeat
+
+       Inside that square tile every gradient is authored in 0-100% space, so
+       `ellipse 37% 37%` IS a circle and stays one at any size. heroParallax()
+       (js/main.js) writes just two numbers per frame — `--p-d` (diameter) and
+       `--p-y` (top edge, px from the box's top) — and the only transform the
+       box ever gets is a translate. A circle translated is still a circle.
+
+       That's also what makes the reveal legible: "the ends draw inward from
+       left and right" is not an aspect-ratio morph, it's --p-d shrinking. At
+       rest the sphere is ~8vw across — so vast that the sliver above the
+       horizon reads as a near-flat limb — and it recedes from there. The disc
+       was always round; you were only ever seeing a crop of it.
+
+       The box itself is viewport-sized (plus margin, so the blur's falloff
+       happens off-screen) and gets translated to wherever the disc currently
+       is. It's bottom-anchored at the horizon seam at rest, which is what
+       crops the huge sphere into a limb — background painting is clipped to
+       the element's box — and heroParallax() lifts it off that anchor as the
+       planet clears the horizon. */
     .hero-glow-track {
       position: absolute;
-      left: 0;
-      right: 0;
+      left: -12vw;
+      right: -12vw;
       bottom: 100%;
-      height: 19vh;
-      min-height: 130px;
-      max-height: 230px;
+      /* Tall enough to cover the viewport once the box stops being pinned to
+         the seam, with margin top and bottom so the blurred edges of the box
+         never land on screen. */
+      height: 124vh;
+      min-height: 620px;
       pointer-events: none;
       z-index: 0;
-      will-change: transform, opacity;
+      /* Fallback only — heroParallax() overwrites this inline every frame.
+         (The disc's own --p-d / --p-y defaults live on .below-fold, NOT here:
+         heroParallax() writes them to #belowFold so the seam bleed — a sibling
+         of this element — sees them too, and a declaration on this element
+         would beat the inherited value and freeze the planet at its default.) */
+      transform: translate3d(0, 0, 0);
+      will-change: transform;
+    }
+
+    /* Pure scroll runway for the locked reveal — no content, no background of
+       its own. heroParallax()'s measure() solves its height so the dock lands
+       on the Timeline header exactly as the lock's scroll budget runs out;
+       the value here is only what's used before that first measure. */
+    .planet-stage {
+      height: 180vh;
+      pointer-events: none;
     }
 
     .hero-glow {
       position: absolute;
-      left: 50%;
-      bottom: 0;
-      /* Overflow the viewport on both sides and grow taller than the track so the
-         blurred falloff happens OFF-SCREEN — the visible area gets the solid
-         colored core instead of the thin, prematurely-faded edge. */
-      width: 128vw;
-      height: 135%;
+      inset: 0;
       pointer-events: none;
-      transform: translateX(-50%);
-      /* Blur and animation stay on this outer compositor so the masked surface,
-         shimmer, and below-fold bleed remain one soft, moving atmosphere. */
-      filter: blur(16px) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
+      /* Blur stays on this outer compositor so the masked surface and the
+         shimmer remain one soft atmosphere. --glow-blur is written in real
+         screen px by heroParallax(): there's no scale transform to divide
+         through any more, and it's scaled with the disc so a 72px dock circle
+         isn't softened by the same 16px that suits a horizon-wide limb. */
+      filter: blur(var(--glow-blur, 16px)) saturate(calc(1 + (1 - var(--theme-blend)) * 0.5));
       opacity: calc(0.85 + var(--theme-blend) * 0.15);
       animation: heroGlowDrift 13s ease-in-out infinite, heroGlowShimmerPulse 6.2s ease-in-out infinite;
       will-change: transform, opacity;
@@ -2211,10 +2265,15 @@
     .hero-glow__surface {
       position: absolute;
       inset: 0;
-      /* Shape only the color source, then let the parent blur soften its edge.
-         The crest sits ~48px above the viewport sides, implying a huge sphere. */
-      -webkit-mask-image: radial-gradient(ellipse 62% 85% at 50% 115%, #000 0 96%, transparent 100%);
-      mask-image: radial-gradient(ellipse 62% 85% at 50% 115%, #000 0 96%, transparent 100%);
+      /* Shape only the color source, then let the parent blur soften its edge. */
+      -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 0 96%, transparent 100%);
+      mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 0 96%, transparent 100%);
+      -webkit-mask-size: var(--p-d, 1200px) var(--p-d, 1200px);
+      mask-size: var(--p-d, 1200px) var(--p-d, 1200px);
+      -webkit-mask-position: 50% var(--p-y, 50%);
+      mask-position: 50% var(--p-y, 50%);
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
       /* Five separate colored blobs (blue/teal/purple/violet/pink) staggered
          left-to-right and composited with `screen`, instead of one gradient
          sweeping through all the hues in sequence. Sequential stops mixed
@@ -2222,38 +2281,176 @@
          the transition zones; screen-blending separate blobs makes their
          overlaps brighten and combine instead. Light mode (--theme-blend → 0)
          leans each blob blue; dark mode (→ 1) resolves to the original
-         purple/pink. */
+         purple/pink.
+         The 4 outer blobs' weight is wrapped in --glow-outer-op so
+         heroParallax() can fade them out late, leaving only the centre blob's
+         hue — one clean colour by the time it's a small dot. */
       background:
-        radial-gradient(ellipse 46% 96% at 14% 100%, color-mix(in oklab, color-mix(in oklab, #4f86e0 calc((1 - var(--theme-blend)) * 100%), #8fb8ff calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 32% 100%, color-mix(in oklab, color-mix(in oklab, #46bda8 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 90%, transparent) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 50% 100%, color-mix(in oklab, color-mix(in oklab, #5674e0 calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 68% 100%, color-mix(in oklab, color-mix(in oklab, #9068e8 calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) 90%, transparent) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 86% 100%, color-mix(in oklab, color-mix(in oklab, #6188e6 calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 95%, transparent) 0%, transparent 75%);
+        radial-gradient(ellipse 37% 37% at 14% 50%, color-mix(in oklab, color-mix(in oklab, #4f86e0 calc((1 - var(--theme-blend)) * 100%), #8fb8ff calc(var(--theme-blend) * 100%)) calc(var(--glow-outer-op, 1) * 95%), transparent) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 32% 50%, color-mix(in oklab, color-mix(in oklab, #46bda8 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) calc(var(--glow-outer-op, 1) * 90%), transparent) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 50% 50%, color-mix(in oklab, color-mix(in oklab, #5674e0 calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 95%, transparent) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 68% 50%, color-mix(in oklab, color-mix(in oklab, #9068e8 calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) calc(var(--glow-outer-op, 1) * 90%), transparent) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 86% 50%, color-mix(in oklab, color-mix(in oklab, #6188e6 calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) calc(var(--glow-outer-op, 1) * 95%), transparent) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%));
       background-blend-mode: screen;
-      /* saturate() is dialed up in light mode (where --theme-blend → 0) so the
-         pastels keep their punch against a bright background; dark mode
-         (--theme-blend → 1) resolves to 1× / full opacity, exactly as before.
-         Lower blur (vs. the original 28px) plus the tighter per-blob falloff
-         above give the limb a more distinct edge instead of a wide soft fade. */
+      background-size: var(--p-d, 1200px) var(--p-d, 1200px);
+      background-position: 50% var(--p-y, 50%);
+      background-repeat: no-repeat;
     }
 
-    /* Extends the fade further down into the content below the seam, so the
-       glow melts smoothly into the dark background instead of ending in a
-       hard rectangular cutoff. Doesn't affect what's visible above the seam
-       (the part visible on first landing), only bleeds downward from it. */
-    .hero-glow::after {
-      content: '';
+    /* Surface detail — real lighting on a real sphere, cropped to the same
+       square tile as the surface so it lands exactly on the disc. Invisible at
+       rest (opacity 0, and buried in the blur regardless); heroParallax() fades
+       --glow-detail-op in and --glow-blur down together across the locked
+       reveal. This is the payload of the hold: it's what there is to look at
+       once the planet has stopped being weather and started being a place. */
+    .hero-glow__detail {
       position: absolute;
-      top: 100%;
+      inset: 0;
+      pointer-events: none;
+      opacity: var(--glow-detail-op, 0);
+      -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 0 96%, transparent 100%);
+      mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 0 96%, transparent 100%);
+      -webkit-mask-size: var(--p-d, 1200px) var(--p-d, 1200px);
+      mask-size: var(--p-d, 1200px) var(--p-d, 1200px);
+      -webkit-mask-position: 50% var(--p-y, 50%);
+      mask-position: 50% var(--p-y, 50%);
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      /* ── Flat 2D geometric, not rendered shading ──────────────────────────
+         Every stop below is a HARD stop (`<colour> 0 99%, transparent 100%`
+         style), so each feature is a shape with an edge rather than a soft
+         falloff. That's the whole idea: no specular bloom, no gradient
+         terminator, no fake volume — a disc, some bands, some circles, one
+         crescent of shadow with a defined edge. Flat design doesn't
+         foreshorten, which is convenient, because it means the latitude bands
+         can be plain horizontal bars.
+
+         ⚠ Still NOT concentric rings — an earlier pass used a
+         repeating-radial-gradient, which is invisible on a 72px dot but turns
+         the revealed sphere into a dartboard. Rings centred on the disc are the
+         one pattern a sphere can't have.
+
+         Layer order is paint order, first on top:
+           1  crescent terminator — a hard-edged offset circle
+           2  limb ring — a hard band around the rim
+           3  polar caps
+           4  spots / seas
+           5  latitude bands
+         All authored in the disc's own 0-100% square (see .hero-glow-track), so
+         they scale with the planet and stay put on it. Colours are pure
+         white/black alphas, never hues, so this reads correctly over both the
+         aurora palette and starfield-mode's sunset retint. */
+      background:
+        /* 1 — night side. Offset up-left, so what's left is a crescent of
+           shadow along the lower-right limb with a crisp terminator. */
+        radial-gradient(ellipse 76% 76% at 31% 26%, transparent 0 99.5%, color-mix(in oklab, #000 26%, transparent) 99.5% 100%),
+        /* 2 — limb ring: a flat darker band hugging the edge of the disc. */
+        radial-gradient(ellipse 50% 50% at 50% 50%, transparent 0 87%, color-mix(in oklab, #000 20%, transparent) 87% 100%),
+        /* 3 — polar caps */
+        radial-gradient(ellipse 30% 11% at 50% 5%, color-mix(in oklab, #fff 26%, transparent) 0 99%, transparent 99%),
+        radial-gradient(ellipse 24% 8% at 50% 96%, color-mix(in oklab, #fff 18%, transparent) 0 99%, transparent 99%),
+        /* 4 — spots. A big one on the third band, a couple of small ones. */
+        radial-gradient(ellipse 10% 10% at 64% 41%, color-mix(in oklab, #000 20%, transparent) 0 99%, transparent 99%),
+        radial-gradient(ellipse 5% 5% at 37% 60%, color-mix(in oklab, #fff 22%, transparent) 0 99%, transparent 99%),
+        radial-gradient(ellipse 3.5% 3.5% at 72% 67%, color-mix(in oklab, #000 16%, transparent) 0 99%, transparent 99%),
+        radial-gradient(ellipse 2.5% 2.5% at 45% 24%, color-mix(in oklab, #000 14%, transparent) 0 99%, transparent 99%),
+        /* 5 — latitude bands, hard edges, uneven widths so it doesn't read as
+           a test pattern. */
+        linear-gradient(to bottom,
+          transparent 0 8%,
+          color-mix(in oklab, #fff 10%, transparent) 8% 14%,
+          transparent 14% 21%,
+          color-mix(in oklab, #000 11%, transparent) 21% 31%,
+          transparent 31% 36%,
+          color-mix(in oklab, #fff 8%, transparent) 36% 44%,
+          transparent 44% 50%,
+          color-mix(in oklab, #000 13%, transparent) 50% 57%,
+          transparent 57% 64%,
+          color-mix(in oklab, #fff 7%, transparent) 64% 72%,
+          transparent 72% 79%,
+          color-mix(in oklab, #000 10%, transparent) 79% 88%,
+          transparent 88% 100%);
+      background-size: var(--p-d, 1200px) var(--p-d, 1200px);
+      background-position: 50% var(--p-y, 50%);
+      background-repeat: no-repeat;
+    }
+
+    /* ── The aurora: the one part that stays soft ────────────────────────────
+       At rest this is fully transparent, so the landing frame is exactly the
+       old one — a single blurred horizon limb. As heroParallax() brings the
+       planet into focus (--glow-blur → ~0), --aurora-op ramps this in on the
+       same curve. The softness reads as lifting OFF a solidifying planet and
+       becoming a separate glow riding above its limb, rather than as the
+       planet merely losing its blur.
+
+       Lives outside .hero-glow (whose blur is what disappears) but inside
+       .hero-glow-track, so it rides the same translate. Its own square tile is
+       placed by --a-d / --a-y, sized and lifted in proportion to the disc, so
+       it tracks the limb through the whole reveal without its own keyframes. */
+    .hero-aurora {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: var(--aurora-op, 0);
+      filter: blur(var(--aurora-blur, 22px)) saturate(calc(1 + (1 - var(--theme-blend)) * 0.4));
+      background:
+        radial-gradient(ellipse 22% 22% at 16% 50%, color-mix(in oklab, color-mix(in oklab, #4f86e0 calc((1 - var(--theme-blend)) * 100%), #8fb8ff calc(var(--theme-blend) * 100%)) 62%, transparent) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 33% 50%, color-mix(in oklab, color-mix(in oklab, #46bda8 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 58%, transparent) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 50% 50%, color-mix(in oklab, color-mix(in oklab, #5674e0 calc((1 - var(--theme-blend)) * 100%), #b48bff calc(var(--theme-blend) * 100%)) 66%, transparent) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 67% 50%, color-mix(in oklab, color-mix(in oklab, #9068e8 calc((1 - var(--theme-blend)) * 100%), #d88bff calc(var(--theme-blend) * 100%)) 58%, transparent) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 84% 50%, color-mix(in oklab, color-mix(in oklab, #6188e6 calc((1 - var(--theme-blend)) * 100%), #ffb0d0 calc(var(--theme-blend) * 100%)) 62%, transparent) 0%, transparent 100%);
+      background-blend-mode: screen;
+      background-size: var(--a-d, 1200px) var(--a-d, 1200px);
+      background-position: 50% var(--a-y, 0px);
+      background-repeat: no-repeat;
+      /* Slower and wider than .hero-glow's own drift, so the two layers never
+         look welded together once they've visually separated. */
+      animation: heroAuroraDrift 19s ease-in-out infinite;
+      will-change: opacity;
+    }
+
+    @keyframes heroAuroraDrift {
+      0%, 100% { transform: translateX(calc(-1 * var(--aurora-drift, 34px))); }
+      50%      { transform: translateX(var(--aurora-drift, 34px)); }
+    }
+
+    /* Lateral drift only — the old keyframes also breathed scaleX 0.965→1.04,
+       which is invisible on a wide horizon smear but makes a formed sphere
+       visibly pulse out of round. --glow-drift is wound down by heroParallax()
+       as the reveal progresses, so the planet drifts freely while it's still
+       atmosphere and sits still once it's a body you're looking AT. */
+    @keyframes heroGlowDrift {
+      0%   { transform: translateX(calc(-1 * var(--glow-drift, 26px))); }
+      50%  { transform: translateX(var(--glow-drift, 26px)); }
+      100% { transform: translateX(calc(-1 * var(--glow-drift, 26px))); }
+    }
+
+    /* Extends the fade down into the content below the seam, so the glow melts
+       smoothly into the background instead of ending in a hard rectangular
+       cutoff. Doesn't affect what's visible above the seam (the part visible on
+       first landing), only bleeds downward from it.
+
+       ⚠ Its own element, a sibling of .hero-glow-track anchored at the top of
+       #belowFold — it used to be .hero-glow::after, which worked only while the
+       glow box's bottom edge WAS the seam. The planet now translates away from
+       the seam during the reveal, and a bleed that travelled with it would
+       detach from the horizon it exists to melt into.
+       ⚠ It also has to carry its own blur and opacity now. Inside .hero-glow it
+       inherited both; standing alone and unblurred, these gradients render as a
+       flat coloured rectangle with a hard top edge sitting across the seam. */
+    .hero-seam-bleed {
+      position: absolute;
+      top: 0;
       left: 0;
       right: 0;
-      /* Taller than the original (75vh / 620px) with the fade pushed out to
-         92% instead of 68%, so the color trails off gradually across most of
-         the section instead of running out partway and leaving a flat black
-         gap before the real background shows through — trimmed back down
-         from a first pass that ran a bit too tall. */
+      pointer-events: none;
+      z-index: 0;
       height: 85vh;
       max-height: 680px;
+      filter: blur(16px);
+      /* Doesn't make sense once the planet has left the horizon — heroParallax()
+         fades this out via --glow-trail-op early in the reveal. */
+      opacity: calc(var(--glow-trail-op, 1) * (0.85 + var(--theme-blend) * 0.15));
       background:
         radial-gradient(ellipse 50% 100% at 18% 0%, color-mix(in oklab, color-mix(in oklab, #4f86e0 calc((1 - var(--theme-blend)) * 100%), #8fb8ff calc(var(--theme-blend) * 100%)) 32%, transparent) 0%, transparent 88%),
         radial-gradient(ellipse 50% 100% at 36% 0%, color-mix(in oklab, color-mix(in oklab, #46bda8 calc((1 - var(--theme-blend)) * 100%), #63e6a8 calc(var(--theme-blend) * 100%)) 30%, transparent) 0%, transparent 88%),
@@ -2263,15 +2460,20 @@
       background-blend-mode: screen;
     }
 
-    /* Thin shimmering highlight tracing the glow's seam — like sunlight
-       sliding along the hard limb of a planet. */
+    /* Thin shimmering highlight tracing the limb — like sunlight sliding along
+       the hard edge of a planet. Pinned just under the disc's crest via the
+       same --p-y the surface uses; its width stays viewport-relative rather
+       than disc-relative, because at rest the disc is ~8vw across and a
+       proportional arc would be miles off screen. Fades out early via
+       --glow-trail-op, so it's a landing-frame detail that never has to
+       survive the reveal. */
     .hero-glow::before {
       content: '';
       position: absolute;
-      top: 33%;
-      left: 8%;
-      right: 8%;
-      height: 18%;
+      top: calc(var(--p-y, 50%) + 6px);
+      left: 14%;
+      right: 14%;
+      height: clamp(28px, 4.5vh, 60px);
       border-top: 2px solid color-mix(in oklab, #fff 75%, transparent);
       border-radius: 50% 50% 0 0 / 100% 100% 0 0;
       -webkit-mask-image: linear-gradient(90deg, transparent 24%, #000 50%, transparent 76%);
@@ -2280,14 +2482,9 @@
       mask-size: 260% 100%;
       -webkit-mask-position: 50% 0;
       mask-position: 50% 0;
-      opacity: calc(0.4 + var(--theme-blend) * 0.3);
+      opacity: calc((0.4 + var(--theme-blend) * 0.3) * var(--glow-trail-op, 1));
     }
 
-    @keyframes heroGlowDrift {
-      0%   { transform: translateX(calc(-50% - 26px)) scaleX(0.965); }
-      50%  { transform: translateX(calc(-50% + 26px)) scaleX(1.04); }
-      100% { transform: translateX(calc(-50% - 26px)) scaleX(0.965); }
-    }
 
     /* Subtle brightness/opacity flicker layered on top of the drift, on its
        own shorter period — reads as the aurora shimmering rather than just
@@ -2315,7 +2512,8 @@
     @media (prefers-reduced-motion: reduce) {
       .hero-glow,
       .hero-glow::before,
-      .hero-glow-track::after {
+      .hero-aurora,
+      .hero-seam-bleed::after {
         animation: none;
       }
     }
@@ -2971,12 +3169,17 @@
       width: auto;
       height: 2em;
       aspect-ratio: 1;
-      border-radius: 22%;
+      border-radius: 50%;
       object-fit: cover;
       object-position: center top;
       vertical-align: -0.4em;
       margin: 0 0.2em 0 0.35em;
       box-shadow: inset 0 0 0 1px var(--glass-border);
+      transition: opacity 0.15s ease;
+      /* .intro / .clock-hero-wrap are pointer-events:none so hero copy doesn't
+         block the starfield canvas underneath — opt the avatar back in so it
+         can receive the hover swap. */
+      pointer-events: auto;
     }
 
     body.work-mode .avatar--inline {
@@ -3491,20 +3694,40 @@
        aurora's .hero-glow: separate colored blobs staggered left-to-right so
        their overlaps brighten into warm in-between tones instead of the
        muddy blend a single multi-stop gradient produces. Retints the hero
-       glow away from the aurora pastels. */
+       glow away from the aurora pastels.
+       ⚠ Geometry must match the base rule exactly (37% 37% at X% 50%) — these
+       are painted into the same square disc tile, and a stale `46% 96% at X%
+       100%` here would bottom-anchor the colour inside a centre-anchored mask
+       and leave the whole upper half of the planet unpainted. */
     body.starfield-mode .hero-glow__surface {
+      /* Outer 4 blobs' alpha wrapped in --glow-outer-op (see base rule above)
+         so only the center hue survives once heroParallax() has fully docked
+         the circle. */
       background:
-        radial-gradient(ellipse 46% 96% at 14% 100%, rgba(222,190,148,0.55) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 32% 100%, rgba(214,142,74,0.5) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 50% 100%, rgba(192,148,104,0.5) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 68% 100%, rgba(196,108,96,0.45) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 86% 100%, rgba(150,96,104,0.4) 0%, transparent 75%);
+        radial-gradient(ellipse 37% 37% at 14% 50%, rgba(222,190,148,calc(var(--glow-outer-op, 1) * 0.55)) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 32% 50%, rgba(214,142,74,calc(var(--glow-outer-op, 1) * 0.5)) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 50% 50%, rgba(192,148,104,0.5) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 68% 50%, rgba(196,108,96,calc(var(--glow-outer-op, 1) * 0.45)) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%)),
+        radial-gradient(ellipse 37% 37% at 86% 50%, rgba(150,96,104,calc(var(--glow-outer-op, 1) * 0.4)) 0 var(--blob-solid, 0%), transparent var(--blob-fall, 78%));
       background-blend-mode: screen;
     }
     body.starfield-mode .hero-glow {
-      filter: blur(26px) saturate(1);
+      filter: blur(var(--glow-blur, 26px)) saturate(1);
     }
-    body.starfield-mode .hero-glow::after {
+    /* Warm sunset haze to match the limb retint above. Brighter and cooler at
+       the edges than the sphere itself so it still reads as light ABOVE the
+       horizon rather than more of the horizon. */
+    body.starfield-mode .hero-aurora {
+      filter: blur(var(--aurora-blur, 22px)) saturate(1.05);
+      background:
+        radial-gradient(ellipse 22% 22% at 16% 50%, rgba(236,205,166,0.5) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 33% 50%, rgba(226,158,90,0.46) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 50% 50%, rgba(206,162,118,0.5) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 67% 50%, rgba(208,122,110,0.44) 0%, transparent 100%),
+        radial-gradient(ellipse 22% 22% at 84% 50%, rgba(166,112,120,0.4) 0%, transparent 100%);
+      background-blend-mode: screen;
+    }
+    body.starfield-mode .hero-seam-bleed {
       /* Fade pushed out to 88% (was 62%) so the color trails off gradually
          instead of running out partway and leaving flat black beneath it. */
       background:
@@ -3520,17 +3743,16 @@
        In dark mode the bottom-of-hero darkness comes free from the below-fold's
        dark background; in light mode that curtain is white, so the limb washed out
        to nothing at the very bottom. Rather than tint the curtain (which then scrolls
-       up and lingers behind the content), this rides the GLOW layer — a child of the
-       parallax track — so it rises slower than the content AND fades out on scroll
-       exactly like the aurora (glowTrack opacity/transform in heroParallax, main.js),
-       clearing well before the timeline reveals (progress 0.62 > glow-gone 0.55). A
-       soft blurred dusk band, darkest across the visible bottom strip, keyed to
-       (1 − theme-blend) so it's fully absent in dark mode and fades through the wipe.
-       Overflows the sides so its blurred edge falls off-screen. */
-    body.starfield-mode .hero-glow-track::after {
+       up and lingers behind the content), this hangs off the seam bleed — which is
+       anchored to the horizon rather than to the planet — so it fades out early via
+       --glow-trail-op as the reveal begins (heroParallax(), main.js), well before the
+       planet leaves the horizon. A soft blurred dusk band, darkest across the visible
+       bottom strip, keyed to (1 − theme-blend) so it's fully absent in dark mode and
+       fades through the wipe. Overflows the sides so its blurred edge falls off-screen. */
+    body.starfield-mode .hero-seam-bleed::after {
       content: '';
       position: absolute;
-      top: 100%;
+      top: 0;
       left: -14vw;
       right: -14vw;
       height: 56vh;
@@ -3544,8 +3766,7 @@
       opacity: calc(1 - var(--theme-blend));
       /* Slow vertical breathing so the horizon reads as "alive" and gently beckons
          upward — a subtle scroll cue in light mode (where this band is what's visible;
-         the aurora above has its own drift). transform only, so it composes with the
-         parent track's scroll-lag transform without fighting it. */
+         the aurora above has its own drift). */
       animation: heroDuskDrift 8.5s ease-in-out infinite;
     }
 
@@ -3624,7 +3845,7 @@
       width: 2.4em;
       object-fit: cover;
       object-position: center 28%;
-      border-radius: 22%;
+      border-radius: 50%;
       box-shadow: inset 0 0 0 1px var(--glass-border);
     }
 
@@ -3683,9 +3904,9 @@
     }
     body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
     body.starfield-mode .clock-hero-wrap .intro-greeting-bar .avatar--inline {
-      height: clamp(84px, 13vw, 128px);
-      width: clamp(84px, 13vw, 128px);
-      border-radius: 22%;
+      height: clamp(110px, 17vw, 166px);
+      width: clamp(110px, 17vw, 166px);
+      border-radius: 50%;
     }
     body.starfield-mode .clock-hero-wrap { margin-bottom: 18px; }
 
@@ -3750,10 +3971,12 @@
       width: 44ch;
       max-width: 100%;
     }
-    /* Avatar = exactly 3 line-boxes tall so its top/bottom flush with the copy. */
+    /* Avatar is scaled up from the exact 3-line match (--avatar-scale) so it reads
+       bigger than the copy block beside it; top stays flush, bottom overhangs. */
     body.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-bar .avatar--inline {
-      height: calc(var(--hero-lines) * var(--hero-copy-lh) * var(--hero-copy-size));
-      width: calc(var(--hero-lines) * var(--hero-copy-lh) * var(--hero-copy-size));
+      --avatar-scale: 1.3;
+      height: calc(var(--hero-lines) * var(--hero-copy-lh) * var(--hero-copy-size) * var(--avatar-scale));
+      width: calc(var(--hero-lines) * var(--hero-copy-lh) * var(--hero-copy-size) * var(--avatar-scale));
       aspect-ratio: auto;
       margin: 0;
       vertical-align: top;

@@ -594,6 +594,15 @@
     const overflowPanel = document.getElementById('overflowPanel');
     const overflowItems = overflowPanel ? overflowPanel.querySelectorAll('.overflow-item') : [];
     const avatarImg    = document.getElementById('avatarImg');
+    if (avatarImg) {
+      const avatarDefaultSrc = avatarImg.dataset.avatarDefault || avatarImg.src;
+      const avatarHoverSrc   = avatarImg.dataset.avatarHover;
+      if (avatarHoverSrc) {
+        new Image().src = avatarHoverSrc; // preload so the hover swap is instant
+        avatarImg.addEventListener('mouseenter', () => { avatarImg.src = avatarHoverSrc; });
+        avatarImg.addEventListener('mouseleave', () => { avatarImg.src = avatarDefaultSrc; });
+      }
+    }
     const launchpad    = document.querySelector('.launchpad');
     const portfolioGrid = document.getElementById('portfolioGrid');
     const heading      = document.querySelector('.intro-headline-content') || document.querySelector('h1');
@@ -4242,41 +4251,152 @@
       const belowFold = document.getElementById('belowFold');
       const glowTrack = document.querySelector('.hero-glow-track');
       const heroEl = document.getElementById('heroSection');
+      const timelineTitle = document.getElementById('homeTimelineTitle');
+      const stage = document.getElementById('planetStage');
       if (!belowFold || !glowTrack) return;
 
       const reduced = typeof matchMedia === 'function'
         && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       // ── Tunables ──
-      const GLOW_SPEED    = 0.5;   // glow rises at this fraction of content speed (<1 ⇒ content is faster)
-      const GLOW_FADE_END = 0.55;  // scroll progress (fraction of one viewport) by which the glow is fully gone —
-                                   // once the top of the body reaches ~mid-viewport, the aurora has cleared out
       const CONTENT_BOOST = 0;     // extra content speed-up (0 = native). Small values only — >0 can poke content above the seam.
       // Hero greeting fades out as you scroll off the hero. (The top nav no
       // longer waits for it — it's pinned visible from load, see --nav-reveal
       // in styles.css.) Values are UNCAPPED scroll progress (scrollY /
       // viewport-height): 0 = at the top, 1 = one screen down (the body has
-      // just covered the hero). NB: driven off scroll progress, NOT the glow
-      // limb — the glow lags behind the scroll.
+      // just covered the hero).
       const GREET_OUT_START = 0.50; // greeting begins fading
       const GREET_OUT_END   = 0.74; // greeting fully gone
+
+      // ── The planet ──────────────────────────────────────────────────────
+      // Two acts, both scrubbed off raw scrollY (reversible, never autoplayed):
+      //
+      //   ACT 1 — LOCKED REVEAL. The planet leaves the horizon and locks to the
+      //     middle of the viewport, where it stays for LOCK_VH viewports of
+      //     scroll while its edges draw inward from left and right into a
+      //     massive sphere that comes into focus as it forms. #planetStage is
+      //     empty document height that buys this act its scroll length; the
+      //     "lock" is this function translating the planet with the viewport,
+      //     not position:sticky (the track already takes a per-frame transform,
+      //     so it's free, and it dodges sticky's containing-block traps).
+      //
+      //   ACT 2 — DOCK. The lock releases, the sphere recedes to a DOCK_SIZE
+      //     circle and settles DOCK_GAP above the Timeline header.
+      //
+      // ⚠ THE INVARIANT: the planet is a perfect circle in every frame. Its
+      // geometry is TWO numbers — a diameter and a top edge — handed to CSS as
+      // --p-d / --p-y, which place a square gradient tile (see .hero-glow-track
+      // in styles.css). There is no scaleX/scaleY anywhere; earlier versions
+      // derived the shape from a pair of independent scales and it came out
+      // stretched, because two curves were describing one circle. The resting
+      // limb is not a squashed disc — it's a sphere REST_R_VW viewports wide
+      // that happens to be cropped by the horizon, and "the ends draw inward"
+      // is nothing more exotic than that diameter shrinking.
+      const DOCK_SIZE    = 72;   // px — the docked circle
+      const DOCK_GAP     = 32;   // px between the docked circle's bottom edge and the header's top
+      const NAV_CLEAR_PX = 88;   // fixed #topBar height — matches --tl-pin-top in styles.css
+
+      const LOCK_ANCHOR = 0.62;  // the seam's viewport position (× vh) when the lock takes hold
+      const LOCK_VH     = 1.25;  // viewports of scroll the planet stays locked for
+      const DOCK_VH     = 0.75;  // viewports the shrink-and-settle act gets after release
+      // prefers-reduced-motion still gets the scrub (it's the user's own scroll,
+      // not autoplay) but not a two-viewport hold of empty runway to drag past.
+      const REDUCED_LOCK_VH = 0.2;
+
+      // The resting sphere, sized so the sliver above the horizon matches the
+      // limb that was there before any of this: a radius of REST_R_VW × the
+      // viewport width puts ~44px of drop between the crest and the screen
+      // edges, which is what the old ellipse drew.
+      const REST_R_VW      = 4.1;
+      // Crest height above the seam at rest, as a fraction of the ORIGINAL
+      // 19vh glow track — so the landing frame is unchanged by the much taller
+      // box the reveal needs.
+      const REST_TRACK_VH  = 0.19, REST_TRACK_MIN = 130, REST_TRACK_MAX = 230;
+      const REST_CREST_FRAC = 0.70 * 1.35; // (mask ry 85% − centre offset 15%) × the old 135% height
+
+      // Sub-phases inside the lock (all in lockT, 0 → 1 across LOCK_VH).
+      const RISE_START   = 0.00, RISE_END   = 0.20; // hands the planet over from the page to the viewport
+      const DRAW_START   = 0.04, DRAW_END   = 0.86; // the long one: the sphere recedes, edges drawing in
+      const SETTLE_START = 0.55, SETTLE_END = 0.96; // the crest lifts so the whole disc clears the bottom
+      const FOCUS_START  = 0.34, FOCUS_END  = 0.88; // blur falls away
+      const DETAIL_START = 0.38, DETAIL_END = 0.94; // banding/terminator/limb-darkening fade up
+      const AURORA_START = 0.32, AURORA_END = 0.86; // the softness lifts off and becomes the aurora
+      const TRAIL_END    = 0.18;                    // seam bleed + shimmer are gone by here
+      // Sub-phases inside the dock act (dockT).
+      const SIMPLIFY_START = 0.10, SIMPLIFY_END = 0.75; // outer blobs collapse to the centre hue
+      const TIMELINE_START = 0.45, TIMELINE_END = 1.0;
+      const DOCK_Z_THRESHOLD = 0.8;
+
+      const BASE_BLUR_PX   = 16;   // matches .hero-glow's own blur at rest
+      const BLUR_FLOOR     = 0.03; // fraction of BASE_BLUR left once fully in focus
+      const AURORA_LIFT     = 0.12; // aurora centre above the crest, × the disc diameter
+      const AURORA_DIA      = 1.05; // aurora tile size, × the disc diameter
+      const AURORA_BLUR_FRAC = 0.05; // aurora blur, × the disc diameter (it never sharpens)
+      const DRIFT_REST_PX  = 26, DRIFT_LOCKED_PX = 5; // lateral drift, wound down as it forms
 
       // NB: the dot-grid "genie" collapse (bottom-up sequential shrink into the
       // glow) is driven per-cell inside grid.js, not here — a single CSS transform
       // can't stagger rows.
 
       const inner   = CONTENT_BOOST > 0 ? belowFold.querySelector('.below-fold-inner') : null;
+      const glowEl   = glowTrack && glowTrack.querySelector('.hero-glow');
+      const auroraEl = glowTrack && glowTrack.querySelector('.hero-aurora');
+      const bleedEl  = belowFold && belowFold.querySelector('.hero-seam-bleed');
+
+      // ── Frame-cost guards ────────────────────────────────────────────────
+      // Custom-property writes invalidate style for the whole subtree, so
+      // rewriting an unchanged value still costs a recalc. Everything below
+      // goes through setVar(), which drops no-ops.
+      const lastVars = Object.create(null);
+      function setVar(name, value) {
+        if (lastVars[name] === value) return;
+        lastVars[name] = value;
+        belowFold.style.setProperty(name, value);
+      }
+      // filter: blur() on a viewport-sized layer is the single most expensive
+      // thing here, and it's pure waste once the planet is in focus (sub-px) or
+      // while a layer is fully transparent. Toggled only on state change.
+      let blurOn = null, auroraOn = null, bleedOn = null;
+      function setDisplay(el, on, cache) {
+        if (!el || on === cache) return cache;
+        el.style.display = on ? '' : 'none';
+        return on;
+      }
+
       let ticking = false;
+      // All cached by measure(); the scroll handler only reads them.
+      let vhCache = 0, vwCache = 0;
+      let seamDoc = 0;        // document-Y of the hero/below-fold seam — the horizon
+      let boxH = 0;           // .hero-glow-track's rendered height
+      let lockStart = 0, lockEnd = 0, dockEnd = 0;  // scrollY breakpoints for the two acts
+      let restR = 0;          // resting sphere radius, px (enormous — it's cropped by the horizon)
+      let restCrest = 0;      // px the resting crest sits above the seam
+      let revealR = 0;        // radius of the fully-revealed sphere, px
+      let dockCenterDoc = 0;  // document-Y of the docked circle's centre
+      let liftedZ = false;    // cached so the z-index write only happens on state change
 
       function navPinnedOpen() {
         return reduced
           // Section pages hide #belowFold, so its rect would read as "scrolled
-          // to the top" and drive the aurora/greeting off bogus numbers.
+          // to the top" and drive the greeting/timeline reveal off bogus numbers.
           || document.body.classList.contains('section-mode')
           || currentMode === 'places'
           || currentMode === 'bookshelf'
           || currentMode === 'gear'
           || currentMode === 'appstack';
+      }
+
+      // Same section/mode gate as navPinnedOpen(), WITHOUT the reduced-motion
+      // check — the dock animation is a direct, reversible scrub of the user's
+      // own scroll input (not an autoplaying effect), so it stays live under
+      // prefers-reduced-motion: reduce. Only the ambient drift/shimmer keyframes
+      // (killed via the existing @media rule in styles.css) are motion-gated.
+      function homeDockActive() {
+        return !(document.body.classList.contains('section-mode')
+          || currentMode === 'places'
+          || currentMode === 'bookshelf'
+          || currentMode === 'gear'
+          || currentMode === 'appstack');
       }
 
       function smoothstep(t) {
@@ -4288,9 +4408,9 @@
         document.body.style.setProperty('--intro-greeting-reveal', clamped.toFixed(3));
       }
 
-      // The timeline ("Timeline") holds hidden until the aurora has cleared,
-      // then fades in as it rises into view — so it doesn't show through the
-      // hero glow. Read as opacity via --timeline-reveal on #homeTimeline.
+      // The timeline ("Timeline") holds hidden until the planet has nearly
+      // finished docking, then fades in as it settles — so it doesn't show
+      // through the glow. Read as opacity via --timeline-reveal on #homeTimeline.
       function setTimelineReveal(reveal) {
         const clamped = Math.max(0, Math.min(1, reveal));
         document.body.style.setProperty('--timeline-reveal', clamped.toFixed(3));
@@ -4303,46 +4423,283 @@
         return smoothstep((p - start) / (end - start));
       }
 
+      // Sums offsetTop up through the offsetParent chain — an element's
+      // static/in-flow document-Y, unaffected by position:sticky's runtime
+      // scroll-driven shift (unlike getBoundingClientRect(), which would read
+      // the already-stuck position once .tl-pin/.tl-pin-head engage).
+      function docTop(el) {
+        let top = 0;
+        let node = el;
+        while (node) {
+          top += node.offsetTop || 0;
+          node = node.offsetParent;
+        }
+        return top;
+      }
+
+      // Caches everything that only changes on load/resize/layout shifts —
+      // the scroll handler itself just reads these cached numbers every frame.
+      function measure() {
+        // ⚠ Cached here and ONLY here. update() used to re-read the hero's rect
+        // and the seam's rect every frame — two forced synchronous layouts per
+        // scroll frame, interleaved with the style writes from the frame
+        // before, which is a large part of why the scrub felt jittery. Nothing
+        // in update() touches the layout any more; the seam's viewport position
+        // is just seamDoc − scrollY.
+        const vh = (heroEl && heroEl.getBoundingClientRect().height)
+          || window.innerHeight || document.documentElement.clientHeight;
+
+        const vw = window.innerWidth || document.documentElement.clientWidth;
+        vhCache = vh;
+        vwCache = vw;
+        seamDoc = docTop(belowFold);
+        boxH = glowTrack.getBoundingClientRect().height;
+
+        // The landing frame is defined against the ORIGINAL 19vh track, not the
+        // much taller one the reveal needs, so growing the box to make room for
+        // the massive sphere can't shift the horizon you first see.
+        const refH = Math.min(REST_TRACK_MAX, Math.max(REST_TRACK_MIN, vh * REST_TRACK_VH));
+        restCrest = REST_CREST_FRAC * refH;
+        restR = REST_R_VW * vw;
+        // Never larger than the box that has to contain it, or the disc gets
+        // clipped by its own element instead of by the horizon.
+        revealR = Math.min(boxH * 0.36, vw * 0.37, vh * 0.36);
+
+        // Act boundaries in scrollY. lockStart is keyed off the seam (which sits
+        // above the stage, so it doesn't move when the stage height changes) —
+        // that's what makes the stage solve below non-circular.
+        const lockVh = reduced ? REDUCED_LOCK_VH : LOCK_VH;
+        lockStart = Math.max(0, seamDoc - vh * LOCK_ANCHOR);
+        lockEnd   = lockStart + vh * lockVh;
+        dockEnd   = lockEnd + vh * DOCK_VH;
+
+        // Where the docked circle should be on screen when the whole thing
+        // finishes: centred in the viewport below the fixed top bar. Anything
+        // else and the planet completes its arrival somewhere you can't see —
+        // which, with the old flat-lead-plus-floor range, is exactly what
+        // happened: it finished up behind #topBar.
+        const landingTop = NAV_CLEAR_PX + Math.max(0, (vh - NAV_CLEAR_PX - DOCK_SIZE) / 2);
+
+        // Solve #planetStage's height so the Timeline header arrives exactly
+        // where dockEnd needs it. The header's document position is linear in
+        // the stage height (the stage is a plain block above it), so one
+        // correction is exact rather than iterative.
+        if (stage && timelineTitle) {
+          const wantHeaderTop = dockEnd + landingTop + DOCK_GAP + DOCK_SIZE;
+          const haveHeaderTop = docTop(timelineTitle);
+          const curH = stage.offsetHeight;
+          const nextH = Math.max(0, Math.round(curH + (wantHeaderTop - haveHeaderTop)));
+          if (nextH !== curH) stage.style.height = nextH + 'px';
+        }
+
+        const headerTop = timelineTitle ? docTop(timelineTitle) : seamDoc;
+        dockCenterDoc = headerTop - DOCK_GAP - DOCK_SIZE / 2;
+      }
+
       function update() {
         ticking = false;
 
-        if (navPinnedOpen()) {
-          setGreetingReveal(0);
-          setTimelineReveal(1);
-          return;
+        // These two only disagree when prefers-reduced-motion is the SOLE
+        // reason navPinnedOpen() is true (i.e. an active home view) — every
+        // other condition (section-mode, non-home currentMode) trips both.
+        // navPinnedOpen() still gates greeting-fade/the travel-based math
+        // below exactly as before; dockActive is what lets the scroll-scrub
+        // dock animation keep running under reduced motion (§5 of the plan —
+        // it's a direct scrub of the user's own scroll input, not autoplay).
+        const pinnedOpen = navPinnedOpen();
+        const dockActive = homeDockActive();
+
+        setGreetingReveal(0); // overridden below once we're in the normal (non-pinned) path
+        if (!dockActive) setTimelineReveal(1); // non-home modes: dock block below won't run to set this itself
+
+        if (!pinnedOpen) {
+          // "One screen" of scroll is the HERO's own rendered height, not the
+          // raw window height — they're only the same when the hero is exactly
+          // 100vh. With a shorter hero (variant B, see body.hero-v2 in
+          // styles.css) the below-fold seam sits well above the window's
+          // bottom at scroll 0, and keying this off window.innerHeight read
+          // that as "already scrolled partway," mistiming the greeting → nav
+          // hand-off before the user ever scrolled.
+          // Both cached by measure() — see the note there. The seam's viewport
+          // position is derived from its cached document-Y rather than read
+          // back, so this whole path is layout-free.
+          const vh = vhCache || window.innerHeight;
+          const seam = seamDoc - window.scrollY;               // viewport-y of the gradient seam
+          const travel = Math.max(0, vh - seam);               // px the seam has risen from the bottom
+          const scrollProgress = vh > 0 ? travel / vh : 0;     // uncapped — drives the greeting → nav hand-off
+
+          if (inner) {
+            inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;
+          }
+
+          const greetOut = fadeBetween(scrollProgress, GREET_OUT_START, GREET_OUT_END);
+          setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : (1 - greetOut));
         }
 
-        // "One screen" of scroll is the HERO's own rendered height, not the raw
-        // window height — they're only the same when the hero is exactly 100vh.
-        // With a shorter hero (variant B, see body.hero-v2 in styles.css) the
-        // below-fold seam sits well above the window's bottom at scroll 0, and
-        // keying this off window.innerHeight read that as "already scrolled
-        // partway," fading the aurora out (and mistiming the greeting/nav
-        // hand-off) before the user ever scrolled.
-        const vh = (heroEl && heroEl.getBoundingClientRect().height)
-          || window.innerHeight || document.documentElement.clientHeight;
-        const seam = belowFold.getBoundingClientRect().top; // viewport-y of the gradient seam
-        const travel = Math.max(0, vh - seam);              // px the seam has risen from the bottom
-        const progress = vh > 0 ? Math.min(1, travel / vh) : 0;
-        const scrollProgress = vh > 0 ? travel / vh : 0;    // uncapped — drives the greeting → nav hand-off
+        if (dockActive && lockEnd > lockStart) {
+          const s = window.scrollY;
+          const vh = vhCache || window.innerHeight;
 
-        // Hold the glow back so the content overtakes it (rises at GLOW_SPEED).
-        const lag = travel * (1 - GLOW_SPEED);
-        glowTrack.style.transform = `translate3d(0, ${lag.toFixed(2)}px, 0)`;
-        // Fully clear the glow by the time the body's top reaches ~mid-viewport,
-        // so the aurora is gone before the nav swaps in rather than lingering.
-        const glowFade = smoothstep(Math.min(1, progress / GLOW_FADE_END));
-        glowTrack.style.opacity = (1 - glowFade).toFixed(3);
+          const lockT = Math.max(0, Math.min(1, (s - lockStart) / (lockEnd - lockStart)));
+          const dockT = dockEnd > lockEnd
+            ? Math.max(0, Math.min(1, (s - lockEnd) / (dockEnd - lockEnd)))
+            : (s >= lockEnd ? 1 : 0);
 
-        if (inner) {
-          inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;
+          const riseT   = fadeBetween(lockT, RISE_START, RISE_END);
+          const drawT   = fadeBetween(lockT, DRAW_START, DRAW_END);
+          const settleT = fadeBetween(lockT, SETTLE_START, SETTLE_END);
+          const focusT  = fadeBetween(lockT, FOCUS_START, FOCUS_END);
+          const detailT = fadeBetween(lockT, DETAIL_START, DETAIL_END);
+          const auroraT = fadeBetween(lockT, AURORA_START, AURORA_END);
+
+          // ⚠ TWO dock curves, not one, because position and size need opposite
+          // things at the release point and sharing a curve visibly jolts.
+          //   • Position: while locked, the planet's on-screen velocity is 0
+          //     (it moves WITH the viewport). A smoothstep starts at zero
+          //     document-space velocity, i.e. instantly frozen in the page —
+          //     so on-screen it snapped from 0 to full scroll speed. dockPos is
+          //     the unique cubic with f(0)=0, f(1)=1, f'(0)=1, f'(1)=0; since
+          //     the dock slot is always exactly (dockEnd − lockEnd) below the
+          //     release point, slope 1 here means "keeps pace with the
+          //     viewport", so the planet lets the page carry it away smoothly
+          //     instead of being dropped.
+          //   • Size: was steady at the release (drawT has finished easing), so
+          //     it needs the opposite — zero initial slope, or the shrink
+          //     starts with a snap. Plain smoothstep.
+          const dockPos  = dockT + dockT * dockT - dockT * dockT * dockT;
+          const dockSize = smoothstep(dockT);
+
+          // ── Radius. ONE number, and the disc is round by construction. This
+          // shrink IS "the ends draw inward from left and right": at rest the
+          // sphere is wider than the screen (which is why its top edge reads as
+          // a near-flat horizon), and as it recedes its limb sweeps in from
+          // both margins until the whole disc is on screen.
+          // ⚠ Interpolated GEOMETRICALLY, not linearly. The span is ~18×, and a
+          // linear lerp spends most of the scroll parked at enormous radii
+          // where nothing visibly changes, then collapses at the end — the
+          // "rushed and flat" failure. In log space the apparent rate of change
+          // is constant, so every screen of scroll does the same amount of work.
+          const revealed = restR * Math.pow(revealR / restR, drawT);
+          const r = revealed * Math.pow((DOCK_SIZE / 2) / revealed, dockSize);
+
+          // ── Position, tracked by the CREST rather than the centre — the
+          // crest is the part you can actually see, and holding it steady while
+          // the radius collapses is what makes the limb read as drawing inward
+          // instead of sinking.
+          //   • At rest it's a document position, restCrest above the seam.
+          //   • riseT hands it over to a viewport-locked height. That handover
+          //     IS the lock; crestLockY is derived so the two agree exactly at
+          //     lockStart, so it decelerates into the lock with no jump.
+          //   • settleT then lifts it the rest of the way, so the fully-formed
+          //     sphere ends up centred instead of hanging off the bottom.
+          // ⚠ The handover is an INTEGRAL, not a lerp between two positions.
+          // Lerping "where it is now" toward "where the lock wants it" looks
+          // right and isn't: the document-anchored crest climbs at 1px per px
+          // of scroll, so it overshoots the locked height and the blend drags
+          // it back DOWN — a ~90px bounce right at the moment the planet is
+          // supposed to be settling. Instead, ramp the *scroll coupling* from
+          // 1 to 0 and integrate it. With riseT = smoothstep(u), the distance
+          // travelled is riseLen·(u − u³ + u⁴/2), which is monotonic, starts at
+          // exactly scroll speed (so there's no velocity jump either) and comes
+          // to rest on its own after climbing half the rise window.
+          const lockLen = lockEnd - lockStart;
+          const riseLen = lockLen * (RISE_END - RISE_START);
+          const u = riseLen > 0
+            ? Math.max(0, Math.min(1, (s - lockStart - lockLen * RISE_START) / riseLen))
+            : 1;
+          const glide = riseLen * (u - u * u * u + u * u * u * u / 2);
+
+          const finalCrestY = NAV_CLEAR_PX + (vh - NAV_CLEAR_PX) / 2 - revealR;
+          const crestLockY = LOCK_ANCHOR * vh - restCrest - glide;
+          const lockedCrestY = crestLockY + (finalCrestY - crestLockY) * settleT;
+          const restCrestDoc = seamDoc - restCrest;
+          // The two branches agree in value AND slope at s === lockStart.
+          const crestDoc = s <= lockStart ? restCrestDoc : s + lockedCrestY;
+
+          const releaseCenter = lockEnd + NAV_CLEAR_PX + (vh - NAV_CLEAR_PX) / 2;
+          const centerDoc = dockT > 0
+            ? releaseCenter + (dockCenterDoc - releaseCenter) * dockPos
+            : crestDoc + r;
+
+          // ── Where the box goes. Its bottom edge is what crops the huge
+          // sphere into a horizon limb, so at rest it sits exactly on the seam.
+          // riseT hands it over to simply being the viewport (plus the margin
+          // that keeps its own blurred edges off screen) — the crop lifting
+          // away as the planet leaves the horizon. Staying viewport-locked
+          // afterwards is also what stops the disc falling out of its own box
+          // during the dock act.
+          const boxBottom = seamDoc + ((s + vh + (boxH - vh) / 2) - seamDoc) * riseT;
+          const y = boxBottom - seamDoc;
+          glowTrack.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+
+          // The two numbers CSS needs: diameter, and the disc's top edge
+          // measured from the box's top. Rounded to whole px — sub-pixel churn
+          // here buys nothing visible and costs a repaint of a viewport-sized
+          // gradient every time it changes.
+          const d = r * 2;
+          const pY = (centerDoc - r) - (boxBottom - boxH);
+          setVar('--p-d', Math.round(d) + 'px');
+          setVar('--p-y', Math.round(pY) + 'px');
+
+          // Aurora: its own tile, lifted above the crest and sized in proportion
+          // to the disc, so it stays glued to the limb at every scale. Its blur
+          // is proportional too — it's the one layer that never sharpens.
+          const aD = d * AURORA_DIA;
+          setVar('--a-d', Math.round(aD) + 'px');
+          setVar('--a-y', Math.round((centerDoc - r - d * AURORA_LIFT - aD / 2) - (boxBottom - boxH)) + 'px');
+          // Clamped: while the sphere is still horizon-wide, d × the fraction
+          // asks for a several-hundred-px blur on a viewport-sized layer.
+          setVar('--aurora-blur', Math.round(Math.min(64, Math.max(4, d * AURORA_BLUR_FRAC))) + 'px');
+          // Softness LEAVES the planet and becomes the aurora on overlapping
+          // curves, so it reads as the glow lifting off a solidifying body
+          // rather than as the planet simply losing its blur.
+          setVar('--aurora-op', auroraT.toFixed(3));
+
+          // Blur is in true screen px (no scale transform to divide out), and
+          // scaled with the disc so the 72px dock circle isn't softened by the
+          // same 16px that suits a horizon-wide limb.
+          const blurScale = Math.min(1, Math.max(0.06, d / (revealR * 2)));
+          const blurPx = BASE_BLUR_PX * (1 - (1 - BLUR_FLOOR) * focusT) * blurScale;
+          setVar('--glow-blur', blurPx.toFixed(2) + 'px');
+          setVar('--glow-detail-op', detailT.toFixed(3));
+          // Flatten the colour underneath as the geometric detail arrives. The
+          // five blobs are an airbrushed falloff, which is right for a horizon
+          // haze and wrong under hard-edged bands and spots — the two styles
+          // fight. Growing each blob's solid plateau turns them into flat
+          // colour fields with a short shoulder, so the whole planet resolves
+          // into one flat 2D treatment rather than shapes floating on a glow.
+          setVar('--blob-solid', (62 * detailT).toFixed(1) + '%');
+          setVar('--blob-fall', (78 + 8 * detailT).toFixed(1) + '%');
+          const trailOp = 1 - fadeBetween(lockT, 0, TRAIL_END);
+          setVar('--glow-trail-op', trailOp.toFixed(3));
+          setVar('--glow-outer-op', (1 - fadeBetween(dockT, SIMPLIFY_START, SIMPLIFY_END)).toFixed(3));
+          // Ambient drift winds down as the planet forms: fine on a smear of
+          // atmosphere, distracting on a body you're being asked to look at.
+          const drift = DRIFT_REST_PX + (DRIFT_LOCKED_PX - DRIFT_REST_PX) * riseT;
+          setVar('--glow-drift', drift.toFixed(1) + 'px');
+          setVar('--aurora-drift', (drift * 1.3).toFixed(1) + 'px');
+
+          // Drop the expensive layers the moment they stop contributing. A
+          // full-viewport blur costs the same whether or not you can see the
+          // result, and for most of this scroll two of the three are invisible:
+          // the aurora hasn't arrived yet, the seam bleed is long gone, and the
+          // planet's own blur is sub-pixel for the whole dock act.
+          const wantBlur = blurPx > 0.6;
+          if (wantBlur !== blurOn && glowEl) {
+            blurOn = wantBlur;
+            glowEl.style.filter = wantBlur ? '' : 'none';
+          }
+          auroraOn = setDisplay(auroraEl, auroraT > 0.001, auroraOn);
+          bleedOn  = setDisplay(bleedEl,  trailOp > 0.001,  bleedOn);
+
+          const shouldLift = dockT > DOCK_Z_THRESHOLD;
+          if (shouldLift !== liftedZ) {
+            liftedZ = shouldLift;
+            glowTrack.style.zIndex = shouldLift ? '3' : '';
+          }
+
+          setTimelineReveal(fadeBetween(dockT, TIMELINE_START, TIMELINE_END));
         }
-
-        const greetOut = fadeBetween(scrollProgress, GREET_OUT_START, GREET_OUT_END);
-        setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : (1 - greetOut));
-        // Reveal the timeline once past the aurora (fully faded by GLOW_FADE_END
-        // ≈ 0.55), ramping in just after so it never bleeds through the glow.
-        setTimelineReveal(fadeBetween(scrollProgress, 0.62, 0.92));
       }
 
       function onScroll() {
@@ -4351,8 +4708,23 @@
         requestAnimationFrame(update);
       }
 
+      function onResize() {
+        measure();
+        onScroll();
+      }
+
       window.addEventListener('scroll', onScroll, { passive: true });
-      window.addEventListener('resize', onScroll, { passive: true });
-      refreshHomeScroll = update;
+      window.addEventListener('resize', onResize, { passive: true });
+      // The scroll range is now derived from the Timeline header's document
+      // position (see measure()), so a late layout shift — webfont swap, an
+      // image above it settling — would otherwise leave the dock landing at
+      // the wrong scroll offset for the rest of the session.
+      window.addEventListener('load', onResize);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(onResize).catch(() => {});
+      // Exposed so other code (mode switches, and js/timeline.js's own
+      // wide/reduced-motion breakpoint toggle) can force a remeasure + repaint
+      // when something that affects the dock target's layout changes.
+      refreshHomeScroll = () => { measure(); update(); };
+      measure();
       update();
     })();

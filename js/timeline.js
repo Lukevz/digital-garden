@@ -182,6 +182,9 @@
   function applyMode() {
     setPinned(wideQuery.matches && !reduceMotionQuery.matches);
     lightAll();
+    // .tl-pin toggling sticky can shift #homeTimelineTitle's layout position —
+    // keep heroParallax()'s cached planet-dock target (main.js) in sync.
+    if (typeof refreshHomeScroll === 'function') refreshHomeScroll();
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });

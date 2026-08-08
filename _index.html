@@ -355,7 +355,7 @@
        words wide enough to stay legible. -->
   <div class="clock-hero-wrap">
     <div class="intro-greeting-bar" id="introGreetingBar" aria-label="Greeting">
-      <span class="intro-greeting-life"><img src="/src/img/headshot-work.jpg" alt="Luke van Zyl" class="avatar avatar--inline" id="avatarImg" width="400" height="400" fetchpriority="high" decoding="async"><span class="greet-text"><span class="greet-line">Hi, I'm Luke!</span><span class="greet-line">I'm a...</span></span></span>
+      <span class="intro-greeting-life"><img src="/src/img/headshot-astronaut.jpg" data-avatar-default="/src/img/headshot-astronaut.jpg" data-avatar-hover="/src/img/headshot-work.jpg" alt="Luke van Zyl" class="avatar avatar--inline" id="avatarImg" width="400" height="400" fetchpriority="high" decoding="async"><span class="greet-text"><span class="greet-line">Hi, I'm Luke!</span><span class="greet-line">I'm a...</span></span></span>
     </div>
     <!-- Scale wrapper: shrinks the dial phrase without touching #clockHero's own
          transform (JS sets a grid-snap translate on it every layout). -->
@@ -503,15 +503,39 @@
 
   <!-- Below the fold — home feed -->
   <section class="below-fold" id="belowFold">
-    <!-- Planetary limb glow. The track is its own parallax layer: JS makes it
-         rise SLOWER than the content (see heroParallax in main.js) so the body
-         content appears to accelerate up through the gradient — a transition
-         "event horizon" moment rather than a static divider. -->
+    <!-- The planet. heroParallax() (main.js) scrubs it off raw scrollY in two
+         acts:
+           1. LOCKED REVEAL — it leaves the horizon, locks to the middle of the
+              viewport and stays there while ~1.25 viewports of scroll draw its
+              ends inward from both edges, closing the shallow limb into a
+              massive sphere that comes into focus as it forms.
+           2. DOCK — the lock releases and the sphere shrinks away to a 72px
+              circle sitting 32px above the Timeline header.
+         #planetStage below is what buys act 1 its scroll length: real document
+         height that nothing else occupies, the same trick the Timeline pin
+         uses. The "lock" is JS translating the planet with the viewport rather
+         than position:sticky — the track is already getting a per-frame
+         transform, so this costs nothing and dodges sticky's
+         containing-block/scroll-container hazards entirely (see the warning on
+         .tl-scroll in styles.css for how easily those bite here).
+         .hero-aurora is deliberately OUTSIDE .hero-glow: .hero-glow's blur is
+         the part that goes away as the planet comes into focus, and the aurora
+         is what that softness turns into. -->
     <div class="hero-glow-track" aria-hidden="true">
       <div class="hero-glow">
         <div class="hero-glow__surface"></div>
+        <div class="hero-glow__detail"></div>
       </div>
+      <div class="hero-aurora"></div>
     </div>
+    <!-- Anchored at the seam, NOT to the planet: the planet now translates
+         away from the seam during the reveal, and the downward colour bleed
+         has to stay welded to the horizon it's melting into. -->
+    <div class="hero-seam-bleed" aria-hidden="true"></div>
+    <!-- Scroll runway for the locked reveal. Height is solved in measure()
+         (js/main.js) so the dock lands exactly where it should — don't set a
+         meaningful one here. -->
+    <div class="planet-stage" id="planetStage" aria-hidden="true"></div>
     <div class="below-fold-inner home-feed">
 
       <!-- data-nav-label: the short name this section goes by in the sub-nav
