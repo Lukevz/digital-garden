@@ -1,7 +1,7 @@
 /* Sub nav — the second bar under #modeTab (see #subNav in _index.html).
  *
- * Scoped to the Career/home view for now. Once the home feed has covered the
- * hero, the bar hinges down on the same rotateX fold as the overflow panel
+ * Scoped to the Career/home view for now. Once you've scrolled past the hero,
+ * the bar hinges down on the same rotateX fold as the overflow panel
  * and shows this page's section anchors as a single static row, spaced
  * across the full width of the bar (space-between) so the first anchor sits
  * flush left, the last sits flush right, and there's no dead space at either
@@ -21,6 +21,7 @@
   if (!nav || !track || !modeTab || !belowFold) return;
 
   const progress      = document.getElementById('subNavProgress');
+  const heroSpacer    = document.querySelector('.hero-spacer');
   const overflowPanel = document.getElementById('overflowPanel');
   const sModal        = document.getElementById('sModal');
   const goo           = document.getElementById('navGoo');
@@ -31,9 +32,17 @@
   // Viewport line that counts as "what you're reading" — a section is active
   // once its top has crossed this line.
   const ANCHOR   = 0.35;
-  // The bar shows once the top of the home feed has risen past this line —
-  // i.e. the hero is mostly gone and there's a long page underneath.
-  const SHOW_AT  = 0.45;
+  // The bar stays away until you've scrolled PAST the hero, and that can't be
+  // measured off the feed. Home uses the reversed reveal (see _index.html):
+  // .hero-spacer is the LAST thing in the document and the page opens pinned to
+  // the end, so the feed sits ABOVE the hero and you scroll up into it. Any
+  // "has a section risen up the viewport" test is therefore true from the first
+  // paint, which is what put the bar over the hero.
+  //
+  // So measure the hero itself: show once the spacer overlaps no more than this
+  // fraction of the viewport, i.e. the screen is essentially all feed. Works
+  // whichever end of the document the hero is on.
+  const HERO_LEFT = 0.15;
   const GAP      = 8;   // px between the bottom of #modeTab and the sub nav
   // #navGoo's <circle> centres are fixed at local y = 6 / 10 / 14 (see
   // _index.html) so its middle blob lands exactly halfway across GAP —
@@ -135,21 +144,41 @@
     return idx;
   }
 
-  function shouldShow() {
-    if (sections.length < 2) return false;
-
+  // Every surface that isn't the home feed — a section page, work mode, the
+  // overflow panel, an open modal — owns the screen itself, so the hero gate
+  // doesn't apply and the chrome is always live.
+  function feedIsTheView() {
     const b = document.body.classList;
     if (b.contains('work-mode') || b.contains('section-mode')
       || b.contains('overflow-mode') || b.contains('places-mode')
       || b.contains('chat-overlay-open')) return false;
-    // The overflow panel folds down into the same spot, and the modal covers
-    // the page the strip is tracking.
     if (overflowPanel && overflowPanel.classList.contains('open')) return false;
     if (sModal && sModal.classList.contains('sm-open')) return false;
-    if (belowFold.hidden) return false;
+    return !belowFold.hidden;
+  }
 
+  // True while the hero is still the screen. Measured off .hero-spacer, which
+  // carries the hero's scroll length (.hero itself is fixed), so this holds
+  // whichever end of the document the reversed reveal puts it at.
+  function heroOwnsScreen() {
+    if (!feedIsTheView()) return false;
+    if (!heroSpacer || heroSpacer.offsetParent === null) return false;
     const vh = window.innerHeight || document.documentElement.clientHeight || 1;
-    return belowFold.getBoundingClientRect().top < vh * SHOW_AT;
+    const r = heroSpacer.getBoundingClientRect();
+    const overlap = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+    return overlap > vh * HERO_LEFT;
+  }
+
+  function shouldShow(onHero) {
+    if (sections.length < 2) return false;
+    if (!feedIsTheView()) return false;
+    if (onHero) return false;
+    // No spacer laid out to measure — fall back to the feed itself.
+    if (!heroSpacer || heroSpacer.offsetParent === null) {
+      const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+      return sections[0].getBoundingClientRect().top < vh * 0.5;
+    }
+    return true;
   }
 
   // Keep the bar pinned under the top nav at exactly its width.
@@ -185,7 +214,17 @@
 
     build();
 
-    const show = shouldShow();
+    // The whole top bar — clock, weather, nav pill, theme/social/power — is
+    // held back while the hero is the screen, so the hero lands uninterrupted.
+    // A class on <body> rather than inline styles, because js/hero-entrance.js
+    // owns the inline opacity of #topBar's three children during the intro;
+    // this fades their common parent instead and the two never fight.
+    const onHero = heroOwnsScreen();
+    if (onHero !== document.body.classList.contains('hero-owns-screen')) {
+      document.body.classList.toggle('hero-owns-screen', onHero);
+    }
+
+    const show = shouldShow(onHero);
     // Size/place the bar BEFORE it unfolds, so it never flips down at a stale
     // width and snaps afterwards.
     if (show) syncBox();

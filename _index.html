@@ -27,11 +27,12 @@
   <link rel="dns-prefetch" href="https://events.mapbox.com">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script defer src="https://va.vercel-scripts.com/v1/script.js"></script>
 </head>
-<body class="intro-done starfield-mode">
+<body class="intro-done starfield-mode dust-hero">
   <script>
     // Hero variant B toggle — a shorter (65vh) hero with a perspective-style
     // starfield, kept side-by-side with the original so they can be A/B
@@ -44,11 +45,71 @@
         if (v2) document.body.classList.add('hero-v2');
       } catch (e) {}
     })();
+
+    // Dust-storm intro gate: runs before the rest of <body> parses so the
+    // first paint is already inside the storm (no end-state flash). Normally
+    // skipped for returning visitors this session and under reduced motion —
+    // both paint the settled end-state composition directly.
+    //
+    // ⚠️ TESTING: REPLAY_INTRO forces the storm to play on EVERY load, so the
+    // entrance can be iterated on without clearing sessionStorage each time.
+    // Set it back to false before shipping — otherwise every internal
+    // navigation back to home replays the whole camera move.
+    (function () {
+      var REPLAY_INTRO = true;
+      try {
+        var played = !REPLAY_INTRO && sessionStorage.getItem('heroIntroPlayed');
+        var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!played && !reduced) document.body.classList.add('dust-intro-pending');
+      } catch (e) {}
+    })();
   </script>
 
   <a class="skip-link" href="#mainPanel">Skip to content</a>
 
   <canvas id="dotGrid"></canvas>
+
+  <!-- Dust-storm hero scene: giant planet + teal atmosphere rim + drifting
+       dust, panned by the on-load "camera tilt" intro (js/hero-entrance.js).
+       A fixed sibling of the canvas — NOT inside .hero, whose internal
+       overflow would scroll it. Paints above #dotGrid so the planet covers
+       stars below the horizon; .hero (z2) and .below-fold (z8) ride on top. -->
+  <div id="heroScene" aria-hidden="true">
+    <div class="hero-scene__pan" id="heroScenePan">
+      <div class="hs-atmo-bloom"></div>
+      <div class="hs-atmo-band"></div>
+      <div class="hs-planet">
+        <div class="hs-planet-surface" id="hsPlanetSurface"></div>
+        <div class="hs-planet-clouds" id="hsPlanetClouds"></div>
+        <div class="hs-planet-wisps" id="hsPlanetWisps"></div>
+      </div>
+      <!-- Clip container: masks the drifting dust to below the horizon line
+           (in camera space), so no haze sits on the black sky or the text.
+           At the intro's start the horizon is above the frame, so the storm
+           still fills the viewport, then parts exactly at the limb. -->
+      <div class="hs-dust-clip">
+        <div class="hs-dust hs-dust--far"><div class="hs-drift"></div></div>
+        <div class="hs-dust hs-dust--mid"><div class="hs-drift"></div></div>
+        <div class="hs-dust hs-dust--near"><div class="hs-drift"></div></div>
+      </div>
+    </div>
+    <div class="hs-veil"><div class="hs-veil-tex" id="hsVeilTex"></div></div>
+    <!-- Storm beat (intro only) — the camera holds inside the storm before it
+         tilts up, so the hold has to look like weather rather than a flat
+         wash: three vortices churn through the dust, and the cloud discharges
+         a few times. All of it rests at opacity 0 and is driven entirely by
+         runDustIntro() in js/hero-entrance.js. -->
+    <div class="hs-swirl"></div>
+    <div class="hs-swirl"></div>
+    <div class="hs-swirl"></div>
+    <div class="hs-gust" id="hsGust1"></div>
+    <div class="hs-gust" id="hsGust2"></div>
+    <!-- Distant discharges: two soft patches the intro repositions and blooms,
+         so a couple can overlap without either being a full-frame event. -->
+    <div class="hs-bolt" id="hsBolt1"></div>
+    <div class="hs-bolt" id="hsBolt2"></div>
+    <div class="hs-grain"></div>
+  </div>
   <!-- Theme cross-fade: conic arc pivots at bottom center, sweeps BL → BR (sun path) -->
   <div id="themeTransition" class="theme-transition" aria-hidden="true">
     <div class="theme-transition__wipe" aria-hidden="true">
@@ -342,7 +403,7 @@
   <!-- Intro -->
   <div class="intro">
     <div class="intro-text">
-      <h1 class="intro-copy"><span class="intro-headline-content"><span class="intro-greeting">Hi, I'm Luke!</span></span><span class="description">I'm a product designer, digital tinker, and systems thinker. Currently building software for veterinarians at Instinct.</span></h1>
+      <h1 class="intro-copy"><span class="intro-headline-content"><span class="intro-greeting">Hello</span></span><span class="description">I'm Luke. I'm a designer, digital tinker, &amp; systems thinker. Currently building software for veterinarians at Instinct.</span></h1>
     </div>
 
     <!-- ClockClock-style dial hero: a fixed dot-matrix of dials rotates its
@@ -498,20 +559,12 @@
 
   </section><!-- /.hero -->
 
-  <!-- Reserves scroll length for the fixed hero above -->
-  <div class="hero-spacer" aria-hidden="true"></div>
-
-  <!-- Below the fold — home feed -->
+  <!-- Below the fold — home feed. Sits BEFORE the scroll spacer: the home
+       view loads pinned to the document's end (hero in view) and the visitor
+       scrolls UP to reveal the feed, which descends over the fixed hero.
+       Section order is visually reversed via column-reverse in styles.css so
+       the first section is the first one revealed. -->
   <section class="below-fold" id="belowFold">
-    <!-- Planetary limb glow. The track is its own parallax layer: JS makes it
-         rise SLOWER than the content (see heroParallax in main.js) so the body
-         content appears to accelerate up through the gradient — a transition
-         "event horizon" moment rather than a static divider. -->
-    <div class="hero-glow-track" aria-hidden="true">
-      <div class="hero-glow">
-        <div class="hero-glow__surface"></div>
-      </div>
-    </div>
     <div class="below-fold-inner home-feed">
 
       <!-- data-nav-label: the short name this section goes by in the sub-nav
@@ -971,6 +1024,27 @@
     </div>
   </section>
 
+  <!-- Reserves scroll length for the fixed hero above. On home this sits at
+       the END of the document (see reversed reveal note on #belowFold); on
+       section pages (#belowFold hidden) it still precedes #sectionBelow, so
+       their downward scroll is unchanged. -->
+  <div class="hero-spacer" aria-hidden="true"></div>
+  <script>
+    // Reversed reveal: pin the home view to the document's end before first
+    // paint, so the page opens on the hero (the storm) with the feed waiting
+    // above. Skipped for hash deep-links (section pages, notes) and when the
+    // browser is restoring a previous scroll position (reload/back).
+    (function () {
+      try {
+        var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+        var restoring = nav && nav.type === 'back_forward';
+        if (document.body.classList.contains('dust-hero') && !location.hash && !restoring) {
+          window.scrollTo(0, 1e9);
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Below the fold — section page body (the list, or an opened item).
        Same opaque curtain treatment as the home feed above, so it slides up
        over the compact section hero exactly the way the home feed covers the
@@ -1335,8 +1409,8 @@
   </div><!-- /#introOverlay -->
 
   <!-- <script src="/js/intro.js"></script> preloader off for now -->
-  <script src="/js/main.js?v=9"></script>
-  <script src="/js/hero-entrance.js?v=2"></script>
+  <script src="/js/main.js?v=11"></script>
+  <script src="/js/hero-entrance.js?v=3"></script>
   <script src="/js/home-feed.js?v=1"></script>
   <script src="/js/timeline.js?v=10"></script>
   <script src="/js/subnav.js?v=1"></script>

@@ -14,6 +14,8 @@
     const canvas = document.getElementById('dotGrid');
     const ctx    = canvas.getContext('2d');
     const heroEl = document.getElementById('heroSection');
+    // Cached because genieProgress() reads it every frame while scrolling.
+    const heroSpacerEl = document.querySelector('.hero-spacer');
     let gridLogicalW = 0;
     let gridLogicalH = 0;
     let gridDpr = 1;
@@ -103,26 +105,32 @@
                    height is MEASURED off the hero, so the sky tracks the
                    responsive height rather than assuming a fraction of it
          density — chance a lattice cell keeps its star (thins the field)
-         seed    — re-rolls star sizes/twinkle, so the thinning and the
-                   brightness spread land differently on each page
+         scatter — how far a star wanders off its lattice point, as a fraction
+                   of the pitch (0 = the old perfect grid, ~0.9 = the lattice
+                   is only a distribution scaffold and reads as a real sky)
+         dim     — multiplier on star alpha, if one sky wants to sit fainter
+                   than the shared baseline (optional; defaults to 1)
+         seed    — re-rolls star sizes/twinkle/scatter, so the thinning and
+                   the brightness spread land differently on each page
        Body coordinates are in lattice pitches (SP) from the named edge, so
        every sky stays snapped to the same grid at any viewport size. */
     const SCENES = {
       home: {
-        density: 1, seed: 8675309,
+        density: 0.34, scatter: 0.92, seed: 8675309,
+        // Just the launchpad moon: the dust-storm hero's giant planet
+        // (#heroScene) owns the lower half of the home viewport now, and the
+        // old twin suns sat at h*0.66 — inside the planet. The moon stays
+        // top-left, above the horizon, so ship lift-offs and warp pairing to
+        // the section skies keep working.
         bodies: (w, h) => ({
           // `launchpad` marks the body ships peel off (see spawnLaunch).
           moon:     { kind: 'moon', cx: SP * 2.8, cy: SP * 2.8, r: SP * 0.66, launchpad: true },
-          sunBig:   { kind: 'sun', cx: w - SP * 3.4, cy: h * 0.66, r: SP * 0.95,
-                      core: '#efd23f', edge: '#e6a028' },
-          sunSmall: { kind: 'sun', cx: w - SP * 5.3, cy: h * 0.66 - SP * 2.15, r: SP * 0.42,
-                      core: '#f0a032', edge: '#df7d1c' },
         }),
       },
       // Writing — one big cool planet with a small moon riding high above it.
       // Sparsest of the three: mostly empty sky.
       writing: {
-        compact: true, density: 0.72, seed: 20260726,
+        compact: true, density: 0.26, scatter: 0.92, seed: 20260726,
         bodies: (w, h) => ({
           planet: { kind: 'sun', cx: w - SP * 5.2, cy: h * 0.64, r: SP * 1.15,
                     core: '#8f9bd6', edge: '#4a5378' },
@@ -132,7 +140,7 @@
       // Videos — two warm orbs clustered tight, like a projector lamp and its
       // spill. Densest field of the three, so the cluster has something to sit in.
       videos: {
-        compact: true, density: 0.85, seed: 314159,
+        compact: true, density: 0.30, scatter: 0.92, seed: 314159,
         bodies: (w, h) => ({
           sunBig:   { kind: 'sun', cx: w - SP * 4.4, cy: h * 0.42, r: SP * 1.0,
                       core: '#f4b23c', edge: '#d1591f' },
@@ -143,7 +151,7 @@
       // Photos — three small orbs strung along a shallow arc, reading as a
       // contact sheet of frames rather than one focal body.
       photos: {
-        compact: true, density: 0.78, seed: 271828,
+        compact: true, density: 0.28, scatter: 0.92, seed: 271828,
         bodies: (w, h) => ({
           orbFar:  { kind: 'sun', cx: w - SP * 13.2, cy: h * 0.3, r: SP * 0.34,
                      core: '#e58fa6', edge: '#a83f5f' },
@@ -303,22 +311,36 @@
       let firstColX = offX;
       while (firstColX < SP * 0.5) firstColX += SP;
       document.documentElement.style.setProperty('--grid-col-inset', firstColX.toFixed(1) + 'px');
+      // The lattice is a distribution scaffold, not the look: each surviving
+      // star is nudged off its point by up to ±(scatter/2) of a pitch, so the
+      // field spreads evenly across the viewport (no clumps, no bald patches)
+      // without ever reading as rows and columns. Zero restores the old grid.
+      const scatter = sc.scatter === undefined ? 0 : sc.scatter;
+      const dim = sc.dim === undefined ? 1 : sc.dim;
       for (let ci = 0; ci <= cols; ci++) {
         for (let ri = 0; ri <= rows; ri++) {
-          const bx = offX + ci * SP;
-          const by = offY + ri * SP;
-          // Compact skies get clipped to the hero and thinned. Both cuts are
-          // seeded, so a scene renders the same sky every time at a given
-          // viewport size. Short-circuited on the home sky so it doesn't draw
-          // from the stream at all — its field stays exactly as authored.
-          if (sc.compact && (by > fieldH || r() >= sc.density)) continue;
+          // Every sky is thinned now (home included — it used to run at
+          // density 1 and skip the draw entirely). Compact skies are also
+          // clipped to the hero. Both cuts are seeded, so a scene renders the
+          // same sky every time at a given viewport size.
+          const lx = offX + ci * SP, ly = offY + ri * SP;
+          if (ly > fieldH || r() >= sc.density) continue;
+          const bx = lx + (r() - 0.5) * SP * scatter;
+          const by = ly + (r() - 0.5) * SP * scatter;
           // Size tiers give a natural distant-starfield spread: mostly tiny
           // pinpoints, some a touch larger, a rare few brighter still.
           const t = r();
-          const sz = STAR_R * (t < 0.7 ? 0.28 + r() * 0.24
-                             : t < 0.93 ? 0.55 + r() * 0.3
-                             :            0.9 + r() * 0.45);
-          const cell = { bx, by, sz, al: 0.3 + r() * 0.24 };
+          const tier = t < 0.7 ? 0 : t < 0.93 ? 1 : 2;
+          const sz = STAR_R * (tier === 0 ? 0.28 + r() * 0.24
+                             : tier === 1 ? 0.55 + r() * 0.3
+                             :              0.9 + r() * 0.45);
+          // Brightness tracks size instead of being one flat band, so the mass
+          // of pinpoints sits near the threshold of visible and only the rare
+          // large ones carry real light — depth, rather than a lit grid.
+          const al = tier === 0 ? 0.12 + r() * 0.10
+                   : tier === 1 ? 0.22 + r() * 0.14
+                   :              0.40 + r() * 0.20;
+          const cell = { bx, by, sz, al: al * dim };
           // Most stars twinkle — deep enough that they fade nearly to nothing
           // and swell back, like real stars blinking in and out.
           if (!prefersReducedMotion && r() < 0.62) {
@@ -481,7 +503,24 @@
       // by heroParallax() in main.js — the two match only when hero=100vh.
       const vh = (heroEl && heroEl.getBoundingClientRect().height) || gridLogicalH || innerHeight || 1;
       const sy = window.pageYOffset || document.documentElement.scrollTop || 0;
-      const p = sy / (vh * GENIE.range);
+      // Reversed reveal (dust hero): home rests at the document's END and the
+      // feed is revealed by scrolling UP, so the collapse keys off distance
+      // scrolled up from the bottom instead of down from the top.
+      let dist = sy;
+      if (b.contains('dust-hero')) {
+        const doc = document.documentElement;
+        dist = Math.max(0, (doc.scrollHeight - innerHeight) - sy);
+        // .hero-spacer overhangs the viewport (styles.css) to leave a stretch
+        // of open sky between the hero and the feed's edge. That stretch is
+        // meant to be travelled with the field INTACT — without this offset the
+        // collapse keys off raw scroll and finishes exactly as the runway ends,
+        // so you arrive at the seam through an empty black sky instead of stars.
+        if (heroSpacerEl) {
+          dist = Math.max(0, dist - Math.max(0,
+            heroSpacerEl.getBoundingClientRect().height - innerHeight));
+        }
+      }
+      const p = dist / (vh * GENIE.range);
       return p < 0 ? 0 : p > 1 ? 1 : p;
     }
 

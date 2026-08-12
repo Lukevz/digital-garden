@@ -763,7 +763,7 @@
         const text = DOCK_SUGGESTIONS[(dockSuggestCursor + i) % DOCK_SUGGESTIONS.length];
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'chat-dock-chip';
+        b.className = 'chat-chip';
         b.textContent = text;
         b.addEventListener('click', () => {
           hideDockSuggestions();
@@ -790,6 +790,9 @@
         // Still answering — the visitor isn't hesitating, they're reading.
         // Come back around rather than giving up on the nudge entirely.
         if (window.chat && window.chat.busy && window.chat.busy()) { armDockIdle(); return; }
+        // The answer itself already offered follow-up chips (js/chat.js) — a
+        // second, unrelated row of them underneath is just noise.
+        if (chatDockThread && chatDockThread.querySelector('.chat-followups')) return;
         showDockSuggestions();
       }, DOCK_IDLE_MS);
     }
@@ -4231,6 +4234,38 @@
       }, (60 - new Date().getSeconds()) * 1000);
     })();
 
+    // ── Reversed-reveal bottom pin ──
+    // The parse-time pin in _index.html lands the home view on the hero, but
+    // the feed's async content (case studies, timeline, testimonials) grows
+    // the document ABOVE the viewport afterwards and scroll anchoring doesn't
+    // reliably compensate — leaving the curtain hanging mid-screen. Keep
+    // re-pinning to the document's end until the visitor scrolls on their
+    // own, then never touch it again.
+    (function homeBottomPin() {
+      if (!document.body.classList.contains('dust-hero')) return;
+      if (location.hash) return;
+      const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      if (nav && nav.type === 'back_forward') return;
+      let userScrolled = false;
+      const stop = () => { userScrolled = true; };
+      ['wheel', 'touchstart', 'keydown'].forEach((t) =>
+        window.addEventListener(t, stop, { passive: true, once: true }));
+      const pin = () => {
+        if (userScrolled) return;
+        window.scrollTo(0, document.documentElement.scrollHeight);
+      };
+      pin();
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(pin);
+        ro.observe(document.body);
+        // Feed content settles well within this window; stop watching so a
+        // later layout change (opening the dock, resizing) can't yank the
+        // visitor back down.
+        setTimeout(() => ro.disconnect(), 8000);
+      }
+      window.addEventListener('load', pin);
+    })();
+
     // ── Hero → below-fold "event horizon" parallax ──
     // Three layers move at three different speeds as you scroll past the hero:
     //   • hero    — position:fixed, speed 0 (stays put behind everything)
@@ -4240,9 +4275,15 @@
     // gradient — a transition moment rather than a static divider.
     (function heroParallax() {
       const belowFold = document.getElementById('belowFold');
+      // The aurora glow only exists on non-home layouts now (the dust-storm
+      // scene replaced it on home) — every use below is null-guarded. This
+      // function ALSO drives the greeting fade + timeline reveal, so it must
+      // run with or without the glow.
       const glowTrack = document.querySelector('.hero-glow-track');
+      const heroScene = document.getElementById('heroScene');
       const heroEl = document.getElementById('heroSection');
-      if (!belowFold || !glowTrack) return;
+      const heroSpacer = document.querySelector('.hero-spacer');
+      if (!belowFold) return;
 
       const reduced = typeof matchMedia === 'function'
         && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4309,6 +4350,12 @@
         if (navPinnedOpen()) {
           setGreetingReveal(0);
           setTimelineReveal(1);
+          document.body.style.setProperty('--seam-fade', '0');
+          if (heroScene) {
+            heroScene.style.transform = '';
+            heroScene.style.opacity = '';
+            document.body.style.removeProperty('--hs-dust-reveal');
+          }
           return;
         }
 
@@ -4321,18 +4368,66 @@
         // hand-off) before the user ever scrolled.
         const vh = (heroEl && heroEl.getBoundingClientRect().height)
           || window.innerHeight || document.documentElement.clientHeight;
-        const seam = belowFold.getBoundingClientRect().top; // viewport-y of the gradient seam
-        const travel = Math.max(0, vh - seam);              // px the seam has risen from the bottom
+        // Reversed reveal (dust hero): the feed sits ABOVE the hero and its
+        // BOTTOM edge descends from the top of the viewport as you scroll up,
+        // so the seam is rect.bottom and travel is how far it has come down.
+        // Classic layouts keep the original rising-curtain math.
+        const rect = belowFold.getBoundingClientRect();
+        const reversed = document.body.classList.contains('dust-hero');
+        // Open sky between the hero and the feed: .hero-spacer is taller than
+        // the viewport, so at rest the feed's edge sits this far ABOVE the top
+        // of the screen. Measured rather than hardcoded — the spacer's height
+        // in styles.css is the only knob, and this keeps in lockstep with it.
+        const runway = reversed && heroSpacer
+          ? Math.max(0, heroSpacer.getBoundingClientRect().height
+              - (window.innerHeight || document.documentElement.clientHeight || 0))
+          : 0;
+        // The seam's own travel: still measured off the edge, so the gradient
+        // stays put until the edge is actually on screen. Negative = off-screen
+        // above, which is the whole runway.
+        const edge = reversed ? rect.bottom : vh - rect.top;
+        // Scene travel counts from the document's end instead, so the storm
+        // sinks and the greeting clears WHILE you cross the runway. Without
+        // this the hero would sit frozen for the whole stretch.
+        const travel = Math.max(0, edge + runway);
         const progress = vh > 0 ? Math.min(1, travel / vh) : 0;
         const scrollProgress = vh > 0 ? travel / vh : 0;    // uncapped — drives the greeting → nav hand-off
 
-        // Hold the glow back so the content overtakes it (rises at GLOW_SPEED).
-        const lag = travel * (1 - GLOW_SPEED);
-        glowTrack.style.transform = `translate3d(0, ${lag.toFixed(2)}px, 0)`;
-        // Fully clear the glow by the time the body's top reaches ~mid-viewport,
-        // so the aurora is gone before the nav swaps in rather than lingering.
-        const glowFade = smoothstep(Math.min(1, progress / GLOW_FADE_END));
-        glowTrack.style.opacity = (1 - glowFade).toFixed(3);
+        // Seam fade (reversed reveal only): the gradient trailing the feed's
+        // bottom edge starts as a hairline of glow and stretches out as the
+        // edge descends, so the sky dissolves into the page over a long
+        // travel rather than meeting it at a hard line. Fully open by the
+        // time the seam is a third of the way down the screen — past that
+        // the transition is already off the bottom of the viewport.
+        if (reversed) {
+          const seamProgress = vh > 0 ? Math.min(1, Math.max(0, edge) / vh) : 0;
+          document.body.style.setProperty('--seam-fade',
+            fadeBetween(seamProgress, 0, 0.32).toFixed(3));
+        }
+
+        if (glowTrack) {
+          // Hold the glow back so the content overtakes it (rises at GLOW_SPEED).
+          const lag = travel * (1 - GLOW_SPEED);
+          glowTrack.style.transform = `translate3d(0, ${lag.toFixed(2)}px, 0)`;
+          // Fully clear the glow by the time the body's top reaches ~mid-viewport,
+          // so the aurora is gone before the nav swaps in rather than lingering.
+          const glowFade = smoothstep(Math.min(1, progress / GLOW_FADE_END));
+          glowTrack.style.opacity = (1 - glowFade).toFixed(3);
+        }
+
+        if (heroScene) {
+          // The planet sinks slower than the content — the camera keeps
+          // tilting up as you scroll on. Parallax rides #heroScene itself
+          // (NOT the pan wrapper) so it never fights the intro tween or the
+          // ambient CSS drifts inside.
+          heroScene.style.transform = `translate3d(0, ${(travel * 0.14).toFixed(2)}px, 0)`;
+          // Ambient dust haze clears by mid-scroll (consumed as a multiplier
+          // in the .hs-dust rest opacities), then the whole scene is gone
+          // before the curtain fully covers it.
+          document.body.style.setProperty('--hs-dust-reveal',
+            (1 - fadeBetween(progress, 0.15, 0.5)).toFixed(3));
+          heroScene.style.opacity = (1 - fadeBetween(progress, 0.5, 0.8)).toFixed(3);
+        }
 
         if (inner) {
           inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;

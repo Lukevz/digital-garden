@@ -2381,6 +2381,21 @@
     }
     #topBar > * { pointer-events: auto; }
 
+    /* …but nothing in it shows while the hero owns the screen — the hero is the
+       whole first view, and the chrome arrives with the feed (js/subnav.js sets
+       the class off the same .hero-spacer measurement the sub nav uses).
+       Faded on the PARENT: js/hero-entrance.js drives inline opacity on
+       .corner-status / .topBar-center / .topBar-actions during the intro, so
+       touching those children here would fight it. Opacity rather than
+       display/visibility so #subNav can keep measuring #modeTab's rect. */
+    #topBar { transition: opacity 0.45s ease; }
+    body.hero-owns-screen #topBar { opacity: 0; }
+    body.hero-owns-screen #topBar > * { pointer-events: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #topBar { transition: none; }
+    }
+
     /* Center slot: mode tabs (the hero greeting lives in the hero itself) */
     .topBar-center {
       grid-column: 2;
@@ -3485,74 +3500,418 @@
     body.starfield-mode .clock-hero-scale { display: none; }
     body.starfield-mode .clock-hero-wrap .greet-text { display: none; }
 
-    /* Earthy planetary limb at the horizon — a Tatooine twin-sunset spread
-       (sand → amber → terracotta → mauve-plum → umber) instead of one flat
-       tan-to-brown sweep. Same five-blob + screen-blend approach as the
-       aurora's .hero-glow: separate colored blobs staggered left-to-right so
-       their overlaps brighten into warm in-between tones instead of the
-       muddy blend a single multi-stop gradient produces. Retints the hero
-       glow away from the aurora pastels. */
-    body.starfield-mode .hero-glow__surface {
-      background:
-        radial-gradient(ellipse 46% 96% at 14% 100%, rgba(222,190,148,0.55) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 32% 100%, rgba(214,142,74,0.5) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 50% 100%, rgba(192,148,104,0.5) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 68% 100%, rgba(196,108,96,0.45) 0%, transparent 75%),
-        radial-gradient(ellipse 46% 96% at 86% 100%, rgba(150,96,104,0.4) 0%, transparent 75%);
-      background-blend-mode: screen;
-    }
-    body.starfield-mode .hero-glow {
-      filter: blur(26px) saturate(1);
-    }
-    body.starfield-mode .hero-glow::after {
-      /* Fade pushed out to 88% (was 62%) so the color trails off gradually
-         instead of running out partway and leaving flat black beneath it. */
-      background:
-        radial-gradient(ellipse 50% 100% at 18% 0%, rgba(222,190,148,0.26) 0%, transparent 88%),
-        radial-gradient(ellipse 50% 100% at 36% 0%, rgba(214,142,74,0.22) 0%, transparent 88%),
-        radial-gradient(ellipse 50% 100% at 54% 0%, rgba(192,148,104,0.22) 0%, transparent 88%),
-        radial-gradient(ellipse 50% 100% at 72% 0%, rgba(196,108,96,0.2) 0%, transparent 88%),
-        radial-gradient(ellipse 50% 100% at 90% 0%, rgba(150,96,104,0.18) 0%, transparent 90%);
-      background-blend-mode: screen;
-    }
+    /* ══ Dust-storm hero scene ═══════════════════════════════════════════
+       "For All Mankind" launch shot: a planet-scale horizon with a teal
+       atmosphere rim under black space, revealed by an on-load camera tilt
+       up out of a tan dust storm (js/hero-entrance.js drives the pan).
+       Approved values live in _reference/hero-prototype.html (direction B —
+       "Tempest"). The scene is always dark, regardless of --theme-blend.
 
-    /* Light-mode dusk ground under the sunset limb.
-       In dark mode the bottom-of-hero darkness comes free from the below-fold's
-       dark background; in light mode that curtain is white, so the limb washed out
-       to nothing at the very bottom. Rather than tint the curtain (which then scrolls
-       up and lingers behind the content), this rides the GLOW layer — a child of the
-       parallax track — so it rises slower than the content AND fades out on scroll
-       exactly like the aurora (glowTrack opacity/transform in heroParallax, main.js),
-       clearing well before the timeline reveals (progress 0.62 > glow-gone 0.55). A
-       soft blurred dusk band, darkest across the visible bottom strip, keyed to
-       (1 − theme-blend) so it's fully absent in dark mode and fades through the wipe.
-       Overflows the sides so its blurred edge falls off-screen. */
-    body.starfield-mode .hero-glow-track::after {
-      content: '';
-      position: absolute;
-      top: 100%;
-      left: -14vw;
-      right: -14vw;
-      height: 56vh;
+       Seam-safety rules (hard-won in the prototype, keep them):
+       – every drifting layer extends past the frame by ≥ one noise-tile on
+         the trailing side and travels exactly one tile per loop
+       – layers that the intro sweeps vertically are ~370vh tall with
+         feathered mask edges
+       – a layer's bounding-box edge must never be able to enter the frame. */
+    #heroScene {
+      position: fixed;
+      inset: 0;
+      z-index: 1;              /* same layer as #dotGrid; later in DOM = paints above it */
       pointer-events: none;
-      background: linear-gradient(to bottom,
-        transparent 0%,
-        color-mix(in oklab, #a5715e 66%, transparent) 12vh,
-        color-mix(in oklab, #99614f 64%, transparent) 30vh,
-        transparent 56vh);
-      filter: blur(30px);
-      opacity: calc(1 - var(--theme-blend));
-      /* Slow vertical breathing so the horizon reads as "alive" and gently beckons
-         upward — a subtle scroll cue in light mode (where this band is what's visible;
-         the aurora above has its own drift). transform only, so it composes with the
-         parent track's scroll-lag transform without fighting it. */
-      animation: heroDuskDrift 8.5s ease-in-out infinite;
+      overflow: clip;
+      contain: strict;
+      display: none;
+      --horizon: 72vh;
+      --planet-d: clamp(2600px, 520vw, 9000px);
+      /* Radius of every celestial circle — the atmosphere gradient places its
+         stops as absolute lengths off this, not percentages (see .hs-atmo-band). */
+      --hs-r: calc(var(--planet-d) / 2);
+      /* How far the atmosphere glow reaches above the limb. Figma measures a
+         66px band on a 1440×1024 frame ≈ 6.4vh. */
+      --hs-atmo-h: clamp(44px, 6.4vh, 96px);
+      /* Camera start = far enough below the horizon that it's out of frame at
+         --horizon's largest value. Kept in sync with runDustIntro(), which
+         reads this var rather than hard-coding the start. */
+      --pan-start: -75vh;
+      /* Planet ramp, sampled straight off the Figma frame's centre column at
+         fixed depths below the limb. It is a top-lit sphere: pale mint where
+         the atmosphere washes over the bright edge, warming through cream to
+         apricot. Nothing in it is dark — an earlier pass ran it down to near
+         black and the planet read as a silhouette. */
+      --hs-p-limb: #d9e4df;
+      --hs-p-pale: #dcdbcf;
+      --hs-p-cream: #e1d1bb;
+      --hs-p-sand: #e2c3a5;
+      --hs-p-peach: #e5c1a2;
+      --hs-p-apricot: #dab291;
+      --hs-p-deep: #d3ac8b;
+      /* Visible planet cap. The ramp is placed as fractions of this rather
+         than fixed lengths, so the whole gradient still lands the same way if
+         --horizon moves. */
+      --hs-cap: calc(100vh - var(--horizon));
+      /* Sampled off the Figma frame's limb, top of the band downward:
+         rgb(23,113,128) at the limb → (17,59,69) mid → fades to sky. */
+      --hs-atmo-hi: #1a8496;
+      --hs-atmo-mid: #135a68;
+      --hs-atmo-deep: #0d3742;
+      --hs-fill: #cda67a;
+      --hs-gust: rgba(205, 166, 122, .65);
+    }
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) #heroScene {
+      display: block;
+    }
+    /* Home sky goes always-dark behind the star canvas (the scene is a fixed
+       dark composition; the below-fold keeps theming normally). Section pages
+       drop this and return to the themed gradient. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode) {
+      background:
+        radial-gradient(135% 108% at 50% 120%, #10131a 0%, #08080a 46%, #060608 100%)
+        fixed;
     }
 
-    @keyframes heroDuskDrift {
-      0%   { transform: translate3d(0, 7px, 0) scaleY(1); }
-      50%  { transform: translate3d(1vw, -17px, 0) scaleY(1.07); }
-      100% { transform: translate3d(0, 7px, 0) scaleY(1); }
+    .hero-scene__pan { position: absolute; inset: 0; }
+    body.dust-intro-pending .hero-scene__pan {
+      transform: translateY(var(--pan-start));
+      will-change: transform;
+    }
+
+    /* Planet + atmosphere: giant circles, only the top arc in frame. No blur
+       or shadow filters on these — ring gradients do the glow, cheaply. */
+    .hs-planet, .hs-atmo-bloom, .hs-atmo-band {
+      position: absolute;
+      left: 50%;
+      width: var(--planet-d);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      transform: translateX(-50%);
+    }
+    /* The separate wide bloom is gone — .hs-atmo-band now carries the whole
+       falloff itself (below), so a second circle would just double-expose it.
+       The element and its intro tween stay wired in case it's wanted back. */
+    .hs-atmo-bloom { display: none; }
+    body.dust-intro-pending .hs-atmo-bloom { opacity: .35; }
+
+    /* ── Atmosphere: bright AT the limb, fading UP into space ──────────────
+       ⚠️ Direction matters and is easy to get backwards. The band is a circle
+       clipped to itself and the planet paints over it, so only the sliver
+       between the two circles' edges is visible — and on that sliver,
+       *outward from center = upward into the sky*. Figma's aurora is brightest
+       against the planet and ramps to nothing ~66px above it; an earlier pass
+       had the stops running the other way (near-white at the top, hard-cut at
+       100%), which read as a stroked outline rather than air.
+
+       The stops are absolute LENGTHS off --hs-r, not percentages of the
+       radius, so the ramp spans exactly --hs-atmo-h — the same value the
+       element is offset up by. With percentages the two drift apart as the
+       viewport changes (--planet-d tracks vw, the offset tracks vh) and the
+       glow either clips bright at the top or dies before reaching the limb. */
+    .hs-atmo-band {
+      top: calc(var(--horizon) - var(--hs-atmo-h));
+      background: radial-gradient(closest-side,
+        var(--hs-atmo-hi) 0,
+        /* everything inward of here is behind the planet */
+        var(--hs-atmo-hi) calc(var(--hs-r) - var(--hs-atmo-h) * 1.02),
+        /* the limb itself: a few px of lift so the terminator stays crisp
+           against the dark planet (Figma gets this from its bright planet) */
+        color-mix(in oklab, #fff 26%, var(--hs-atmo-hi)) calc(var(--hs-r) - var(--hs-atmo-h)),
+        var(--hs-atmo-hi) calc(var(--hs-r) - var(--hs-atmo-h) * .93),
+        var(--hs-atmo-mid) calc(var(--hs-r) - var(--hs-atmo-h) * .72),
+        var(--hs-atmo-deep) calc(var(--hs-r) - var(--hs-atmo-h) * .42),
+        color-mix(in oklab, var(--hs-atmo-deep) 34%, transparent) calc(var(--hs-r) - var(--hs-atmo-h) * .16),
+        transparent var(--hs-r));
+      animation: hsShimmer 6.4s ease-in-out infinite alternate;
+    }
+    @keyframes hsShimmer { from { opacity: .82; } to { opacity: 1; } }
+    /* Concentric with the circle itself (closest-side ⇒ 100% IS the limb), so
+       every stop is a true depth-below-the-limb and the shading follows the
+       curve out to the edges of the frame. The previous build used
+       `circle at 50% 4%`, which put the gradient's origin ~300px BELOW the
+       limb — the bright stop landed as a band under the horizon and the limb
+       itself fell on the darkest stops, i.e. lit from the wrong side. */
+    .hs-planet {
+      top: var(--horizon);
+      background: radial-gradient(closest-side in oklab,
+        var(--hs-p-deep) 0,
+        var(--hs-p-deep) calc(var(--hs-r) - var(--hs-cap) * 2),
+        var(--hs-p-apricot) calc(var(--hs-r) - var(--hs-cap) * .75),
+        var(--hs-p-peach) calc(var(--hs-r) - var(--hs-cap) * .48),
+        var(--hs-p-sand) calc(var(--hs-r) - var(--hs-cap) * .32),
+        var(--hs-p-cream) calc(var(--hs-r) - var(--hs-cap) * .21),
+        var(--hs-p-pale) calc(var(--hs-r) - var(--hs-cap) * .1),
+        var(--hs-p-limb) var(--hs-r));
+      overflow: hidden;
+    }
+    /* Drifting mottled dust shadows on the surface; oversized + feathered so
+       the drift can never expose an edge. Noise background set by JS. */
+    .hs-planet-surface {
+      position: absolute;
+      top: 0; left: -30%;
+      width: 160%; height: 7%;
+      mix-blend-mode: soft-light;
+      opacity: 1;
+      -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+      animation: hsSurfaceDrift 210s linear infinite alternate;
+    }
+    @keyframes hsSurfaceDrift { from { transform: translateX(0); } to { transform: translateX(-1200px); } }
+
+    /* ── Planet cloud deck ────────────────────────────────────────────────
+       Two banded sheets over the surface mottling, drifting at different
+       rates in OPPOSITE directions — that counter-motion is what sells a
+       turning atmosphere; matched drifts just read as one sliding texture.
+       Both use anisotropic turbulence (low X frequency, higher Y), so the
+       features stretch into latitude bands like a real cloud deck instead
+       of isotropic blobs. Noise backgrounds are set by JS.
+
+       Each sheet carries one full tile of slack on the side it travels
+       toward and moves exactly one tile per loop, so the wrap is invisible
+       and no bounding-box edge can ever enter the circle. */
+    .hs-planet-clouds, .hs-planet-wisps {
+      position: absolute;
+      top: 0;
+      left: -30%;
+      width: 160%;
+      height: 7%;
+      background-repeat: repeat;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+    .hs-planet-clouds {
+      background-size: 1600px 1600px;
+      opacity: .4;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0 46%, transparent 92%);
+      mask-image: linear-gradient(to bottom, #000 0 46%, transparent 92%);
+      animation: hsCloudDrift 170s linear infinite;
+    }
+    .hs-planet-wisps {
+      background-size: 1100px 1100px;
+      opacity: .24;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0 32%, transparent 76%);
+      mask-image: linear-gradient(to bottom, #000 0 32%, transparent 76%);
+      animation: hsWispDrift 104s linear infinite;
+    }
+    @keyframes hsCloudDrift { to { transform: translateX(-1600px); } }
+    @keyframes hsWispDrift { from { transform: translateX(-1100px); } to { transform: translateX(0); } }
+
+    /* Clip container for the dust: masks the haze to below the horizon (in
+       camera space) so the black sky and the text stay crisp. It is NOT
+       animated — the sweep/drift transforms live on its children — so the
+       cut line stays glued to the planet's limb throughout the intro. */
+    .hs-dust-clip {
+      position: absolute;
+      inset: -200vh 0;
+      -webkit-mask-image: linear-gradient(to bottom,
+        transparent calc(200vh + var(--horizon) - 5vh),
+        #000 calc(200vh + var(--horizon) + 8vh));
+      mask-image: linear-gradient(to bottom,
+        transparent calc(200vh + var(--horizon) - 5vh),
+        #000 calc(200vh + var(--horizon) + 8vh));
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+    }
+
+    /* Foreground dust: three tiling noise layers (backgrounds set by JS).
+       The intro sweeps them from translateY(-Nvh) to rest; each .hs-drift
+       extends right by exactly one tile and travels one tile per loop.
+       Positioned inside .hs-dust-clip (whose box starts at -200vh), so
+       top:20vh here = the old -180vh in camera coordinates. */
+    .hs-dust {
+      position: absolute;
+      left: 0; right: 0;
+      top: 20vh; height: 370vh;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+    }
+    .hs-drift { position: absolute; top: 0; bottom: 0; left: 0; background-repeat: repeat; }
+    /* Rest opacities × a scroll multiplier (set by heroParallax in main.js)
+       so the ambient haze clears as the below-fold curtain rises. */
+    .hs-dust--far  { opacity: calc(.22 * var(--hs-dust-reveal, 1)); }
+    .hs-dust--mid  { opacity: calc(.14 * var(--hs-dust-reveal, 1)); }
+    .hs-dust--near { opacity: calc(.07 * var(--hs-dust-reveal, 1)); }
+    .hs-dust--far  .hs-drift { right: -2000px; background-size: 2000px 2000px; animation: hsDrift2000 130s linear infinite; }
+    .hs-dust--mid  .hs-drift { right: -1400px; background-size: 1400px 1400px; animation: hsDrift1400r 96s linear infinite; }
+    .hs-dust--near .hs-drift { right: -900px;  background-size: 900px 900px;   animation: hsDrift900 70s linear infinite; }
+    @keyframes hsDrift900   { to { transform: translateX(-900px); } }
+    @keyframes hsDrift1400r { from { transform: translateX(-1400px); } to { transform: translateX(0); } }
+    @keyframes hsDrift2000  { to { transform: translateX(-2000px); } }
+    body.dust-intro-pending .hs-dust--far  { opacity: .8;  transform: translateY(-30vh); }
+    body.dust-intro-pending .hs-dust--mid  { opacity: .9;  transform: translateY(-55vh); }
+    body.dust-intro-pending .hs-dust--near { opacity: 1;   transform: translateY(-88vh); }
+
+    /* Full-viewport storm immersion — opaque-ish tan wash the camera starts
+       inside; the intro fades it out entirely (the dust layers keep the
+       ambient haze after that). */
+    .hs-veil {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom in oklab,
+        color-mix(in oklab, var(--hs-fill) 88%, #fff) 0%,
+        var(--hs-fill) 55%,
+        color-mix(in oklab, var(--hs-fill) 80%, #000) 100%);
+      opacity: 0;
+      isolation: isolate;   /* keep .hs-veil-tex blending against the wash only */
+    }
+    /* The wash was the one surface in the storm that couldn't read as weather
+       — a flat gradient holding still for 2.8s. This drifts the same
+       turbulence the dust layers use, at a higher frequency, across it.
+       ⚠️ .hs-veil is a sibling of .hero-scene__pan, NOT inside it, so this
+       animation can't invalidate the pan's cached subtree — which is why it
+       is safe to keep running through the tilt while everything inside the
+       pan is paused (see the intro-performance block below). */
+    .hs-veil-tex {
+      position: absolute;
+      inset: 0;
+      right: -1200px;      /* one tile of slack in the direction of travel */
+      background-repeat: repeat;
+      background-size: 1200px 1200px;
+      mix-blend-mode: overlay;
+      opacity: .6;
+      animation: hsVeilDrift 18s linear infinite;
+    }
+    @keyframes hsVeilDrift { to { transform: translateX(-1200px); } }
+    /* Promoted for the intro only: the veil's opacity is animated across the
+       whole pan, and without this the full-viewport gradient repaints each
+       frame instead of the compositor just fading a cached one. */
+    body.dust-intro-pending .hs-veil { opacity: .7; will-change: opacity; }
+
+    /* ── Storm beat: swirls ──
+       Slow vortices turning inside the veil during the camera hold. A conic
+       gradient with a few soft arms is what makes rotation read as *churn* —
+       a rotating radial gradient is rotationally symmetric and looks static.
+       The arms are deliberately faint and the intro turns them only a dozen
+       degrees or so: this is weather seen from orbit, so the wash should
+       breathe rather than boil. Blended soft-light so each arm lifts or darkens
+       the tan wash instead of painting over it. Rest state is invisible;
+       runDustIntro() drives them.
+
+       ⚠️ NO `filter: blur()` here, deliberately. A blurred layer re-rasterizes
+       on every frame it rotates, and at this size (a ~1000px square) three of
+       them dropped frames right as the camera pan started — the most expensive
+       moment in the intro. The softness costs nothing to get another way: the
+       conic arms already ramp over ~70° each, and the mask is a donut, which
+       both feathers the outer edge AND punches out the center. That center
+       matters — every arm of a conic gradient converges on one point, and
+       unblurred that convergence is a visible pinwheel pinch. Masked out, it
+       reads as the eye of the vortex instead. */
+    .hs-swirl {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 80vmax;
+      height: 80vmax;
+      margin: -40vmax 0 0 -40vmax;
+      border-radius: 50%;
+      opacity: 0;
+      mix-blend-mode: soft-light;
+      background: conic-gradient(from 0deg,
+        rgba(255, 255, 255, 0) 0deg,
+        rgba(255, 240, 214, .3) 44deg,
+        rgba(255, 255, 255, 0) 116deg,
+        rgba(96, 52, 24, .24) 178deg,
+        rgba(255, 255, 255, 0) 252deg,
+        rgba(255, 236, 208, .2) 304deg,
+        rgba(255, 255, 255, 0) 360deg);
+      -webkit-mask-image: radial-gradient(closest-side, transparent 0%, rgba(0,0,0,.85) 34%, rgba(0,0,0,.5) 62%, transparent 86%);
+      mask-image: radial-gradient(closest-side, transparent 0%, rgba(0,0,0,.85) 34%, rgba(0,0,0,.5) 62%, transparent 86%);
+    }
+    /* Offset + resize each one so they don't read as one disc spinning. */
+    .hs-swirl:nth-of-type(2) { left: 24%; top: 62%; width: 62vmax; height: 62vmax; margin: -31vmax 0 0 -31vmax; }
+    .hs-swirl:nth-of-type(3) { left: 78%; top: 34%; width: 48vmax; height: 48vmax; margin: -24vmax 0 0 -24vmax; }
+    body.dust-intro-pending .hs-swirl { will-change: transform, opacity; }
+
+    /* ── Storm beat: distant discharges ──
+       Martian dust storms discharge triboelectrically, and from this far out
+       you'd never resolve a forked bolt — just a patch of cloud that glows for
+       a moment and goes out. So: small, dim, heavily feathered, screen-blended
+       so it brightens the dust rather than sitting on top of it. There is
+       deliberately NO frame-wide flash layer — a full-screen strobe is what
+       makes this read as a jump scare instead of weather.
+
+       Also unblurred — a radial gradient with soft stops IS the blur, and this
+       one is still fading while the camera pans, so the filter was pure cost
+       in the exact window that couldn't afford it. */
+    .hs-bolt {
+      position: absolute;
+      width: 34vw;
+      height: 20vh;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      opacity: 0;
+      mix-blend-mode: screen;
+      background: radial-gradient(closest-side,
+        rgba(255, 250, 242, .8) 0%,
+        rgba(238, 224, 255, .46) 30%,
+        rgba(196, 174, 222, .16) 58%,
+        transparent 84%);
+    }
+
+    /* Wind gusts, fired by the intro only. */
+    .hs-gust {
+      position: absolute;
+      width: 68vw; height: 13vh;
+      left: -70vw;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, var(--hs-gust) 0%, transparent 70%);
+      /* Was blur(10px) — dropped for the same reason as the swirls. These
+         travel 190vw during the camera pan, so a filter on them re-rasterizes
+         a 68vw-wide layer every frame of the busiest stretch, and the radial
+         gradient was already carrying all the softness. */
+      transform: skewY(-6deg);
+      opacity: 0;
+    }
+
+    /* Film grain — noise background set by JS. */
+    .hs-grain {
+      position: absolute;
+      inset: -60px;
+      opacity: .045;
+      mix-blend-mode: overlay;
+      animation: hsGrainJump .5s steps(4) infinite;
+    }
+    @keyframes hsGrainJump {
+      0% { transform: translate(0, 0); } 25% { transform: translate(-24px, 16px); }
+      50% { transform: translate(18px, -22px); } 75% { transform: translate(-12px, -14px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    /* ── ⚠️ Intro performance: freeze the ambient loops while the camera moves ──
+       The pan translates a subtree containing two ~7500px circles, three 370vh
+       dust sheets, a mask on each, and a soft-light blend. The compositor can
+       move all of that for free — but ONLY as a cached texture, and only if
+       nothing inside it invalidates. A single ambient loop ticking mid-pan
+       (the 210s surface drift, the 6.4s limb shimmer, any of the three dust
+       drifts) forces the entire subtree to re-rasterize every frame, which is
+       what the stutter on the way up was. Nothing here is faster than a 70s
+       loop, so holding them still for the intro's ~6s is imperceptible — and
+       because each is paused at time 0 rather than mid-cycle, they start from
+       their own beginning when the class drops instead of jumping. */
+    body.dust-intro-pending .hs-atmo-band,
+    body.dust-intro-pending .hs-planet-surface,
+    body.dust-intro-pending .hs-planet-clouds,
+    body.dust-intro-pending .hs-planet-wisps,
+    body.dust-intro-pending .hs-drift {
+      animation-play-state: paused;
+    }
+    /* Grain can't be fixed by pausing: it's a full-frame overlay blend sitting
+       OVER the moving scene, so the compositor has to recompute it against a
+       changing backdrop every frame regardless of its own animation. It's a
+       4.5% noise wash — it can arrive once the camera has settled. */
+    body.dust-intro-pending .hs-grain { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hs-atmo-band, .hs-planet-surface, .hs-planet-clouds, .hs-planet-wisps,
+      .hs-drift, .hs-grain, .hs-veil-tex {
+        animation: none;
+      }
+    }
+    @media (max-width: 768px) {
+      #heroScene { --horizon: 76vh; --pan-start: -79vh; }
+      .hs-dust--near { display: none; }
+      /* Three big blurred conic gradients are the most expensive thing in the
+         intro; one carries the churn well enough on a phone. */
+      .hs-swirl:nth-of-type(2), .hs-swirl:nth-of-type(3) { display: none; }
     }
 
     /* Shrink the dial phrase ~24% while anchoring its top edge, so the greeting
@@ -3780,6 +4139,216 @@
       }
       body.starfield-mode:not(.work-mode) .hero-lockup .intro { align-items: center; }
       body.starfield-mode:not(.work-mode) .hero-lockup .intro-copy { text-align: center; }
+    }
+
+    /* ══ Dust-hero text lockup ═══════════════════════════════════════════
+       HELLO + subtitle floating in the sky band above the planet horizon,
+       matching the Figma frames: tiny wide-tracked Quicksand caps against
+       the huge planet — the scale contrast IS the composition. Replaces the
+       avatar/greeting/dial lockup on home (clean slate). Placed AFTER the
+       whole starfield-lockup section so these win its equal-or-lower
+       specificity overrides (display, font-size:inherit, 44ch measure). */
+    /* Avatar back above the wordmark. Only the headshot survives out of
+       .clock-hero-wrap — the "Hi, I'm Luke!" text and the dial are already
+       hidden by the starfield rules further up, and the copy underneath now
+       carries the introduction. Kept small on purpose: the poster's whole
+       idea is the scale contrast, so a big avatar competes with HELLO. */
+    body.dust-hero:not(.work-mode) .clock-hero-wrap {
+      display: block;
+      width: auto;
+      flex: 0 0 auto;
+      order: -1;
+      /* ⚠️ No opacity here — this selector outweighs the dust-intro-pending
+         start-state rule below, and would leave the avatar sitting in the
+         middle of the storm through the whole hold. */
+    }
+    /* ⚠️ The gap under the avatar needs the .hero-lockup in the selector:
+       the starfield lockup's own rule (…:not(.work-mode) .hero-lockup
+       .clock-hero-wrap { margin: 0 }) zeroed it out from a side-by-side
+       layout that no longer applies here, and it outranks the block above. */
+    body.dust-hero:not(.work-mode) .hero-lockup .clock-hero-wrap,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap {
+      margin: 0 0 24px;
+    }
+    body.dust-hero:not(.work-mode) .clock-hero-wrap .intro-greeting-bar,
+    body.dust-hero:not(.work-mode) .clock-hero-wrap .intro-greeting-life {
+      justify-content: center;
+      width: auto;
+      margin: 0;
+      padding: 0;
+    }
+    /* Beats the starfield lockup's "exactly 3 line-boxes tall" sizing (which
+       assumed the avatar sat BESIDE a 3-line paragraph). */
+    body.dust-hero:not(.work-mode) .clock-hero-wrap .intro-greeting-bar .avatar--inline,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .clock-hero-wrap .intro-greeting-bar .avatar--inline {
+      height: clamp(76px, 7.6vw, 112px);
+      width: clamp(76px, 7.6vw, 112px);
+      border-radius: 50%;
+      margin: 0;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), 0 8px 28px rgba(0, 0, 0, .5);
+    }
+    /* Stack it above the copy (the starfield lockup is a side-by-side row). */
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup {
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: auto;
+    }
+    body.dust-hero.starfield-mode:not(.work-mode) .hero {
+      padding-bottom: 32vh; /* lockup centers ~34vh — clear air above the horizon */
+    }
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro,
+    body.dust-hero:not(.work-mode) .intro {
+      align-items: center;
+    }
+    body.dust-hero:not(.work-mode) .intro .intro-headline-content,
+    body.dust-hero.starfield-mode:not(.work-mode) .intro .intro-headline-content {
+      display: block;
+      margin-right: 0;
+    }
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-text {
+      width: auto;
+      max-width: 100%;
+    }
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-copy {
+      width: auto;
+      /* Narrow enough that the justified caption sets as three full lines
+         rather than two-and-an-orphan — below ~460px it spills to four. */
+      max-width: min(470px, calc(100vw - 48px));
+      margin: 0;
+      text-align: center;
+      opacity: var(--intro-greeting-reveal, 1);
+    }
+    body.dust-hero:not(.work-mode) .intro-copy .intro-greeting,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-copy .intro-greeting {
+      display: block;
+      font-family: 'Quicksand', 'Geomanist', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: clamp(22px, 2.92vw, 42px);
+      /* Figma: 41.58px tracking @ 42px ≈ .99em. text-indent re-centers the
+         trailing letter-space that letter-spacing adds after the last glyph. */
+      letter-spacing: .99em;
+      text-indent: .99em;
+      text-transform: uppercase;
+      color: #fff;
+      white-space: nowrap;
+      line-height: 1.25;
+    }
+    body.dust-hero:not(.work-mode) .intro-copy .description,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-copy .description {
+      display: block;
+      margin-top: clamp(12px, 2.1vh, 22px);
+      font-family: 'Quicksand', 'Geomanist', system-ui, sans-serif;
+      font-weight: 700;
+      /* Figma: ~15px on a 1440 frame (25px line-boxes at 1.65) ≈ 1.05vw. */
+      font-size: clamp(10px, 1.05vw, 15px);
+      letter-spacing: .2em;
+      line-height: 1.65;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .72);
+      text-align: justify;
+      text-align-last: justify;
+    }
+    @media (max-width: 768px) {
+      body.dust-hero:not(.work-mode) .intro-copy .description,
+      body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-copy .description {
+        text-align: center;
+        text-align-last: center;
+      }
+    }
+    /* Intro start-state: the copy hides until the camera levels (the anime
+       timeline reveals it inline). Status chrome + star canvas are snapped
+       and revealed by js/hero-entrance.js itself, same as the classic
+       entrance, so they're deliberately NOT held here — an inline reveal
+       can't animate past a class rule that pins them at 0. */
+    body.dust-intro-pending .intro-copy .intro-greeting,
+    body.dust-intro-pending .intro-copy .description,
+    body.dust-intro-pending .clock-hero-wrap {
+      opacity: 0;
+    }
+
+    /* The frosted veil (body::before) would grey the whole scene out — the
+       dust-hero home paints its own atmosphere. Section/overflow/work pages
+       keep the frosting. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode)::before {
+      content: none;
+    }
+    /* The hero is always dark: top chrome that reads --text-primary (dark ink
+       in light theme) gets pinned to its dark-theme color over the scene. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode) .corner-status,
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode) .topBar-actions {
+      --text-primary: #e9ebef;
+      color: #e9ebef;
+    }
+
+    /* ── Reversed reveal ──
+       The camera tilted UP to find the horizon, so the page continues the
+       move: home loads scrolled to the document's end (pinned by an inline
+       script after the spacer) and the visitor scrolls UP to reveal the feed,
+       which descends over the hero like a curtain being lowered. The feed's
+       section order is reversed so the first section is the first revealed. */
+    body.dust-hero:not(.section-mode):not(.work-mode) .below-fold-inner.home-feed {
+      display: flex;
+      flex-direction: column-reverse;
+      /* The base rule's big top padding (the old "aurora gap" before content)
+         belongs on the seam side now — the BOTTOM edge, next to the hero. */
+      padding: 120px 20px clamp(120px, 20vh, 260px);
+    }
+    body.dust-hero:not(.section-mode):not(.work-mode) .hero {
+      border-radius: 0; /* the seam is a fade now, not a rounded panel edge */
+    }
+
+    /* ── The seam ──
+       The feed used to arrive as a visible white panel: rounded bottom
+       corners and a 12vh peek parked at the top of the viewport at rest.
+       That read as a curtain hanging in the sky. Instead the feed's edge is
+       square and unlit, and everything below it is a gradient that GROWS
+       with scroll (--seam-fade, set by heroParallax() in js/main.js):
+
+         at rest      →  ~20px of glow: the sky just brightens along the very
+                         top edge, hinting there's something above
+         mid-scroll   →  the gradient stretches to ~44vh, so the black sky
+                         dissolves into the page background over a long
+                         travel instead of meeting it at a line
+
+       Kept in --bg so it inverts with the theme (dark mode gets the same
+       move, just without the white). */
+    body.dust-hero:not(.section-mode):not(.work-mode) #belowFold {
+      border-radius: 0;
+    }
+    body.dust-hero:not(.section-mode):not(.work-mode) #belowFold::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      /* ⚠️ Fixed height, scaled — NOT an animated height. This grows on every
+         scroll frame, and `height` is a layout property: driving it directly
+         made the browser reflow and repaint the seam the whole way up. scaleY
+         off a fixed box is a compositor-only transform, and stretching a
+         linear gradient's texture is indistinguishable from a taller one.
+           0.035 of 60vh ≈ 20px, the thin resting glow. */
+      height: 60vh;
+      transform-origin: top;
+      transform: scaleY(calc(0.035 + var(--seam-fade, 0) * 0.965));
+      pointer-events: none;
+      background: linear-gradient(to bottom,
+        var(--bg) 0%,
+        color-mix(in oklab, var(--bg) 62%, transparent) 34%,
+        color-mix(in oklab, var(--bg) 24%, transparent) 66%,
+        transparent 100%);
+    }
+
+    /* Spacer (base is 88vh) taller than the viewport, so the document's end
+       leaves the feed's bottom edge a good way ABOVE the top of the screen.
+       Everything past the first 100vh is open sky: you scroll the storm out and
+       travel through bare starfield before the feed's edge shows up at all,
+       instead of the page background arriving on the first pixel of scroll.
+       ⚠️ This is the single knob for how long that stretch is — heroParallax()
+       in js/main.js measures the overhang off this element rather than
+       hardcoding it, so the scene's exit re-times itself when you change it. */
+    body.dust-hero:not(.section-mode):not(.work-mode) .hero-spacer {
+      height: 150vh;
     }
 
     /* ── Dedicated overflow-menu pages (Bookshelf / My Gear / App Stack / Places) ──
@@ -7828,7 +8397,9 @@ a.portfolio-img-item:hover img {
   opacity: 1;
   padding: 4px 18px 10px;
 }
-.chat-dock-chip {
+/* One chip, two homes: the idle nudge in #chatDockSuggest and the follow-ups
+   rendered into a transcript after an answer that couldn't fully land. */
+.chat-chip {
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--glass-border-medium);
@@ -7841,10 +8412,29 @@ a.portfolio-img-item:hover img {
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
-.chat-dock-chip:hover {
+.chat-chip:hover {
   color: var(--text-primary);
   background: var(--hover-fill-soft);
   border-color: var(--glass-border);
+}
+
+/* ── Follow-up chips (js/chat.js, renderFollowups) ──
+   Sit in the transcript directly under the reply they belong to, aligned with
+   the assistant's bubbles so they read as part of that answer rather than a
+   new turn. Same surface in the dock island and the overlay. */
+.chat-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 4px;
+  animation: chatFollowupsIn 0.32s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes chatFollowupsIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-followups { animation: none; }
 }
 /* Now that the panel opens tall, a short conversation would be stranded at the
    top of it. Push it down to sit next to the compose row instead — via

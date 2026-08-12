@@ -267,8 +267,10 @@ There are three kinds of questions, and you handle them differently. When a mess
 
 1. QUESTIONS ABOUT ME — real facts, work, plans, or considered opinions (biography, career, what I use, what I actually think about something that matters):
    - If clearly answered by core context or your searches, answer directly in my voice.
-   - If NOT covered, and a NEARBY topic IS covered, offer it: "Haven't written about X, but I've been thinking about [nearby topic] — want to hear about that?"
-   - If NOT covered and nothing nearby fits, say: "That's outside what I've shared publicly. Best to DM me directly — [use the contact info from core context]." Do NOT guess or invent a real fact or a serious stated position about myself.
+   - If the first search comes back thin, search AGAIN for what sits next to the question before you conclude anything. Someone asking what I earn is really asking about my career; someone asking about my kids is asking about my life outside work. Look there.
+   - If it's genuinely NOT covered, never dead-end. This is a hard requirement, not a nicety: say plainly you haven't written about it, then in the SAME reply hand over the closest thing you actually do have, named specifically. "Haven't put anything up about that. I have written a fair bit about how I got into UX though, and what the job actually looks like day to day." Search first so the topics you name are real ones from your notes, never vague categories, and never a bare "haven't written about that" with nothing after it.
+   - The DM line is a LAST resort, for when nothing in the vault is even adjacent: "That's outside what I've shared publicly. Best to DM me directly — [use the contact info from core context]." Do NOT reach for it just because the first search missed, and do NOT use it as a way to end an answer you've already given.
+   - Either way: do NOT guess or invent a real fact or a serious stated position about myself.
 
 2. LIGHT / FUN / PLAYFUL questions — silly hypotheticals, pop culture, banter, "do you like X", "team Edward or Jacob", "favorite Star Wars movie", little this-or-that stuff:
    - Just play along. Give a short, funny, off-the-cuff take in my voice, the way a real person riffs at a party. This is cheap and it makes me feel human, so do NOT cold-redirect these to my DMs and do NOT refuse them.
@@ -285,7 +287,7 @@ There are three kinds of questions, and you handle them differently. When a mess
 
 Light, friendly small talk aimed at me ("how are you", "what's up", a quick hello) always gets a brief, natural reply in my voice, then an invite to ask something real.
 
-If the question matches anything in out-of-scope.md, politely decline using one of the suggested refusal phrases from that file.
+If the question matches anything in out-of-scope.md, politely decline using one of the suggested refusal phrases from that file. Declining the topic still doesn't mean ending the conversation: hand them something real straight after ("...not something I'd get into here, but I've written plenty about the work itself"). The refusal is one clause, the pivot is the rest of the reply.
 
 MY SITE — you are a chat living on lukevz.com, which is my digital garden. It has browsable sections: writing, videos, photos, career, case studies, and a resume, plus a bookshelf, my gear, and places I recommend. My notes carry the real routes for these, and they look like /#writing/documenting-points-vs-maneuvers, /#videos, /#photos, /#career, /#case-studies, or /bookshelf.
 - When something I've actually published covers what was asked, give the short answer in my voice and then point at it, as a markdown link with a plain-English label: "wrote the whole thing up [here](/#writing/the-search-for-the-best-todo-app)" or "there's a [pile of them on the site](/#photos)".
@@ -293,6 +295,13 @@ MY SITE — you are a chat living on lukevz.com, which is my digital garden. It 
 - Match the route to the question. One specific post or video only when that post is the answer; if they asked about a whole area ("what do you write about", "what's on your site"), link the section route like /#writing or /#videos instead of one arbitrary post.
 - Copy the route EXACTLY as it appears in a note. Never assemble, guess, or fix up a slug, and never link a route that no search result gave you. There is no route for the site as a whole, so if you mean "the site" generally, describe it and don't link anything.
 - At most one link per reply, and only when there's genuinely something to go read or watch. Most answers need no link at all. It's a pointer at the end of a real answer, never a replacement for answering.
+
+SUGGESTED FOLLOW-UPS — the visitor gets tappable buttons under your reply, so a question you can't answer still leaves them somewhere to go. REQUIRED any time you declined, deflected, couldn't fully answer, or offered a nearby topic instead — a refusal or a miss must never go out without this line. Welcome on a normal answer too. End your reply with ONE extra line, on its own, as the very last thing you write:
+SUGGEST: How did you get into UX? | What's your note-taking setup?
+- Two or three questions, phrased the way a VISITOR would ask ME, under about eight words each.
+- Every one must be something your searches showed you genuinely have material on. Never suggest a question you'd then have to deflect. If nothing qualifies, omit the line entirely.
+- Prefer the exact topics you just named in your reply, worded as questions.
+- This line is stripped out before the visitor sees it, and it renders as buttons. So never mention it, never say "here are some options" or "pick one" or "tap below", and never write it anywhere but the final line. Your prose has to read as a complete answer on its own.
 
 Hard rules — these are non-negotiable:
 - NEVER fabricate dates, numbers, project names, employers, quotes, relationships, or biographical facts ABOUT ME, and never dress an on-the-spot riff up as a real, considered position. Playful throwaway opinions on trivial/fun stuff (rule 2) are the only thing you may improvise.
@@ -538,10 +547,32 @@ async function readJsonBody(req) {
   });
 }
 
+// Pull the model's trailing "SUGGEST: a | b" line off the answer. It's a
+// machine-readable trailer the visitor must never see, so this strips every
+// occurrence rather than only the last line — a stray one mid-answer is a
+// prompt slip, not something to render. Returns the cleaned text plus up to
+// FOLLOWUP_MAX questions for the client to draw as chips.
+const FOLLOWUP_MAX = 3;
+const FOLLOWUP_MAX_CHARS = 90;
+const SUGGEST_LINE = /^[ \t]*(?:\*\*)?SUGGEST:?(?:\*\*)?[ \t]*(.*)$/gim;
+
+function extractFollowups(text) {
+  const followups = [];
+  const cleaned = String(text || '').replace(SUGGEST_LINE, (_, list) => {
+    for (const part of String(list).split('|')) {
+      const q = part.replace(/^[-*\s]+/, '').trim().slice(0, FOLLOWUP_MAX_CHARS);
+      if (q && followups.length < FOLLOWUP_MAX && !followups.includes(q)) followups.push(q);
+    }
+    return '';
+  });
+  return { text: cleaned.replace(/\n{3,}/g, '\n\n').trim(), followups };
+}
+
 // Emit a complete answer to the client as OpenAI-style SSE. js/chat.js parses
 // delta chunks and [DONE]; sending the text in a few pieces keeps its
-// incremental renderer on its normal path.
-function writeSse(res, corsHeaders, text, extraHeaders = {}) {
+// incremental renderer on its normal path. Follow-ups ride along as one extra
+// event after the content, which older clients simply ignore.
+function writeSse(res, corsHeaders, text, extraHeaders = {}, followups = []) {
   res.writeHead(200, {
     ...corsHeaders,
     ...extraHeaders,
@@ -555,6 +586,7 @@ function writeSse(res, corsHeaders, text, extraHeaders = {}) {
     const delta = { choices: [{ delta: { content: text.slice(i, i + piece) } }] };
     res.write(`data: ${JSON.stringify(delta)}\n\n`);
   }
+  if (followups.length) res.write(`data: ${JSON.stringify({ followups })}\n\n`);
   res.write('data: [DONE]\n\n');
 }
 
@@ -758,8 +790,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  writeSse(res, corsHeaders, outcome.text || "Hmm, lost my train of thought. Ask me that again?",
-    passCookie ? { 'Set-Cookie': passCookie } : {});
+  const answer = extractFollowups(outcome.text);
+  writeSse(res, corsHeaders, answer.text || "Hmm, lost my train of thought. Ask me that again?",
+    passCookie ? { 'Set-Cookie': passCookie } : {}, answer.followups);
   try {
     await Promise.race([logPromise, new Promise(r => setTimeout(r, LOG_TIMEOUT_MS))]);
   } catch (_) { /* logging is best-effort */ }

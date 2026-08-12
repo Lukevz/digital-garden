@@ -35,7 +35,13 @@
   let mockReplyIndex = 0;
 
   const MOCK_FIXTURES = {
-    help: "Mock commands: **short**, **long**, **links**, **md**, **empty**, **error**, **429**, **netfail**. Anything else cycles a few canned replies. Toggle with `chat.mock(false)`.",
+    help: "Mock commands: **short**, **long**, **links**, **md**, **gap**, **empty**, **error**, **429**, **netfail**. Anything else cycles a few canned replies. Toggle with `chat.mock(false)`.",
+    // A fixture that couldn't answer and steers instead — the followups array
+    // is what the real API sends after stripping the model's SUGGEST line.
+    gap: {
+      text: "Haven't put anything up about what I make, honestly. I have written a fair bit about how I ended up in UX though, and what the job actually looks like day to day.",
+      followups: ['How did you get into UX?', 'What does your job involve?', "What's your note-taking setup?"],
+    },
     short: "Cats, and I don't even have to think about it.",
     long: "Honestly it was a long, winding road. I started a Mac tutorial channel on YouTube as a teenager and taught myself design, video, and code from scratch, then did years of freelance and agency work before landing in UX properly.\n\nAnd so by the time I got the official title, I'd already been doing the work for a decade. The thing is, that path taught me more about shipping real things than any bootcamp could have — I was debugging my own site at 2am because nobody else was going to.\n\nAt the end of the day, I think the winding road was the point. You pick up taste from making a thousand small judgment calls, not from following a curriculum. That works for me.",
     links: "You can find me on linkedin.com/in/lukevz or check out [my work](https://lukevz.com/work) — the side project lives at https://github.com/lukevz too. And so if you want the full story, /work has it. I wrote the whole thing up [right here](/#writing/the-search-for-the-best-todo-app), and there's a bunch more at /#photos and /bookshelf.",
@@ -55,8 +61,13 @@
     if (cmd === '429') return Promise.resolve(new Response('mock rate limit', { status: 429 }));
 
     let reply;
+    let followups = null;
     if (cmd === 'empty') reply = '';
-    else if (MOCK_FIXTURES[cmd]) reply = MOCK_FIXTURES[cmd];
+    else if (MOCK_FIXTURES[cmd]) {
+      const fixture = MOCK_FIXTURES[cmd];
+      if (typeof fixture === 'string') reply = fixture;
+      else { reply = fixture.text; followups = fixture.followups; }
+    }
     else reply = MOCK_REPLIES[mockReplyIndex++ % MOCK_REPLIES.length];
 
     const encoder = new TextEncoder();
@@ -68,6 +79,9 @@
         for (const w of words) {
           controller.enqueue(encoder.encode(sseChunk(w)));
           await sleep(24);
+        }
+        if (followups) {
+          controller.enqueue(encoder.encode('data: ' + JSON.stringify({ followups }) + '\n\n'));
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
@@ -390,7 +404,42 @@
     renderMarkdown(bubble, text);
   }
 
-  function parseSSE(text, onDelta) {
+  // ── Suggested follow-ups ───────────────────────────────────────────────────
+  // When an answer couldn't fully land — a gap, or a nearby topic offered
+  // instead — the API sends 2-3 questions it KNOWS it can answer. They render
+  // as chips under the reply so a miss still leaves somewhere to go, instead of
+  // dead-ending on "DM me".
+  const FOLLOWUP_ROW_CLASS = 'chat-followups';
+
+  function clearFollowups(transcript) {
+    transcript.querySelectorAll('.' + FOLLOWUP_ROW_CLASS).forEach(n => n.remove());
+  }
+
+  function renderFollowups(questions, transcript, send) {
+    const clean = (questions || [])
+      .filter(q => typeof q === 'string')
+      .map(q => q.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    if (!clean.length) return;
+    const row = el('div', FOLLOWUP_ROW_CLASS);
+    clean.forEach(q => {
+      const b = el('button', 'chat-chip', q);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        if (inflight) return;
+        // The chip IS the question — asking it should leave the same trace as
+        // typing it, so the row goes and a normal user turn takes its place.
+        clearFollowups(transcript);
+        streamChat(q, transcript, send);
+      });
+      row.appendChild(b);
+    });
+    transcript.appendChild(row);
+    scrollToBottom(transcript);
+  }
+
+  function parseSSE(text, onDelta, onFollowups) {
     // OpenAI-style SSE: lines beginning with "data: " carrying JSON.
     // [DONE] is the terminator.
     const lines = text.split(/\r?\n/);
@@ -403,6 +452,7 @@
         const data = JSON.parse(payload);
         const delta = data?.choices?.[0]?.delta?.content;
         if (delta) onDelta(delta);
+        if (Array.isArray(data?.followups) && onFollowups) onFollowups(data.followups);
       } catch (e) { /* partial chunk — ignore */ }
     }
     return false;
@@ -415,6 +465,9 @@
     const gen = generation;
 
     messages.push({ role: 'user', content: userText });
+    // Chips from the previous answer are stale the moment a new question is
+    // asked, however it was asked.
+    clearFollowups(transcript);
     const userBubble = addBubble('user', transcript);
     userBubble.textContent = userText;
     scrollToBottom(transcript);
@@ -425,6 +478,7 @@
     let assistantBubble = null;
     let assistantText = '';
     let renderScheduled = false;
+    let followups = [];
 
     function ensureBubble() {
       if (!assistantBubble) {
@@ -480,7 +534,7 @@
             ensureBubble();
             assistantText += delta;
             scheduleRender();
-          });
+          }, (qs) => { followups = qs; });
         }
       }
       if (buffer) {
@@ -488,7 +542,7 @@
           ensureBubble();
           assistantText += delta;
           scheduleRender();
-        });
+        }, (qs) => { followups = qs; });
       }
 
       // Flush any pending text immediately rather than waiting for the next
@@ -512,6 +566,10 @@
       if (typingRow.parentNode) typingRow.remove();
       inflight = false;
       send.disabled = false;
+      // After inflight clears, or the first chip clicked would bounce off its
+      // own guard. Only a completed stream ever sets these, so error paths
+      // render nothing.
+      if (gen === generation) renderFollowups(followups, transcript, send);
       scrollToBottom(transcript);
     }
   }
@@ -520,7 +578,7 @@
     if (transcript.dataset.welcomed === '1') return;
     transcript.dataset.welcomed = '1';
     const msg = el('div', 'chat-welcome');
-    msg.textContent = "Hey 👋 this is Luke's digital brain. Ask me anything you'd ask the real one. If it's outside what I've shared here, I'll point you to him directly.";
+    msg.textContent = "Hey 👋 this is Luke's digital brain. Ask me anything you'd ask the real one. If it's outside what I've shared here, I'll point you at the closest thing I've got.";
     transcript.appendChild(msg);
   }
 
