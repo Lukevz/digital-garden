@@ -267,6 +267,199 @@ Supported audio formats: `.m4a`, `.mp3`, `.wav`, `.ogg`, `.aac`, `.flac`, `.webm
 - `getNoteFromUrl()` parses hash and finds matching post
 - History API used for navigation without page reloads
 
+**Theme — dark-only for now:**
+
+Light mode is switched off, not deleted. Three things pin it, and all three have to be undone together to bring it back:
+
+1. `_index.html` carries `data-theme="dark"` on `<html>` (and `<meta name="color-scheme" content="dark">`), so the **first paint** is dark even on a light-preference system — no flash before JS runs.
+2. `THEME_LOCK_DARK = true` in js/main.js makes `isDarkTheme()` and `systemPrefersDark()` always answer dark, redirects `applyThemeSystem()` to pin `data-theme="dark"` instead of clearing it, hides `#themeToggle` and never wires its click, and skips the `prefers-color-scheme` change listener. The toggle markup, the wipe animation, and the whole session-override path are left intact and unreachable.
+3. `#themeToggle` has `hidden` in the markup, plus `#themeToggle[hidden] { display: none !important; }` in styles.css.
+
+⚠️ Why the pinned attribute is what makes this safe: every light-keyed selector in styles.css is either `[data-theme="light"]` or `:root:not([data-theme])`, and **neither can match once the attribute is set** — so light styling is unreachable by construction rather than by overriding it. The counterpart is that `@media (prefers-color-scheme: dark) { html:not([data-theme="light"]) … }` blocks stop applying on a light-preference machine; each one already has a `[data-theme="dark"]` twin carrying the same declarations, so **any new dark rule must be written as that pair, not as the media query alone**.
+
+`api/home.js` no longer sniffs `Sec-CH-Prefers-Color-Scheme` for the OG image — it always serves `og_dark.png`, and the response no longer varies by client hint.
+
+**How the poster hero leaves (`heroParallax()` in js/main.js):**
+
+Home is a **descent**. The page opens at scroll 0 on the poster, `.hero-spacer` — which must sit **above** `#belowFold` in the DOM — reserves a short runway (60vh) so the poster holds for a beat, and the feed then rises into frame at native scroll speed while the fixed world drifts *up* past the camera. The long runway that used to live in the spacer is now the `.world-void` immediately below, which does the same job and animates.
+
+⚠️ `travel` is **`scrollY`**, and this function is the one place that's correct. `.hero` is `position: fixed`, so scroll offset *is* the camera's travel, and it is 0 on the first frame by construction. It used to be measured off the feed's own top edge (`vh - rect.top`), which is only equivalent while the spacer is about one screen tall — cutting the spacer to 60vh left the feed's edge already 40vh inside the viewport at scroll 0, so `travel` opened at 0.4 of a screen and **the poster lockup was a third of the way through its exit before the visitor touched the wheel** (HELLO off the top of the landing screen). `heroParallax()` owns only the hero's own exit and the world's depth drift; everything that happens to the *world* is `js/worlds.js`, keyed off the void's rect.
+
+> *Formerly a reversed reveal* (loaded pinned to the document's end, scrolled up, feed descending as a curtain, sections flipped with `column-reverse`). That's gone — see "Worlds" below for why. If you find a comment or selector that still assumes it, it's stale.
+
+The hero lockup **leaves through the top of the frame rather than fading**. The world rises past the camera and the copy goes with it at full opacity; `--intro-greeting-reveal` stays pinned at 1 on this layout.
+
+- The distance is **measured, not assumed** (`sinkDistance()`): the lockup mixes clamped type with a vw-scaled avatar, so its share of the viewport moves with the window. It reads the lockup's rect and subtracts the offset it applied last frame to recover the resting position — which is why the read happens with the other rect reads at the top of `update()`, before the frame's first style write.
+- ⚠️ `--hero-sink` is **negative** on this layout (`sinkApplied = -sinkDist * …`).
+- Easing is `t^1.7`, not linear. Linear reads as a scrollbar dragging the text away; the acceleration is what sells the fall. `SINK_END` (0.78) sits *under* the scene's own 0.5→0.8 opacity ramp on purpose, so the copy exits while the planet is still there rather than leaving an empty sky.
+- ⚠️ The transform rides **`.hero-lockup`** — the one element holding both the avatar and the copy. `.clock-hero-wrap` already owns a `translateY(-8.5vh)` that a second transform would replace, and shifting the two halves separately means two rules that have to stay in step forever.
+- `.hero` is `overflow-y: auto`, and a descendant translated far enough extends its scrollable overflow — that popped a nested scrollbar during the old *downward* sink. Overflow above a box isn't scrollable, so `overflow: clip` (not `hidden`, which would make it a scroll container) is belt-and-braces now rather than load-bearing. Kept anyway; the overflow-menu pages (Bookshelf / Gear / App Stack / Places) scroll their own tall grids inside `.hero` and are excluded.
+- ⚠️ Reduced motion takes the `navPinnedOpen()` early-out. That branch has to hold the reveal at 1 for the dust hero — a blanket 0 leaves reduced-motion visitors on a home page with a planet and no name on it, since `--intro-greeting-reveal` is the lockup's own opacity and nothing else's.
+- ⚠️ `genieProgress()` in js/grid.js **returns 0 on `dust-hero`**. The per-cell "genie" collapse existed to hide the star field before the feed's opaque curtain covered it; the feed is transparent now and the field *is* the world's sky, so it stays lit all the way down and warps at world boundaries instead. Keyed off raw scroll it would finish at 50vh — a full viewport before any content arrives.
+
+**Worlds — the home feed is a descent through biospheres (js/worlds.js):**
+
+Home isn't one backdrop with content over it. It's a sequence of **worlds** separated by **voids**, and the direction never reverses — what changes is scale and context. Each void names its own transition with `data-passage`, and `js/worlds.js` dispatches on that: `storm` is the dust→ocean scale reveal, `genie` is the ocean→message collapse, and anything unnamed (`fade`) gets a plain cross-fade. Both named passages are documented below.
+
+⚠️ **`applyLive()` mounts the active void's TWO worlds, not every layer on the page.** It used to mean "all of them", which was indistinguishable while there were two worlds and one passage; with four it puts the dust planet back on screen underneath the ocean draining away.
+
+```
+  space          ← intro pans DOWN onto the planet
+  poster         ← HELLO, planet at the horizon
+  ┌─ void: data-passage="storm" ───┐
+  │ you fly INTO the planet        │
+  │ storm rolls up over it         │
+  │ …the shape shrinks, unseen…    │
+  │ storm clears → the mirror pose │
+  │ it keeps receding → JELLYFISH  │
+  └────────────────────────────────┘
+  ocean          ← Case Studies + Timeline, all of it underwater
+  ┌─ void: data-passage="genie" ───┐
+  │ the sea drains DOWNWARD        │
+  │ …through a neck, into the      │
+  │ question bubble below…         │
+  │ → a blue dot → the bubble      │
+  └────────────────────────────────┘
+  chat           ← the testimonial thread, in a LIGHT room
+  ┌─ void: data-passage="fade" ────┐
+  └────────────────────────────────┘
+  deep           ← Principles / Goals / Experiments, open field
+```
+
+⚠️ **Everything moves in one direction: down.** This is the constraint the whole model exists to protect, and it's easy to break one half of it without noticing the other:
+
+1. **The intro descends.** `runDustIntro()` opens on empty space with the planet below the frame and brings the camera *down* onto it — `--pan-start` is **positive** (40vh, the scene pushed below) easing to 0. It used to be `-75vh`: camera buried in the storm, tilting *up*. That made the opening a rise and everything after it a fall, which is the same palindrome the reversed-reveal layout had.
+2. **The planet doesn't leave.** `heroParallax()` no longer fades `#heroScene` out, and its drift is clamped to one screen. The dust planet is the world the Timeline is *read inside*, not a hero that gets out of the way. Recession is `--world-dim`'s job.
+3. **You leave it by going through it.** See the passage below.
+
+The storm beat (swirls, gusts, lightning) is **not in the intro** any more — it only worked because the camera started buried in the dust, and the dust is masked to below the horizon. It moved to the descent, where you're genuinely inside the weather. The elements stay in the markup and rest at opacity 0 **in the stylesheet**.
+
+> ⚠️ `runDustIntro()` must **not** write inline `opacity: 0` on the veil, swirls, bolts or gusts to park them. Every one of those is lit by a `calc()` off a `--w-*` var, and an inline opacity outranks that calc — parking them there switched the entire storm off. It only *looked* fine because the intro's wrap-up clears inline styles ~6s in, which quietly made the bug depend on how fast the visitor scrolled. The gusts weren't in `sceneEls` at all, so theirs was never cleared and they were dead for the whole session.
+
+**The passage — the scale reveal:**
+
+The transition sits **immediately after the hero**, as the first child of the home feed (`.world-void[data-passage="storm"]`), and runs about two screens. Scrolling off the poster doesn't slide the planet away — **you fly at it**, the storm rolls up over you, and what comes back out is **the same shape at a completely different scale**: a jellyfish, underwater. Everything below reads in the ocean; the Timeline fades in already down there.
+
+`js/worlds.js` derives everything from `enter` (0→1 as the reading line crosses the void). **Nothing in the passage is on a clock** — every value is a scroll position, so stopping stops the storm and scrolling back plays it in reverse:
+
+| var | window | shape | drives |
+|---|---|---|---|
+| `--w-push` | .00–.30 ↗ .50–.72 ↘ | 0→1→0 | the camera dive at the limb (scale 2.15, origin on the horizon) and back out |
+| `--w-storm` | .06–.30 ↗ .56–.74 ↘ | 0→1→0 | dust, `.hs-veil` |
+| `--w-shrink` | .24–.50 | 0→1 | d0 → dm, **hidden** |
+| `--w-morph` | .30–.52 | 0→1 | the *fill* cross-fading planet → bell, **hidden** |
+| `--w-recede` | .56–.93 | 0→1 | dm → bell size, **in plain sight** |
+| `--w-reveal` | .66–.88 | 0→1 | oral arms, water shimmer, the other jellies |
+| `--w-hand` → `--world-handoff` | .86–.94 | 0→1→**1** | the ocean's standing copy of the jellyfish fades in underneath |
+| `--w-exit` | .90–.99 | 0→1 | the dust scene fades out over it — nothing moves |
+| `--w-churn` | = `enter` | 0→1 | swirl rotation, gust sweep |
+| `--w-travel` | .06–.30 ↗ half, .56–.74 ↗ rest | 0→.5→1 | WHERE the veil sheet is: below the frame → centred over it → off the top |
+| `--w-flash-a/-b` | pulses | spikes | lightning, each a `pulse()` centred on a scroll position |
+| `--world-enter` | .20–.46 | 0→1 | the incoming world's opacity |
+| `--world-settled` | | 0→reveal→**1** | the first chapter's fade-in |
+
+⚠️ **The veil is a SHEET, not a wash.** `.hs-veil` is 300vh tall with feathered mask edges, and `--w-travel` slides it up across the frame (below → covering → off the top) while `--w-storm` owns opacity — that's what makes the storm something you scroll *through* instead of an overlay that fades in place. `--w-travel` is two half-ramps synced to the storm's rise and fall so the sheet is exactly centred (full cover) for the entire opacity plateau; key it to `enter` linearly and the feathered leading edge crosses the frame at full strength, leaving a see-through band at the top of the storm.
+
+⚠️ **Ambient loops pause while crossing (`body.is-world-crossing`).** The passage transforms `.hero-scene__pan` every scroll frame; the compositor can move that cached subtree for free only while nothing inside it invalidates. js/worlds.js holds the class while any void owns the reading line, and styles.css pauses the limb shimmer, cloud/wisp/dust drifts and the ocean's shimmer/snow on it (and drops `.hs-grain`, which pausing can't help) — the same trick, for the same reason, as the intro's `dust-intro-pending` block. This is what fixed the mid-passage scroll jank and the missing-tile flashes. Related: `.hs-atmo-band`'s gradient interior is now **transparent** — it used to be solid teal to the centre (hidden behind the opaque planet), and any frame where the planet's tiles rasterized late showed raw teal rectangles through the gap; it also tinted the translucent bell from behind once `--w-morph` faded the planet to 6%.
+
+⚠️ **Only `--w-morph` has to stay inside the storm's plateau.** The *size* is free to keep changing in the open — that reads as distance, and is exactly what `--w-recede` is for — but the moment the **fill** visibly changes identity you're watching a planet turn into a jellyfish, which is a cartoon. Hidden, you simply have to re-read what you were already looking at.
+
+⚠️ **`--world-enter` is not raw `enter`.** It's shaped to arrive *under* the storm and be fully present before the dust lifts. Keyed off `enter` directly you watch the water fade up over the planet, which gives the whole thing away before the reveal.
+
+⚠️ **`--world-settled` is monotonic and the phase windows are not.** They all fall back to 0 in a chapter, so keying content off them would hide the thing they just introduced. That's what `settled` exists for — 0 before the void, `reveal` inside it, 1 once past. ⚠️ It's keyed to the **storm** void by passage name, not to `vs[0]` — there are three voids now and only that one has a reveal to settle out of.
+
+**⚠️ The bell is the planet's own circle, not a second picture.** `.hs-planet`, `.hs-atmo-band`, `.hs-atmo-bloom` and `.hs-bell` all sit on one shared geometry rule and share `--planet-d` and `--hs-top`. Only the *fill* cross-fades. The moment one of them gets its own `top` or `width` they stop being the same object and the reveal degrades into a dissolve.
+
+- **Three stops, not two, and the middle one is the point.** A straight `d0 → d1` lerp is useless: `d0` is thousands of px and `d1` is a third of the viewport, so a linear parameter spends ~96% of its range still looking like a horizon-filling limb and then collapses at the very end. `--hs-planet-dm` (118vh) / `--hs-topm` (-46vh) is the **mirror of the hero** — the whole body in frame with its bottom limb curving across the lower screen at exactly `--horizon`, sky underneath. That's the pose the storm hands back to you, and the reason the shrink is legible at all. ⚠️ The middle weight is `shrink - recede`, valid only while the two windows don't overlap.
+- **⚠️ The bell is TOP-LIT, like the planet.** `.hs-bell` (and `.os-jelly::after`) layer a crown highlight at `50% 26%` over the centred body ramp — a centre-lit bell reads as a glowing orb, not the same body the planet was. The highlight is its own gradient layer, never an off-centre body gradient: the centred layer owns the circular feathered silhouette, and moving its origin deforms the silhouette into a blob. The ocean jellies additionally carry a teal rim ring in the same `::after` (the jelly-scale echo of `.hs-atmo-band`); the dust scene's bell gets its rim from the real band instead.
+- **⚠️ The bell is WARM, not blue** — the planet's own apricot/cream ramp, a couple of stops deeper. Counter-intuitive (a cool bell against blue water is the obvious jellyfish) but a colour change makes the reveal a cross-fade between two different objects, i.e. a dissolve. Golden jellies in blue water is also just what Jellyfish Lake looks like, so the reference and the trick want the same thing. **What changes across the passage is the ground, never the body.**
+- `.hs-atmo-band` is a **top-limb band**, not a halo — the same circle offset *up* by `--hs-atmo-h`, so the only glow is the crescent poking out above. Correct for the hero and useless the moment the body shows its bottom. `.hs-atmo-bloom` (formerly `display: none`) is the concentric half: same circle, `scale(1.14)`, ring straddling the limb all the way round, faded in on `--w-shrink`. It doubles as the jellyfish's water halo.
+- **Oral arms, not a curtain.** `.hs-tentacles` hangs from the bell's *lower* rim (the bell is translucent — arms rooted higher show through it as stripes) and is kept short and dense. A curtain at 1.15× the body's height is a full viewport long while the body is still 100vh across on the way out of the storm.
+- **⚠️ The tan dust layers are what draw a hard line across the ocean if you get their timing wrong.** They're clipped by `.hs-dust-clip` to below `--horizon` — invisible in the dust world because the cut runs along the planet's limb, glaring the moment the ground behind it is open water. Two things keep it hidden: the *ambient* term fades on `--w-shrink` (done by .50, deep inside the storm's plateau), and the *storm* term is **squared** so the dust clears faster than the veil. Sharing one curve with `.hs-veil` looks right and isn't — half a veil over half the dust leaves the seam showing for the whole back half of the beat.
+
+**The jellyfish stays. ⚠️ It is a second element (`.os-jelly--hero` in `#oceanScene`), not the one from the passage.**
+
+The dust scene's jellyfish physically cannot outlive the void: every dimension it has is interpolated on a phase window, and those all fall back to 0 in a chapter, so the shared circle snaps back to planet size the instant you leave. So the ocean carries its own copy at exactly the resting pose. `--world-handoff` (monotonic, same shape as `--world-settled`) fades that copy in **underneath** the original, and `--w-exit` then fades the original out **over** it — in that order, always overlapping, so there's never a frame where neither is at full strength. Nothing moves during the swap; you can't see it. Because `#oceanScene` is a fixed, full-viewport layer, the copy then simply stays pinned above the Timeline for the whole chapter.
+
+- ⚠️ `--jelly-top` / `--jelly-d` (on `:root`) are the **one** definition of the resting pose. `#heroScene`'s `--hs-top1` / `--hs-planet-d1` read them, and so does `.os-jelly--hero`. They must not drift apart. The copy also has to carry `--hero-drift`, which the dust scene applies as a transform on `.hero-scene__pan`.
+- ⚠️ `.os-jelly::before` is the **arms** and `::after` is the **bell**, in that order, so the translucent bell paints over the roots — the same stacking the dust scene gets from `.hs-tentacles` sitting before `.hs-bell`. Both arm masks start *transparent* at the top for the same reason: at full strength where they meet a translucent bell they show through it as a comb laid across the body.
+- `.os-jelly--hero` carries `filter: brightness(1 + --world-dim × 0.6)`. Inside a chapter the world takes a ~52% wash plus each section's scrim, which is right for water and wrong for the subject; it can't be lifted above `#worldDim` (it lives in `#worldLayers`, which the dimmer paints over by design), so it brightens by as much as the dimmer darkens.
+
+**Background jellyfish are DOM, not canvas.** `SCENES.ocean` in js/grid.js does carry `jelly` bodies and they're load-bearing — home's moon travels into the biggest one, which is how the moon becomes a jelly for free during the warp. But the star canvas sits **under** `#worldLayers` and `.os-water` is an opaque gradient, so **nothing drawn on the canvas survives into the ocean chapter**. The canvas jellies are the warp; the `.os-jelly` field in the markup is what you actually read. If you ever make the water translucent enough to show the canvas through it, delete the DOM field rather than keeping both.
+
+- The field is `mix-blend-mode: screen` and uses a **more saturated** amber than the hero. Screen lifts value but eats chroma, so the shared fill (tuned to match `.hs-bell` under normal compositing) comes out grey-blue — the exact wrong note, since the point is that these are the same creature. ⚠️ Scoped off `--hero`, which must keep the shared fill unchanged or the hand-off stops being invisible.
+- They bloom in on `--world-settled` (monotonic) and stay.
+
+The incoming world's layer gets `.is-entering` and fades up at `--world-enter`. ⚠️ For this passage it paints **beneath** the outgoing one — backwards from a cross-fade, and the whole reason the reveal lands: the water has to be the *backdrop* the shrinking body is seen against, while the dust scene goes on painting the body in front of it. That's `#heroScene { z-index: 2 }` — **only** the dust scene is lifted; giving `#oceanScene` a matching number would also apply where the ocean is the *outgoing* layer and would invert the passage below it.
+
+**The genie passage — the ocean drains into the message (`data-passage="genie"`):**
+
+Where the water ends. Instead of one world fading into the next, the sea is **sucked down into the question bubble** of the testimonial thread below it — the whole biosphere pours into a message, pinches to a blue dot, and unfolds into the bubble the replies arrive in. The room behind it is light, so the thread reads as the app it's imitating.
+
+`genieState()` / `genieOutline()` in js/worlds.js own it. Progress is **monotonic across the whole page** (0 above the void, 1 below), not just inside it, because the bubble's paint state has to be answerable anywhere: unpainted for the whole ocean chapter above, painted for the whole chat chapter below.
+
+| var | window | drives |
+|---|---|---|
+| — (`drain`) | 0 – .86 | the clip-path: viewport sheet → a circle the size of the bubble's height |
+| — (`open`) | .86 – .95 | that circle → the bubble's own rounded-rect silhouette |
+| `--genie-tint` | .58 – .86 | the sea taking the bubble's blue *before* it stops being a shape |
+| `--genie-hand` | last 14% of `open` | the real bubble's gradient taking over from the clip |
+| `--genie-text` | .95 – 1 | the copy fading up inside it |
+| `--w-genie` | = progress | published for CSS; not currently consumed |
+
+- **Rows are cosine-spaced, 72 of them.** Uniform rows read as a faceted polygon exactly where the eye checks for roundness — the crown, the circle's poles, the bubble's corner radii. `rowU()` concentrates samples at the shape's top and bottom, where all the curvature lives.
+- **The curve exponents live in `GENIE`** (`bow`, `topHold`, `botLead`, `crownFrom`), tunable live like the rest. `crownFrom` gates the crown to the back half of the drain: doming the corners while the sheet is still near frame size reads as a window being resized, so they stay square until the sheet has genuinely left the edges.
+- **It is one outline function, sampled at N rows, for both acts.** Every act's end state is the next one's start state *exactly*, because they're written against the same parameterisation (`u` = 0 at the shape's top, 1 at its bottom) rather than against absolute geometry. That's what makes the three beats chain without a seam.
+- ⚠️ **The circle is parameterised by `u`, not by `y`.** Solving the circle at each row's actual `y` gives zero width for every row outside the circle's band, so mid-drain the sheet is a rectangle with two spikes instead of a funnel — and the neck never forms.
+- ⚠️ **The neck is measured against the shape's own reach, not the viewport's.** For most of the drain the bubble is still below the fold, so against the viewport every row is equally far from it, the neck term cancels, and the sheet collapses as a rectangle.
+- ⚠️ **Both axes are eased hard, and the two vertical edges differently.** A sheet that starts leaving the frame edges on the first pixel of scroll reads as a window being resized; the top edge is what the eye reads as "how much sea is left", so it holds and lets go late while the bottom leaves early.
+- ⚠️ **`(1 - d)` is raised to a power.** Raw, the pinch falls off linearly and the sides come out dead straight — a paper cone. The exponent is the only thing separating this from a triangle.
+- ⚠️ **The crown closes ahead of the rest** (the `cap` term). The shape's top row is a straight horizontal cut across its current width; once the sheet is small that flat edge *is* the silhouette — a blue lozenge with its top sliced off. Closing the top rows early leaves a drop instead.
+- ⚠️ **`--genie-hand` is NOT the same curve as `open`, and that is the difference between a transform and an overlay.** The real bubble is always at its full final width; the clipped water is whatever width the unfold has reached. Cross-fade them across the whole unfold and you see **both** — a solid lozenge sitting inside a pale full-width pill. The hand-off waits until the clip has all but finished, then crosses between two shapes that are already the same shape.
+- **The incoming layer sits `.is-beneath`, at full strength, and is revealed by the water being clipped off it** — a genie passage must never *also* cross-fade, or the room washes out the water draining into it. ⚠️ `#chatScene { z-index: -1 }` has to be negative: the ocean can't be lifted (it's outgoing here and incoming in the passage above, and a number applies to both), and `0` doesn't drop it, since 0 and `auto` share a level and `#chatScene` wins on DOM order.
+- **Unarmed → plain cross-fade.** Reduced motion, or a bubble that can't be measured (the feed is `display:none` in some modes), and the whole thing degrades to the fade the other voids use, with `--genie-hand`/`--genie-text` forced back to 1 so the bubble paints itself.
+- Tune live: `worlds.genie.drainEnd` / `.openEnd` / `.neck` / `.tintFrom`, then scroll.
+
+**The light room (`data-world="chat"`) — the one chapter that reads dark-on-light:**
+
+`#chatScene` is deliberately inert: no weather, no depth, no texture. Every other world is a place with something going on in it; this one is the inside of the message bubble at viewport scale, and the thread is what you're meant to be looking at.
+
+- ⚠️ **This is not light mode coming back.** Light mode is off by construction (see the theme note above — every light-keyed selector is unreachable while `<html>` carries `data-theme="dark"`). The ink block is a local repaint of one section against one opaque layer, scoped to `[data-world="chat"]`, and written in **literal colours, not tokens** — the tokens are all theme-derived and every one resolves dark. Reaching for `--text-primary` here is exactly how the section ends up invisible.
+- ⚠️ **The per-section scrim is switched off for it.** The scrim pools ~70% `--bg` (near black) and would hang a dark cloud behind the one chapter that needs the opposite. It buys nothing there anyway — the room is a flat fill with no sky to quiet down.
+- ⚠️ **`--world-dim` is pinned to 0 across the chapter** for the same reason. It's already 0 through both of the chapter's voids, so pinning it is continuous, not a jump.
+- ⚠️ **The exit fade is not the entrance's inverse.** `leaveOp` **holds** the room at full strength until the thread has left the frame and only then drops it (`.world-layer.is-leaving`). Light copy sitting over a half-faded room is unreadable in a way a symmetric cross-fade never is.
+- The question bubble's row opts out of the thread's centre-line reveal (`js/testimonials.js` still marks it, harmlessly): the clip tracks its live rect, and a row sliding 18px sideways under a shape measured every frame reads as the water missing its mark.
+
+**`SCENES.deep`** is what's left after the water goes: no bodies at all (the jellies were the ocean's, and `warpFrameBodies()` shrinks and fades any body the incoming scene has no partner for, so the drift simply thins out), theme-tracking ink, because this is open field rather than a biosphere. ⚠️ `SCENES.chat` is an **alias getter for the same object**, not a copy — the chat room is opaque and its sky is never once visible, so sharing the object makes `grid.scene()` early-return on that swap instead of warping a field nobody can see to an identical one.
+
+**Background jellyfish.** `SCENES.ocean` carries several `jelly` bodies at different depths. ⚠️ Order matters: `warpFrameBodies()` pairs biggest-to-biggest, so the **largest** one is what home's single moon travels into and cross-fades kind against — the moon *becomes* a jellyfish for free. The rest have no counterpart and take the leftover-incoming path (grow from 60%, fade up on warp progress), blooming into the water behind it. Make one of the small ones the biggest and the moon swims to the wrong corner.
+
+⚠️ `--hero-drift` (heroParallax's depth offset) is **composed into the pan's transform in CSS**, not written as a transform on `#heroScene`. `#heroScene` is the clipping box (`inset: 0; overflow: clip; contain: strict`) — translating it slides its own bottom edge up the viewport and leaves a bare strip underneath. That never showed while the scene faded out on scroll and appeared the instant it stopped.
+
+⚠️ One writer per element. The pan's transform is owned by anime during the intro and by the stylesheet afterwards (anime strips its inline styles at the end); nothing else may set it.
+
+- **Chapters are an attribute, not a wrapper.** `data-world` goes directly on each `.home-section`; consecutive siblings sharing a value are one chapter. ⚠️ Don't wrap them — `.below-fold-inner` is a flex column with `gap: 56px`, so a wrapper would put that gap between *chapters* instead of between sections and re-space the whole feed.
+- **`.world-void[data-from][data-to][data-passage]`** is the one genuinely new element: an empty, aria-hidden spacer between two chapters. It gets a real element because a measured rect beats arithmetic on the space between two others, and because the transition needs authored length — the sky's ~950ms warp has to finish before the next chapter arrives. The base height (195vh) is the **storm** passage's, which has the most beats to fit; the `--mid` / `--short` modifiers shorten the others.
+- The director resolves two things per frame: the **sky**, swapped at the void's *midpoint* (deepest in the gap, least on screen to notice), and **`--world-dim`** on `<html>` — 0 while a void owns the reading line, ramping to 1 inside a chapter. `#worldDim` turns that into an opacity wash over the world layers (not `filter: brightness()`, which would force a filter layer on two full-screen noise compositions).
+- ⚠️ **Loads between js/main.js and js/grid.js.** It needs main.js's `window.setSky`, and grid.js reads `body[data-sky]` once at init — so the world resolved on the first frame is the sky grid.js *builds*, with no wrong-world flash on a restored scroll position deep in the page.
+- ⚠️ **Push sky changes through `setSky()`, never `window.grid.scene()`** — `setSky` writes the attribute first and only then calls grid, which is the whole handshake.
+- ⚠️ `closeSectionPage()` calls `setSky(window.worlds.currentSky())`, **not `setSky(null)`**. Null resolves to `home`, which would snap a visitor returning from Writing back to the dust sky when they left from the ocean chapter.
+- ⚠️ **Reduced motion does not switch the director off** — only grid.js's warp is skipped (it hard-cuts). A dormant director would leave reduced-motion visitors reading ocean content under a dust planet.
+- Chapters are measured **live, never cached**: `#homeCaseStudies` and `#homeEnergyBoard` ship `hidden` and are unhidden by JS once their content loads.
+- Tune live: `worlds.tune.line` (reading-line position), `.fade` (how far out the world starts brightening toward a void), `.depth` (dim ceiling).
+
+**The feed is transparent (this is what makes worlds visible):**
+
+`#belowFold` used to be an opaque `var(--bg)` curtain that covered the fixed hero. On home it's now `background: transparent`, because a world you can't see through the content isn't a place you're standing in — it's an interstitial. Legibility is paid for three ways instead: a **static per-section scrim** (a `::before` gradient pooling ~70% `--bg` under each section and feathering to nothing at its own edges, so the void gaps stay clear), **`--world-dim`**, and grid.js's **content-hole system** (`.home-section-title` is in `TEXT_HOLE_SELECTORS`). ⚠️ Never take the scrim to 100% `--bg` — that's the curtain again. It works because the feed is mostly `--surface-raised` cards, which carry themselves against a sky; only bare type needs help. `#sectionBelow` (Writing / Videos / Photos) keeps its curtain — those pages cover a compact hero, not a world.
+
+**Per-scene ink (js/grid.js):**
+
+A scene can declare `ink: '#rrggbb'` and every star, streak, bloom and ship is drawn in it — that's what lets a sky be somewhere other than space (pale stars on black vs. cyan marine snow). `gridDotRgb` stays the *theme* colour and the source of `--grid-mark-rgb` (js/clock-hero.js depends on it); `inkRgb` is the resolved per-frame value, set once at the top of `drawGrid`. ⚠️ **Omit `ink` to stay theme-tracking** — `SCENES.home` deliberately has none, so the system is a no-op until you leave home. ⚠️ Ink lerps on the warp's **eased `e`, not raw `p`**: every spatial property of a star travels on `e`, and only opacity cross-fades use `p`. On `p` the colour arrives ahead of the stars and reads as a tint sliding across a field that hasn't moved.
+
+**Body kinds are a table (`BODY_KINDS` in js/grid.js):** `sun` / `moon` / `jelly`, each `{ draw, fade }` with one shared signature `(c, body, part, fade, ts, bob, shim)`. It replaced a two-branch if/else whose `else` fell through to `drawSun`, so an unknown kind rendered as a sun with undefined colours and threw inside `hexA`. ⚠️ The per-kind `fade` multiplier lives with its draw function — moving one without the other changes the look.
+
+⚠️ **`SCENES.ocean` has exactly ONE body on purpose.** `warpFrameBodies()` pairs bodies biggest-to-biggest, so home's single moon matches it 1:1 and *travels across the screen while cross-fading kind into the jellyfish* on one shared position — the planet→jelly morph, for free, with no transition code. Add a second body and that clean pairing becomes a pair plus an orphan.
+
 **Section pages vs. the section modal (js/main.js):**
 
 The top-bar tabs are Career / Writing / Videos / Photos. **Career is the home view** — `navModeFromState()` returns `'career'` for life mode with no section route, so its tab is active from first paint.

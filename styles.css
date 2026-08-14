@@ -531,6 +531,16 @@
     #homeTimeline {
       opacity: var(--timeline-reveal, 1);
     }
+    /* On the worlds layout the first chapter fades in on the TAIL OF THE
+       PASSAGE — after the storm has cleared and the jellyfish has been
+       revealed — so the Timeline arrives already underwater. --world-settled
+       (js/worlds.js) is monotonic: 0 before the void, the reveal ramp inside
+       it, 1 once past. The phase windows themselves can't drive this; they all
+       fall back to 0 in a chapter and would hide the content they just
+       introduced. */
+    body.dust-hero:not(.section-mode):not(.work-mode) #homeTimeline {
+      opacity: var(--world-settled, 1);
+    }
 
     /* Timeline heading now lives inside the pin (.tl-pin-head) so it freezes
        with the rail. Centered above the strip; sticky left keeps it in view in
@@ -667,7 +677,7 @@
     }
 
     /* Avatar — sits at the foot of the bubble column like an iMessage group
-       thread. tabindex makes it focusable so the tooltip is keyboard-reachable. */
+       thread. */
     .testi-chat__avatar {
       position: relative;
       flex-shrink: 0;
@@ -686,39 +696,6 @@
       box-shadow: inset 0 0 0 1px var(--glass-border-medium);
     }
 
-    /* CSS-only tooltip: role/company, shown on hover or keyboard focus. */
-    .testi-chat__tip {
-      position: absolute;
-      left: 0;
-      bottom: calc(100% + 10px);
-      transform: translateY(4px);
-      width: max-content;
-      max-width: 200px;
-      padding: 8px 11px;
-      border-radius: 10px;
-      background: var(--glass-bg);
-      box-shadow:
-        0 8px 20px rgba(0, 0, 0, calc(0.10 + var(--theme-blend) * 0.30)),
-        inset 0 1px 0 var(--glass-highlight),
-        inset 0 0 0 1px var(--glass-border);
-      backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-      -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-      font-size: 0.76rem;
-      line-height: 1.35;
-      font-weight: 500;
-      color: var(--text-secondary);
-      white-space: normal;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.16s ease, transform 0.16s ease;
-      z-index: 3;
-    }
-    .testi-chat__avatar:hover .testi-chat__tip,
-    .testi-chat__avatar:focus-visible .testi-chat__tip {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
     .testi-chat__col {
       display: flex;
       flex-direction: column;
@@ -726,10 +703,34 @@
       gap: 5px;
       min-width: 0;
     }
+
+    /* Handle — name + role/company, always visible (used to be a
+       hover-only tooltip on the avatar). Wraps to its own line under the
+       name on narrow rows rather than truncating. */
+    .testi-chat__handle {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      column-gap: 7px;
+      row-gap: 0;
+    }
     .testi-chat__name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .testi-chat__role {
       font-size: 0.76rem;
-      font-weight: 600;
+      font-weight: 500;
       color: var(--text-secondary);
+    }
+    /* Generated, not typed into the HTML — keeps the dot out of
+       .testi-chat__role's textContent, which js/testimonials.js reads
+       verbatim into the modal. */
+    .testi-chat__role::before {
+      content: "\00b7";
+      margin-right: 7px;
+      color: var(--text-tertiary, var(--text-secondary));
     }
 
     /* Our own `display` would otherwise override the HTML hidden attribute
@@ -2819,6 +2820,7 @@
       color: var(--text-primary);
     }
     #themeToggle:hover { opacity: 0.7; }
+    #themeToggle[hidden] { display: none !important; }
     #themeToggle .theme-icon { display: block; }
     #themeToggle .theme-icon[hidden] { display: none !important; }
 
@@ -3513,26 +3515,309 @@
        – layers that the intro sweeps vertically are ~370vh tall with
          feathered mask edges
        – a layer's bounding-box edge must never be able to enter the frame. */
-    #heroScene {
+    /* ── World layers ──
+       The fixed box every biosphere's DOM scenery lives in. Each .world-layer
+       fills it absolutely; js/worlds.js decides which is on stage.
+       ⚠️ No transform/filter/opacity here — #heroScene is `contain: strict`
+       and its children assume a viewport-sized containing block. Per-world
+       transforms ride the layers, not this. */
+    #worldLayers {
       position: fixed;
       inset: 0;
       z-index: 1;              /* same layer as #dotGrid; later in DOM = paints above it */
+      pointer-events: none;
+    }
+    /* Off by default; the wrapper only lights up on the home worlds layout. */
+    #worldLayers { display: none; }
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) #worldLayers {
+      display: block;
+    }
+    /* A world more than one chapter away costs nothing. */
+    .world-layer { display: none; }
+    .world-layer.is-live { display: block; }
+
+    /* ── The jellyfish's resting pose ─────────────────────────────────────
+       ⚠️ Shared by TWO layers and that is the point. #heroScene's --hs-top1 /
+       --hs-planet-d1 (where the shrinking planet comes to rest) and
+       #oceanScene's .os-jelly--hero (the copy that survives the void and stays
+       pinned over the Timeline) both read these. They have to be one
+       definition, because the whole hand-off works only while the two elements
+       are pixel-identical in position and size.
+       Low enough on the screen to clear the top bar and the sub-nav ticker —
+       those float over the world, and a jellyfish parked behind them is one you
+       don't get to look at. */
+    :root {
+      --jelly-top: 24vh;
+      --jelly-d: 32vh;
+    }
+    /* Mid-crossing the far world fades up at --world-enter, which js/worlds.js
+       shapes to arrive UNDER the storm and be fully present before the dust
+       lifts. Only set while actually crossing — the current world's layer sits
+       at full strength the rest of the time. */
+    .world-layer.is-entering { opacity: var(--world-enter, 1); }
+    /* ⚠️ The incoming world paints BENEATH the outgoing one, not over it.
+       That's backwards from a cross-fade, and it is the whole reason the reveal
+       lands: the water has to already be there as the BACKDROP the shrinking
+       body is seen against, while the dust scene goes on painting the body
+       itself in front of it. (The dust scene has no background of its own —
+       it's a planet, some haze, and a veil over transparency — so "in front"
+       costs nothing.) With the ocean on top it would simply curtain the
+       jellyfish off at the exact moment you were meant to recognise it.
+       #worldLayers is already a stacking context (position:fixed + z-index),
+       so this stays local to it.
+       ⚠️ Lift ONLY the dust scene, and do NOT give the ocean a z-index to
+       match. #heroScene is live for exactly one chapter and one passage, so
+       pinning it on top is precisely scoped; putting a number on #oceanScene
+       would also apply where the ocean is the OUTGOING layer (the passage
+       below it), where it would sit above its own successor and invert that
+       transition instead. Every other layer stays in plain DOM order. */
+    #heroScene { z-index: 2; }
+    /* Same shape of rule one world further down, solved from the other end.
+       The light room waits UNDER the water that's about to drain into the
+       bubble — here it isn't a reveal trick so much as a physical one: the
+       water is clipped away, and whatever is behind it is what you're left
+       standing in.
+       ⚠️ It has to be NEGATIVE, and the rule above is why. The ocean can't be
+       lifted (it's the outgoing layer in this passage and the incoming one in
+       the passage above, and a number would apply to both), so the room has to
+       drop instead — and `0` doesn't drop it, since 0 and auto share a level
+       and #chatScene wins on DOM order. It stays inside #worldLayers' stacking
+       context, so it can't fall behind the page. */
+    #chatScene { z-index: -1; }
+    /* Held at full strength while the outgoing world is clipped off it. The
+       declaration is the default, but the class is what suppresses .is-entering
+       (see applyLive in js/worlds.js) — a genie passage must never ALSO
+       cross-fade, or the room washes the draining water out from under itself. */
+    .world-layer.is-beneath { opacity: 1; }
+    /* The other end of the chat chapter. `deep` is open field — there is no
+       incoming layer to fade in, so the thing that has to move is the room you
+       are leaving. --world-leave holds it at 1 until the thread has left the
+       frame and only then drops it; see the leaveOp note in js/worlds.js. */
+    .world-layer.is-leaving { opacity: var(--world-leave, 1); }
+
+    /* ── The passage: dive → storm → shrink → reveal ──────────────────────
+       Scrolling off the poster does not slide the planet away. You fly AT it,
+       the storm rolls up over you, and what comes back out the other side is
+       the same shape at a completely different scale — a jellyfish, underwater.
+
+       Every value below is a scroll POSITION, published by js/worlds.js from
+       how far the reading line has crossed the .world-void. Nothing in this
+       block is on a clock: stop scrolling and the storm stops with you, scroll
+       back and it runs backwards.
+
+         --w-push    0→1→0  the camera dive at the limb, and back out
+         --w-storm   0→1→0  the dust closing over the frame and opening again
+         --w-shrink  0→1    giant limb → a body you can see all of (hidden)
+         --w-morph   0→1    the FILL cross-fading, planet → bell (hidden)
+         --w-recede  0→1    that body receding to bell size, IN PLAIN SIGHT
+         --w-reveal  0→1    oral arms, shimmer — the re-read
+         --w-exit    0→1    you fall past it and it leaves through the top
+         --w-churn / --w-flash-a / --w-flash-b  weather, driven by scroll
+
+       ⚠️ --w-morph is the one that must stay inside the storm's plateau. The
+       SIZE is free to keep changing in the open — that reads as distance, and
+       is the point of --w-recede — but the moment the fill visibly changes
+       identity you're watching a planet turn into a jellyfish, which is a
+       cartoon. Hidden, you simply have to re-read what you were already
+       looking at.
+
+       The transform rides .hero-scene__pan, the same element the intro tweens.
+       They never overlap in time (the intro is long finished before the void is
+       on screen) and anime clears its inline transform at the end, so this rule
+       owns it from then on. --hero-drift is heroParallax's gentle depth offset
+       for the same element, composed in here so there's ONE writer. (It can't
+       ride #heroScene: that's the clipping box, and translating it exposes a
+       bare strip below its own bottom edge.) */
+    body.dust-hero #heroScene .hero-scene__pan {
+      /* Dive at the limb and settle back out — there and back, so the camera
+         ends where it started and only the subject has changed. The origin sits
+         ON the horizon so the push reads as flying INTO the planet rather than
+         as the frame zooming; --w-push leads --w-storm deliberately, so you get
+         a beat of visible approach before the dust takes the frame.
+         ⚠️ --w-exit does NOT move anything. It used to lift the scene out of
+         the top of the frame, on the theory that you fall past the jellyfish —
+         but the jellyfish is meant to STAY, pinned over the Timeline for the
+         whole ocean chapter. It's a pure cross-fade to #oceanScene's standing
+         copy now (see .os-jelly--hero), so nothing may translate here or the
+         two halves of the hand-off separate. */
+      transform:
+        translateY(calc(var(--w-push, 0) * -24vh + var(--hero-drift, 0px)))
+        scale(calc(1 + var(--w-push, 0) * 1.15));
+      transform-origin: 50% 72%;
+    }
+    /* The dust scene bows out. By here the body has stopped moving and
+       #oceanScene's identical copy of it is already lit underneath
+       (--world-handoff leads --w-exit), so this fade has nothing to cross. */
+    body.dust-hero #heroScene { opacity: calc(1 - var(--w-exit, 0)); }
+    /* Ambient haze thickens into weather.
+       NB: --hs-dust-reveal has no writer any more — heroParallax used to ramp
+       it down so the haze cleared before the opaque feed covered it, and
+       neither of those things is true now. Left as an unused manual knob
+       (defaults to 1); delete it here and in the base rules together.
+
+       ⚠️ The ambient term is multiplied by `1 - --w-shrink`, and that is not a
+       nicety — it is what stops a hard horizontal line being drawn across the
+       ocean. These layers are the HOME world's haze: tan, and clipped by
+       .hs-dust-clip to below --horizon. That clip edge is invisible in the dust
+       world because it runs along the planet's limb, and glaringly visible the
+       moment the ground behind it is open water. So the ambient haze has to be
+       gone BEFORE the veil lifts — --w-shrink completes at .50, deep inside the
+       storm's plateau, while only the storm's own term is still up. Keying it
+       to --w-recede instead (which doesn't finish until .93) left ~60% of the
+       haze on screen when the water was revealed: a brown seam at 72vh and a
+       murky lower third.
+
+       ⚠️ The storm term is SQUARED so the dust clears faster than the veil does.
+       Sharing one curve with .hs-veil looks right on paper and isn't: halfway
+       through the clear you have half a veil (soft, full-frame) over half the
+       dust (hard-edged at --horizon), and the seam shows through against the
+       water for the whole back half of the beat. Squared, the dust is down to a
+       sixth by the time the veil is at half. */
+    body.dust-hero .hs-dust--far  { opacity: calc((.22 * (1 - var(--w-shrink, 0)) + var(--w-storm, 0) * var(--w-storm, 0) * .70) * var(--hs-dust-reveal, 1)); }
+    body.dust-hero .hs-dust--mid  { opacity: calc((.14 * (1 - var(--w-shrink, 0)) + var(--w-storm, 0) * var(--w-storm, 0) * .74) * var(--hs-dust-reveal, 1)); }
+    body.dust-hero .hs-dust--near { opacity: calc((.07 * (1 - var(--w-shrink, 0)) + var(--w-storm, 0) * var(--w-storm, 0) * .80) * var(--hs-dust-reveal, 1)); }
+    /* The wash the camera is inside. This is what actually hides both the sky
+       warp and the shrink. */
+    body.dust-hero .hs-veil { opacity: calc(var(--w-storm, 0) * 0.96); }
+    /* ── Weather that only exists in here, and only while you're moving ──
+       ⚠️ None of this is a CSS animation, deliberately. The storm used to churn
+       and flash on its own timers, which meant it played whether or not the
+       visitor was scrolling — you could stop dead in the middle of the dust and
+       watch lightning fire at you. Every value below is a position in the void
+       instead: the churn is how far through you are, and each bolt is a pulse
+       centred on a scroll position (see pulse() in js/worlds.js). Stop and it
+       holds; scroll back and the same bolt fires again in the same place.
+       All of it rests at 0 outside the void, so it costs nothing for the whole
+       time you're reading a chapter. */
+    body.dust-hero .hs-swirl {
+      opacity: calc(var(--w-storm, 0) * 0.34);
+      transform: rotate(calc(var(--w-churn, 0) * 0.85turn));
+    }
+    body.dust-hero .hs-swirl:nth-of-type(2) { transform: rotate(calc(var(--w-churn, 0) * -0.62turn)); }
+    body.dust-hero .hs-swirl:nth-of-type(3) { transform: rotate(calc(var(--w-churn, 0) * 1.35turn)); }
+    /* Lightning inside the cloud. At this range the cloud diffuses the strike,
+       so it's a patch that lights and goes out rather than a forked bolt.
+       Already multiplied by --w-storm upstream, so it can't fire in clear air. */
+    body.dust-hero #hsBolt1 { opacity: var(--w-flash-a, 0); }
+    body.dust-hero #hsBolt2 { opacity: var(--w-flash-b, 0); }
+    #hsBolt1 { left: 33%; top: 41%; }
+    #hsBolt2 { left: 69%; top: 58%; }
+    /* Gusts driven across the frame by the same scroll position. */
+    body.dust-hero .hs-gust {
+      opacity: calc(var(--w-storm, 0) * var(--hs-gust-o, 0.55));
+      transform: translateX(calc(var(--w-churn, 0) * 250vw)) skewY(-6deg);
+    }
+    #hsGust1 { top: 26%; }
+    #hsGust2 { top: 57%; }
+    body.dust-hero #hsGust2 {
+      --hs-gust-o: 0.4;
+      transform: translateX(calc((var(--w-churn, 0) - 0.24) * 250vw)) skewY(4deg);
+    }
+
+    /* ── Passage performance: the intro's trick, applied to every crossing ──
+       The passage scales .hero-scene__pan every scroll frame. The compositor
+       can move that cached subtree for free — but only while nothing inside
+       it invalidates. Any ambient loop ticking mid-passage (the limb shimmer,
+       the cloud/wisp drifts, the dust drifts, the ocean's shimmer and snow)
+       forces the giant circles and 370vh sheets to re-rasterize every frame:
+       that was the scroll jank, and the missing-tile flashes that came with
+       it. js/worlds.js holds .is-world-crossing on <body> while a void owns
+       the reading line; nothing here is faster than an 18s loop, so freezing
+       it for the couple of seconds a crossing takes is imperceptible. The
+       jellies' bob is deliberately NOT paused — they're on screen and looked
+       at during the reveal, and each is its own small cheap layer. */
+    body.is-world-crossing .hs-atmo-band,
+    body.is-world-crossing .hs-planet-surface,
+    body.is-world-crossing .hs-planet-clouds,
+    body.is-world-crossing .hs-planet-wisps,
+    body.is-world-crossing .hs-drift,
+    body.is-world-crossing .os-water::after,
+    body.is-world-crossing .os-caustics .os-drift,
+    body.is-world-crossing .os-snow .os-drift {
+      animation-play-state: paused;
+    }
+    /* Grain can't be fixed by pausing — it's an overlay blend OVER the moving
+       scene, recomputed against a changing backdrop every frame regardless.
+       Same answer the intro gives: it goes away entirely. A 4.5% noise wash
+       vanishing under a storm is invisible. */
+    body.is-world-crossing .hs-grain { display: none; }
+    body.is-world-crossing .hero-scene__pan { will-change: transform; }
+
+    #heroScene {
+      position: absolute;
+      inset: 0;
       pointer-events: none;
       overflow: clip;
       contain: strict;
       display: none;
       --horizon: 72vh;
-      --planet-d: clamp(2600px, 520vw, 9000px);
+      /* ── The shape that survives the transition ───────────────────────────
+         Every circle in the scene (planet, atmosphere band, jellyfish bell)
+         shares ONE diameter and ONE top edge. That's the whole scale reveal:
+         the silhouette never changes identity, it only changes size. Cross-
+         fading two separately-positioned pictures would be a dissolve; this is
+         a re-read.
+         ⚠️ Keep .hs-planet, .hs-atmo-band and .hs-bell on the shared geometry
+         rule below. The moment one of them gets its own top or width they stop
+         being the same object and the trick dies.
+
+         THREE stops, not two, and the middle one is the point. A straight
+         d0 → d1 lerp is useless here: d0 is thousands of px and d1 is a third
+         of the viewport, so a linear parameter spends ~96% of its range still
+         looking like a horizon-filling limb and then collapses at the very end.
+         Splitting it lets each half be authored for what it has to read as:
+
+           d0  the hero pose — one enormous arc across the bottom of the frame
+           dm  the MIRROR of it — the whole body in frame with its bottom limb
+               curving across the lower screen, sky underneath. This is the
+               pose the storm hands back to you, and the reason the shrink is
+               legible at all.
+           d1  bell size.
+
+         (d0 → dm) rides --w-shrink and happens under the storm; (dm → d1) rides
+         --w-recede and happens in the open, reading as distance rather than as
+         a transformation. ⚠️ The middle term is `shrink - recede`, which is
+         only a valid weight while the two windows don't overlap — js/worlds.js
+         completes shrink before recede starts. Keep it that way. */
+      --hs-planet-d0: clamp(2600px, 520vw, 9000px);   /* horizon-filling planet */
+      --hs-planet-dm: 118vh;                           /* whole body in frame */
+      /* ⚠️ Rest pose comes from the shared --jelly-* pair (see the world-layer
+         block above) — #oceanScene's standing copy of the jellyfish reads the
+         same two values, and the hand-off is invisible only while they agree. */
+      --hs-planet-d1: var(--jelly-d);                  /* jellyfish bell */
+      --planet-d: calc(var(--hs-planet-d0) * (1 - var(--w-shrink, 0))
+                     + var(--hs-planet-dm) * (var(--w-shrink, 0) - var(--w-recede, 0))
+                     + var(--hs-planet-d1) * var(--w-recede, 0));
+      /* --hs-topm puts dm's BOTTOM limb exactly where d0's top limb was
+         (-46vh + 118vh = 72vh = --horizon), which is what makes the middle pose
+         read as the opening shot upside down. Keep the two in step. */
+      --hs-top0: var(--horizon);
+      --hs-topm: -46vh;
+      --hs-top1: var(--jelly-top);
+      --hs-top: calc(var(--hs-top0) * (1 - var(--w-shrink, 0))
+                   + var(--hs-topm) * (var(--w-shrink, 0) - var(--w-recede, 0))
+                   + var(--hs-top1) * var(--w-recede, 0));
       /* Radius of every celestial circle — the atmosphere gradient places its
          stops as absolute lengths off this, not percentages (see .hs-atmo-band). */
       --hs-r: calc(var(--planet-d) / 2);
       /* How far the atmosphere glow reaches above the limb. Figma measures a
-         66px band on a 1440×1024 frame ≈ 6.4vh. */
-      --hs-atmo-h: clamp(44px, 6.4vh, 96px);
-      /* Camera start = far enough below the horizon that it's out of frame at
-         --horizon's largest value. Kept in sync with runDustIntro(), which
-         reads this var rather than hard-coding the start. */
-      --pan-start: -75vh;
+         66px band on a 1440×1024 frame ≈ 6.4vh. Scaled down as the body
+         shrinks: the stops are absolute lengths, so at bell size an unscaled
+         band is a proportionally enormous halo instead of a rim light. */
+      --hs-atmo-h: calc(clamp(44px, 6.4vh, 96px)
+                     * (1 - var(--w-shrink, 0) * 0.34 - var(--w-recede, 0) * 0.46));
+      /* Camera start, as a translate on .hero-scene__pan.
+         ⚠️ POSITIVE = the scene sits LOWER, i.e. the horizon starts off the
+         BOTTOM of the frame and you open on empty space. The intro then eases
+         it to 0, bringing the limb up into view — which reads as the camera
+         DESCENDING onto the planet. (It used to be -75vh: the horizon above
+         the frame, camera buried inside the storm, tilting up. That made the
+         opening a rise and the whole rest of the page a fall — the palindrome
+         the worlds model exists to avoid.)
+         --horizon is 72vh, so anything over 28vh clears the bottom edge.
+         Kept in sync with runDustIntro(), which reads this var rather than
+         hard-coding the start. */
+      --pan-start: 40vh;
       /* Planet ramp, sampled straight off the Figma frame's centre column at
          fixed depths below the limb. It is a top-lit sphere: pale mint where
          the atmosphere washes over the bright edge, warming through cream to
@@ -3557,7 +3842,10 @@
       --hs-fill: #cda67a;
       --hs-gust: rgba(205, 166, 122, .65);
     }
-    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) #heroScene {
+    /* ⚠️ Requires .is-live, which js/worlds.js manages — but the class is also
+       authored into the markup so world one is mounted at first paint, before
+       any JS runs. Don't remove it from the HTML. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) #heroScene.is-live {
       display: block;
     }
     /* Home sky goes always-dark behind the star canvas (the scene is a fixed
@@ -3577,7 +3865,10 @@
 
     /* Planet + atmosphere: giant circles, only the top arc in frame. No blur
        or shadow filters on these — ring gradients do the glow, cheaply. */
-    .hs-planet, .hs-atmo-bloom, .hs-atmo-band {
+    /* ⚠️ Shared geometry — the one circle the whole transition turns on.
+       See the --hs-planet-d0/--hs-top note on #heroScene. Anything that needs
+       to BE this shape belongs in this selector list. */
+    .hs-planet, .hs-atmo-bloom, .hs-atmo-band, .hs-bell {
       position: absolute;
       left: 50%;
       width: var(--planet-d);
@@ -3585,11 +3876,31 @@
       border-radius: 50%;
       transform: translateX(-50%);
     }
-    /* The separate wide bloom is gone — .hs-atmo-band now carries the whole
-       falloff itself (below), so a second circle would just double-expose it.
-       The element and its intro tween stay wired in case it's wanted back. */
-    .hs-atmo-bloom { display: none; }
-    body.dust-intro-pending .hs-atmo-bloom { opacity: .35; }
+    /* ── Rim glow, once the body has a rim ────────────────────────────────
+       ⚠️ .hs-atmo-band is a top-limb band, not a halo: it is the same circle as
+       the planet, offset UP by --hs-atmo-h, so the only glow is the crescent
+       that pokes out above. Correct for the hero, where the top limb is the
+       only edge in frame — and useless the moment the body shrinks far enough
+       to show its bottom, which is exactly what the middle pose is for. A hard
+       unlit edge there kills it.
+       So the bloom (which used to be display:none) comes back as the
+       CONCENTRIC half of the job: same circle, scaled up about its own centre,
+       with a ring straddling the limb all the way round. It fades in on
+       --w-shrink, so it contributes nothing to the hero and everything from the
+       mirror pose onward — where it doubles as the jellyfish's water halo. */
+    .hs-atmo-bloom {
+      top: var(--hs-top);
+      opacity: calc(var(--w-shrink, 0) * (1 - var(--w-recede, 0) * 0.18));
+      /* Percentage stops are relative to the (scaled) box, so the ring keeps
+         its proportions at every size — no second length to keep in step. */
+      transform: translateX(-50%) scale(1.14);
+      background: radial-gradient(closest-side,
+        rgba(0, 0, 0, 0) 0 74%,
+        color-mix(in oklab, var(--hs-atmo-hi) 70%, transparent) 87%,
+        color-mix(in oklab, var(--hs-atmo-hi) 26%, transparent) 94%,
+        rgba(0, 0, 0, 0) 100%);
+      mix-blend-mode: screen;
+    }
 
     /* ── Atmosphere: bright AT the limb, fading UP into space ──────────────
        ⚠️ Direction matters and is easy to get backwards. The band is a circle
@@ -3606,10 +3917,20 @@
        viewport changes (--planet-d tracks vw, the offset tracks vh) and the
        glow either clips bright at the top or dies before reaching the limb. */
     .hs-atmo-band {
-      top: calc(var(--horizon) - var(--hs-atmo-h));
+      /* Tracks the shared top, so the planet's atmosphere becomes the bell's
+         rim glow with no extra work — it was always a ring hugging the limb. */
+      top: calc(var(--hs-top) - var(--hs-atmo-h));
       background: radial-gradient(closest-side,
-        var(--hs-atmo-hi) 0,
-        /* everything inward of here is behind the planet */
+        /* ⚠️ The interior is TRANSPARENT on purpose. It used to be solid teal
+           all the way to the centre — hidden behind the opaque planet, so it
+           looked free — but any frame where the planet's tiles rasterized late
+           (mid-passage, with the pan scaling every scroll frame) showed the
+           raw teal through the gap as hard-edged rectangles. And once
+           --w-morph fades the planet to 6%, a solid interior also tinted the
+           translucent bell blue-green from behind. Only the sliver above the
+           planet's limb was ever meant to be seen; paint only that. */
+        transparent 0,
+        transparent calc(var(--hs-r) - var(--hs-atmo-h) * 1.7),
         var(--hs-atmo-hi) calc(var(--hs-r) - var(--hs-atmo-h) * 1.02),
         /* the limb itself: a few px of lift so the terminator stays crisp
            against the dark planet (Figma gets this from its bright planet) */
@@ -3629,7 +3950,11 @@
        limb — the bright stop landed as a band under the horizon and the limb
        itself fell on the darkest stops, i.e. lit from the wrong side. */
     .hs-planet {
-      top: var(--horizon);
+      top: var(--hs-top);
+      /* Hands off to .hs-bell under the storm. Not a straight 1-morph: the
+         planet holds most of its body through the first half so the shrinking
+         shape still reads as solid, then gives way late. */
+      opacity: calc(1 - var(--w-morph, 0) * 0.94);
       background: radial-gradient(closest-side in oklab,
         var(--hs-p-deep) 0,
         var(--hs-p-deep) calc(var(--hs-r) - var(--hs-cap) * 2),
@@ -3641,6 +3966,104 @@
         var(--hs-p-limb) var(--hs-r));
       overflow: hidden;
     }
+    /* ── The jellyfish bell ──
+       Geometry comes entirely from the shared circle rule above; all this adds
+       is the fill. Translucent, brightest at the crown, feathering out at the
+       rim so it reads as something light passes through rather than a disc.
+       Only visible once --w-morph has run, which happens inside the storm.
+
+       ⚠️ WARM, not blue — the same apricot/cream ramp the planet is painted in
+       (--hs-p-*), a couple of stops deeper. This is the single most important
+       colour decision in the passage and it is counter-intuitive: a cool bell
+       against blue water is the obvious jellyfish, but it makes the reveal a
+       cross-fade between two different-coloured objects, which is a dissolve.
+       Golden jellies in blue water is also just what Jellyfish Lake looks like,
+       so the reference picture and the trick want the same thing. What changes
+       across the passage is the GROUND (black sky → blue water), never the
+       body. */
+    .hs-bell {
+      top: var(--hs-top);
+      opacity: var(--w-morph, 0);
+      /* Two layers: a crown highlight at the top over the centred body ramp.
+         The planet is a top-lit sphere (light from the limb above), so the
+         creature it becomes has to be lit the same way — a centre-lit bell
+         reads as a glowing orb, not the same body. ⚠️ The highlight is its own
+         layer rather than an off-centre body gradient: the centred layer owns
+         the circular feathered silhouette, and moving its origin deforms the
+         silhouette into a blob. Kept identical in .os-jelly::after. */
+      background:
+        radial-gradient(58% 42% at 50% 26%,
+          rgba(255, 244, 226, .5) 0%,
+          rgba(255, 244, 226, 0) 72%),
+        radial-gradient(closest-side in oklab,
+          rgba(248, 229, 202, .95) 0%,
+          rgba(236, 199, 156, .88) 30%,
+          rgba(216, 158, 105, .76) 58%,
+          rgba(184, 118,  70, .44) 82%,
+          rgba(150,  92,  52, 0) 100%);
+      /* A brighter margin along the lower half — the edge a jelly reads by. */
+      box-shadow: inset 0 calc(var(--planet-d) * -0.05) calc(var(--planet-d) * 0.09)
+                  rgba(255, 233, 202, .42);
+    }
+    /* Oral arms: a dense cluster of short frilled arms under the bell, not a
+       curtain of long trailing strands. Drawn as a repeating gradient rather
+       than N elements — at this size and opacity individual nodes buy nothing,
+       and one masked box is one layer instead of eight.
+       ⚠️ Kept SHORT (about half the bell's diameter) and clustered well inside
+       its width. Long strands are the silhouette of a moon jelly seen from the
+       side; the compact frilled bundle is what makes this read as the golden
+       jelly in the reference — and, more practically, a curtain that hangs
+       1.15× the body's height is the length of a viewport when the body is
+       still 100vh across on the way out of the storm. */
+    .hs-tentacles {
+      position: absolute;
+      left: 50%;
+      /* Hung from the bell's LOWER rim, not its middle. The bell is
+         translucent, so arms rooted any higher show straight through it as
+         stripes across the body. */
+      top: calc(var(--hs-top) + var(--planet-d) * 0.74);
+      width: calc(var(--planet-d) * 0.62);
+      height: calc(var(--planet-d) * 0.42);
+      transform: translateX(-50%);
+      opacity: calc(var(--w-reveal, 0) * 0.5);
+      pointer-events: none;
+      /* ⚠️ Feathered stops, not hard ones, and a LONG period. Square-edged
+         bars at this width read as a barcode laid over the bell, and even
+         soft-edged ones do once there are a dozen of them — the wider spacing
+         and low peak are what let them read as a handful of arms hanging in
+         water rather than a comb. Kept identical to .os-jelly::before — see
+         the note there. */
+      background: repeating-linear-gradient(90deg,
+        rgba(240, 200, 152, 0) 0%,
+        rgba(240, 200, 152, .32) 2.6%,
+        rgba(240, 200, 152, .68) 4.2%,
+        rgba(240, 200, 152, .32) 5.8%,
+        rgba(240, 200, 152, 0) 8.4%,
+        rgba(240, 200, 152, 0) 11%);
+      /* ⚠️ Starts TRANSPARENT, not opaque. The bell is translucent, so arms at
+         full strength where they meet it show straight through the body as a
+         comb laid over it. Fading them in just below the rim is what makes them
+         read as hanging behind the bell instead. */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, rgba(0,0,0,.34) 62%, transparent 96%),
+                          radial-gradient(closest-side, #000 52%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, rgba(0,0,0,.34) 62%, transparent 96%),
+                  radial-gradient(closest-side, #000 52%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-composite: intersect;
+      /* Converge the arms toward the bottom. Perfectly parallel lines read as
+         a comb; the taper is most of what makes them read as hanging in water. */
+      clip-path: polygon(6% 0%, 94% 0%, 62% 100%, 38% 100%);
+      animation: hsTentacleSway 9s ease-in-out infinite alternate;
+      transform-origin: 50% 0;
+    }
+    @keyframes hsTentacleSway {
+      from { transform: translateX(-50%) skewX(-3.5deg) scaleY(0.97); }
+      to   { transform: translateX(-50%) skewX(3.5deg) scaleY(1.03); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hs-tentacles { animation: none; }
+    }
+
     /* Drifting mottled dust shadows on the surface; oversized + feathered so
        the drift can never expose an edge. Noise background set by JS. */
     .hs-planet-surface {
@@ -3736,20 +4159,41 @@
     @keyframes hsDrift900   { to { transform: translateX(-900px); } }
     @keyframes hsDrift1400r { from { transform: translateX(-1400px); } to { transform: translateX(0); } }
     @keyframes hsDrift2000  { to { transform: translateX(-2000px); } }
-    body.dust-intro-pending .hs-dust--far  { opacity: .8;  transform: translateY(-30vh); }
-    body.dust-intro-pending .hs-dust--mid  { opacity: .9;  transform: translateY(-55vh); }
-    body.dust-intro-pending .hs-dust--near { opacity: 1;   transform: translateY(-88vh); }
+    /* Intro start state for the dust. POSITIVE offsets: the haze sits below
+       with the rest of the planet and rises into place as the camera comes
+       down, each layer at its own rate so the descent has parallax. Small
+       magnitudes — they're settling into frame, not streaming past the lens
+       the way they did on the old upward tilt. And they start FAINT, because
+       you're arriving from clean space rather than climbing out of the storm. */
+    body.dust-intro-pending .hs-dust--far  { opacity: .10; transform: translateY(22vh); }
+    body.dust-intro-pending .hs-dust--mid  { opacity: .07; transform: translateY(34vh); }
+    body.dust-intro-pending .hs-dust--near { opacity: .04; transform: translateY(48vh); }
 
-    /* Full-viewport storm immersion — opaque-ish tan wash the camera starts
-       inside; the intro fades it out entirely (the dust layers keep the
-       ambient haze after that). */
+    /* Full-viewport storm immersion — an opaque-ish tan wash for when the
+       camera is INSIDE the dust. It no longer plays on the intro (which now
+       opens in clean space); it's driven by --world-enter on the way DOWN into
+       the planet, where being swallowed by the storm is the transition out of
+       this world. See the descent block further down. */
     .hs-veil {
       position: absolute;
-      inset: 0;
+      /* Three screens tall: the storm is a SHEET the camera passes through,
+         not a wash that fades in place. --w-travel (js/worlds.js) slides it up
+         across the frame — below the fold, covering it, then off the top —
+         while --w-storm still owns opacity. The gradient now spans the sheet,
+         so you enter through its bright sunlit crest and fall out of its dark
+         underside into the water: the colour progression is the descent. */
+      inset: -100vh 0;
       background: linear-gradient(to bottom in oklab,
         color-mix(in oklab, var(--hs-fill) 88%, #fff) 0%,
         var(--hs-fill) 55%,
         color-mix(in oklab, var(--hs-fill) 80%, #000) 100%);
+      /* Feathered leading and trailing edges — a hard veil edge crossing the
+         frame reads as a curtain being pulled, not weather rolling up. */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 16%, #000 84%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 16%, #000 84%, transparent 100%);
+      /* travel 0 → sheet fully below the frame; .5 → centred over it (held
+         there for the storm's whole opacity plateau); 1 → fully above. */
+      transform: translateY(calc((1 - 2 * var(--w-travel, .5)) * 200vh));
       opacity: 0;
       isolation: isolate;   /* keep .hs-veil-tex blending against the wash only */
     }
@@ -3771,10 +4215,10 @@
       animation: hsVeilDrift 18s linear infinite;
     }
     @keyframes hsVeilDrift { to { transform: translateX(-1200px); } }
-    /* Promoted for the intro only: the veil's opacity is animated across the
-       whole pan, and without this the full-viewport gradient repaints each
-       frame instead of the compositor just fading a cached one. */
-    body.dust-intro-pending .hs-veil { opacity: .7; will-change: opacity; }
+    /* ⚠️ The intro no longer starts inside the storm, so the veil starts CLEAR
+       (opacity 0, from the base rule) — no dust-intro-pending override. It's
+       promoted here only while the descent is driving its opacity. */
+    body.dust-hero .hs-veil { will-change: opacity, transform; }
 
     /* ── Storm beat: swirls ──
        Slow vortices turning inside the veil during the camera hold. A conic
@@ -3907,7 +4351,12 @@
       }
     }
     @media (max-width: 768px) {
-      #heroScene { --horizon: 76vh; --pan-start: -79vh; }
+      /* ⚠️ --pan-start POSITIVE, same as the desktop value and for the same
+         reason: the intro descends onto the planet. This was left at -79vh when
+         the opening was flipped, which put the phone's camera below the horizon
+         tilting UP — the one direction the worlds model exists to rule out.
+         --horizon is 76vh here, so anything over 24vh clears the bottom edge. */
+      #heroScene { --horizon: 76vh; --pan-start: 36vh; }
       .hs-dust--near { display: none; }
       /* Three big blurred conic gradients are the most expensive thing in the
          intro; one carries the churn well enough on a phone. */
@@ -4256,6 +4705,44 @@
         text-align-last: center;
       }
     }
+
+    /* Poster billing block — sits under the description like a movie
+       poster's bottom credit line: small, tracked, factual, no fluff.
+       Row 1 (headline) reads brighter than row 2 (specialty credits), the
+       same brightness step .description already uses off pure white. */
+    body.dust-hero:not(.work-mode) .intro-billing,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-billing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(4px, .6vh, 7px);
+      margin: clamp(14px, 2.4vh, 26px) 0 0;
+      text-align: center;
+    }
+    body.dust-hero:not(.work-mode) .intro-billing-row,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-billing-row {
+      font-family: 'Quicksand', 'Geomanist', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: clamp(9px, .82vw, 12px);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      white-space: normal;
+    }
+    body.dust-hero:not(.work-mode) .intro-billing-headline,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-billing-headline {
+      color: rgba(255, 255, 255, .88);
+    }
+    body.dust-hero:not(.work-mode) .intro-billing-specialties,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-billing-specialties {
+      color: rgba(255, 255, 255, .52);
+    }
+    body.dust-hero:not(.work-mode) .intro-billing-dot,
+    body.dust-hero.starfield-mode:not(.work-mode) .hero-lockup .intro-billing-dot {
+      display: inline-block;
+      margin: 0 .6em;
+      opacity: .6;
+    }
+
     /* Intro start-state: the copy hides until the camera levels (the anime
        timeline reveals it inline). Status chrome + star canvas are snapped
        and revealed by js/hero-entrance.js itself, same as the classic
@@ -4263,6 +4750,7 @@
        can't animate past a class rule that pins them at 0. */
     body.dust-intro-pending .intro-copy .intro-greeting,
     body.dust-intro-pending .intro-copy .description,
+    body.dust-intro-pending .intro-billing,
     body.dust-intro-pending .clock-hero-wrap {
       opacity: 0;
     }
@@ -4281,74 +4769,605 @@
       color: #e9ebef;
     }
 
-    /* ── Reversed reveal ──
-       The camera tilted UP to find the horizon, so the page continues the
-       move: home loads scrolled to the document's end (pinned by an inline
-       script after the spacer) and the visitor scrolls UP to reveal the feed,
-       which descends over the hero like a curtain being lowered. The feed's
-       section order is reversed so the first section is the first revealed. */
-    body.dust-hero:not(.section-mode):not(.work-mode) .below-fold-inner.home-feed {
-      display: flex;
-      flex-direction: column-reverse;
-      /* The base rule's big top padding (the old "aurora gap" before content)
-         belongs on the seam side now — the BOTTOM edge, next to the hero. */
-      padding: 120px 20px clamp(120px, 20vh, 260px);
-    }
+    /* ── Squared seam ──
+       The feed used to arrive as a visible panel: rounded bottom corners on
+       the hero and a peek parked at the top of the viewport. That read as a
+       curtain hanging in the sky. Both edges are square here, so the feed
+       rises into the world rather than sliding a card over it.
+       ⚠️ Keep both of these. The hero's base rule is
+       `border-radius: 0 0 64px 64px` (see .hero above), and a rounded fixed
+       hero behind a transparent feed shows as a black notch in the corners. */
     body.dust-hero:not(.section-mode):not(.work-mode) .hero {
-      border-radius: 0; /* the seam is a fade now, not a rounded panel edge */
+      border-radius: 0;
     }
-
-    /* ── The seam ──
-       The feed used to arrive as a visible white panel: rounded bottom
-       corners and a 12vh peek parked at the top of the viewport at rest.
-       That read as a curtain hanging in the sky. Instead the feed's edge is
-       square and unlit, and everything below it is a gradient that GROWS
-       with scroll (--seam-fade, set by heroParallax() in js/main.js):
-
-         at rest      →  ~20px of glow: the sky just brightens along the very
-                         top edge, hinting there's something above
-         mid-scroll   →  the gradient stretches to ~44vh, so the black sky
-                         dissolves into the page background over a long
-                         travel instead of meeting it at a line
-
-       Kept in --bg so it inverts with the theme (dark mode gets the same
-       move, just without the white). */
     body.dust-hero:not(.section-mode):not(.work-mode) #belowFold {
       border-radius: 0;
     }
-    body.dust-hero:not(.section-mode):not(.work-mode) #belowFold::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 100%;
-      /* ⚠️ Fixed height, scaled — NOT an animated height. This grows on every
-         scroll frame, and `height` is a layout property: driving it directly
-         made the browser reflow and repaint the seam the whole way up. scaleY
-         off a fixed box is a compositor-only transform, and stretching a
-         linear gradient's texture is indistinguishable from a taller one.
-           0.035 of 60vh ≈ 20px, the thin resting glow. */
-      height: 60vh;
-      transform-origin: top;
-      transform: scaleY(calc(0.035 + var(--seam-fade, 0) * 0.965));
-      pointer-events: none;
-      background: linear-gradient(to bottom,
-        var(--bg) 0%,
-        color-mix(in oklab, var(--bg) 62%, transparent) 34%,
-        color-mix(in oklab, var(--bg) 24%, transparent) 66%,
-        transparent 100%);
+
+    /* ── The feed is not a curtain any more ──
+       Each chapter of the home feed has a world behind it (js/worlds.js), so
+       an opaque `background: var(--bg)` on #belowFold would mean the world is
+       never seen — it'd be an interstitial between pages rather than a place
+       you're inside. The feed goes transparent and legibility is paid for
+       three ways instead: a per-section scrim (below), --world-dim on the
+       world layers, and grid.js's content-hole system clearing stars behind
+       bare type.
+       ⚠️ Scoped to the home feed only. #sectionBelow (Writing / Videos /
+       Photos) keeps its curtain — those pages have a compact hero to cover,
+       not a world to stand in. The :not() chain matches the other home rules
+       in this block. */
+    body.dust-hero:not(.section-mode):not(.work-mode):not(.overflow-mode):not(.places-mode) #belowFold {
+      background: transparent;
+    }
+    /* The 200px transparent→--bg ramp above the feed's edge only makes sense
+       when there IS an opaque edge to blend into. */
+    body.dust-hero:not(.section-mode):not(.work-mode):not(.overflow-mode):not(.places-mode) #belowFold::before {
+      content: none;
     }
 
-    /* Spacer (base is 88vh) taller than the viewport, so the document's end
-       leaves the feed's bottom edge a good way ABOVE the top of the screen.
-       Everything past the first 100vh is open sky: you scroll the storm out and
-       travel through bare starfield before the feed's edge shows up at all,
-       instead of the page background arriving on the first pixel of scroll.
+    /* ── World dimmer ──
+       See the markup note in _index.html. --world-dim is 0..1 from
+       js/worlds.js; DIM_MAX here is the actual ceiling, so the world never
+       goes fully black even deep inside a chapter — you should always be able
+       to tell which biosphere you're standing in. */
+    #worldDim {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      display: none;
+      background: var(--bg);
+      opacity: calc(var(--world-dim, 0) * 0.52); /* DIM_MAX */
+    }
+    /* Only the home feed has worlds to dim. Section pages, work mode and the
+       overflow pages own their own sky and their body is opaque anyway. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) #worldDim {
+      display: block;
+    }
+
+    /* ── Ocean: the world below the dust planet ────────────────────────────
+       Same grammar as the dust scene — a graded body, drifting textures at
+       three depths, a floor — so the two read as places rather than two
+       unrelated pictures. Textures come from the same noiseURI() generator in
+       js/hero-entrance.js.
+       It arrives INSIDE the storm (--w-storm is at its plateau when the passage
+       swaps worlds), so it fades up on the back half of the crossing and is
+       fully present by the time the dust clears. */
+    #oceanScene {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: clip;
+      contain: strict;
+      /* Dark BLUE, not teal — the teal version read as a swimming pool. The
+         hue holds all the way down and only the value drops, which is what
+         makes depth read as depth rather than as a colour change. */
+      --os-surface: #12456e;
+      --os-mid: #0a2545;
+      --os-deep: #051428;
+      --os-abyss: #020813;
+      --os-light: #7fd2f0;
+    }
+    /* The water column: bright where the surface is far overhead, going to
+       nothing at depth. The whole world is this gradient; everything else is
+       something suspended in it. */
+    .os-water {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom in oklab,
+        var(--os-surface) 0%,
+        var(--os-mid) 34%,
+        var(--os-deep) 68%,
+        var(--os-abyss) 100%);
+    }
+    /* Shimmer — two very wide, very slow diagonal light bands crossing the
+       column at different rates. Deliberately not a texture: at this scale
+       water moves as broad sheets of refracted light, and anything with
+       visible grain reads as fog instead. The counter-rotation is what stops
+       it looking like a single sweeping gradient. */
+    .os-water::after {
+      content: '';
+      position: absolute;
+      inset: -30%;
+      background:
+        linear-gradient(74deg, transparent 34%, rgba(150, 214, 255, .10) 50%, transparent 66%),
+        linear-gradient(-58deg, transparent 38%, rgba(120, 226, 255, .07) 52%, transparent 68%);
+      background-size: 240% 240%, 300% 300%;
+      animation: osShimmerA 26s ease-in-out infinite alternate,
+                 osShimmerB 37s ease-in-out infinite alternate;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+    @keyframes osShimmerA { from { background-position: 0% 0%, 0% 0%; } to { background-position: 100% 60%, 0% 0%; } }
+    @keyframes osShimmerB { from { background-position: 0% 0%, 100% 20%; } to { background-position: 0% 0%, 0% 90%; } }
+    @media (prefers-reduced-motion: reduce) {
+      .os-water::after { animation: none; }
+    }
+    /* Sunlight refracting through the surface far above. Reaches down about a
+       third of the frame and no further — past that it's the deep. */
+    .os-caustics {
+      position: absolute;
+      left: 0; right: 0; top: 0; height: 46vh;
+      opacity: .18;
+      mix-blend-mode: screen;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+    }
+    .os-caustics .os-drift {
+      position: absolute; top: 0; bottom: 0; left: 0; right: -1400px;
+      background-repeat: repeat; background-size: 1400px 1400px;
+      animation: osCaustic 42s linear infinite;
+    }
+    @keyframes osCaustic { to { transform: translateX(-1400px); } }
+    /* Marine snow: the ocean's answer to the dust layers.
+       ⚠️ Drifts DOWNWARD, not sideways. Sinking detritus is the single cue
+       that says "water" rather than "sky" — the same texture drifting
+       horizontally just reads as another dust sheet. */
+    .os-snow {
+      position: absolute;
+      left: 0; right: 0; top: -100vh; height: 300vh;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    }
+    .os-snow .os-drift {
+      position: absolute; left: 0; right: 0; top: 0; bottom: -1600px;
+      background-repeat: repeat;
+    }
+    .os-snow--far  { opacity: .22; }
+    .os-snow--mid  { opacity: .16; }
+    .os-snow--near { opacity: .11; }
+    .os-snow--far  .os-drift { background-size: 1600px 1600px; animation: osSink1600 120s linear infinite; }
+    .os-snow--mid  .os-drift { background-size: 1200px 1200px; animation: osSink1200 78s linear infinite; }
+    .os-snow--near .os-drift { background-size: 800px 800px;   animation: osSink800 52s linear infinite; }
+    @keyframes osSink1600 { to { transform: translateY(1600px); } }
+    @keyframes osSink1200 { to { transform: translateY(1200px); } }
+    @keyframes osSink800  { to { transform: translateY(800px); } }
+    /* The dark below. Gives the world a floor to be above, which is what makes
+       the jellyfish read as suspended rather than just placed. */
+    .os-abyss {
+      position: absolute;
+      left: 0; right: 0; bottom: 0; height: 42vh;
+      background: linear-gradient(to bottom, transparent 0%, var(--os-abyss) 78%);
+    }
+
+    /* ── The ocean's residents ─────────────────────────────────────────────
+       A field of jellyfish at different depths — the water's answer to the
+       star field, and the thing that turns "a jellyfish" into "the place
+       jellyfish live".
+
+       ⚠️ DOM elements, not canvas, and that is not a preference. `SCENES.ocean`
+       in js/grid.js does carry `jelly` bodies and they're load-bearing — home's
+       moon travels into the biggest one, which is how the moon becomes a jelly
+       for free during the warp. But the star canvas sits UNDER #worldLayers and
+       `.os-water` is an opaque gradient, so **nothing drawn on the canvas
+       survives into the ocean chapter**. The canvas jellies are the warp; this
+       is the field you actually read once the storm clears. If you ever make
+       the water translucent enough to show the canvas through it, delete this
+       block rather than having both.
+
+       One recipe, two uses: the background field, and `--hero`, which is the
+       ocean's own copy of the jellyfish the planet turned into (see below). */
+    .os-jelly {
+      position: absolute;
+      left: var(--jx, 50%);
+      top: var(--jy, 30%);
+      width: var(--jd, 8vh);
+      height: var(--jd, 8vh);
+      margin-left: calc(var(--jd, 8vh) / -2);
+      /* Bloom in on the reveal and stay. --world-settled is the monotonic one
+         (0 before the void, the reveal ramp inside it, 1 forever after); the
+         phase windows themselves fall back to 0 in a chapter and would empty
+         the ocean the moment you started reading it. */
+      opacity: calc(var(--jo, .3) * var(--world-settled, 1));
+      pointer-events: none;
+      animation: osJellyBob var(--jspd, 15s) ease-in-out infinite alternate;
+      animation-delay: var(--jdel, 0s);
+    }
+    /* ⚠️ ::before is the ARMS and ::after is the BELL, in that order, so the
+       translucent bell paints over the roots — same stacking the dust scene
+       gets from .hs-tentacles sitting before .hs-bell in the markup. Swap them
+       and the arms draw a comb across the body. */
+    .os-jelly::before,
+    .os-jelly::after { content: ''; position: absolute; }
+    /* The bell — the same warm ramp as .hs-bell, deliberately. The whole point
+       of the passage is that the planet WAS one of these, so the residents have
+       to be the same creature or the reveal retroactively stops making sense. */
+    .os-jelly::after {
+      inset: 0;
+      border-radius: 50%;
+      /* Three layers, top to bottom: a teal rim ring hugging the limb (the
+         jelly-scale echo of the planet's atmosphere band — this is what makes
+         every resident read as the same designed object as the hero), the
+         crown highlight (the planet's top-light), and the centred body ramp
+         that owns the silhouette. Same recipe as .hs-bell plus the rim, which
+         the dust scene gets from .hs-atmo-band instead. */
+      background:
+        radial-gradient(closest-side,
+          transparent 0 82%,
+          rgba(64, 190, 205, .38) 92%,
+          rgba(26, 132, 150, .2) 96%,
+          transparent 100%),
+        radial-gradient(58% 42% at 50% 26%,
+          rgba(255, 244, 226, .5) 0%,
+          rgba(255, 244, 226, 0) 72%),
+        radial-gradient(closest-side in oklab,
+          rgba(248, 229, 202, .95) 0%,
+          rgba(236, 199, 156, .88) 30%,
+          rgba(216, 158, 105, .76) 58%,
+          rgba(184, 118, 70, .44) 82%,
+          rgba(150, 92, 52, 0) 100%);
+      box-shadow:
+        inset 0 calc(var(--jd, 8vh) * -0.05) calc(var(--jd, 8vh) * 0.09) rgba(255, 233, 202, .42),
+        0 0 calc(var(--jd, 8vh) * 0.18) calc(var(--jd, 8vh) * 0.03) var(--jhalo, rgba(102, 198, 226, .38));
+    }
+    /* Oral arms. ⚠️ Same proportions as .hs-tentacles (top 78% / width 62% /
+       height 46% of the bell, same taper) — that's what lets the hero copy
+       stand in for the dust scene's bell without anything shifting position at
+       the hand-off. Change one, change both. */
+    .os-jelly::before {
+      top: 74%; left: 19%; width: 62%; height: 42%;
+      opacity: .55;
+      background: repeating-linear-gradient(90deg,
+        rgba(240, 200, 152, 0) 0%,
+        rgba(240, 200, 152, .32) 2.6%,
+        rgba(240, 200, 152, .68) 4.2%,
+        rgba(240, 200, 152, .32) 5.8%,
+        rgba(240, 200, 152, 0) 8.4%,
+        rgba(240, 200, 152, 0) 11%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, rgba(0,0,0,.34) 62%, transparent 96%),
+                          radial-gradient(closest-side, #000 52%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, rgba(0,0,0,.34) 62%, transparent 96%),
+                  radial-gradient(closest-side, #000 52%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-composite: intersect;
+      clip-path: polygon(6% 0%, 94% 0%, 62% 100%, 38% 100%);
+      animation: osArmSway 8.5s ease-in-out infinite alternate;
+    }
+    @keyframes osJellyBob {
+      from { transform: translateY(calc(var(--jd, 8vh) * -0.12)) scaleX(1.02); }
+      to   { transform: translateY(calc(var(--jd, 8vh) * 0.12)) scaleX(0.98); }
+    }
+    /* ⚠️ Screen-blended, and only the background field. These are small, dim
+       and a long way off, and at the opacity that puts them at the right depth
+       a normally-composited warm fill just goes grey against navy — you lose
+       the one thing that makes them the same creature as the hero. Screen keeps
+       the hue and reads as backlit, which is what a jelly at depth looks like.
+       The hero copy must NOT do this: it has to match .hs-bell exactly, and
+       .hs-bell composites normally. */
+    .os-jelly { mix-blend-mode: screen; }
+    .os-jelly--hero { mix-blend-mode: normal; }
+    /* …and a more saturated amber to pay for it. Screen lifts value but eats
+       chroma, so the shared fill (which is tuned to match .hs-bell under NORMAL
+       compositing) comes out of it grey-blue — the exact wrong note, since the
+       whole point is that these are the same creature as the one you just
+       watched a planet turn into. ⚠️ Scoped off the hero, which must keep the
+       shared fill unchanged or the hand-off stops being invisible. */
+    .os-jelly:not(.os-jelly--hero)::after {
+      background:
+        radial-gradient(closest-side,
+          transparent 0 82%,
+          rgba(64, 190, 205, .4) 92%,
+          rgba(26, 132, 150, .22) 96%,
+          transparent 100%),
+        radial-gradient(58% 42% at 50% 26%,
+          rgba(255, 248, 230, .55) 0%,
+          rgba(255, 248, 230, 0) 72%),
+        radial-gradient(closest-side in oklab,
+          rgba(255, 228, 180, .95) 0%,
+          rgba(247, 191, 121, .90) 32%,
+          rgba(229, 147, 67, .80) 60%,
+          rgba(191, 105, 41, .50) 84%,
+          rgba(150, 80, 30, 0) 100%);
+    }
+    @keyframes osArmSway {
+      from { transform: skewX(-4deg) scaleY(0.96); }
+      to   { transform: skewX(4deg) scaleY(1.04); }
+    }
+
+    /* ── The one the planet became ─────────────────────────────────────────
+       ⚠️ This is a SECOND element standing in the same place as the dust
+       scene's `.hs-bell`, not a mistake. The dust scene's jellyfish physically
+       cannot outlive the void: every dimension it has is interpolated on a
+       phase window, and those all fall back to 0 in a chapter, so the shared
+       circle snaps back to planet size the instant you leave. The ocean keeps
+       its own copy at exactly the resting pose, fades it in underneath while
+       the original is still there (--world-handoff, monotonic — 0 before the
+       void, ramping inside it, 1 forever after), and the original then fades
+       out over it. Nothing moves; you can't see the swap.
+       That's also what pins the jellyfish above the Timeline for the whole
+       chapter: #oceanScene is a fixed, full-viewport layer, so once the copy
+       is lit it simply stays there while the feed scrolls underneath.
+
+       ⚠️ --jelly-top / --jelly-d are the shared pose (see the :root block by
+       the world layers) and #heroScene's --hs-top1 / --hs-planet-d1 read the
+       SAME two vars. They must not drift apart or the hand-off jumps.
+       --hero-drift is heroParallax's depth offset, which the dust scene applies
+       as a transform on .hero-scene__pan; the copy has to carry it too or it
+       sits ~10vh off. */
+    .os-jelly--hero {
+      --jd: var(--jelly-d);
+      --jhalo: rgba(26, 132, 150, .62);
+      left: 50%;
+      top: calc(var(--jelly-top) + var(--hero-drift, 0px));
+      opacity: var(--world-handoff, 1);
+      /* No bob. The bell has to sit exactly where the dust scene left it while
+         the two cross-fade, and a bob is a few vh of drift at the one moment
+         the visitor is looking straight at it. The arms still sway. */
+      animation: none;
+      /* ⚠️ Compensates for --world-dim, and only on this one element. Inside a
+         chapter the world takes a ~52% wash (#worldDim) plus each section's own
+         scrim, which is right for water and marine snow and wrong for the
+         subject — the jellyfish is the thing the visitor is meant to keep
+         seeing while they read, not part of the backdrop. It can't simply be
+         lifted above #worldDim (it lives in #worldLayers, which the dimmer
+         paints over by design), so it brightens by exactly as much as the
+         dimmer darkens. One small box, so the filter layer is cheap. */
+      filter: brightness(calc(1 + var(--world-dim, 0) * 0.6));
+    }
+
+    @media (max-width: 640px) {
+      .os-snow--near { display: none; }
+      /* Thin the field on a phone — same reason the third dust layer goes. */
+      .os-jelly--far { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .os-caustics .os-drift, .os-snow .os-drift { animation: none; }
+      .os-jelly, .os-jelly::after { animation: none; }
+    }
+    /* The sea taking the message's colour on the way down the drain. It covers
+       the whole layer and is clipped with it, so the shape you're watching
+       shrink changes colour rather than a coloured shape appearing inside it.
+       Ramped late (GENIE.tintFrom) — early enough that the dot is fully blue
+       before it starts to unfold, late enough that a viewport of water never
+       visibly turns light. */
+    .os-genie-tint {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #4fa8ff, #0b84fe);
+      opacity: var(--genie-tint, 0);
+      pointer-events: none;
+    }
+
+    /* ── Chat: the light room the ocean is poured into ──────────────────────
+       No weather, no depth, no texture. Every other world on this page is a
+       place with something going on in it; this one is deliberately inert,
+       because it isn't scenery — it's the inside of the message bubble at
+       viewport scale, and the thread is what you're supposed to be looking at.
+       ⚠️ The one chapter of the feed that reads DARK-ON-LIGHT. The ink block
+       for [data-world="chat"] further down is not optional decoration: without
+       it the thread is near-white type on a near-white room. */
+    #chatScene {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: clip;
+      contain: strict;
+      --chat-room: #eef1f5;
+      --chat-room-edge: #dfe4ea;
+    }
+    .cs-room {
+      position: absolute;
+      inset: 0;
+      /* A very slight vertical settle rather than a flat fill — enough that the
+         room has a floor and a ceiling, not so much that it reads as a gradient
+         anyone is meant to notice. */
+      background: linear-gradient(to bottom in oklab,
+        var(--chat-room) 0%,
+        var(--chat-room) 58%,
+        var(--chat-room-edge) 100%);
+    }
+
+    /* ── The void between two worlds ──
+       An authored stretch of nothing between chapters. It has no content and
+       no scrim, so the world behind is at full strength here — which is what
+       js/worlds.js's --world-dim ramp is timed against, and what makes the
+       transition read as a gap you fall through rather than a cut.
+       Tall enough that the sky's ~950ms warp (WARP.dur in js/grid.js) has room
+       to play out at an ordinary scroll speed; much shorter and you arrive in
+       the next chapter with streaks still on screen. */
+    .world-void {
+      /* Base length = the STORM passage's (the modifiers below shorten the
+         others). The whole dust→ocean transition plays across this: the dive
+         in, the storm, the shrink behind it, the storm clearing on the mirror
+         pose, then the long recede to bell size that is still running as the
+         Timeline arrives. That's five beats, so it wants about two screens —
+         at the previous 145vh the recede finished before the first chapter was
+         even in frame, which is the half the visitor is meant to watch. */
+      height: 195vh;
+      flex: 0 0 auto;
+      pointer-events: none;
+      /* First child of a flex column with a 56px gap; the gap would otherwise
+         add to the authored length and drift the phase windows. */
+      margin-bottom: -56px;
+    }
+    @media (max-width: 640px) {
+      .world-void { height: 155vh; }
+    }
+    /* ⚠️ A void BETWEEN two sections has the feed's 56px gap on both sides, not
+       just below it. Cancelling only one of them lengthens the authored span by
+       a gap and drifts every phase window that's measured against it. */
+    .world-void--mid { margin-top: -56px; }
+    /* The ocean draining into the message. Fewer beats than the dust passage —
+       a collapse, an unfold, and the copy — so it wants less room; at the storm
+       void's length the drain is a slow puncture rather than a suction. */
+    .world-void--mid[data-passage="genie"] { height: 150vh; }
+    /* Leaving the light room: one cross-fade, nothing to watch. Long enough
+       that the room doesn't blink out, short enough that it isn't a chapter of
+       its own. */
+    .world-void--short { height: 90vh; }
+    @media (max-width: 640px) {
+      .world-void--mid[data-passage="genie"] { height: 130vh; }
+      .world-void--short { height: 80vh; }
+    }
+
+    /* ── Per-section scrim ──
+       A pool of dimmed sky under each section, feathered to nothing at the
+       section's own top and bottom edges — so the world reads clearly in the
+       gaps BETWEEN sections (where the void transitions live) and settles
+       down behind the copy where it has to be read.
+       Deliberately a static gradient, not a JS-driven overlay: it costs zero
+       per-frame work, it re-feathers itself when a section changes height,
+       and it still works if the director never boots.
+       ⚠️ Never take the mix to 100% var(--bg) — at full opacity this is just
+       the curtain again with extra steps. ~70% is the legibility budget; the
+       feed is mostly --surface-raised cards, which carry themselves. */
+    body.dust-hero:not(.section-mode):not(.work-mode) .home-feed .home-section {
+      position: relative;
+      /* Keeps the -1 pseudo inside the section's own stacking context so it
+         can't fall behind #belowFold. NB: isolation creates a stacking context
+         but does NOT create a containing block, so #homeTimeline's sticky pin
+         is unaffected (same reasoning as the opacity note on --timeline-reveal). */
+      isolation: isolate;
+    }
+    body.dust-hero:not(.section-mode):not(.work-mode) .home-feed .home-section::before {
+      content: '';
+      position: absolute;
+      top: -7vh;
+      bottom: -7vh;
+      /* Full-bleed out of .below-fold-inner's 1100px reading column. Safe:
+         <html>/<body> are overflow-x: clip (the timeline rail already breaks
+         out to 100vw the same way). */
+      left: 50%;
+      width: 100vw;
+      transform: translateX(-50%);
+      z-index: -1;
+      pointer-events: none;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        color-mix(in oklab, var(--bg) 70%, transparent) 13%,
+        color-mix(in oklab, var(--bg) 74%, transparent) 87%,
+        transparent 100%);
+    }
+    /* ⚠️ …except in the light room, where the scrim is a pool of --bg (near
+       black) and would hang a dark cloud behind the one chapter that reads
+       dark-on-light. It buys nothing there either: the room is a flat fill with
+       no sky to quiet down. */
+    body.dust-hero:not(.section-mode):not(.work-mode) .home-feed .home-section[data-world="chat"]::before {
+      background: none;
+    }
+
+    /* ── The light room's ink ───────────────────────────────────────────────
+       The chat chapter is the one place on this site that reads dark-on-light,
+       and it is NOT light mode coming back: light mode is switched off by
+       construction (see the theme note in CLAUDE.md — every light-keyed
+       selector is unreachable while <html> carries data-theme="dark"). This is
+       a local repaint of one section against one opaque world layer, scoped to
+       [data-world="chat"] so nothing outside it can be dragged along.
+       ⚠️ Written in literal colours, not tokens. The tokens here are all
+       theme-derived and every one of them resolves dark; reaching for
+       --text-primary is exactly how this section ends up invisible. */
+    .home-section[data-world="chat"] {
+      --chat-ink: #10151c;
+      --chat-ink-soft: #5b6675;
+      --chat-surface: #ffffff;
+      --chat-line: rgba(16, 21, 28, .10);
+    }
+    .home-section[data-world="chat"] .home-section-title,
+    .home-section[data-world="chat"] .home-section-icon {
+      color: var(--chat-ink);
+    }
+    /* Received bubbles: white on the room's grey, the way the app it's
+       imitating does it. The glass recipe can't be reused — it's a translucent
+       light film designed to sit on a dark surface. */
+    .home-section[data-world="chat"] .testi-chat__bubble--in {
+      background: var(--chat-surface);
+      color: var(--chat-ink);
+      box-shadow: 0 1px 2px rgba(16, 21, 28, .06), inset 0 0 0 1px var(--chat-line);
+    }
+    .home-section[data-world="chat"] .testi-chat__name {
+      color: var(--chat-ink);
+    }
+    .home-section[data-world="chat"] .testi-chat__role {
+      color: var(--chat-ink-soft);
+    }
+    .home-section[data-world="chat"] .testi-chat__dot {
+      background: var(--chat-ink-soft);
+    }
+    .home-section[data-world="chat"] .testi-chat__avatar-img {
+      background: var(--chat-surface);
+      box-shadow: inset 0 0 0 1px var(--chat-line);
+    }
+    .home-section[data-world="chat"] .testi-chat__more {
+      background: var(--chat-surface);
+      color: var(--chat-ink);
+      box-shadow: 0 1px 2px rgba(16, 21, 28, .06), inset 0 0 0 1px var(--chat-line);
+    }
+    .home-section[data-world="chat"] .testi-chat__more:hover {
+      background: #f4f6f9;
+    }
+    .home-section[data-world="chat"] .testi-chat__more:focus-visible {
+      outline-color: var(--chat-ink);
+    }
+
+    /* ── The bubble the ocean turns into ────────────────────────────────────
+       The question bubble does not fade in like the rest of the thread — it is
+       what the world collapses into, so its paint is handed to it by the genie
+       (js/worlds.js) at the exact moment the clipped water underneath is
+       already its shape and its colour. Both are on the same rect, so there is
+       no cross-fade to see: --genie-hand takes the real gradient from 0 to 1
+       underneath a shape that already looks like the finished thing.
+       ⚠️ --genie-text runs AFTER --genie-hand, never with it. Copy appearing
+       while the bubble is still growing is the generic card-animates-in move
+       this whole passage exists instead of. */
+    .home-section[data-world="chat"] .testi-chat__bubble--out {
+      background: linear-gradient(180deg,
+        rgba(79, 168, 255, var(--genie-hand, 1)),
+        rgba(11, 132, 254, var(--genie-hand, 1)));
+      color: rgba(255, 255, 255, var(--genie-text, 1));
+    }
+    /* Its row is the one row in the thread the centre-line reveal must not
+       own (js/testimonials.js still marks it, harmlessly): the clip tracks the
+       bubble's live rect, and a row sliding 18px sideways under a shape being
+       measured every frame reads as the water missing its mark. */
+    .home-section[data-world="chat"] .testi-chat__row--out {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    /* ── The lockup leaves through the top of the frame ──
+       You're descending, so the world rises past the camera and the poster copy
+       goes with it — up and out, instead of dissolving where it stands.
+       Distance and easing come from --hero-sink (heroParallax() in js/main.js),
+       which measures how far the lockup actually has to go — it clears the edge
+       outright, so nothing here fades. ⚠️ The value is NEGATIVE on this layout.
+       ⚠️ Rides .hero-lockup because that's the one element holding BOTH the
+       avatar and the copy. Shifting them separately means two rules that have to
+       stay in step forever, and .clock-hero-wrap already owns a
+       translateY(-8.5vh) of its own that a second transform would replace. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) .hero-lockup {
+      transform: translate3d(0, var(--hero-sink, 0px), 0);
+      will-change: transform;
+    }
+    /* .hero is overflow-y:auto, and a descendant translated far enough extends
+       its scrollable overflow — which popped a nested scrollbar inside the hero
+       partway through the old downward sink. Overflow ABOVE a box isn't
+       scrollable, so on the upward exit this is belt-and-braces rather than
+       load-bearing — but it costs nothing and keeps the rule true if the
+       direction is ever revisited. `clip` (NOT `hidden`) cuts the copy off at
+       the viewport edge without turning the hero into a scroll container. The
+       exclusion list matches the frosted-veil rule above: the overflow-menu
+       pages (Bookshelf / Gear / App Stack / Places) scroll their own tall grids
+       inside .hero and genuinely need overflow-y:auto. */
+    body.dust-hero.starfield-mode:not(.section-mode):not(.work-mode):not(.places-mode):not(.overflow-mode) .hero {
+      overflow: clip;
+    }
+
+    /* Spacer (base is 88vh) a full viewport taller than the screen, so the feed
+       starts that far BELOW the fold. Everything past the first 100vh is open
+       sky: you scroll the storm out and travel through bare starfield before the
+       feed's edge shows up at all, instead of the page background arriving on
+       the first pixel of scroll.
        ⚠️ This is the single knob for how long that stretch is — heroParallax()
-       in js/main.js measures the overhang off this element rather than
-       hardcoding it, so the scene's exit re-times itself when you change it. */
+       in js/main.js derives `travel` from the feed's own rect, which this
+       element positions, so the scene's exit re-times itself when you change it.
+       ⚠️ It only works from ABOVE #belowFold in the DOM. */
     body.dust-hero:not(.section-mode):not(.work-mode) .hero-spacer {
-      height: 150vh;
+      /* Short: just long enough that the poster holds for a beat and the
+         reading line (42vh) starts ABOVE the passage, so the storm doesn't
+         trigger at scroll 0. The long runway that used to live here is now the
+         .world-void immediately below, which does the same job and animates. */
+      height: 60vh;
     }
 
     /* ── Dedicated overflow-menu pages (Bookshelf / My Gear / App Stack / Places) ──
@@ -8536,8 +9555,8 @@ a.portfolio-img-item:hover img {
   text-transform: uppercase;
   cursor: help;
 }
-/* CSS-only tooltip saying what "experimental" actually means here. Same
-   recipe as .testi-chat__tip; tabindex on the tag makes it keyboard-reachable. */
+/* CSS-only tooltip saying what "experimental" actually means here.
+   tabindex on the tag makes it keyboard-reachable. */
 .chat-dock-label__tip {
   position: absolute;
   left: 0;

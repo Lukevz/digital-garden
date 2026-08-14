@@ -1,7 +1,9 @@
 /**
- * Serves the homepage with theme-aware OG image based on Sec-CH-Prefers-Color-Scheme.
- * When clients send this header (Chrome, Edge), we serve the matching og:image.
- * Safari/iMessage don't support it yet, so they get the light default.
+ * Serves the homepage.
+ *
+ * This used to pick a theme-aware OG image from Sec-CH-Prefers-Color-Scheme.
+ * The site is dark-only for now, so the dark card is the only correct one and
+ * the response no longer varies by client hint.
  */
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -18,18 +20,11 @@ export default async function handler(req, res) {
   const host = req.headers['x-forwarded-host'] || req.headers['host'] || 'lukevz.com';
   const base = `https://${host}`;
 
-  // Infer theme: prefer Sec-CH-Prefers-Color-Scheme if available,
-  // otherwise fall back to time-of-day in Eastern Time (dark 7pm–7am)
-  const colorScheme = req.headers['sec-ch-prefers-color-scheme'];
-  let preferDark;
-  if (colorScheme === 'dark' || colorScheme === 'light') {
-    preferDark = colorScheme === 'dark';
-  } else {
-    const hourET = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false });
-    const h = parseInt(hourET, 10);
-    preferDark = h >= 19 || h < 7;
-  }
-  const ogImage = `${base}/images/${preferDark ? 'og_dark' : 'og_light'}.png`;
+  // The site is dark-only for now (THEME_LOCK_DARK in js/main.js), so the card
+  // always shows the dark shot regardless of what the client prefers. When light
+  // mode comes back, restore the Sec-CH-Prefers-Color-Scheme sniff (falling back
+  // to time-of-day in Eastern Time, dark 7pm–7am) and pick the image from it.
+  const ogImage = `${base}/images/og_dark.png`;
 
   let html;
   try {
@@ -46,8 +41,5 @@ export default async function handler(req, res) {
   );
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Accept-CH', 'Sec-CH-Prefers-Color-Scheme');
-  res.setHeader('Critical-CH', 'Sec-CH-Prefers-Color-Scheme');
-  res.setHeader('Vary', 'Sec-CH-Prefers-Color-Scheme');
   res.send(html);
 }

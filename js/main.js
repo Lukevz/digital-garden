@@ -2376,23 +2376,33 @@
     });
 
     // ── Theme toggle (session-only override; never persisted) ──
+    /* Dark-only for now. While THEME_LOCK_DARK is true the site ignores the
+       system preference and the toggle entirely: isDarkTheme() always answers
+       dark, <html data-theme="dark"> stays put, the toggle is hidden and never
+       wired up, and the wipe animation is never reachable. Everything below it
+       is left intact — flip this to false, drop `data-theme="dark"` from
+       _index.html and `hidden` from #themeToggle to restore light mode. */
+    const THEME_LOCK_DARK = true;
+
     const themeToggle = document.getElementById('themeToggle');
     const themeMoon = themeToggle?.querySelector('.theme-icon-moon');
     const themeSun  = themeToggle?.querySelector('.theme-icon-sun');
     let themeSessionOverride = null;
 
     function systemPrefersDark() {
+      if (THEME_LOCK_DARK) return true;
       return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
     }
 
     function isDarkTheme() {
+      if (THEME_LOCK_DARK) return true;
       if (themeSessionOverride === true) return true;
       if (themeSessionOverride === false) return false;
       return systemPrefersDark();
     }
 
     function updateThemeToggleUi(dark) {
-      if (!themeToggle) return;
+      if (!themeToggle || THEME_LOCK_DARK) return;
       themeToggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
       const hint = ' Shift-click: return to system appearance.';
       themeToggle.removeAttribute('aria-disabled');
@@ -2403,6 +2413,7 @@
     }
 
     function applyThemeSystem() {
+      if (THEME_LOCK_DARK) { applyThemeDom(true); return; }
       themeSessionOverride = null;
       document.documentElement.removeAttribute('data-theme');
       updateThemeToggleUi(isDarkTheme());
@@ -2507,7 +2518,9 @@
 
     initThemeOnLoad();
 
-    if (themeToggle) {
+    if (themeToggle && THEME_LOCK_DARK) {
+      themeToggle.hidden = true;
+    } else if (themeToggle) {
       updateThemeToggleUi(isDarkTheme());
       themeToggle.addEventListener('click', e => {
         e.stopPropagation();
@@ -2532,7 +2545,7 @@
     }
 
     try {
-      if (typeof matchMedia === 'function') {
+      if (!THEME_LOCK_DARK && typeof matchMedia === 'function') {
         matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev) => {
           if (themeSessionOverride !== null) return;
           applyThemeSystem();
@@ -3118,6 +3131,9 @@
       else delete document.body.dataset.sky;
       if (window.grid && window.grid.scene) window.grid.scene(name || 'home');
     }
+    // js/worlds.js drives the home feed's sky through this too, so there's one
+    // implementation of the write-attribute-then-call-grid handshake.
+    window.setSky = setSky;
 
     // The hero description is the same line the section's launchpad card
     // carries on the home page, read straight off the card so the two can't
@@ -3179,7 +3195,12 @@
       // Forget the lockup so re-entering this same section fades in again
       // rather than being treated as "nothing changed".
       heroLockupKey = null;
-      setSky(null);
+      // ⚠️ NOT setSky(null). The home feed has more than one world now, and
+      // null resolves to 'home' — which would snap a visitor who left from the
+      // ocean chapter back to the dust sky. Ask the director where we actually
+      // are. It reads section-mode, which the line above has already cleared,
+      // so by now it answers for the home feed rather than reporting dormant.
+      setSky(window.worlds ? window.worlds.currentSky() : null);
     }
 
     // The renderers signal "this view has a parent" by showing the modal's own
@@ -4234,79 +4255,63 @@
       }, (60 - new Date().getSeconds()) * 1000);
     })();
 
-    // ── Reversed-reveal bottom pin ──
-    // The parse-time pin in _index.html lands the home view on the hero, but
-    // the feed's async content (case studies, timeline, testimonials) grows
-    // the document ABOVE the viewport afterwards and scroll anchoring doesn't
-    // reliably compensate — leaving the curtain hanging mid-screen. Keep
-    // re-pinning to the document's end until the visitor scrolls on their
-    // own, then never touch it again.
-    (function homeBottomPin() {
-      if (!document.body.classList.contains('dust-hero')) return;
-      if (location.hash) return;
-      const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-      if (nav && nav.type === 'back_forward') return;
-      let userScrolled = false;
-      const stop = () => { userScrolled = true; };
-      ['wheel', 'touchstart', 'keydown'].forEach((t) =>
-        window.addEventListener(t, stop, { passive: true, once: true }));
-      const pin = () => {
-        if (userScrolled) return;
-        window.scrollTo(0, document.documentElement.scrollHeight);
-      };
-      pin();
-      if (window.ResizeObserver) {
-        const ro = new ResizeObserver(pin);
-        ro.observe(document.body);
-        // Feed content settles well within this window; stop watching so a
-        // later layout change (opening the dock, resizing) can't yank the
-        // visitor back down.
-        setTimeout(() => ro.disconnect(), 8000);
-      }
-      window.addEventListener('load', pin);
-    })();
-
-    // ── Hero → below-fold "event horizon" parallax ──
-    // Three layers move at three different speeds as you scroll past the hero:
-    //   • hero    — position:fixed, speed 0 (stays put behind everything)
-    //   • glow    — the aurora gradient, rises SLOWER than the content (GLOW_SPEED)
-    //   • content — the below-fold, rises at native scroll speed (fastest)
-    // The speed gap makes the content feel like it's accelerating up THROUGH the
-    // gradient — a transition moment rather than a static divider.
+    // ── Hero → below-fold descent ──
+    // Home is a DESCENT: the page opens on the hero (the poster), .hero-spacer
+    // holds a short stretch of open sky below it, and the feed rises into frame
+    // from the bottom at native scroll speed while the fixed hero drifts UP
+    // past the camera. `travel` / `scrollProgress` normalize that in units of
+    // one hero-height — key new scroll effects off those.
+    // ⚠️ This function owns only the hero's OWN exit (the lockup rising out of
+    // frame, and the world's gentle depth drift). Everything that happens to
+    // the world itself — the dive into the storm, the shrink, the reveal — is
+    // js/worlds.js's, keyed off the .world-void's rect rather than off scroll,
+    // so it stays correct if the runway above it ever changes length.
     (function heroParallax() {
       const belowFold = document.getElementById('belowFold');
-      // The aurora glow only exists on non-home layouts now (the dust-storm
-      // scene replaced it on home) — every use below is null-guarded. This
-      // function ALSO drives the greeting fade + timeline reveal, so it must
-      // run with or without the glow.
-      const glowTrack = document.querySelector('.hero-glow-track');
       const heroScene = document.getElementById('heroScene');
       const heroEl = document.getElementById('heroSection');
-      const heroSpacer = document.querySelector('.hero-spacer');
       if (!belowFold) return;
 
       const reduced = typeof matchMedia === 'function'
         && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // ── Tunables ──
-      const GLOW_SPEED    = 0.5;   // glow rises at this fraction of content speed (<1 ⇒ content is faster)
-      const GLOW_FADE_END = 0.55;  // scroll progress (fraction of one viewport) by which the glow is fully gone —
-                                   // once the top of the body reaches ~mid-viewport, the aurora has cleared out
-      const CONTENT_BOOST = 0;     // extra content speed-up (0 = native). Small values only — >0 can poke content above the seam.
-      // Hero greeting fades out as you scroll off the hero. (The top nav no
-      // longer waits for it — it's pinned visible from load, see --nav-reveal
-      // in styles.css.) Values are UNCAPPED scroll progress (scrollY /
-      // viewport-height): 0 = at the top, 1 = one screen down (the body has
-      // just covered the hero). NB: driven off scroll progress, NOT the glow
-      // limb — the glow lags behind the scroll.
-      const GREET_OUT_START = 0.50; // greeting begins fading
-      const GREET_OUT_END   = 0.74; // greeting fully gone
+      // ── The lockup leaves through the TOP of the frame ──
+      // You're descending, so the world rises past the camera and the poster
+      // copy goes with it — up and out at full opacity rather than dissolving
+      // where it stands. Nothing fades; sinkDistance() is measured so the
+      // lockup genuinely clears the top edge at every viewport size.
+      const SINK_END  = 0.78; // scroll progress by which it has fully left frame.
+                              // Under the scene's own 0.5→0.8 opacity ramp on
+                              // purpose: the copy should exit WHILE the planet is
+                              // still there, so you watch it leave rather than
+                              // watch it leave an empty sky.
+      const SINK_EASE = 1.7;  // >1 ⇒ nearly still at first, then accelerating.
+                              // Linear reads as a scrollbar dragging the text
+                              // away; the acceleration is what sells the fall.
+      const lockup = document.querySelector('.hero-lockup');
+      // Last frame's offset (NEGATIVE — the lockup travels up), kept so
+      // sinkDistance() can subtract it back out and recover the lockup's
+      // RESTING position without ever having to un-transform it.
+      let sinkApplied = 0;
 
-      // NB: the dot-grid "genie" collapse (bottom-up sequential shrink into the
-      // glow) is driven per-cell inside grid.js, not here — a single CSS transform
-      // can't stagger rows.
+      // How far the lockup must travel to clear the TOP of the frame.
+      // Measured, not assumed: the lockup mixes clamped type with a vw-scaled
+      // avatar, so its share of the viewport shifts with the window. Read at the
+      // TOP of update(), before this frame writes its transform, so the read
+      // never lands between a write and a layout.
+      function sinkDistance() {
+        if (!lockup) return 0;
+        const r = lockup.getBoundingClientRect();
+        if (!r.height) return 0; // display:none (work/section mode) or display:contents
+        const restBottom = r.bottom - sinkApplied;
+        return Math.max(0, restBottom + 24);
+      }
 
-      const inner   = CONTENT_BOOST > 0 ? belowFold.querySelector('.below-fold-inner') : null;
+      // NB: the dot-grid "genie" collapse is driven per-cell inside grid.js,
+      // not here — a single CSS transform can't stagger rows. On this layout
+      // it's switched off entirely (the field is the world's sky now, and it
+      // warps at world boundaries instead of collapsing).
+
       let ticking = false;
 
       function navPinnedOpen() {
@@ -4348,13 +4353,23 @@
         ticking = false;
 
         if (navPinnedOpen()) {
-          setGreetingReveal(0);
+          // ⚠️ The dust hero holds its lockup VISIBLE here. --intro-greeting-reveal
+          // is that lockup's own opacity and nothing else's (#introGreetingBar is
+          // the only .intro-greeting-bar in the document, and it lives inside
+          // .clock-hero-wrap), so the blanket 0 left reduced-motion visitors on a
+          // home page with a planet and no name on it. The other branches that
+          // land here — section-mode, the overflow-menu pages — have the lockup
+          // display:none, so the value is moot there either way.
+          setGreetingReveal(
+            document.body.classList.contains('dust-hero')
+            && !document.body.classList.contains('work-mode') ? 1 : 0);
           setTimelineReveal(1);
-          document.body.style.setProperty('--seam-fade', '0');
+          sinkApplied = 0;
+          document.body.style.setProperty('--hero-sink', '0px');
           if (heroScene) {
             heroScene.style.transform = '';
             heroScene.style.opacity = '';
-            document.body.style.removeProperty('--hs-dust-reveal');
+            document.body.style.removeProperty('--hero-drift');
           }
           return;
         }
@@ -4368,76 +4383,58 @@
         // hand-off) before the user ever scrolled.
         const vh = (heroEl && heroEl.getBoundingClientRect().height)
           || window.innerHeight || document.documentElement.clientHeight;
-        // Reversed reveal (dust hero): the feed sits ABOVE the hero and its
-        // BOTTOM edge descends from the top of the viewport as you scroll up,
-        // so the seam is rect.bottom and travel is how far it has come down.
-        // Classic layouts keep the original rising-curtain math.
-        const rect = belowFold.getBoundingClientRect();
-        const reversed = document.body.classList.contains('dust-hero');
-        // Open sky between the hero and the feed: .hero-spacer is taller than
-        // the viewport, so at rest the feed's edge sits this far ABOVE the top
-        // of the screen. Measured rather than hardcoded — the spacer's height
-        // in styles.css is the only knob, and this keeps in lockstep with it.
-        const runway = reversed && heroSpacer
-          ? Math.max(0, heroSpacer.getBoundingClientRect().height
-              - (window.innerHeight || document.documentElement.clientHeight || 0))
-          : 0;
-        // The seam's own travel: still measured off the edge, so the gradient
-        // stays put until the edge is actually on screen. Negative = off-screen
-        // above, which is the whole runway.
-        const edge = reversed ? rect.bottom : vh - rect.top;
-        // Scene travel counts from the document's end instead, so the storm
-        // sinks and the greeting clears WHILE you cross the runway. Without
-        // this the hero would sit frozen for the whole stretch.
-        const travel = Math.max(0, edge + runway);
+        // Measured here, alongside the other rect reads and BEFORE this frame's
+        // first style write — grouping the reads keeps the frame to one layout.
+        const sinkDist = sinkDistance();
+        /* How far you have actually scrolled. `.hero` is position:fixed, so
+           scroll offset IS the camera's travel down the page and this is 0 on
+           the first frame by construction.
+           ⚠️ It used to be measured off the feed's own top edge (vh - rect.top),
+           which was equivalent only while .hero-spacer was about one screen
+           tall. The worlds layout cut the spacer to 60vh — the long runway
+           moved into the .world-void below — so the feed's edge already sat
+           40vh inside the viewport at scroll 0, and `travel` opened at 0.4 of a
+           screen: the poster lockup was a third of the way through its exit
+           before the visitor touched the wheel, i.e. HELLO was off the top of
+           the frame on the landing screen. */
+        const travel = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
         const progress = vh > 0 ? Math.min(1, travel / vh) : 0;
         const scrollProgress = vh > 0 ? travel / vh : 0;    // uncapped — drives the greeting → nav hand-off
 
-        // Seam fade (reversed reveal only): the gradient trailing the feed's
-        // bottom edge starts as a hairline of glow and stretches out as the
-        // edge descends, so the sky dissolves into the page over a long
-        // travel rather than meeting it at a hard line. Fully open by the
-        // time the seam is a third of the way down the screen — past that
-        // the transition is already off the bottom of the viewport.
-        if (reversed) {
-          const seamProgress = vh > 0 ? Math.min(1, Math.max(0, edge) / vh) : 0;
-          document.body.style.setProperty('--seam-fade',
-            fadeBetween(seamProgress, 0, 0.32).toFixed(3));
-        }
-
-        if (glowTrack) {
-          // Hold the glow back so the content overtakes it (rises at GLOW_SPEED).
-          const lag = travel * (1 - GLOW_SPEED);
-          glowTrack.style.transform = `translate3d(0, ${lag.toFixed(2)}px, 0)`;
-          // Fully clear the glow by the time the body's top reaches ~mid-viewport,
-          // so the aurora is gone before the nav swaps in rather than lingering.
-          const glowFade = smoothstep(Math.min(1, progress / GLOW_FADE_END));
-          glowTrack.style.opacity = (1 - glowFade).toFixed(3);
-        }
-
         if (heroScene) {
-          // The planet sinks slower than the content — the camera keeps
-          // tilting up as you scroll on. Parallax rides #heroScene itself
-          // (NOT the pan wrapper) so it never fights the intro tween or the
-          // ambient CSS drifts inside.
-          heroScene.style.transform = `translate3d(0, ${(travel * 0.14).toFixed(2)}px, 0)`;
-          // Ambient dust haze clears by mid-scroll (consumed as a multiplier
-          // in the .hs-dust rest opacities), then the whole scene is gone
-          // before the curtain fully covers it.
-          document.body.style.setProperty('--hs-dust-reveal',
-            (1 - fadeBetween(progress, 0.15, 0.5)).toFixed(3));
-          heroScene.style.opacity = (1 - fadeBetween(progress, 0.5, 0.8)).toFixed(3);
+          // ⚠️ The scene does NOT fade out any more, and the drift is CLAMPED
+          // to one screen. The planet isn't a hero that gets out of the way —
+          // it's the world the first chapter is read inside, so it has to stay
+          // put underneath the content. Recession is --world-dim's job, and
+          // leaving it is the descent's (--world-enter; see styles.css).
+          // Negative because you're falling: the world drifts up past the
+          // camera, slower than the content, which is what reads as depth.
+          // ⚠️ Written as a VARIABLE the stylesheet composes into the pan's
+          // transform — NOT as a transform on #heroScene itself. #heroScene is
+          // the scene's clipping box (inset: 0, overflow: clip, contain:
+          // strict); translating the box slides its own bottom edge up the
+          // viewport and leaves a bare strip under it. That never showed while
+          // the scene faded out on scroll, and appeared the moment it stopped.
+          // The pan can move freely inside it: the planet is thousands of px
+          // tall and .hs-dust-clip carries 200vh of slack.
+          const drift = Math.min(travel, vh) * -0.10;
+          document.body.style.setProperty('--hero-drift', drift.toFixed(2) + 'px');
         }
 
-        if (inner) {
-          inner.style.transform = `translate3d(0, ${(-travel * CONTENT_BOOST).toFixed(2)}px, 0)`;
-        }
-
-        const greetOut = fadeBetween(scrollProgress, GREET_OUT_START, GREET_OUT_END);
-        setGreetingReveal(document.body.classList.contains('work-mode') ? 0 : (1 - greetOut));
-        // Reveal the timeline once past the aurora (fully faded by GLOW_FADE_END
-        // ≈ 0.55), ramping in just after so it never bleeds through the glow.
-        setTimelineReveal(fadeBetween(scrollProgress, 0.62, 0.92));
+        // Rise, don't fade: the lockup keeps full opacity the whole way and
+        // simply leaves through the top of the frame with the rest of the world.
+        const inWork = document.body.classList.contains('work-mode');
+        const sinkT = Math.min(1, Math.max(0, scrollProgress / SINK_END));
+        sinkApplied = -sinkDist * Math.pow(sinkT, SINK_EASE);
+        document.body.style.setProperty('--hero-sink', sinkApplied.toFixed(1) + 'px');
+        setGreetingReveal(inWork ? 0 : 1);
+        // ⚠️ Pinned at 1 on this layout. The first chapter's fade-in is the
+        // TAIL OF THE PASSAGE now, not a scroll window of its own: the Timeline
+        // has to arrive already underwater, after the storm has cleared and the
+        // jellyfish has been revealed. js/worlds.js publishes --world-settled
+        // for exactly that, and styles.css keys #homeTimeline off it. Keying it
+        // off scrollProgress here as well gave two clocks for one fade.
+        setTimelineReveal(1);
       }
 
       function onScroll() {

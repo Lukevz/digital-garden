@@ -14,8 +14,6 @@
     const canvas = document.getElementById('dotGrid');
     const ctx    = canvas.getContext('2d');
     const heroEl = document.getElementById('heroSection');
-    // Cached because genieProgress() reads it every frame while scrolling.
-    const heroSpacerEl = document.querySelector('.hero-spacer');
     let gridLogicalW = 0;
     let gridLogicalH = 0;
     let gridDpr = 1;
@@ -50,7 +48,15 @@
 
     const GRID_RGB_LIGHT = [58, 61, 69];
     const GRID_RGB_DARK = [178, 186, 202];
+    // The THEME's mark colour. Stays the single source of truth for
+    // --grid-mark-rgb (js/clock-hero.js matches its dial lattice to it) and is
+    // the fallback ink for any scene that doesn't name one.
     let gridDotRgb = '58,61,69';
+    // The ACTIVE ink — what stars, streaks, blooms and ships are actually drawn
+    // in this frame. Equals gridDotRgb unless the scene overrides it (see the
+    // `ink` field on SCENES), and lerps between the two scenes' inks mid-warp.
+    // Resolved once at the top of drawGrid, never read outside it.
+    let inkRgb = gridDotRgb;
     // 1 = dark (constellation as authored), 0 = light (half-turned sky). The
     // theme wipe ramps this 0↔1, so the celestial swing animates with it.
     let themeBlend = 1;
@@ -68,6 +74,34 @@
       const g = Math.round(lerp((x >> 8) & 255, (y >> 8) & 255, t));
       const bl = Math.round(lerp(x & 255, y & 255, t));
       return '#' + (((1 << 24) | (r << 16) | (g << 8) | bl).toString(16)).slice(1);
+    }
+
+    function hexToRgbStr(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+    }
+    function mixRgbStr(a, b, t) {
+      if (a === b) return a;
+      const x = a.split(','), y = b.split(',');
+      return Math.round(lerp(+x[0], +y[0], t)) + ',' +
+             Math.round(lerp(+x[1], +y[1], t)) + ',' +
+             Math.round(lerp(+x[2], +y[2], t));
+    }
+    // A scene with no `ink` keeps the theme's mark colour — which is why
+    // SCENES.home deliberately doesn't declare one: it stays theme-tracking,
+    // and the ink system is a pure no-op until you actually leave home.
+    function inkFor(sc) {
+      return sc && sc.ink ? hexToRgbStr(sc.ink) : gridDotRgb;
+    }
+    // ⚠️ Lerped on the warp's EASED fraction, not raw p. Every spatial property
+    // of a star (position, size, alpha) travels on `e`; only opacity
+    // cross-fades between two renderings use `p`. Ink isn't a cross-fade, it's
+    // a property travelling with the field — on `p` it arrives ahead of the
+    // stars and reads as a tint sliding across a field that hasn't moved yet.
+    function resolveInk(wp) {
+      const to = inkFor(scene);
+      if (!wp || !warp || !warp.fromBodies) return to;
+      return mixRgbStr(inkFor(warp.fromBodies.scene), to, wp.e);
     }
 
     function setGridDotBlend(blend) {
@@ -112,6 +146,11 @@
                    than the shared baseline (optional; defaults to 1)
          seed    — re-rolls star sizes/twinkle/scatter, so the thinning and
                    the brightness spread land differently on each page
+         ink     — #rrggbb the marks are drawn in, overriding the theme colour.
+                   Optional; OMIT IT to stay theme-tracking (which is what home
+                   does). This is what lets a sky be somewhere other than space
+                   — pale stars on black vs. cool marine snow in deep water —
+                   and it lerps between the two scenes across a warp.
        Body coordinates are in lattice pitches (SP) from the named edge, so
        every sky stays snapped to the same grid at any viewport size. */
     const SCENES = {
@@ -127,6 +166,52 @@
           moon:     { kind: 'moon', cx: SP * 2.8, cy: SP * 2.8, r: SP * 0.66, launchpad: true },
         }),
       },
+      // ── Ocean: the second home world ──
+      // You fall out of the dust planet's sky, through the void, and into deep
+      // water. Same full-viewport field, but the stars become marine snow:
+      // cool ink, thinner, fainter, drifting in the same lattice.
+      // A drift of jellies at different depths — sparse, nothing like the star
+      // count, just enough that the water is populated rather than empty.
+      // ⚠️ Order matters more than it looks. warpFrameBodies() pairs
+      // biggest-to-biggest, so `lead` (the largest) is what home's single moon
+      // travels into and cross-fades kind against — the moon BECOMES a
+      // jellyfish for free. The rest have no counterpart, so they take the
+      // leftover-incoming path: they grow from 60% and fade up on the warp's
+      // progress, blooming into the water behind the lead. Keep the lead the
+      // biggest or the moon pairs with the wrong one and swims to the corner.
+      ocean: {
+        density: 0.26, scatter: 0.94, dim: 0.78, seed: 5150,
+        ink: '#7fd8e6',
+        bodies: (w, h) => ({
+          lead:  { kind: 'jelly', cx: w - SP * 6.4, cy: h * 0.30, r: SP * 0.92,
+                   core: '#bdf2fb', edge: '#2f7f96' },
+          far1:  { kind: 'jelly', cx: SP * 5.2,     cy: h * 0.52, r: SP * 0.40,
+                   core: '#9fe2f2', edge: '#245f78' },
+          far2:  { kind: 'jelly', cx: w * 0.34,     cy: h * 0.16, r: SP * 0.30,
+                   core: '#8fd8ec', edge: '#1e5169' },
+          far3:  { kind: 'jelly', cx: w * 0.62,     cy: h * 0.70, r: SP * 0.24,
+                   core: '#86d2e8', edge: '#1a475d' },
+          far4:  { kind: 'jelly', cx: SP * 11.5,    cy: h * 0.82, r: SP * 0.18,
+                   core: '#7fccE4', edge: '#173e52' },
+        }),
+      },
+      // ── Deep: what's left after the ocean drains ──
+      // The last stretch of the home feed, once the water has been poured into
+      // the message. No bodies at all — the jellies were the ocean's, and they
+      // go with it (warpFrameBodies shrinks and fades any body the incoming
+      // scene has no partner for, so the drift simply thins out and is gone).
+      // Theme-tracking ink, deliberately: this is open field, not a biosphere,
+      // and it should read as the site's own sky rather than as somewhere.
+      deep: {
+        density: 0.30, scatter: 0.92, seed: 902100,
+        bodies: () => ({}),
+      },
+      // ⚠️ Alias, not a copy. The chat chapter's light room is an opaque
+      // full-screen layer, so its sky is never once visible — the only thing it
+      // has to get right is the state it hands to `deep` on the way out, and
+      // sharing the object means grid.scene() early-returns on that swap
+      // instead of warping a field nobody can see to an identical one.
+      get chat() { return SCENES.deep; },
       // Writing — one big cool planet with a small moon riding high above it.
       // Sparsest of the three: mostly empty sky.
       writing: {
@@ -386,7 +471,15 @@
     //     right of short lines instead of a big dead rectangle.
     //   • BOX atoms — the avatar, the launchpad icon tiles, and the case-study
     //     cards, each cleared by its bounding box.
-    const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text', '.section-hero__copy'];
+    // ⚠️ Each entry costs a TreeWalker + getClientRects() per match on every
+    // scroll frame (see scheduleGenieDraw). The home feed sits over a live
+    // world now that #belowFold is transparent, but most of it is
+    // --surface-raised cards that carry themselves against the sky — only the
+    // bare section headings need the field cleared out from under them. Resist
+    // adding the whole feed here; the per-section scrim in styles.css is the
+    // cheap half of this job.
+    const TEXT_HOLE_SELECTORS = ['.intro-text', '.greet-text', '.section-hero__copy',
+                                 '.home-section-title'];
     // .corner-status (clock + weather) and the top-right action buttons cut into
     // the field the same way — each cleared by its own box so the pattern
     // displaces around them and texture survives in the gaps between the icons.
@@ -498,29 +591,20 @@
       // almost immediately — and the field is covered by the page's opaque
       // body a moment later anyway. Leave their sky alone.
       if (b.contains('section-mode')) return 0;
+      // ⚠️ The worlds layout doesn't collapse the field at all. The collapse
+      // exists to hide the sky before the feed's opaque curtain covers it —
+      // but on home the feed is TRANSPARENT now and the field IS the world's
+      // sky. It stays lit the whole way down and warps at world boundaries
+      // instead (see grid.scene() / js/worlds.js). Keying it off raw scroll
+      // here would finish the collapse at 50vh, a full viewport before any
+      // content arrives, and you'd cross the open sky through a bald frame.
+      if (b.contains('dust-hero')) return 0;
       // Scaled to the hero's own rendered height (not the raw window height)
-      // so the collapse stays in sync with the content rise/glow fade driven
-      // by heroParallax() in main.js — the two match only when hero=100vh.
+      // so the collapse stays in sync with the content rise driven by
+      // heroParallax() in main.js — the two match only when hero=100vh.
       const vh = (heroEl && heroEl.getBoundingClientRect().height) || gridLogicalH || innerHeight || 1;
       const sy = window.pageYOffset || document.documentElement.scrollTop || 0;
-      // Reversed reveal (dust hero): home rests at the document's END and the
-      // feed is revealed by scrolling UP, so the collapse keys off distance
-      // scrolled up from the bottom instead of down from the top.
-      let dist = sy;
-      if (b.contains('dust-hero')) {
-        const doc = document.documentElement;
-        dist = Math.max(0, (doc.scrollHeight - innerHeight) - sy);
-        // .hero-spacer overhangs the viewport (styles.css) to leave a stretch
-        // of open sky between the hero and the feed's edge. That stretch is
-        // meant to be travelled with the field INTACT — without this offset the
-        // collapse keys off raw scroll and finishes exactly as the runway ends,
-        // so you arrive at the seam through an empty black sky instead of stars.
-        if (heroSpacerEl) {
-          dist = Math.max(0, dist - Math.max(0,
-            heroSpacerEl.getBoundingClientRect().height - innerHeight));
-        }
-      }
-      const p = dist / (vh * GENIE.range);
+      const p = sy / (vh * GENIE.range);
       return p < 0 ? 0 : p > 1 ? 1 : p;
     }
 
@@ -759,6 +843,9 @@
       // purely scroll-driven.
       const genieP = Math.max(genieProgress(), entranceProgress(ts));
       const wp = warpTick(ts);
+      // Resolve the frame's ink once, AFTER warpTick (which is what advances
+      // wp.e) and before anything draws with it.
+      inkRgb = resolveInk(wp);
       frameBodies = computeFrameBodies();
       for (const cl of (wp ? drawList : cells)) {
         let x = cl.bx, y = cl.by, sz = cl.sz, al = cl.al;
@@ -835,7 +922,7 @@
           const sp = Math.hypot(vx, vy);
           const len = Math.min(WARP.maxStreak, sp * WARP.streak);
           if (len > R * 1.4) {
-            c.strokeStyle = `rgba(${gridDotRgb},${(alpha * 0.5).toFixed(3)})`;
+            c.strokeStyle = `rgba(${inkRgb},${(alpha * 0.5).toFixed(3)})`;
             c.lineWidth = R * 1.6;
             c.lineCap = 'round';
             c.beginPath();
@@ -851,13 +938,13 @@
           const b = (tw - 0.74) / 0.26;            // 0 → 1 across the peak
           const gr = R * (2.4 + b * 1.8);
           const g = c.createRadialGradient(x, y, R * 0.5, x, y, gr);
-          g.addColorStop(0, `rgba(${gridDotRgb},${(alpha * 0.42 * b).toFixed(3)})`);
-          g.addColorStop(1, `rgba(${gridDotRgb},0)`);
+          g.addColorStop(0, `rgba(${inkRgb},${(alpha * 0.42 * b).toFixed(3)})`);
+          g.addColorStop(1, `rgba(${inkRgb},0)`);
           c.fillStyle = g;
           c.beginPath(); c.arc(x, y, gr, 0, 6.2832); c.fill();
         }
         // The star itself is always a crisp anti-aliased point.
-        c.fillStyle = `rgba(${gridDotRgb},${alpha.toFixed(3)})`;
+        c.fillStyle = `rgba(${inkRgb},${alpha.toFixed(3)})`;
         c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
       }
       // Celestial bodies sit above the stars and fade out as the field collapses.
@@ -898,12 +985,29 @@
         // competing with the hero copy.
         for (const part of b.parts) {
           if (part.w <= 0.01) continue;
-          if (part.kind === 'moon') drawMoon(c, b, fade * 0.72 * part.w, bob, shim);
-          else drawSun(c, b, part.core, part.edge, fade * 0.55 * part.w, shim);
+          const k = BODY_KINDS[part.kind] || BODY_KINDS.sun;
+          k.draw(c, b, part, fade * k.fade * part.w, ts, bob, shim);
         }
         i++;
       }
     }
+
+    /* ── Body kinds ──
+       A table, not an if/else chain, so a scene can introduce a new kind
+       without the fall-through silently rendering it as a sun with undefined
+       colours (which throws inside hexA). Every draw fn takes the SAME
+       signature — (c, body, part, fade, ts, bob, shim) — and reads its colours
+       off `part`, because mid-warp a body carries two parts at different
+       weights and only the part knows which rendering it is.
+       ⚠️ The per-kind `fade` multiplier lives here with the function it belongs
+       to. These are what keep the bodies reading as distant scenery instead of
+       spotlights competing with the hero copy — moving a draw fn without its
+       multiplier changes the look. */
+    const BODY_KINDS = {
+      sun:   { draw: (c, b, part, fade, ts, bob, shim) => drawSun(c, b, part.core, part.edge, fade, shim), fade: 0.55 },
+      moon:  { draw: (c, b, part, fade, ts, bob, shim) => drawMoon(c, b, fade, bob, shim),                 fade: 0.72 },
+      jelly: { draw: (c, b, part, fade, ts, bob, shim) => drawJelly(c, b, part.core, part.edge, fade, ts, bob, shim), fade: 0.62 },
+    };
 
     // Twin suns: a shaded orb whose rim feathers into the sky (no hard circle),
     // wrapped in a soft corona that breathes with the shimmer.
@@ -957,6 +1061,64 @@
       dg.addColorStop(1, 'rgba(47,50,58,0)');
       c.fillStyle = dg;
       c.beginPath(); c.arc(dx, dy, dr, 0, 6.2832); c.fill();
+      c.restore();
+    }
+
+    // Jellyfish: a translucent bell over a drift of tentacles. Built on the
+    // same "shaded dome, rim feathered into the surround" grammar as the sun
+    // and the moon, so a warp cross-fading a moon into one lines up — the
+    // silhouettes are the same circle and only the reading of it changes.
+    // Pulses on its own slow clock (a bell contracts; a planet doesn't), and
+    // rides the shared `bob` so it drifts with the rest of the scene.
+    function drawJelly(c, b, core, edge, fade, ts, bob, shim) {
+      const cx = b.cx, cy = b.cy + bob, r = b.r;
+      // Contraction: the bell squashes vertically and spreads horizontally,
+      // out of phase with the tentacle sway so it reads as propulsion.
+      const pulse = prefersReducedMotion ? 0 : Math.sin(ts / 1500);
+      const rx = r * (1 + pulse * 0.06);
+      const ry = r * (1 - pulse * 0.09);
+      c.save();
+      // Bioluminescent halo — the water around the bell carrying its light.
+      const hr = r * (2.1 + shim * 0.4);
+      const halo = c.createRadialGradient(cx, cy, r * 0.6, cx, cy, hr);
+      halo.addColorStop(0, hexA(core, 0.20 * (0.6 + shim * 0.4) * fade));
+      halo.addColorStop(1, hexA(core, 0));
+      c.fillStyle = halo;
+      c.beginPath(); c.arc(cx, cy, hr, 0, 6.2832); c.fill();
+      c.globalAlpha = fade;
+      // Tentacles first, so the translucent bell sits over their roots.
+      const n = 7;
+      c.lineCap = 'round';
+      for (let i = 0; i < n; i++) {
+        const f = n === 1 ? 0.5 : i / (n - 1);
+        const x0 = cx + (f - 0.5) * rx * 1.35;
+        const len = ry * (1.7 + 0.9 * Math.sin(i * 2.3));
+        const sway = prefersReducedMotion ? 0 : Math.sin(ts / 1900 + i * 0.8) * rx * 0.20;
+        c.strokeStyle = hexA(edge, 0.42 * fade);
+        c.lineWidth = Math.max(1, r * 0.055);
+        c.beginPath();
+        c.moveTo(x0, cy + ry * 0.42);
+        c.quadraticCurveTo(x0 + sway, cy + ry * 0.42 + len * 0.55,
+                           x0 + sway * 1.7, cy + ry * 0.42 + len);
+        c.stroke();
+      }
+      // The bell: a dome, brightest at its crown, feathering out at the rim so
+      // it never draws a hard circle against the water.
+      const g = c.createRadialGradient(cx, cy - ry * 0.45, r * 0.1, cx, cy, r * 1.06);
+      g.addColorStop(0, hexA(core, 0.92));
+      g.addColorStop(0.52, hexA(edge, 0.72));
+      g.addColorStop(0.85, hexA(edge, 0.34));
+      g.addColorStop(1, hexA(edge, 0));
+      c.fillStyle = g;
+      c.beginPath();
+      c.ellipse(cx, cy, rx * 1.06, ry * 1.06, 0, 0, 6.2832);
+      c.fill();
+      // Rim light along the bell's lower margin — the edge a jelly reads by.
+      c.strokeStyle = hexA(core, 0.5 * fade);
+      c.lineWidth = Math.max(1, r * 0.05);
+      c.beginPath();
+      c.ellipse(cx, cy, rx * 0.9, ry * 0.9, 0, 0.16 * Math.PI, 0.84 * Math.PI);
+      c.stroke();
       c.restore();
     }
 
@@ -1026,14 +1188,14 @@
         c.rotate(L.ang);
         c.scale(1.9, 0.68);
         const g = c.createRadialGradient(0, 0, 0, 0, 0, gr);
-        g.addColorStop(0,   `rgba(${gridDotRgb},${(a * 0.9).toFixed(3)})`);
-        g.addColorStop(0.4, `rgba(${gridDotRgb},${(a * 0.32).toFixed(3)})`);
-        g.addColorStop(1,   `rgba(${gridDotRgb},0)`);
+        g.addColorStop(0,   `rgba(${inkRgb},${(a * 0.9).toFixed(3)})`);
+        g.addColorStop(0.4, `rgba(${inkRgb},${(a * 0.32).toFixed(3)})`);
+        g.addColorStop(1,   `rgba(${inkRgb},0)`);
         c.fillStyle = g;
         c.beginPath(); c.arc(0, 0, gr, 0, 6.2832); c.fill();
         c.restore();
         // Bright little core at the head of the streak.
-        c.fillStyle = `rgba(${gridDotRgb},${a.toFixed(3)})`;
+        c.fillStyle = `rgba(${inkRgb},${a.toFixed(3)})`;
         c.beginPath(); c.arc(x, y, L.size * 0.75, 0, 6.2832); c.fill();
       }
     }

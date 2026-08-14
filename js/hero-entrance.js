@@ -46,13 +46,13 @@
     heroDelay:  260,   // ms the hero reveal waits after the stars begin
     starsFade:  700,   // ms for the starfield canvas to light up
     statusFade: 1400,  // ms for the status bar to fade in with the stars
-    /* Dust intro (Tempest timings from the approved prototype) */
-    panHold:    2800,  // ms fully inside the storm before the camera moves —
-                       // long enough for the swirls to turn and the cloud to
-                       // strike three times (see STRIKES in runDustIntro).
-                       // Shorten this and the strike table shortens with it.
-    panDur:     2500,  // ms of camera tilt…
-    panSettle:  500,   // …plus a settle back from a 1.4vh overshoot
+    /* Descent intro — the camera comes DOWN out of space onto the planet. */
+    panHold:    900,   // ms of quiet space before the camera starts down. A
+                       // breath that lets the star field register, not the
+                       // 2.8s storm hold this used to be — that weather moved
+                       // to the descent INTO the planet (see runDustIntro).
+    panDur:     2500,  // ms of camera descent…
+    panSettle:  500,   // …plus a settle back from a -1.2vh undershoot
     panEase:    [0.6, 0.02, 0.16, 1],
   };
 
@@ -90,6 +90,23 @@
        shallow offset) because it sits under a 70%-opacity veil and an
        overlay blend, both of which flatten it out again. */
     veilTex: { size: 1200, freq: '0.0026 0.0058', oct: 5, seed: 77, rgb: [236, 202, 158], slope: 1.6, off: -0.18 },
+    /* ── Ocean (#oceanScene) ──
+       Marine snow is PARTICULATE, not haze: a high base frequency with few
+       octaves gives separated specks rather than the smeared cloud the dust
+       layers want, and a steep slope on a deep offset keeps only the brightest
+       tips so most of the tile stays empty water. */
+    /* ⚠️ `off` is the density knob and it is very sensitive. Alpha is
+       roughly slope × noise + off, and fractalNoise sits around 0.5 — so at
+       off ≈ -slope×0.6 only the top fifth of the field survives as specks.
+       Back it off toward -slope×0.5 and the tile fills in until it reads as
+       television static rather than drift. */
+    snowFar:  { size: 1600, freq: 0.16, oct: 1, seed: 12, rgb: [196, 232, 240], slope: 3.4, off: -2.62 },
+    snowMid:  { size: 1200, freq: 0.20, oct: 1, seed: 38, rgb: [214, 244, 250], slope: 3.6, off: -2.80 },
+    snowNear: { size: 800,  freq: 0.26, oct: 1, seed: 55, rgb: [232, 250, 255], slope: 3.8, off: -2.98 },
+    /* Caustics: the two-axis freq form again, but stretched the other way from
+       the cloud decks — a lower Y frequency draws the long vertical shafts
+       light makes coming down through a moving surface. */
+    caustics: { size: 1400, freq: '0.010 0.0016', oct: 3, seed: 91, rgb: [180, 240, 252], slope: 1.5, off: -0.52 },
   };
 
   const heroScene = document.getElementById('heroScene');
@@ -106,6 +123,22 @@
     bg('.hs-planet-wisps', NOISE.wisps);
     bg('.hs-veil-tex', NOISE.veilTex);
     bg('.hs-grain', NOISE.grain);
+  }
+
+  // The ocean world's textures. Painted here rather than in a module of its
+  // own so there's exactly one noise generator in the codebase — but keyed off
+  // its own element, because #oceanScene is a sibling of #heroScene, not a
+  // child, and the query above is scoped to the dust scene.
+  const oceanScene = document.getElementById('oceanScene');
+  if (oceanScene) {
+    const obg = (sel, params) => {
+      const el = oceanScene.querySelector(sel);
+      if (el) el.style.backgroundImage = noiseURI(params);
+    };
+    obg('.os-snow--far .os-drift', NOISE.snowFar);
+    obg('.os-snow--mid .os-drift', NOISE.snowMid);
+    obg('.os-snow--near .os-drift', NOISE.snowNear);
+    obg('.os-caustics .os-drift', NOISE.caustics);
   }
 
   /* Respect reduced-motion: leave every element at its resting opacity (the
@@ -360,6 +393,7 @@
     const dustFar = heroScene.querySelector('.hs-dust--far');
     const greeting = introCopy && introCopy.querySelector('.intro-greeting');
     const descEl = introCopy && introCopy.querySelector('.description');
+    const billingEl = document.getElementById('introBilling');
     const avatarWrap = document.querySelector('.clock-hero-wrap');
     // The camera's start height lives in CSS (--pan-start on #heroScene) so it
     // can be tuned alongside --horizon; both must move together or the storm
@@ -373,95 +407,47 @@
     const sceneEls = [panEl, veil, bloom, dustNear, dustMid, dustFar]
       .concat(swirls, bolts);
 
-    // ── Storm beat ──
-    // The hold used to be dead air: an opaque tan wash sitting still. Now it
-    // has weather in it — but weather watched from orbit, where nothing
-    // happens fast. The whole beat is detail you notice rather than events
-    // that grab you.
+    // ── The storm beat is NOT here any more ──
+    // The swirls, gusts and bolts used to fill a 2.8s hold, which only worked
+    // because the camera started buried below the horizon with the dust
+    // covering the frame. The camera now opens in clean space ABOVE the planet,
+    // where all of that would either be off-screen (the dust is masked to below
+    // the horizon) or nonsense (lightning in orbit). The weather moved to the
+    // one place you're actually inside it: the descent INTO the planet, driven
+    // by the --w-* scroll positions in styles.css. These elements stay in the
+    // markup and are simply inert until then.
     //
-    // Swirls turn only ~15° across the whole beat. Each turns a different
-    // amount in a different direction — matched rotation across all three
-    // would read as one disc spinning behind a mask.
-    //
-    // They're fully faded out BY the time the camera moves, rather than
-    // riding into the pan as they used to. Three rotating full-viewport
-    // layers on top of the pan (which is already moving the planet, three
-    // dust sheets and the gusts) was more than a frame's budget, and the
-    // churn has done its job by then anyway — the veil is going with it.
-    const SWIRL_OUT = 900;   // ms of fade, landing on the pan's first frame
-    swirls.forEach((el, i) => {
-      const dir = i % 2 ? -1 : 1;
-      anime({
-        targets: el,
-        rotate: [dir * -7, dir * (15 + i * 5)],
-        scale: [0.95 + i * 0.02, 1.05],
-        opacity: [
-          { value: 0.34 - i * 0.07, duration: 1000, easing: 'easeOutQuad' },
-          // Keyframe delays are relative to the previous keyframe's end, so
-          // this lands every swirl's fade-out on HOLD regardless of its
-          // stagger. Clamped in case panHold is tuned down below the beat.
-          { value: 0, duration: SWIRL_OUT, delay: Math.max(0, HOLD - SWIRL_OUT - 1000 - i * 260), easing: 'easeInQuad' },
-        ],
-        // Trimmed by the stagger so every swirl completes exactly on HOLD.
-        duration: Math.max(0, HOLD - i * 260),
-        delay: i * 260,
-        easing: 'linear',
-        // Take the layer out of the tree the moment it's done. They carry
-        // `will-change` (see styles.css) which pins a promoted layer per
-        // swirl; leaving three of those parked at opacity 0 through the pan
-        // costs GPU memory for nothing. The end-of-intro cleanup strips this
-        // inline style along with the rest.
-        complete: function () { el.style.display = 'none'; },
-      });
-    });
+    // ⚠️ The intro must NOT write inline opacity on them to say so. Every one
+    // of these already rests at opacity 0 in the stylesheet and is lit by a
+    // calc() off --w-storm; an inline `opacity: 0` outranks that calc, so
+    // parking them here left the whole storm — veil, churn and lightning —
+    // permanently switched off for anyone whose intro ran. (It only looked
+    // fine because the styles were later cleared by the wrap-up below, which
+    // silently made the bug depend on how fast you scrolled.)
 
-    // Distant discharges. `at` is ms into the hold; they alternate between the
-    // two patches so a couple can overlap. Faint and irregular on purpose —
-    // the far one is barely there, and no two share a brightness.
-    const GLIMMERS = [
-      { at: 560,  x: '26vw', y: '34vh', peak: 0.72 },
-      { at: 1180, x: '69vw', y: '20vh', peak: 0.4 },
-      { at: 1880, x: '44vw', y: '47vh', peak: 0.9 },
-      { at: 2480, x: '15vw', y: '24vh', peak: 0.34 },
-    ];
-    // Bloom → settle → long fade, ~1.3s end to end. Still NOT the hard
-    // attack/dip/re-strike envelope real lightning has: at this distance the
-    // cloud diffuses all of that, and the sharp version reads as a strobe.
-    // Brightness is what makes these register, not speed — so the peaks are
-    // roughly doubled while the shape of the pulse stays soft.
-    function glimmerKeys(peak) {
-      return [
-        { value: peak, duration: 240, easing: 'easeOutQuad' },
-        { value: peak * 0.5, duration: 220, easing: 'easeInOutQuad' },
-        { value: 0, duration: 860, easing: 'easeInOutQuad' },
-      ];
-    }
-    if (bolts.length) {
-      GLIMMERS.forEach((g, i) => {
-        const el = bolts[i % bolts.length];
-        setTimeout(() => {
-          el.style.left = g.x;
-          el.style.top = g.y;
-          anime({ targets: el, opacity: glimmerKeys(g.peak) });
-        }, g.at);
-      });
-    }
-
-    // Camera tilt with a 1.4vh settle overshoot.
+    // ── The descent ──
+    // panStart is POSITIVE, so the scene begins pushed down out of frame and
+    // eases UP to rest — which reads as the camera coming DOWN onto the planet.
+    // The overshoot goes the other way with it: undershoot slightly past rest
+    // and settle back, so the camera lands rather than stops dead.
     anime({
       targets: panEl,
       translateY: [
-        { value: [panStart, '1.4vh'], duration: PAN, easing: ease },
+        { value: [panStart, '-1.2vh'], duration: PAN, easing: ease },
         { value: '0vh', duration: CFG.panSettle, easing: 'easeOutQuad' },
       ],
       delay: HOLD,
     });
 
-    // Dust sweeps past the camera — nearer layers travel further (parallax).
+    // Dust rises into frame under the limb — nearer layers travel further
+    // (parallax). ⚠️ Offsets are POSITIVE: the haze is arriving from below with
+    // the planet, not streaming down past the lens. It also arrives FAINT and
+    // stays faint; the thick version of these layers is what the descent
+    // through the atmosphere ramps up later.
     const sweeps = [
-      [dustNear, '-88vh', 1, 0.07, PAN - 300, HOLD - 100],
-      [dustMid, '-55vh', 0.9, 0.14, PAN, HOLD],
-      [dustFar, '-30vh', 0.8, 0.22, PAN + 400, HOLD + 120],
+      [dustNear, '48vh', 0.04, 0.07, PAN - 300, HOLD - 100],
+      [dustMid, '34vh', 0.07, 0.14, PAN, HOLD],
+      [dustFar, '22vh', 0.10, 0.22, PAN + 400, HOLD + 120],
     ];
     sweeps.forEach(([el, fromY, o0, o1, dur, delay]) => {
       if (!el) return;
@@ -475,27 +461,22 @@
       });
     });
 
-    // Storm veil thins away over ~75% of the pan.
-    anime({ targets: veil, opacity: [0.7, 0], duration: PAN * 0.75, delay: HOLD, easing: 'easeInOutQuad' });
+    // The veil stays clear — we're not in the storm; see the note above. Its
+    // rest state is the stylesheet's, so there is nothing to do here.
 
-    // Sky comes alive as the dust clears; atmosphere blooms at the horizon.
-    setTimeout(() => { revealStars(); revealStatus(); }, HOLD + PAN - 900);
-    anime({ targets: bloom, opacity: [0.35, 1], duration: 1400, delay: HOLD + PAN - 500, easing: 'easeOutQuad' });
+    // Stars are the FIRST thing, not the last: the opening frame is space, so
+    // the field has to be there before the camera starts moving. (It used to
+    // wait until the dust cleared near the end of the pan.)
+    setTimeout(() => { revealStars(); revealStatus(); }, 60);
+    // ⚠️ No bloom tween. .hs-atmo-bloom is the body's CONCENTRIC rim glow now
+    // and is keyed off --w-shrink, so it belongs to the passage, not the intro
+    // — fading it up here left a teal ring around the hero's giant planet
+    // (inline opacity again outranking the calc) until the wrap-up cleared it.
 
-    // Two wind gusts whip across mid-pan (Tempest signature).
-    [['hsGust1', HOLD + 300, '18vh'], ['hsGust2', HOLD + 900, '38vh']].forEach(([id, delay, top]) => {
-      const g = document.getElementById(id);
-      if (!g) return;
-      g.style.top = top;
-      anime({
-        targets: g,
-        translateX: ['0vw', '190vw'],
-        opacity: [{ value: 0.85, duration: 275 }, { value: 0, duration: 825 }],
-        duration: 1100,
-        delay,
-        easing: 'cubicBezier(0.3,0.1,0.3,1)',
-      });
-    });
+    // Gusts belong to the storm, and the storm belongs to the descent — see
+    // the note above the swirls. Their rest position and opacity are the
+    // stylesheet's too; these are not in `sceneEls`, so an inline style written
+    // here would never be cleared and would disable them for the whole session.
 
     // Avatar lands first, then HELLO tracks in under it, then the subtitle.
     if (avatarWrap) {
@@ -531,6 +512,18 @@
         easing: 'cubicBezier(0.16,1,0.3,1)',
       });
     }
+    // Billing block lands last, like the credit line settling under a poster's
+    // tagline once the rest of the lockup has landed.
+    if (billingEl) {
+      anime({
+        targets: billingEl,
+        opacity: [0, 1],
+        translateY: [8, 0],
+        duration: 600,
+        delay: HOLD + PAN + 750,
+        easing: 'cubicBezier(0.16,1,0.3,1)',
+      });
+    }
 
     // Wrap up: dock blooms, the pending class drops (releases will-change),
     // and inline styles are cleared so the stylesheet owns the rest state.
@@ -539,7 +532,7 @@
       try { sessionStorage.setItem('heroIntroPlayed', '1'); } catch (e) {}
       document.body.classList.remove('dust-intro-pending');
       sceneEls.forEach((el) => { if (el) el.removeAttribute('style'); });
-      [greeting, descEl, avatarWrap].forEach((el) => { if (el) el.removeAttribute('style'); });
+      [greeting, descEl, billingEl, avatarWrap].forEach((el) => { if (el) el.removeAttribute('style'); });
     }, HOLD + PAN + 1600);
   }
 

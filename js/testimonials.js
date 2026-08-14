@@ -40,7 +40,7 @@
 
     const avatarImg = row.querySelector('.testi-chat__avatar-img');
     const name = row.querySelector('.testi-chat__name')?.textContent?.trim() || '';
-    const role = row.querySelector('.testi-chat__tip')?.textContent?.trim() || '';
+    const role = row.querySelector('.testi-chat__role')?.textContent?.trim() || '';
 
     if (avatarImg) {
       avatarEl.src = avatarImg.src;

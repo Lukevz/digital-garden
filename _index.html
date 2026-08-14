@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- Dark-only for now: data-theme is pinned here so the first paint is dark even
+     on a light-preference system. To bring light mode back, drop this attribute
+     and flip THEME_LOCK_DARK in js/main.js. -->
+<html lang="en" data-theme="dark">
 <head>
   <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark">
   <title>Luke</title>
   <link rel="icon" href="/v1/images/favicon.svg" type="image/svg+xml">
 
@@ -12,14 +15,14 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Luke">
   <meta property="og:description" content="Designer, tinkerer, and passionate note-taker.">
-  <meta property="og:image" content="https://lukevz.com/images/og_light.png">
+  <meta property="og:image" content="https://lukevz.com/images/og_dark.png">
   <meta property="og:url" content="https://lukevz.com">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Luke">
   <meta name="twitter:description" content="Designer, tinkerer, and passionate note-taker.">
-  <meta name="twitter:image" content="https://lukevz.com/images/og_light.png">
+  <meta name="twitter:image" content="https://lukevz.com/images/og_dark.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,12 +72,23 @@
 
   <canvas id="dotGrid"></canvas>
 
+  <!-- ── World layers ──
+       One fixed box holding every biosphere's DOM scenery, so the shared
+       parallax and the cross-fade have a single parent instead of N siblings
+       that have to be kept in step. js/worlds.js decides which child is on
+       stage; a world more than one chapter away is display:none (two
+       full-screen noise compositions is the whole budget — see the swirls note
+       in js/hero-entrance.js).
+       A fixed sibling of the canvas — NOT inside .hero, whose internal
+       overflow would scroll it. Paints above #dotGrid so a planet can cover
+       stars below its horizon; .hero (z2) and .below-fold (z8) ride on top. -->
+  <div id="worldLayers" aria-hidden="true">
+
   <!-- Dust-storm hero scene: giant planet + teal atmosphere rim + drifting
        dust, panned by the on-load "camera tilt" intro (js/hero-entrance.js).
-       A fixed sibling of the canvas — NOT inside .hero, whose internal
-       overflow would scroll it. Paints above #dotGrid so the planet covers
-       stars below the horizon; .hero (z2) and .below-fold (z8) ride on top. -->
-  <div id="heroScene" aria-hidden="true">
+       ⚠️ Keeps its id — js/hero-entrance.js queries it in several places and
+       heroParallax() writes its transform and opacity directly. -->
+  <div id="heroScene" class="world-layer is-live" data-world="home" aria-hidden="true">
     <div class="hero-scene__pan" id="heroScenePan">
       <div class="hs-atmo-bloom"></div>
       <div class="hs-atmo-band"></div>
@@ -83,6 +97,16 @@
         <div class="hs-planet-clouds" id="hsPlanetClouds"></div>
         <div class="hs-planet-wisps" id="hsPlanetWisps"></div>
       </div>
+      <!-- Tentacles. Before .hs-bell so the translucent bell paints over their
+           roots. Sized and placed off the same shared circle, so they hang from
+           the bell's underside at any scale. -->
+      <div class="hs-tentacles"></div>
+      <!-- ⚠️ The jellyfish bell is NOT a separate picture placed somewhere
+           else — it is the planet's own circle (same --planet-d, same --hs-top,
+           same shared geometry rule) with a different fill faded in over it
+           under cover of the storm. That's what makes this a scale reveal
+           rather than a cross-dissolve. -->
+      <div class="hs-bell"></div>
       <!-- Clip container: masks the drifting dust to below the horizon line
            (in camera space), so no haze sits on the black sky or the text.
            At the intro's start the horizon is above the frame, so the storm
@@ -109,7 +133,80 @@
     <div class="hs-bolt" id="hsBolt1"></div>
     <div class="hs-bolt" id="hsBolt2"></div>
     <div class="hs-grain"></div>
-  </div>
+  </div><!-- /#heroScene -->
+
+  <!-- ── Ocean: the world below the dust planet ──
+       Same grammar as the dust scene — a graded body of water, one drifting
+       texture per depth, a floor — so the two cross-fade against each other
+       instead of reading as two unrelated pictures. Textures come from the
+       same noiseURI() generator in js/hero-entrance.js. -->
+  <div id="oceanScene" class="world-layer" data-world="ocean" aria-hidden="true">
+    <div class="os-water"></div>
+    <!-- Sunlight refracting through the surface far above. Sits at the top of
+         the column and reaches down about a third of the frame. -->
+    <div class="os-caustics"><div class="os-drift"></div></div>
+    <!-- Marine snow: the ocean's answer to the dust layers. Three parallax
+         depths, each drifting DOWNWARD (detritus sinking) rather than
+         sideways, which is the one motion cue that says "water" and not "sky". -->
+    <!-- ── The residents ──
+         A field of jellyfish at depth, the water's answer to the star field.
+         ⚠️ These are DOM, not the `jelly` bodies in SCENES.ocean (js/grid.js).
+         Those still matter — home's moon warps into the biggest one — but the
+         star canvas sits under #worldLayers and .os-water is opaque, so nothing
+         drawn on it survives into this chapter. See the .os-jelly block in
+         styles.css. Placed between the far and near snow so the nearest
+         marine snow drifts in front of them. -->
+    <div class="os-snow os-snow--far"><div class="os-drift"></div></div>
+    <div class="os-jelly os-jelly--far" style="--jx:11%;  --jy:19%; --jd:7vh;    --jo:.42; --jspd:16s; --jdel:-2s"></div>
+    <div class="os-jelly"              style="--jx:40%;  --jy:11%; --jd:5vh;    --jo:.36; --jspd:13s; --jdel:-5s"></div>
+    <div class="os-jelly"              style="--jx:78%;  --jy:16%; --jd:6vh;    --jo:.34; --jspd:18s; --jdel:-9s"></div>
+    <div class="os-jelly"              style="--jx:63%;  --jy:31%; --jd:11vh;   --jo:.40; --jspd:21s; --jdel:-3s"></div>
+    <div class="os-jelly os-jelly--far" style="--jx:26%;  --jy:47%; --jd:4.5vh;  --jo:.30; --jspd:12s; --jdel:-7s"></div>
+    <div class="os-snow os-snow--mid"><div class="os-drift"></div></div>
+    <div class="os-jelly"              style="--jx:89%;  --jy:53%; --jd:14vh;   --jo:.30; --jspd:24s; --jdel:-11s"></div>
+    <div class="os-jelly os-jelly--far" style="--jx:7%;   --jy:65%; --jd:9vh;    --jo:.26; --jspd:19s; --jdel:-14s"></div>
+    <div class="os-jelly"              style="--jx:55%;  --jy:70%; --jd:6.5vh;  --jo:.24; --jspd:15s; --jdel:-6s"></div>
+    <div class="os-jelly os-jelly--far" style="--jx:33%;  --jy:82%; --jd:5vh;    --jo:.20; --jspd:17s; --jdel:-1s"></div>
+    <div class="os-jelly"              style="--jx:72%;  --jy:79%; --jd:8vh;    --jo:.22; --jspd:22s; --jdel:-16s"></div>
+    <!-- ⚠️ The one the planet became — a SECOND element standing exactly where
+         the dust scene's .hs-bell comes to rest, not a duplicate by mistake.
+         The dust scene's jellyfish can't outlive the void (its geometry is
+         interpolated on phase windows that all reset in a chapter), so this
+         copy fades in underneath it on --world-handoff and then simply stays,
+         pinned over the Timeline for the whole ocean chapter. Full note on
+         .os-jelly--hero in styles.css. -->
+    <div class="os-jelly os-jelly--hero"></div>
+    <div class="os-snow os-snow--near"><div class="os-drift"></div></div>
+    <div class="os-abyss"></div>
+    <!-- The water's last act: as the genie pinches it down to a dot, the sea
+         takes on the message bubble's own blue, so the shape that unfolds is
+         already the right colour and the hand-off to the real bubble has
+         nothing to cross-fade. Driven by --genie-tint (js/worlds.js); rests at
+         0, and is clipped along with everything else in here. -->
+    <div class="os-genie-tint"></div>
+  </div><!-- /#oceanScene -->
+
+  <!-- ── Chat: the light room the ocean is poured into ──
+       The one world with no weather in it. A flat, near-white room — the
+       inside of the message bubble, blown up to viewport size — so the thread
+       reads dark-on-light like the app it's imitating.
+       ⚠️ It sits BENEATH #oceanScene (z-index, see styles.css), not over it.
+       Every other passage fades the incoming world in on top; this one is
+       revealed by the outgoing world being clipped away, so the room has to
+       already be there at full strength behind the water. -->
+  <div id="chatScene" class="world-layer" data-world="chat" aria-hidden="true">
+    <div class="cs-room"></div>
+  </div><!-- /#chatScene -->
+
+  </div><!-- /#worldLayers -->
+  <!-- World dimmer. Sits above the star canvas and the dust scene (both z1,
+       and this is later in the DOM) but below .hero (z2), so the world settles
+       back behind a chapter's copy without dimming the hero lockup with it.
+       Driven by --world-dim from js/worlds.js: 0 in a void (the world at full
+       strength) → 1 inside a chapter. A plain opacity wash rather than a
+       filter: brightness() on the layers, which would force a filter layer on
+       two full-screen noise compositions for the same visual result. -->
+  <div id="worldDim" aria-hidden="true"></div>
   <!-- Theme cross-fade: conic arc pivots at bottom center, sweeps BL → BR (sun path) -->
   <div id="themeTransition" class="theme-transition" aria-hidden="true">
     <div class="theme-transition__wipe" aria-hidden="true">
@@ -145,8 +242,10 @@
   </div>
 
   <div class="topBar-actions">
-    <!-- Theme toggle: moon = switch to dark, sun = switch to light -->
-    <button id="themeToggle" type="button" title="Dark mode" aria-label="Switch to dark mode" aria-pressed="false">
+    <!-- Theme toggle: moon = switch to dark, sun = switch to light.
+         Hidden while the site is dark-only (THEME_LOCK_DARK in js/main.js);
+         drop the `hidden` here to bring it back. -->
+    <button id="themeToggle" type="button" title="Dark mode" aria-label="Switch to dark mode" aria-pressed="false" hidden>
       <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
       </svg>
@@ -404,6 +503,13 @@
   <div class="intro">
     <div class="intro-text">
       <h1 class="intro-copy"><span class="intro-headline-content"><span class="intro-greeting">Hello</span></span><span class="description">I'm Luke. I'm a designer, digital tinker, &amp; systems thinker. Currently building software for veterinarians at Instinct.</span></h1>
+      <!-- Poster billing block: the same billing-line convention as a movie
+           poster's bottom credits — small, tracked, factual. Row 1 is the
+           headline facts (experience + pedigree), row 2 the specialty credits. -->
+      <p class="intro-billing" id="introBilling">
+        <span class="intro-billing-row intro-billing-headline">11+ Years UX Design<span class="intro-billing-dot">&middot;</span>Previously at PwC</span>
+        <span class="intro-billing-row intro-billing-specialties">Design Systems<span class="intro-billing-dot">&middot;</span>Figma Migration<span class="intro-billing-dot">&middot;</span>Clinical UX</span>
+      </p>
     </div>
 
     <!-- ClockClock-style dial hero: a fixed dot-matrix of dials rotates its
@@ -559,17 +665,40 @@
 
   </section><!-- /.hero -->
 
-  <!-- Below the fold — home feed. Sits BEFORE the scroll spacer: the home
-       view loads pinned to the document's end (hero in view) and the visitor
-       scrolls UP to reveal the feed, which descends over the fixed hero.
-       Section order is visually reversed via column-reverse in styles.css so
-       the first section is the first one revealed. -->
+  <!-- Reserves scroll length for the fixed hero above, and holds a stretch of
+       open sky past it: at 150vh on home it's a full viewport taller than the
+       screen, so you scroll the storm out and travel through bare starfield
+       before the feed's edge arrives. heroParallax() in js/main.js measures
+       `travel` off the feed's own rect, so this element's height is the single
+       knob for how long that stretch lasts.
+       ⚠️ Must precede #belowFold — it IS the runway. On section pages
+       (#belowFold hidden) it still precedes #sectionBelow, unchanged. -->
+  <div class="hero-spacer" aria-hidden="true"></div>
+
+  <!-- Below the fold — home feed. Rises into frame from the bottom at native
+       scroll speed while the fixed hero drifts up past the camera. Chapters
+       are marked with data-world on each .home-section and separated by
+       .world-void spacers; js/worlds.js reads those to drive the sky. -->
   <section class="below-fold" id="belowFold">
     <div class="below-fold-inner home-feed">
 
+      <!-- ── The passage: dust planet → jellyfish ocean ──
+           The transition happens HERE, immediately after the hero, not deep in
+           the feed: you leave the poster, the storm closes over you, and what
+           comes out the other side is underwater. Everything below reads in the
+           ocean. js/worlds.js measures this rect and derives the whole sequence
+           from how far the reading line has travelled across it — storm, then
+           the planet morphing to a bell behind it, then the reveal.
+           ⚠️ Inside .below-fold-inner rather than a sibling of #belowFold, so
+           heroParallax's `travel` (which keys off the feed's top edge) starts
+           climbing as soon as you scroll — otherwise the hero lockup would
+           still be sitting on top of the storm, which paints below it. -->
+      <div class="world-void" data-from="home" data-to="ocean"
+           data-passage="storm" aria-hidden="true"></div>
+
       <!-- data-nav-label: the short name this section goes by in the sub-nav
            ticker (js/subnav.js); falls back to the <h2> when absent. -->
-      <section class="home-section" id="homeCaseStudies" aria-labelledby="homeCaseStudiesTitle" data-nav-label="Case Studies" hidden>
+      <section class="home-section" id="homeCaseStudies" aria-labelledby="homeCaseStudiesTitle" data-nav-label="Case Studies" data-world="ocean" hidden>
         <header class="home-section-header">
           <span class="home-section-icon" data-clone-icon="Case Studies" aria-hidden="true"></span>
           <h2 class="home-section-title" id="homeCaseStudiesTitle">Case Studies</h2>
@@ -579,7 +708,10 @@
         </div>
       </section>
 
-      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle" data-nav-label="Timeline">
+      <!-- data-world: which biosphere this chapter is read inside. Consecutive
+           sections sharing a value are one chapter; a .world-void between two
+           of them is where the sky warps. See js/worlds.js. -->
+      <section class="home-section" id="homeTimeline" aria-labelledby="homeTimelineTitle" data-nav-label="Timeline" data-world="ocean">
         <!-- Horizontal career timeline. Most recent role on the left. Scrolling
              past the hero and into this section pins it (js/timeline.js) and
              converts vertical scroll into horizontal motion across the rail —
@@ -766,12 +898,29 @@
         </div>
       </section>
 
+      <!-- ── The ocean drains into the message ──
+           The second passage, and the one that ends the water. Instead of the
+           sky swapping behind the content, the world itself is SUCKED DOWN —
+           macOS-dock genie — into the question bubble of the thread below,
+           pinching to a blue circle and then unfolding into the bubble, which
+           is where its text arrives from. js/worlds.js owns the geometry
+           (data-passage="genie"); it tracks the real bubble's live rect, so the
+           funnel follows it as it rises up the viewport. -->
+      <div class="world-void world-void--mid" data-from="ocean" data-to="chat"
+           data-passage="genie" data-genie-target="#testiChat .testi-chat__bubble--out"
+           aria-hidden="true"></div>
+
       <!-- Testimonials — an iMessage-style group-chat thread (.testi-chat) rather
            than a card grid or a wall of text. Each teaser's "Read more" opens
            #testiModal with the full quote from a matching <template data-testi-full>;
-           js/testimonials.js wires that up, the avatar hover tooltip, and the
-           centre-of-viewport reveal of each bubble. -->
-      <section class="home-section" id="homeTestimonials" aria-labelledby="homeTestimonialsTitle" data-nav-label="Colleagues">
+           js/testimonials.js wires that up, and the centre-of-viewport reveal
+           of each bubble. Each handle is name + role/company (.testi-chat__role) —
+           js/testimonials.js reads the role from that element, not the name span.
+           ⚠️ data-world="chat" is its own biosphere — a flat light room, the
+           inside of the message the ocean was just poured into. It is the one
+           chapter of the feed that reads DARK-ON-LIGHT; see the
+           [data-world="chat"] ink block in styles.css. -->
+      <section class="home-section" id="homeTestimonials" aria-labelledby="homeTestimonialsTitle" data-nav-label="Colleagues" data-world="chat">
         <header class="home-section-header">
           <span class="home-section-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -796,12 +945,14 @@
           </div>
 
           <div class="testi-chat__row testi-chat__row--in">
-            <span class="testi-chat__avatar" tabindex="0">
+            <span class="testi-chat__avatar">
               <img class="testi-chat__avatar-img" src="/images/testimonials/michael.jpg" alt="Michael Lund" loading="lazy" onerror="this.remove()">
-              <span class="testi-chat__tip" role="tooltip">Product Designer</span>
             </span>
             <div class="testi-chat__col">
-              <span class="testi-chat__name">Michael Lund</span>
+              <span class="testi-chat__handle">
+                <span class="testi-chat__name">Michael Lund</span>
+                <span class="testi-chat__role">Product Designer</span>
+              </span>
               <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
                 <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
@@ -811,12 +962,14 @@
           </div>
 
           <div class="testi-chat__row testi-chat__row--in">
-            <span class="testi-chat__avatar" tabindex="0">
+            <span class="testi-chat__avatar">
               <img class="testi-chat__avatar-img" src="/images/testimonials/jamie.jpg" alt="Jamie Sutton" loading="lazy" onerror="this.remove()">
-              <span class="testi-chat__tip" role="tooltip">Design Director</span>
             </span>
             <div class="testi-chat__col">
-              <span class="testi-chat__name">Jamie Sutton</span>
+              <span class="testi-chat__handle">
+                <span class="testi-chat__name">Jamie Sutton</span>
+                <span class="testi-chat__role">Director, PwC</span>
+              </span>
               <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
                 <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
@@ -826,12 +979,14 @@
           </div>
 
           <div class="testi-chat__row testi-chat__row--in">
-            <span class="testi-chat__avatar" tabindex="0">
+            <span class="testi-chat__avatar">
               <img class="testi-chat__avatar-img" src="/images/testimonials/ashley.jpg" alt="Ashley Dischinger" loading="lazy" onerror="this.remove()">
-              <span class="testi-chat__tip" role="tooltip">Senior Technical Project Manager, Red Ventures</span>
             </span>
             <div class="testi-chat__col">
-              <span class="testi-chat__name">Ashley Dischinger</span>
+              <span class="testi-chat__handle">
+                <span class="testi-chat__name">Ashley Dischinger</span>
+                <span class="testi-chat__role">Senior Technical Project Manager, Red Ventures</span>
+              </span>
               <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
                 <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
@@ -841,12 +996,14 @@
           </div>
 
           <div class="testi-chat__row testi-chat__row--in">
-            <span class="testi-chat__avatar" tabindex="0">
+            <span class="testi-chat__avatar">
               <img class="testi-chat__avatar-img" src="/images/testimonials/emmanuel.jpg" alt="Emmanuel Idehen" loading="lazy" onerror="this.remove()">
-              <span class="testi-chat__tip" role="tooltip">Senior Manager, PwC</span>
             </span>
             <div class="testi-chat__col">
-              <span class="testi-chat__name">Emmanuel Idehen</span>
+              <span class="testi-chat__handle">
+                <span class="testi-chat__name">Emmanuel Idehen</span>
+                <span class="testi-chat__role">Senior Manager, PwC</span>
+              </span>
               <div class="testi-chat__bubble testi-chat__bubble--in testi-chat__typing" aria-hidden="true">
                 <span class="testi-chat__dot"></span><span class="testi-chat__dot"></span><span class="testi-chat__dot"></span>
               </div>
@@ -878,11 +1035,20 @@
         </template>
       </section>
 
+      <!-- Leaving the light room. Nothing to genie back out of — the room just
+           dims away and the open field is behind it. data-passage="fade" is the
+           plain cross-fade: the outgoing layer holds until the thread has left
+           the frame, THEN goes (see .world-layer.is-leaving in styles.css), so
+           the chat's dark-on-light copy is never sitting over a half-dark
+           background. -->
+      <div class="world-void world-void--mid world-void--short" data-from="chat" data-to="deep"
+           data-passage="fade" aria-hidden="true"></div>
+
       <!-- Core principles — rebuilt from the old Framer site. The A→X lockup is
            live type (not an image): a struck-through "UX" sitting above a
            display-weight "A → X", so it scales, themes, and stays selectable.
            Trait copy is verbatim from the original. Pure HTML/CSS — no JS. -->
-      <section class="home-section" id="homePrinciples" aria-labelledby="homePrinciplesTitle" data-nav-label="Principles">
+      <section class="home-section" id="homePrinciples" aria-labelledby="homePrinciplesTitle" data-nav-label="Principles" data-world="deep">
         <header class="home-section-header">
           <span class="home-section-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -982,7 +1148,7 @@
         </div>
       </section>
 
-      <section class="home-section" id="homeEnergyBoard" aria-labelledby="homeEnergyBoardTitle" data-nav-label="Goals" hidden>
+      <section class="home-section" id="homeEnergyBoard" aria-labelledby="homeEnergyBoardTitle" data-nav-label="Goals" data-world="deep" hidden>
         <header class="home-section-header energy-board-header">
           <span class="home-section-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1001,7 +1167,7 @@
         </div>
       </section>
 
-      <section class="home-section" id="homeExperiments" aria-labelledby="homeExperimentsTitle" data-nav-label="Experiments">
+      <section class="home-section" id="homeExperiments" aria-labelledby="homeExperimentsTitle" data-nav-label="Experiments" data-world="deep">
         <header class="home-section-header">
           <span class="home-section-icon" data-clone-icon="Labs" aria-hidden="true"></span>
           <h2 class="home-section-title" id="homeExperimentsTitle">Experiments</h2>
@@ -1023,27 +1189,6 @@
 
     </div>
   </section>
-
-  <!-- Reserves scroll length for the fixed hero above. On home this sits at
-       the END of the document (see reversed reveal note on #belowFold); on
-       section pages (#belowFold hidden) it still precedes #sectionBelow, so
-       their downward scroll is unchanged. -->
-  <div class="hero-spacer" aria-hidden="true"></div>
-  <script>
-    // Reversed reveal: pin the home view to the document's end before first
-    // paint, so the page opens on the hero (the storm) with the feed waiting
-    // above. Skipped for hash deep-links (section pages, notes) and when the
-    // browser is restoring a previous scroll position (reload/back).
-    (function () {
-      try {
-        var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-        var restoring = nav && nav.type === 'back_forward';
-        if (document.body.classList.contains('dust-hero') && !location.hash && !restoring) {
-          window.scrollTo(0, 1e9);
-        }
-      } catch (e) {}
-    })();
-  </script>
 
   <!-- Below the fold — section page body (the list, or an opened item).
        Same opaque curtain treatment as the home feed above, so it slides up
@@ -1410,6 +1555,10 @@
 
   <!-- <script src="/js/intro.js"></script> preloader off for now -->
   <script src="/js/main.js?v=11"></script>
+  <!-- ⚠️ Between main.js and grid.js on purpose: worlds.js needs main.js's
+       window.setSky to exist, and grid.js reads body[data-sky] once at init —
+       so the world resolved here on the first frame is the sky grid.js builds. -->
+  <script src="/js/worlds.js?v=1"></script>
   <script src="/js/hero-entrance.js?v=3"></script>
   <script src="/js/home-feed.js?v=1"></script>
   <script src="/js/timeline.js?v=10"></script>
