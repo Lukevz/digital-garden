@@ -27,14 +27,18 @@
   --frame-w: 20px;
   --sheet-radius: 24px;
 
-  /* Light: white frame, warm grey paper, near-black ink. */
+  /* Light: white frame, cool grey paper, near-black ink.
+     The stock is a slate grey — the warmth is gone, with a faint blue-green
+     cast left behind. ⚠️ The ink, the rules and the spec marks are cast the
+     same way. A warm ink on a cool sheet doesn't read as contrast, it reads
+     as two different printings on one page. */
   --frame: #ffffff;
-  --paper-hi: #eae7e0;
-  --paper-mid: #e4e1d9;
-  --paper-lo: #dbd7ce;
-  --ink: #15140f;
-  --ink-soft: rgba(21, 20, 15, 0.58);
-  --rule: rgba(21, 20, 15, 0.22);
+  --paper-hi: #e9eced;
+  --paper-mid: #e2e6e7;
+  --paper-lo: #d7dcde;
+  --ink: #12171a;
+  --ink-soft: rgba(18, 23, 26, 0.58);
+  --rule: rgba(18, 23, 26, 0.22);
 
   /* Grain is tuned per theme: on paper it darkens (multiply), on a dark
      sheet a multiply has nothing left to take away, so it goes two-way. */
@@ -51,13 +55,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --frame: #1a1a19;
-    --paper-hi: #33302a;
-    --paper-mid: #2a2823;
-    --paper-lo: #232220;
-    --ink: #ece7dd;
-    --ink-soft: rgba(236, 231, 221, 0.72);
-    --rule: rgba(236, 231, 221, 0.22);
+    --frame: #17191a;
+    --paper-hi: #2e3234;
+    --paper-mid: #262a2c;
+    --paper-lo: #1f2325;
+    --ink: #e5e9ea;
+    --ink-soft: rgba(229, 233, 234, 0.72);
+    --rule: rgba(229, 233, 234, 0.22);
 
     --grain-blend: overlay;
     --grain-opacity: 0.32;
@@ -261,7 +265,7 @@ body {
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --spec-ink: rgba(21, 20, 15, 0.34);
+  --spec-ink: rgba(18, 23, 26, 0.34);
   --spec-inset: 15px;     /* the frame line's gap from the sheet's edge */
   --spec-radius: max(0px, calc(var(--sheet-radius) - var(--spec-inset)));
   --spec-corner: 46px;    /* where a ruler's ticks start, clearing the curve */
@@ -269,7 +273,7 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-  :root { --spec-ink: rgba(236, 231, 221, 0.30); }
+  :root { --spec-ink: rgba(229, 233, 234, 0.30); }
 }
 
 
@@ -431,8 +435,8 @@ body {
   --curl-open: clamp(160px, 22vw, 276px);
   /* The sheet's reverse: bright along the fold where it tilts into the light,
      falling away to the tip that is lying back down on the page. */
-  --curl-fold: #f7f5ef;
-  --curl-tip: #d6d1c7;
+  --curl-fold: #f4f7f8;
+  --curl-tip: #d0d6d9;
   /* Three stops: a tight contact edge for the sheet's own thickness, a mid
      falloff, and a wide dispersed one for the air the lifted corner is
      holding open. The whole filter is the token, not a colour — the three
@@ -446,8 +450,8 @@ body {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --curl-fold: #3d3931;
-    --curl-tip: #1f1e1b;
+    --curl-fold: #383d3f;
+    --curl-tip: #1c2022;
     /* A shadow has far less room to read on a dark sheet, so the same
        geometry carries more alpha. ⚠️ Not unboundedly more: the widest layer
        reaches up and left across the social row, and past about 0.2 it stops
