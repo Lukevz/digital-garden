@@ -2,319 +2,118 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## What this branch is
 
-This is a personal digital garden / portfolio website that simulates the Bear notes app interface. It features:
-- An interactive black hole particle simulation background
-- Bear-style 3-pane note browser with tag navigation
-- OS-style window management system (draggable, resizable windows)
-- Music player with YouTube integration
-- Tasks/goals viewer
-- Static site - no build process required for core functionality
+`paperlike` is a **reset**. The v2 site — the fixed starfield hero, the world-descent
+director, the Bear-style feed, the section pages, the chat dock island — is gone from
+the working tree. In its place is one file's worth of site: a single, non-scrollable,
+text-only landing page.
+
+⚠️ **Nothing was lost, and nothing here should be reconstructed from memory.** The whole
+v2 front-end plus ~40KB of notes describing it (worlds, passages, the genie drain, the
+starfield warp, per-scene ink, section pages vs. the section modal) lives on `main`.
+`git show main:CLAUDE.md` and `git show main:js/worlds.js` are the references. If a task
+needs any of that back, take it from `main` rather than rewriting it.
+
+**Removed here:** `_index.html`, `styles.css` (the old 280KB one), `js/`, `about.html`,
+`now.html`, `work.html`, `flipboard.*`, `fonts/chillax/`, `src/img/`, most of `images/`,
+and `api/home.js` (it existed only to serve the v2 shell with a theme-aware OG image).
+
+**Kept and still working:** `content/` (the writing, photos, and the second-brain vault),
+`api/` minus `home.js`, `build/`, `src/data/`, and `v1/` — the original v1 site, still
+served at `/v1`, and still what `build/build.js` generates manifests for.
 
 ## Development Commands
 
-**Start development server:**
 ```bash
-node build/dev.js
-```
-This starts a local server at http://localhost:3000, watches the `/posts`, `/sounds`, `/labs`, and `/thought-train` folders for changes, and auto-regenerates their corresponding manifest files when content is added/modified.
-
-**CRITICAL - Dev Server API Endpoints:**
-The dev server (`build/dev.js`) provides API proxy endpoints for the music player:
-- `/api/youtube/playlist?id=PLAYLIST_ID` - Fetches YouTube playlist tracks (query parameter format)
-- Requires `music-config.js` with YouTube API key configuration
-- Returns playlist items in format expected by `fetchPlaylistWithCache()` in js/app.js
-
-**Build manifests:**
-```bash
-node build/build.js
-```
-Scans folders and generates manifest files:
-- `posts.js` - Markdown files from `/posts` folder
-- `sounds.js` - Audio files from `/sounds` folder
-- `labs.js` - Lab projects from `/labs` folder
-- `thought-trains.js` - Thought trains from `/thought-train` folder
-
-**Running the site:**
-Simply open `index.html` in a browser, or use any static file server. No build step required for core functionality. However, for the music player to fetch YouTube playlists in development, you must use `node build/dev.js` which provides the API proxy.
-
-## Architecture
-
-### File Structure
-```
-/
-├── index.html              - Main entry point, contains all views
-├── styles.css              - All styles (window system, Bear UI, Zen player)
-├── background.js           - Black hole particle simulation
-├── cursor-trail.js         - Mouse cursor trail effect
-├── /js/                    - Modular JavaScript (ES6 modules)
-│   ├── app.js              - Main application orchestration
-│   ├── /config/            - Configuration modules
-│   │   ├── icons.js        - SVG icon definitions (tags, music folders, weather)
-│   │   ├── constants.js    - App constants (folders, hidden tags, keys)
-│   │   └── state.js        - Centralized state initialization
-│   ├── /utils/             - Utility functions
-│   │   ├── dom.js          - DOM utilities (formatDate, filenameToSlug)
-│   │   ├── storage.js      - LocalStorage helpers
-│   │   ├── yaml.js         - Shared YAML frontmatter parser
-│   │   └── markdown.js     - Markdown to HTML parser (12KB)
-│   ├── /parsers/           - Content parsers
-│   │   ├── post-parser.js  - Bear-style post parsing
-│   │   ├── train-parser.js - Thought train parsing
-│   │   └── lab-parser.js   - Lab project parsing
-│   └── /build/             - Build utilities
-│       └── manifest-builder.js - Shared manifest generation
-├── /build/                 - Build scripts
-│   ├── build.js            - Generate all manifests
-│   └── dev.js              - Dev server with file watching & API proxy
-├── /posts/                 - Markdown notes
-├── /thought-train/         - Thought train markdown files
-├── /labs/                  - Lab project markdown files
-├── /sounds/                - Local audio files
-└── /api/                   - Vercel serverless functions (production)
+npm run dev      # static server + watchers on :3000; serves index.html at /
+npm run build    # v1 manifests — this is Vercel's buildCommand
+npm run index    # rebuild the committed chat index from the vault
+npm run gaps     # re-check the KB gap list against the committed index
 ```
 
-**Auto-generated manifests:**
-- `posts.js` - Markdown files from `/posts` folder
-- `sounds.js` - Audio files from `/sounds` folder
-- `labs.js` - Lab projects from `/labs` folder
-- `thought-trains.js` - Thought trains from `/thought-train` folder
+## The landing page
 
-**Configuration files:**
-- `music.md` - YouTube videos, playlists, and channels
-- `music-config.js` - YouTube API key configuration (gitignored, required for dev)
-- `goals.md` - Task list with checkboxes
+Two files: `index.html` and `styles.css`. No build step, no JavaScript, no framework.
 
-### Key Systems
+**Two surfaces, and the distinction is the whole design.** `<body>` is a flat,
+untextured **frame** in a single solid colour (white in light mode, near-black in dark).
+`.sheet` is the **paper**: `position: fixed`, `inset: var(--frame-w)`, rounded by
+`--sheet-radius`, carrying the texture. The frame being the only untextured colour on
+the page is what makes the grey field read as a sheet laid down on something rather
+than as a page background.
 
-**Modular Architecture:**
-The codebase uses ES6 modules for clean separation of concerns:
-- **Configuration** (`/js/config/`) - Icons, constants, and state initialization
-- **Utilities** (`/js/utils/`) - Shared helper functions (DOM, storage, YAML, markdown parsing)
-- **Parsers** (`/js/parsers/`) - Content parsing logic (posts, thought trains, labs)
-- **Build** (`/js/build/`) - Manifest generation utilities
-- **Main App** (`js/app.js`) - Application orchestration and UI logic
+- `--frame-w` (20px) and `--sheet-radius` (36px) are the two dials, halved on the
+  `max-width: 640px` breakpoint. The `inset` is written twice — the second uses
+  `max(--frame-w, env(safe-area-inset-*))` so a notch can widen one side without the
+  first declaration's uniform value being lost on browsers that don't support `env()`.
+- `isolation: isolate` on `.sheet` is load-bearing: without it the grain's blend modes
+  reach through to the frame and the "solid colour" stops being solid.
 
-**Bear-Style Note Browser:**
-- Uses `parsePost()` from `js/parsers/post-parser.js` to extract frontmatter, hashtags, and content from markdown
-- Supports nested tags (e.g., `#business/career`)
-- Tag hierarchy rendered as collapsible tree
-- Posts manifest at `posts.js` includes creation dates from filesystem
-- URL routing: `#note/slug` for deep linking to notes
+**The paper texture is generated, not an image.** Two `feTurbulence` tiles as data
+URIs — `.sheet::before` is fine speckle (180px tile), `.sheet::after` is slow tonal
+mottle (640px) — over a soft radial tone ramp. No asset to load, resolution-independent,
+and re-tintable per theme, which a photographed paper scan is not.
 
-**Black Hole Simulation (background.js)**
-- Canvas-based particle physics with gravitational attraction
-- 400 particles orbiting the black hole
-- Mouse interaction creates repulsion effects
-- Celestial bodies (moons/planets) orbit at different speeds
-- Frame-limited to 30 FPS for performance
+⚠️ **Three things about that noise, each of which looked broken before it was fixed:**
 
-**Music Player (app.js:2814-3355)**
-- **CRITICAL**: Zen Mosaic-style music player with embedded playback for YouTube videos and local audio
-- **Folder Order**: Music, Podcasts, Ambience, Sounds (defined in `defaultMusicFolders` at app.js:308)
-- **Auto-play**: Tracks automatically start playing when clicked from playlist
-- **Dual Playback Support**:
-  - YouTube videos: Embedded via YouTube IFrame API (`ensureYouTubePlayer()` at app.js:3351)
-  - Local audio: HTML5 audio player (`ensureAudioPlayer()` at app.js:3344) for files in `/sounds` directory
-- **Track Sources**:
-  - `music.md`: YouTube videos, playlists, and channels
-  - `sounds.js`: Auto-generated manifest of local audio files (built by `node build.js`)
-- **Data Flow**:
-  1. `loadMusic()` (app.js:2915) loads tracks from music.md and sounds.js
-  2. `parseMusicMd()` (app.js:3010) parses markdown to extract videos, playlists, channels
-  3. YouTube playlists expand via API (`fetchPlaylistWithCache()` at app.js:2874)
-  4. `loadSounds()` (app.js:2814) imports sounds.js manifest
-  5. All tracks combined in `musicState.allTracks`
-  6. `applyFolderFilter()` (app.js:3210) filters tracks by active folder
-  7. `renderPlaylist()` (app.js:3251) displays filtered tracks
-  8. `playTrack()` (app.js:3315) handles playback for both YouTube and local audio
-- **NO THUMBNAILS for Sounds folder** (app.js:3287-3294) - thumbnails hidden to keep UI clean
-- **Styling**: `.zen-device` has NO box-shadow (styles.css:2441) per design requirements
+1. **`feTurbulence` writes noise into the ALPHA channel too**, not just RGB, so half the
+   speckle is erased by its own transparency and the grain comes out invisible. The
+   `feColorMatrix` folds the red channel across RGB and pins alpha to 1 — opaque
+   greyscale noise.
+2. **It also emits *colour*.** Straight out of the filter the "paper" picks up faint
+   yellow and olive blotches. Same `feColorMatrix` fixes it; a `type='saturate'`
+   matrix alone does not, because it leaves the alpha noise in place.
+3. **`fractalNoise` clusters tightly around 0.5**, so the untouched output is a smooth
+   grey wash. The `feComponentTransfer` stretches it (`slope` ~2.4 for the fine grain)
+   — that stretch is the difference between visible paper stock and a flat fill.
 
-### Data Format
+Because the noise is centred on mid-grey and opaque, it rides `mix-blend-mode: overlay`
+with **no net shift in the sheet's tone** — the palette and the texture are independent.
+Multiply would darken the paper as a side effect of graining it.
 
-**posts.js format:**
-```javascript
-export default [
-  {
-    "file": "My Note.md",
-    "created": "2025-01-19"
-  }
-]
-```
+⚠️ **The mottle wants to be almost invisible** (`--mottle-opacity: 0.13` light, `0.08`
+dark). At 0.5 it reads as marble, not paper. It is tonal unevenness you should only
+notice when it's gone.
 
-**Markdown frontmatter (optional):**
-```markdown
----
-title: Note Title
-date: 2025-01-19
-tags: [tag1, tag2]
----
-```
+**Typeface.** One face, everywhere: TAY Wingman (`fonts/taywingman/`), a hand-drawn
+1950s monoline caps face. woff2 + woff are what the page loads; the `.otf` is the
+desktop original, kept for reference. The woff2 is `<link rel="preload">`ed because
+*every* glyph on the page is set in it — a swap flash here reflows the whole layout,
+not one heading.
 
-**Bear-style hashtags:**
-Tags can be placed anywhere in content using `#tagname` or `#parent/child` for nested tags.
+- The page is set in **caps via `text-transform`**, not typed in caps, so screen readers
+  and copy-paste get real sentence case.
+- Letter-spacing adds a trailing gap after a line's last letter, which pushes a centred
+  line half a space right. `.name` and `.bio` each carry a negative `margin-right` equal
+  to their own tracking to take it back.
+- The font has no em dash, en dash, or middle dot — its punctuation is `!&',-./:?@’`.
+  Separators must come from that set, or they render as tofu.
 
-**music.md format:**
-```markdown
-## Music
-- [Title](https://youtube.com/watch?v=...)
-- https://youtube.com/watch?v=...
+**One screen, always.** `html, body { height: 100%; overflow: hidden }` and no scroll
+container anywhere inside, so there is nothing for a stray overflow to start scrolling.
+`.name` sizes off `vw` (`clamp(2.4rem, 8.5vw, 6.25rem)`), which is what keeps
+"LUKE VAN ZYL" on one line at every width without a `nowrap` that could overflow.
+⚠️ Don't put a `max-width` on `.lockup` — it was there once and broke the name across
+three lines and overrode the bio's hand-set `<br>`s. The measure belongs on `.bio`.
 
-## Podcasts
-- [Channel Name](https://youtube.com/@handle)
-```
+**Theme is automatic** (`prefers-color-scheme`), with no toggle. This is not the v2
+dark-lock coming back: that whole mechanism — `THEME_LOCK_DARK`, the pinned
+`data-theme="dark"` attribute, the hidden `#themeToggle` — went with `js/main.js`.
+Every colour here is a `:root` custom property redefined in one media query.
 
-Links can be in markdown format `[Title](url)` or just bare URLs. Folders are defined by `##` headings.
+## Routing
 
-**goals.md format:**
-```markdown
-# Section Name
-- [x] Completed task
-- [ ] Pending task
-- Regular list item (shows as active)
-```
+`vercel.json` has no `/` rewrite any more, so `index.html` is served statically at the
+root. `/v1` still rewrites to the v1 site. The `/work` and `/about` rewrites are gone
+with their pages. `build/dev.js` resolves `/` to `index.html` — ⚠️ it used to resolve
+to `_index.html`, and that one-line difference is the whole local-dev story.
 
-**sounds.js format (auto-generated):**
-```javascript
-export default [
-  {
-    "file": "Sound Name.m4a",
-    "created": "2025-12-27"
-  }
-]
-```
-Supported audio formats: `.m4a`, `.mp3`, `.wav`, `.ogg`, `.aac`, `.flac`, `.webm`, `.qta`
+## Backend (unchanged from `main`, and currently unused by the landing page)
 
-## Important Implementation Details
-
-**Music Player - CRITICAL Implementation Rules:**
-
-⚠️ **DO NOT modify these without careful consideration - this system has been debugged extensively**
-
-1. **Track Data Structure:**
-   - All tracks stored in `musicState.allTracks` (combined from all sources)
-   - Filtered tracks stored in `musicState.tracks` (current folder only)
-   - Track object must have: `title`, `artist`, `folder`
-   - YouTube tracks: also have `videoId`, `thumbnail`, `url`
-   - Local audio: also have `audioUrl`, `isLocalAudio: true`
-   - Channels: also have `isChannel: true` (opens in new tab, not playable)
-
-2. **Playlist API Format:**
-   - Frontend calls: `/api/youtube/playlist?id=PLAYLIST_ID` (query parameter)
-   - Returns: `{ items: [...], pageInfo: {...} }` format
-   - Each item has: `snippet` and `contentDetails` matching YouTube API v3 structure
-   - Dev server (dev.js:241-305) must handle this endpoint
-   - Production uses Vercel serverless function (api/youtube/playlist.js)
-
-3. **Playback Rules:**
-   - `playTrack(index)` (app.js:3315) is the ONLY entry point for playing tracks
-   - YouTube: calls `ensureYouTubePlayer(videoId)` which auto-plays
-   - Local audio: calls `ensureAudioPlayer(audioUrl)` with `autoplay` attribute
-   - Channels: don't call playTrack, they're `<a>` tags that open in new tab
-
-4. **Sounds Folder Special Rules:**
-   - NO thumbnails displayed (app.js:3287-3294 checks `track.folder !== 'Sounds'`)
-   - Files loaded from `sounds.js` manifest (auto-generated by build.js)
-   - Display: filename without extension as title, creation date as artist
-   - Sorted by creation date (newest first)
-
-5. **Folder Management:**
-   - Default order defined ONCE at app.js:308: `['Music', 'Podcasts', 'Ambience', 'Sounds']`
-   - `mergeFolders()` (app.js:3195) combines default folders with folders from music.md
-   - `applyFolderFilter()` (app.js:3210) filters `allTracks` to current folder
-   - `switchFolder()` (app.js:3214) changes active folder and re-renders
-
-6. **Rendering Pipeline:**
-   ```
-   loadMusic() → parseMusicMd() + loadSounds() → combine into allTracks
-      ↓
-   applyFolderFilter() → filters to musicState.tracks
-      ↓
-   renderPlaylist() → displays playlist items
-      ↓
-   User clicks track → playTrack() → ensureYouTubePlayer() OR ensureAudioPlayer()
-   ```
-
-7. **DO NOT:**
-   - Add fallback tracks for failed playlist fetches (silently skip instead)
-   - Show thumbnails for Sounds folder tracks
-   - Add box-shadow to `.zen-device` class
-   - Change folder order without updating `defaultMusicFolders`
-   - Use path-based playlist API (`/api/youtube/playlist/ID`) - must use query param format
-
-**Tag System:**
-- Hidden tags (defined in `hiddenTags` array) are excluded from sidebar
-- Currently: `status` tag is hidden
-- Nested tags use `/` separator and render as collapsible tree
-- Tag icons defined in `tagIcons` object using Lucide SVG paths
-
-**Particle Simulation:**
-- Uses vis-viva equation for orbital mechanics (background.js:86)
-- Particles stabilized with tangential velocity correction (background.js:350-359)
-- Event horizon fading and accretion disk swirl effects
-- Edge fade system prevents harsh cutoff at viewport boundaries
-
-**Window Dragging:**
-- Only draggable by titlebar, not by interactive elements
-- Position stored as `left`/`top` CSS properties, not transforms
-- Z-index managed via `state.windows.highestZIndex`
-
-**Note URL Routing:**
-- Format: `#note/slug` where slug is filename converted to URL-safe format
-- `filenameToSlug()` converts spaces and special chars to hyphens
-- `getNoteFromUrl()` parses hash and finds matching post
-- History API used for navigation without page reloads
-
-**Section pages vs. the section modal (js/main.js):**
-
-The top-bar tabs are Career / Writing / Videos / Photos. **Career is the home view** — `navModeFromState()` returns `'career'` for life mode with no section route, so its tab is active from first paint.
-
-The other three are *pages*, not modals (`SECTION_PAGES` in js/main.js). On `#writing` / `#videos` / `#photos`, `openSectionPage()` adds `body.section-mode`, which drops the home lockup + feed, shrinks the fixed hero to ~52vh with a left-aligned title + description (`#sectionHero`), and shows `#sectionBelow` as the page body. Every other section (Career, Case Studies, Labs, Portfolio, …) still opens in `#sModal`, unchanged.
-
-⚠️ The section renderers (`renderIndex`, `renderItem`, `renderPhotosGrid`, …) are **shared between the two surfaces** and paint wherever `sModalBody` points. It's a `let`, not a `const`: `openSectionPage()` repoints it at `#sectionPageBody` and `closeSectionPage()` puts it back. Don't turn it back into a `const` or capture it in a closure.
-
-Item views work the same on both surfaces: renderers signal "this view has a parent" by setting `sModalBack.style.display = 'flex'`, and a MutationObserver on the page body mirrors that onto the hero via `syncSectionHero()`. That's what makes the photo detail — which is opened by a click, not a hash — get a working back control for free.
-
-On an item the hero switches to a **detail lockup** (`body.section-detail`): back button on top, icon and blurb hidden, the item's own title at a smaller size in place of the section name, and the header narrowed to the same reading column the body uses so both share one left edge. That title is **hoisted out of the rendered body** (`.cs-body h1`) rather than threaded through every renderer, and the original gets `.is-hoisted` so it isn't shown twice.
-
-Header and body cross-fade together on the way in (`fadeHeroCopy()` + `.section-page .sm-fade`, both 280ms). ⚠️ The header fade is gated on the header being **settled** — every render syncs twice, once on its `Loading…` placeholder and again on the real content, and fading on the placeholder starts the transition under the *old* title and swaps it mid-fade. Only one animation runs at a time (the previous is cancelled), or overlapping runs can strand the header dimmed.
-
-**A single photo stays a modal.** It's the one item view that doesn't become a page: the modal is what carries the blurred-photo backdrop (`#sModalBg` + `.sm-photo`), which tints the whole panel to that photo. `openPhotoDetail()` repoints `sModalBody` back to the modal and opens it over the still-live grid, so closing it is the entire way back — no in-modal back step. `closeSModal()` checks `activeSectionPage` and hands the URL and the render target back to the page underneath instead of clearing the hash.
-
-**Video slugs:** `#videos/<title-slug>`, not the raw YouTube id. `videoSlugBase()` slugifies the title (90-char cap, truncated on a word boundary); `videoSlugMap(videos)` then assigns slugs **across the whole set** so same-title clips — Videos merges two channels, which do overlap — get `-2`, `-3` suffixes instead of colliding. The map is ordered by `videoId`, *not* display order, because the index and the item view build it independently and must agree. `renderVideoItem()` resolves a title slug first and falls back to a raw id, so `/#videos/<id>` links shared before the change still work. Since a slug's shape no longer distinguishes a clip from a markdown post in `content/videos/`, it asks the channel feed first and falls back to `renderMarkdownItem()`.
-
-**Video descriptions:** the detail view renders the description **in full** — no clamp. `api/youtube/channel-videos.js` reads it from `playlistItems.snippet`, which returns the whole thing (`search.list` is the endpoint that truncates), so there's nothing extra to fetch. It's plain text, not markdown: `.video-desc` uses `white-space: pre-wrap` to keep the author's line breaks and chapter lists, and `linkifyText()` turns bare URLs into links. ⚠️ That helper matches against the **raw** text and escapes each segment on the way out — escaping first and linkifying the result looks equivalent but breaks quoted URLs (the closing `"` has become `&quot;`, so `&quot` gets swallowed into the href).
-
-**Per-page starfield skies (js/grid.js):**
-
-`SCENES` holds one sky per view. `home` is the authored full-viewport sky (grey moon top-left, twin suns lower-right). Writing / Videos / Photos each declare `compact: true` plus their own bodies, palette, star `density` and `seed`:
-- **compact** skies size their field by **measuring the hero**, so they track its responsive height instead of assuming a fraction, and stop exactly at the seam where the page body covers them.
-- compact skies **don't do the theme half-turn swing** (`computeFrameBodies`). The section hero's copy is left-aligned and fills the left half, so a 180° swing sweeps the bodies straight through the title. They sit in the right margin, opposite the copy, in both themes.
-- Bodies are generic: `kind: 'sun'` (with `core`/`edge` colours) or `kind: 'moon'`. `launchpad: true` marks the body ships peel off — only home has one.
-
-⚠️ **js/main.js loads before js/grid.js.** On a page that comes up straight at a section route, `window.grid` doesn't exist yet, so main.js records the sky on `body[data-sky]` (`setSky()`) and grid.js reads that attribute when it initialises. Push the scene through `setSky()`, never `window.grid.scene()` directly.
-
-**Warping between skies (Career ↔ Writing ↔ Videos ↔ Photos):**
-
-`window.grid.scene()` doesn't cut from one sky to the next — the field *flies* there (`WARP` in js/grid.js, ~950ms). Every star in the outgoing sky is matched to its nearest star in the incoming one (greedy nearest-neighbour over a coarse spatial hash, each source claimable once so a star never visibly splits) and travels to it, stretching into a **streak scaled to how far it moves that frame**. The trip is eased with smootherstep, so the streaks bloom out at the midpoint and retract on their own — the hyperspace look falls out of the easing rather than being a separate sequenced state.
-
-- **Unmatched stars never pop.** The section skies are thinner and half as tall as home, so hundreds are always left over: they streak *outward past the viewer* from the warp focus and fade, while the incoming sky's extra stars stream in along the same axis. Both directions point away from the focus, so the mismatch reads as flying forward instead of a cross-fade.
-- **Planets travel too.** Bodies are paired biggest-to-biggest and interpolate position, radius and colour, so home's twin suns *become* Videos' lamp pair. A pair that changes `kind` (moon ↔ sun) cross-fades the two renderings over one shared travelling position — that's what `parts` on a frame-body entry is for, and `wmax` shrinks the star-clearing disc of a body that's only partly there.
-- Three pieces of state make this work: `makeCells()` / `makeBodies()` build a scene's field **without installing it**, so the outgoing bundle stays alive alongside the incoming one; `snapshotCells()` freezes the field as it currently looks — *including mid-warp*, so clicking a third tab while the second is still flying picks up from where the stars actually are; and `drawList` is what the draw loop iterates (`cells`, plus the outgoing sky's partnerless stars while a warp runs).
-- The content hole (`cl.hidden`) **ramps** during a warp instead of switching, so a star that ends up under the incoming page's copy fades out over the jump rather than vanishing the instant the new hole rects are measured.
-- A warp forces the loop off its 30fps ambient cap (`fullRate`) — at 30fps the streaks strobe instead of trailing. Reduced-motion skips the warp entirely and swaps instantly.
-
-Tune it live from the console: `grid.warp.dur = 1400`, `grid.warp.streak`, or `grid.warp.enabled = false` to compare against a hard cut.
-
-## Development Workflow
-
-1. Add new markdown files to `/posts` folder
-2. Run `node dev.js` to auto-rebuild `posts.js` on changes
-3. Use Bear-style hashtags for organization: `#business/ideas`, `#writing`, etc.
-4. First H1 in markdown becomes the note title (if no frontmatter)
-5. Hashtags are automatically stripped from displayed content
+The chat API, the vault index, the KB-gap pipeline, and the Instagram photo sync all
+still run — they just have no front end on this branch. Left intact so the branch can
+grow a UI back without re-deriving any of it.
 
 ## Chat Assistant (api/chat.js)
 
@@ -429,6 +228,6 @@ The detail row is `[ ‹ ][ photo ][ EXIF ][ › ]` — the chevrons are laid-ou
 
 ## Content Sources
 
-- Weather: Open-Meteo API (free, no key required) for Atlanta, GA
-- Music metadata: YouTube oEmbed API
-- Background image: `images/bg.jpg` (customizable via CSS variable `--bg-image`)
+Weather (Open-Meteo), YouTube oEmbed music metadata, and the v2 background image were
+all consumed by the deleted front end. They are documented on `main`; nothing on this
+branch reads them.

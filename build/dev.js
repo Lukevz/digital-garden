@@ -1178,7 +1178,7 @@ const server = createServer(async (req, res) => {
 
   const reqUrl = new URL(req.url, `http://${req.headers.host}`);
   const decodedPath = decodeURIComponent(reqUrl.pathname);
-  const pathRel = decodedPath === '/' || decodedPath === '' ? '_index.html' : decodedPath.replace(/^\//, '');
+  const pathRel = decodedPath === '/' || decodedPath === '' ? 'index.html' : decodedPath.replace(/^\//, '');
   let filePath = join(rootDir, pathRel);
   // Serve index.html for directory requests; try path.html for extensionless routes
   if (filePath.endsWith('/') || !extname(filePath)) {

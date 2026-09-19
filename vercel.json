@@ -2,9 +2,6 @@
   "buildCommand": "node build/build.js",
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/", "destination": "/api/home" },
-    { "source": "/work", "destination": "/work.html" },
-    { "source": "/about", "destination": "/about.html" },
     { "source": "/v1", "destination": "/v1/index.html" },
     { "source": "/v1/", "destination": "/v1/index.html" }
   ],
