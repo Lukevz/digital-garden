@@ -165,7 +165,15 @@ is lying on, and the only thing reading as a fold is the drop shadow.
 
 ⚠️ **Those two are declared with the curl, below the theme block.** A media query
 adds no specificity, so a `prefers-color-scheme` override written *above* them
-never wins — it has to come after.
+never wins — it has to come after. `--curl-shadow` lives with them, and is the
+**whole `filter` value**, not a colour: it is three `drop-shadow()` stops (a
+tight contact edge for the sheet's thickness, a mid falloff, a wide dispersed
+one for the air the lifted corner holds open), and all three alphas have to move
+together between themes — plain CSS has no arithmetic on a colour's alpha.
+
+⚠️ **The dark shadow can't just scale up to compensate.** Its widest layer
+reaches up and left across the social row, and past roughly 0.2 alpha it stops
+reading as depth and starts smothering the dimmest type on the page.
 
 ⚠️ **A small ear (`--curl-rest`) is always showing.** A pure hover-reveal with no
 resting affordance is a corner nobody finds.

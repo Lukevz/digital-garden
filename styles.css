@@ -427,18 +427,36 @@ body {
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --curl-rest: 26px;
-  --curl-open: clamp(150px, 21vw, 262px);
+  --curl-rest: 44px;
+  --curl-open: clamp(160px, 22vw, 276px);
   /* The sheet's reverse: bright along the fold where it tilts into the light,
      falling away to the tip that is lying back down on the page. */
   --curl-fold: #f7f5ef;
   --curl-tip: #d6d1c7;
+  /* Three stops: a tight contact edge for the sheet's own thickness, a mid
+     falloff, and a wide dispersed one for the air the lifted corner is
+     holding open. The whole filter is the token, not a colour — the three
+     alphas have to move together between themes, and there is no arithmetic
+     on a colour's alpha in plain CSS. */
+  --curl-shadow:
+    drop-shadow(-1px -1px 1.5px rgba(0, 0, 0, 0.17))
+    drop-shadow(-5px -5px 16px rgba(0, 0, 0, 0.11))
+    drop-shadow(-16px -16px 46px rgba(0, 0, 0, 0.09));
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --curl-fold: #3d3931;
     --curl-tip: #1f1e1b;
+    /* A shadow has far less room to read on a dark sheet, so the same
+       geometry carries more alpha. ⚠️ Not unboundedly more: the widest layer
+       reaches up and left across the social row, and past about 0.2 it stops
+       being depth and starts being a smudge over links that are already the
+       dimmest type on the page. */
+    --curl-shadow:
+      drop-shadow(-1px -1px 1.5px rgba(0, 0, 0, 0.44))
+      drop-shadow(-6px -6px 18px rgba(0, 0, 0, 0.26))
+      drop-shadow(-18px -18px 50px rgba(0, 0, 0, 0.18));
   }
 }
 
@@ -496,10 +514,7 @@ body {
     var(--curl-fold) 0%,
     var(--curl-fold) 8%,
     var(--curl-tip) 100%);
-  /* Two shadows: a tight one that reads as the sheet's own thickness, and a
-     wide soft one for the gap the lifted corner is holding open. */
-  filter: drop-shadow(-1px -1px 1px rgba(0, 0, 0, 0.20))
-          drop-shadow(-5px -5px 14px rgba(0, 0, 0, 0.16));
+  filter: var(--curl-shadow);
 }
 
 /* The reverse of the sheet is the same stock, so it carries the same grain. */
