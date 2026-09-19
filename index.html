@@ -33,7 +33,7 @@
     <!-- Draughtsman's layer: rulers, registration marks and dimension
          annotations, drawn faintly over the paper like notations in a codex.
          Decorative only, hence aria-hidden and pointer-events: none. -->
-    <div class="spec spec--a" id="spec" aria-hidden="true">
+    <div class="spec" aria-hidden="true">
       <span class="spec-ruler spec-ruler--t"></span>
       <span class="spec-ruler spec-ruler--r"></span>
       <span class="spec-ruler spec-ruler--b"></span>
@@ -46,16 +46,10 @@
       <span class="spec-mark spec-mark--bl"></span>
       <span class="spec-mark spec-mark--br"></span>
 
-      <span class="spec-dim spec-dim--w"><i></i></span>
+      <span class="spec-dim spec-dim--w"></span>
       <span class="spec-label spec-label--w">20</span>
-      <span class="spec-dim spec-dim--h"><i></i></span>
-      <span class="spec-label spec-label--h">20</span>
-
-      <span class="spec-axis spec-axis--v"></span>
-      <span class="spec-axis spec-axis--h"></span>
-
-      <span class="spec-badge spec-badge--tl">2</span>
-      <span class="spec-badge spec-badge--tr">&minus;3</span>
+      <span class="spec-dim spec-dim--h"></span>
+      <span class="spec-label spec-label--h">24</span>
     </div>
 
     <main class="lockup">
@@ -74,6 +68,23 @@
       <a href="https://www.instagram.com/lukevanzyl/" rel="me noopener">Instagram</a>
       <a href="https://github.com/Lukevz" rel="me noopener">GitHub</a>
     </footer>
+
+    <!-- Hover the right edge and the bottom-right corner lifts, the way you
+         lift a page to see what's under it. The dog-ear is two triangles:
+         .curl-hole is the gap the paper left (and holds the nav), .curl-flap
+         is the folded-over corner lying on top of the page. A small ear is
+         always showing, so there is something to notice before you hover. -->
+    <div class="curl-zone" aria-hidden="true"></div>
+    <div class="curl">
+      <div class="curl-hole">
+        <nav class="curl-nav" aria-label="Sections">
+          <a href="#writing">Writing</a>
+          <a href="#photos">Photos</a>
+          <a href="#more">More</a>
+        </nav>
+      </div>
+      <span class="curl-flap" aria-hidden="true"></span>
+    </div>
 
   </div>
 

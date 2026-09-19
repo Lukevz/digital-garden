@@ -56,7 +56,7 @@
     --paper-mid: #2a2823;
     --paper-lo: #232220;
     --ink: #ece7dd;
-    --ink-soft: rgba(236, 231, 221, 0.56);
+    --ink-soft: rgba(236, 231, 221, 0.72);
     --rule: rgba(236, 231, 221, 0.22);
 
     --grain-blend: overlay;
@@ -272,6 +272,7 @@ body {
   :root { --spec-ink: rgba(236, 231, 221, 0.30); }
 }
 
+
 .spec {
   position: absolute;
   inset: 0;
@@ -284,8 +285,7 @@ body {
   line-height: 1;
 }
 
-/* Every part is opt-in per variant. */
-.spec > * { display: none; position: absolute; }
+.spec > * { position: absolute; }
 
 /* ── The frame line ────────────────────────────────────────────────────────
    One continuous rounded rect concentric with the sheet. The rulers hang
@@ -362,7 +362,7 @@ body {
 }
 
 .spec-dim--w {
-  top: calc(var(--spec-inset) + 26px);
+  top: calc(var(--spec-inset) + 32px);
   left: 32%;
   right: 32%;
   height: 1px;
@@ -371,13 +371,13 @@ body {
 .spec-dim--w::before { left: -4px; top: 0; transform: rotate(45deg); }
 .spec-dim--w::after  { right: -4px; top: 0; transform: rotate(45deg); }
 .spec-label--w {
-  top: calc(var(--spec-inset) + 12px);
+  top: calc(var(--spec-inset) + 18px);
   left: 50%;
   transform: translateX(-50%);
 }
 
 .spec-dim--h {
-  left: calc(var(--spec-inset) + 26px);
+  left: calc(var(--spec-inset) + 32px);
   top: 34%;
   bottom: 34%;
   width: 1px;
@@ -386,57 +386,198 @@ body {
 .spec-dim--h::before { top: -4px; left: -4px; transform: rotate(45deg); }
 .spec-dim--h::after  { bottom: -4px; left: -4px; transform: rotate(45deg); }
 .spec-label--h {
-  left: calc(var(--spec-inset) + 34px);
+  left: calc(var(--spec-inset) + 40px);
   top: 50%;
   transform: translateY(-50%);
 }
 
-/* ── Construction axes ─────────────────────────────────────────────────────
-   Dashed and very faint: these cross the lockup, and a solid hairline
-   through the middle of the name reads as a defect rather than a guide. */
-.spec-axis { opacity: 0.55; }
-.spec-axis--v {
-  top: var(--spec-corner); bottom: var(--spec-corner); left: 50%; width: 1px;
-  background-image: repeating-linear-gradient(to bottom, currentColor 0 3px, transparent 3px 9px);
-}
-.spec-axis--h {
-  left: var(--spec-corner); right: var(--spec-corner); top: 50%; height: 1px;
-  background-image: repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 9px);
-}
-
-/* ── Inspector badges ──────────────────────────────────────────────────── */
-.spec-badge {
-  padding: 3px 5px 2px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  font-size: 8px;
-  letter-spacing: 0.1em;
-}
-.spec-badge--tl { top: calc(var(--spec-inset) + 5px); left: calc(var(--spec-inset) + 30px); }
-.spec-badge--tr { top: calc(var(--spec-inset) + 30px); right: calc(var(--spec-inset) + 5px); }
-
-/* ── Variants ──────────────────────────────────────────────────────────── */
-/* A — draughtsman's rulers: instrument-like, all four edges measured. */
-.spec--a .spec-frame,
-.spec--a .spec-ruler,
-.spec--a .spec-mark { display: block; }
-
-/* B — codex margin notes: sparse, dimensioned, with construction lines. */
-.spec--b .spec-dim,
-.spec--b .spec-label--w,
-.spec--b .spec-label--h,
-.spec--b .spec-axis,
-.spec--b .spec-mark,
-.spec--b .spec-ruler--t,
-.spec--b .spec-ruler--l { display: block; }
-
-/* C — inspection overlay: the measured content box from the reference. */
-.spec--c .spec-frame,
-.spec--c .spec-ruler,
-.spec--c .spec-mark,
-.spec--c .spec-badge { display: block; }
-
 /* The marks are margin furniture; there is no margin left on a phone. */
 @media (max-width: 640px) {
   .spec { display: none; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   The dog-ear.
+
+   Hovering the right edge lifts the sheet's bottom-right corner and the
+   section nav is underneath it — the page is the thing you pick up, not a
+   surface a menu slides over.
+
+   Two triangles, both sized to the same square at the corner. The fold runs
+   along that square's diagonal:
+
+       (0,0)────────(s,0)          .curl-flap  = {(0,0) (s,0) (0,s)}
+         │  flap  ╱   │            .curl-hole  = {(0,s) (s,0) (s,s)}
+         │      ╱     │            the fold    = the shared hypotenuse
+       (0,s)────────(s,s)          the sheet's corner is (s,s)
+
+   The corner that folds away is the lower-right triangle; reflected across
+   the fold it lands on the upper-left one, which is why the flap points back
+   into the page. The hole is what the paper stopped covering, so it paints
+   the frame colour — the same surface the sheet has been sitting on all
+   along — and the nav lives inside it, clipped, so it is genuinely revealed
+   rather than faded in over the top.
+
+   ⚠️ The wrapper cannot carry the clip. A clip-path on `.curl` applies to
+   its children, so clipping it to the hole's triangle erases the flap, which
+   occupies the opposite half of the same box. Each triangle clips itself.
+
+   ⚠️ A small ear (--curl-rest) is always showing. Pure hover-reveal of
+   something with no resting affordance is a corner nobody finds.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --curl-rest: 26px;
+  --curl-open: clamp(150px, 21vw, 262px);
+  /* The sheet's reverse: bright along the fold where it tilts into the light,
+     falling away to the tip that is lying back down on the page. */
+  --curl-fold: #f7f5ef;
+  --curl-tip: #d6d1c7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --curl-fold: #3d3931;
+    --curl-tip: #1f1e1b;
+  }
+}
+
+/* The trigger.
+   ⚠️ It stops short of the bottom. The social row is centred, so as the
+   viewport narrows its right end slides under a zone pinned to `bottom: 0`
+   — and because the zone is invisible and sits above the row, the only
+   symptom is GitHub quietly not being clickable. The corner region it gives
+   up is covered by `.curl:hover` anyway, so nothing is lost. */
+.curl-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 104px;
+  width: calc(var(--curl-open) + 36px);
+  z-index: 2;
+}
+
+.curl {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--curl-rest);
+  height: var(--curl-rest);
+  z-index: 3;
+  transition: width 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+              height 460ms cubic-bezier(0.22, 0.75, 0.18, 1);
+}
+
+.curl-hole,
+.curl-flap {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── The gap the corner left ───────────────────────────────────────────── */
+.curl-hole {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  background: var(--frame);
+}
+
+/* Contact shadow along the fold, where the sheet lifts off the surface. */
+.curl-hole::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(315deg, transparent 54%, rgba(0, 0, 0, 0.26) 100%);
+}
+
+/* ── The folded-over corner ────────────────────────────────────────────── */
+.curl-flap {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  /* Brightest at the fold, falling off toward the tip lying on the page. */
+  background: linear-gradient(315deg,
+    var(--curl-fold) 0%,
+    var(--curl-fold) 8%,
+    var(--curl-tip) 100%);
+  /* Two shadows: a tight one that reads as the sheet's own thickness, and a
+     wide soft one for the gap the lifted corner is holding open. */
+  filter: drop-shadow(-1px -1px 1px rgba(0, 0, 0, 0.20))
+          drop-shadow(-5px -5px 14px rgba(0, 0, 0, 0.16));
+}
+
+/* The reverse of the sheet is the same stock, so it carries the same grain. */
+.curl-flap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise-fine);
+  background-size: 180px 180px;
+  mix-blend-mode: var(--grain-blend);
+  opacity: var(--grain-opacity);
+}
+
+/* ── The nav under the corner ──────────────────────────────────────────── */
+.curl-nav {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  font-size: clamp(0.62rem, 1.05vw, 0.78rem);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  /* Held back until the fold is most of the way open — copy appearing while
+     the corner is still a stub reads as text printed on the paper. */
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.curl-nav a {
+  color: var(--ink);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 180ms ease;
+}
+.curl-nav a:hover,
+.curl-nav a:focus-visible {
+  border-bottom-color: var(--rule);
+  outline: none;
+}
+
+/* ── Open ──────────────────────────────────────────────────────────────────
+   :focus-within is not a nicety here — the links are clipped out of sight
+   when the ear is at rest, so tabbing to one has to be what opens it. */
+.curl-zone:hover ~ .curl,
+.curl:hover,
+.curl:focus-within {
+  width: var(--curl-open);
+  height: var(--curl-open);
+}
+
+.curl-zone:hover ~ .curl .curl-nav,
+.curl:hover .curl-nav,
+.curl:focus-within .curl-nav {
+  opacity: 1;
+  transition-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curl { transition: none; }
+  .curl-nav { transition: none; }
+}
+
+/* ── No hover to give ──────────────────────────────────────────────────────
+   A touch device never fires the hover, so the corner sits open and the nav
+   is simply there. */
+@media (hover: none), (max-width: 640px) {
+  .curl-zone { display: none; }
+  .curl {
+    width: var(--curl-open);
+    height: var(--curl-open);
+  }
+  .curl-nav { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  :root { --curl-open: 150px; }
 }

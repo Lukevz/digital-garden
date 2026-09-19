@@ -126,11 +126,65 @@ first. A concentric arc inside a 24px corner has ~9px of curve to show, which is
 smaller than the numeral labelling it; the only way to make it legible is to
 draw it non-concentric, at which point it annotates nothing.
 
-Three variants are in the stylesheet, selected by the class on `#spec`:
-`spec--a` (rulers on all four edges), `spec--b` (sparse codex notes with
-dimension lines and dashed construction axes), `spec--c` (inspection overlay
-with corner badges). The whole layer is `display: none` under 640px — the marks
-are margin furniture and a phone has no margin.
+The layer settles on rulers all round plus the two dimension notes; the
+construction axes and the corner badges that were tried alongside them are gone
+(the axes ran a hairline through the middle of the name). The whole layer is
+`display: none` under 640px — the marks are margin furniture and a phone has no
+margin.
+
+## The dog-ear (`.curl`)
+
+Hovering the right edge lifts the sheet's bottom-right corner, and the section
+nav is underneath it. The page is the thing you pick up, not a surface a menu
+slides over.
+
+Two triangles sized to the same square at the corner, with the fold along its
+diagonal:
+
+```
+  (0,0)────────(s,0)      .curl-flap = {(0,0) (s,0) (0,s)}  the folded corner
+    │  flap  ╱   │        .curl-hole = {(0,s) (s,0) (s,s)}  what it stopped covering
+    │      ╱     │        the fold   = the shared hypotenuse
+  (0,s)────────(s,s)      the sheet's own corner is (s,s)
+```
+
+The corner that folds away is the lower-right triangle; reflected across the
+fold it lands on the upper-left one, which is why the flap points back into the
+page. The hole paints `--frame` — the same surface the sheet has been sitting on
+all along — and the nav lives inside it, clipped, so it is genuinely revealed
+rather than faded in over the top. Opening is a `width`/`height` transition on
+the wrapper; both triangles are `inset: 0` and follow.
+
+⚠️ **The wrapper cannot carry the clip.** A `clip-path` on `.curl` applies to its
+children, so clipping it to the hole's triangle erases the flap, which occupies
+the opposite half of the same box. Each triangle clips itself.
+
+⚠️ **The flap needs its own tones** (`--curl-fold` / `--curl-tip`), not the
+sheet's. Drawn in `--paper-*` the folded corner is the same value as the page it
+is lying on, and the only thing reading as a fold is the drop shadow.
+
+⚠️ **Those two are declared with the curl, below the theme block.** A media query
+adds no specificity, so a `prefers-color-scheme` override written *above* them
+never wins — it has to come after.
+
+⚠️ **A small ear (`--curl-rest`) is always showing.** A pure hover-reveal with no
+resting affordance is a corner nobody finds.
+
+⚠️ **`.curl-zone` stops 104px short of the bottom.** The social row is centred,
+so as the viewport narrows its right end slides under a zone pinned to
+`bottom: 0` — and because the zone is invisible and sits above the row, the only
+symptom is GitHub quietly not being clickable. The corner it gives up is covered
+by `.curl:hover` anyway.
+
+⚠️ **`:focus-within` is not a nicety.** The nav links are clipped out of sight at
+rest but stay in the tab order, so tabbing to one has to be what opens the fold.
+`@media (hover: none)` parks the corner open, since a touch device never fires
+the hover.
+
+**The nav's destinations are placeholders** (`#writing`, `#photos`, `#more`) —
+those pages don't exist on this branch. `More` is a link, not a menu: a real
+overflow menu needs JS or a `<details>`, and the page is deliberately
+script-free.
 
 ## Routing
 
