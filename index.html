@@ -30,6 +30,34 @@
        inside it; the paper grain is painted by its two pseudo-elements. -->
   <div class="sheet">
 
+    <!-- Draughtsman's layer: rulers, registration marks and dimension
+         annotations, drawn faintly over the paper like notations in a codex.
+         Decorative only, hence aria-hidden and pointer-events: none. -->
+    <div class="spec spec--a" id="spec" aria-hidden="true">
+      <span class="spec-ruler spec-ruler--t"></span>
+      <span class="spec-ruler spec-ruler--r"></span>
+      <span class="spec-ruler spec-ruler--b"></span>
+      <span class="spec-ruler spec-ruler--l"></span>
+
+      <span class="spec-frame"></span>
+
+      <span class="spec-mark spec-mark--tl"></span>
+      <span class="spec-mark spec-mark--tr"></span>
+      <span class="spec-mark spec-mark--bl"></span>
+      <span class="spec-mark spec-mark--br"></span>
+
+      <span class="spec-dim spec-dim--w"><i></i></span>
+      <span class="spec-label spec-label--w">20</span>
+      <span class="spec-dim spec-dim--h"><i></i></span>
+      <span class="spec-label spec-label--h">20</span>
+
+      <span class="spec-axis spec-axis--v"></span>
+      <span class="spec-axis spec-axis--h"></span>
+
+      <span class="spec-badge spec-badge--tl">2</span>
+      <span class="spec-badge spec-badge--tr">&minus;3</span>
+    </div>
+
     <main class="lockup">
       <h1 class="name">Luke van Zyl</h1>
       <p class="bio">

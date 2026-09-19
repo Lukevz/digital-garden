@@ -102,6 +102,36 @@ dark-lock coming back: that whole mechanism — `THEME_LOCK_DARK`, the pinned
 `data-theme="dark"` attribute, the hidden `#themeToggle` — went with `js/main.js`.
 Every colour here is a `:root` custom property redefined in one media query.
 
+## The draughtsman's layer
+
+`.spec` is a decorative overlay of rulers, registration crosses and dimension
+notes, drawn over the paper the way a codex page carries its own measurements
+around the figure. It is `aria-hidden` with `pointer-events: none`, and nothing
+on it carries information the page needs — the numerals are notation, not live
+values (there is no JS to compute any).
+
+It is built from positioned boxes and repeating gradients, not an inline SVG:
+the sheet is fully fluid, and an SVG with a fixed viewBox would have to stretch,
+which puts the ticks on a different pitch top vs. side and tapers the hairlines.
+
+⚠️ **Corners are concentric: `inner = outer − gap`.** `--spec-radius` derives
+the frame line's corner from `--sheet-radius` rather than restating it, so the
+two curves stay parallel instead of drifting apart at the diagonal — the one
+place the eye checks — and so the relationship survives a retune of the sheet.
+The `max(0px, …)` is load-bearing: once the gap exceeds the outer radius the
+correct inner corner is **square**, not a clamped curve.
+
+That rule is also why there is no radius-annotation arc, though one was drawn
+first. A concentric arc inside a 24px corner has ~9px of curve to show, which is
+smaller than the numeral labelling it; the only way to make it legible is to
+draw it non-concentric, at which point it annotates nothing.
+
+Three variants are in the stylesheet, selected by the class on `#spec`:
+`spec--a` (rulers on all four edges), `spec--b` (sparse codex notes with
+dimension lines and dashed construction axes), `spec--c` (inspection overlay
+with corner badges). The whole layer is `display: none` under 640px — the marks
+are margin furniture and a phone has no margin.
+
 ## Routing
 
 `vercel.json` has no `/` rewrite any more, so `index.html` is served statically at the

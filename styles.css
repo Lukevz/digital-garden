@@ -25,7 +25,7 @@
 :root {
   /* The two dials the brief is written in. */
   --frame-w: 20px;
-  --sheet-radius: 36px;
+  --sheet-radius: 24px;
 
   /* Light: white frame, warm grey paper, near-black ink. */
   --frame: #ffffff;
@@ -220,7 +220,7 @@ body {
 @media (max-width: 640px) {
   :root {
     --frame-w: 12px;
-    --sheet-radius: 24px;
+    --sheet-radius: 16px;
   }
   /* The bio's hand-set line breaks are for the wide layout; let it wrap. */
   .bio br { display: none; }
@@ -232,4 +232,211 @@ body {
 @media (max-height: 460px) {
   .bio { margin-top: clamp(14px, 3vh, 24px); line-height: 1.85; }
   .sheet { padding: clamp(18px, 4vw, 40px); }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   The draughtsman's layer.
+
+   Rulers, registration crosses and dimension notes laid faintly over the
+   paper, the way a codex page carries its own measurements around the
+   figure. Every mark is decorative: the layer is aria-hidden and takes no
+   pointer events, and nothing on it carries information the page needs.
+
+   Built from positioned boxes and repeating gradients rather than an inline
+   SVG, because the sheet is fully fluid — an SVG with a fixed viewBox would
+   have to stretch, which would put the ticks on a different pitch top vs.
+   side and taper the hairlines.
+
+   ⚠️ CORNERS ARE CONCENTRIC. Any box nested inside another takes
+   `inner = outer − gap`, so the two curves stay parallel instead of drifting
+   apart at the diagonal. --spec-radius derives that from --sheet-radius
+   rather than restating it, which is what keeps the rule true when the sheet
+   radius is retuned. The `max(0px, …)` matters: once the gap exceeds the
+   outer radius the correct inner corner is square, not a clamped curve.
+
+   That rule is also why there is no radius-annotation arc here. A concentric
+   arc inside a 24px corner has about 9px of curve to show, which is smaller
+   than the numeral labelling it — it would have to be drawn non-concentric
+   to be legible, at which point it annotates nothing.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --spec-ink: rgba(21, 20, 15, 0.34);
+  --spec-inset: 15px;     /* the frame line's gap from the sheet's edge */
+  --spec-radius: max(0px, calc(var(--sheet-radius) - var(--spec-inset)));
+  --spec-corner: 46px;    /* where a ruler's ticks start, clearing the curve */
+  --spec-tick: 8px;       /* minor tick pitch; majors every 5th */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { --spec-ink: rgba(236, 231, 221, 0.30); }
+}
+
+.spec {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  color: var(--spec-ink);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Every part is opt-in per variant. */
+.spec > * { display: none; position: absolute; }
+
+/* ── The frame line ────────────────────────────────────────────────────────
+   One continuous rounded rect concentric with the sheet. The rulers hang
+   their ticks off it rather than each drawing its own baseline, so the line
+   stays unbroken through the corners. */
+.spec-frame {
+  inset: var(--spec-inset);
+  border: 1px solid currentColor;
+  border-radius: var(--spec-radius);
+}
+
+/* ── Edge rulers ───────────────────────────────────────────────────────── */
+.spec-ruler { background-repeat: no-repeat; }
+
+.spec-ruler--t,
+.spec-ruler--b {
+  left: var(--spec-corner);
+  right: var(--spec-corner);
+  height: 9px;
+  /* Two pitches on one element: the taller majors paint over the minors. */
+  background-image:
+    repeating-linear-gradient(to right, currentColor 0 1px, transparent 1px calc(var(--spec-tick) * 5)),
+    repeating-linear-gradient(to right, currentColor 0 1px, transparent 1px var(--spec-tick));
+  background-size: 100% 9px, 100% 4px;
+}
+.spec-ruler--t {
+  top: calc(var(--spec-inset) + 1px);
+  background-position: left top, left top;
+}
+.spec-ruler--b {
+  bottom: calc(var(--spec-inset) + 1px);
+  background-position: left bottom, left bottom;
+}
+
+.spec-ruler--l,
+.spec-ruler--r {
+  top: var(--spec-corner);
+  bottom: var(--spec-corner);
+  width: 9px;
+  background-image:
+    repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px calc(var(--spec-tick) * 5)),
+    repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px var(--spec-tick));
+  background-size: 9px 100%, 4px 100%;
+}
+.spec-ruler--l {
+  left: calc(var(--spec-inset) + 1px);
+  background-position: left top, left top;
+}
+.spec-ruler--r {
+  right: calc(var(--spec-inset) + 1px);
+  background-position: right top, right top;
+}
+
+/* ── Registration crosses ──────────────────────────────────────────────── */
+.spec-mark { width: 13px; height: 13px; }
+.spec-mark::before,
+.spec-mark::after { content: ''; position: absolute; background: currentColor; }
+.spec-mark::before { left: 0; right: 0; top: 50%; height: 1px; }
+.spec-mark::after  { top: 0; bottom: 0; left: 50%; width: 1px; }
+
+.spec-mark--tl { top: calc(var(--spec-inset) + 13px); left: calc(var(--spec-inset) + 13px); }
+.spec-mark--tr { top: calc(var(--spec-inset) + 13px); right: calc(var(--spec-inset) + 13px); }
+.spec-mark--bl { bottom: calc(var(--spec-inset) + 13px); left: calc(var(--spec-inset) + 13px); }
+.spec-mark--br { bottom: calc(var(--spec-inset) + 13px); right: calc(var(--spec-inset) + 13px); }
+
+/* ── Dimension lines ───────────────────────────────────────────────────── */
+/* Architect's slash marks rather than arrowheads — the draughtsman's tick. */
+.spec-dim::before,
+.spec-dim::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  border-top: 1px solid currentColor;
+}
+
+.spec-dim--w {
+  top: calc(var(--spec-inset) + 26px);
+  left: 32%;
+  right: 32%;
+  height: 1px;
+  background: currentColor;
+}
+.spec-dim--w::before { left: -4px; top: 0; transform: rotate(45deg); }
+.spec-dim--w::after  { right: -4px; top: 0; transform: rotate(45deg); }
+.spec-label--w {
+  top: calc(var(--spec-inset) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.spec-dim--h {
+  left: calc(var(--spec-inset) + 26px);
+  top: 34%;
+  bottom: 34%;
+  width: 1px;
+  background: currentColor;
+}
+.spec-dim--h::before { top: -4px; left: -4px; transform: rotate(45deg); }
+.spec-dim--h::after  { bottom: -4px; left: -4px; transform: rotate(45deg); }
+.spec-label--h {
+  left: calc(var(--spec-inset) + 34px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ── Construction axes ─────────────────────────────────────────────────────
+   Dashed and very faint: these cross the lockup, and a solid hairline
+   through the middle of the name reads as a defect rather than a guide. */
+.spec-axis { opacity: 0.55; }
+.spec-axis--v {
+  top: var(--spec-corner); bottom: var(--spec-corner); left: 50%; width: 1px;
+  background-image: repeating-linear-gradient(to bottom, currentColor 0 3px, transparent 3px 9px);
+}
+.spec-axis--h {
+  left: var(--spec-corner); right: var(--spec-corner); top: 50%; height: 1px;
+  background-image: repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 9px);
+}
+
+/* ── Inspector badges ──────────────────────────────────────────────────── */
+.spec-badge {
+  padding: 3px 5px 2px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+.spec-badge--tl { top: calc(var(--spec-inset) + 5px); left: calc(var(--spec-inset) + 30px); }
+.spec-badge--tr { top: calc(var(--spec-inset) + 30px); right: calc(var(--spec-inset) + 5px); }
+
+/* ── Variants ──────────────────────────────────────────────────────────── */
+/* A — draughtsman's rulers: instrument-like, all four edges measured. */
+.spec--a .spec-frame,
+.spec--a .spec-ruler,
+.spec--a .spec-mark { display: block; }
+
+/* B — codex margin notes: sparse, dimensioned, with construction lines. */
+.spec--b .spec-dim,
+.spec--b .spec-label--w,
+.spec--b .spec-label--h,
+.spec--b .spec-axis,
+.spec--b .spec-mark,
+.spec--b .spec-ruler--t,
+.spec--b .spec-ruler--l { display: block; }
+
+/* C — inspection overlay: the measured content box from the reference. */
+.spec--c .spec-frame,
+.spec--c .spec-ruler,
+.spec--c .spec-mark,
+.spec--c .spec-badge { display: block; }
+
+/* The marks are margin furniture; there is no margin left on a phone. */
+@media (max-width: 640px) {
+  .spec { display: none; }
 }
