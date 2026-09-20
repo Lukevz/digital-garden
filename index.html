@@ -53,8 +53,21 @@
        intro is: it only ever adds a section, and never touches the sheet. -->
   <link rel="stylesheet" href="/photos.css">
   <link rel="stylesheet" href="/more.css">
+  <!-- The career page: timeline and principles, on the folio surface. -->
+  <link rel="stylesheet" href="/career.css">
 </head>
 <body>
+  <!-- Refraction for the glass fade under a post (styles.css, `.page::after`).
+       A slow turbulence pushes the blurred text behind the pane sideways a
+       few pixels, so it reads as seen through liquid rather than through a
+       frosted plain. Chromium only; elsewhere the pane keeps its blur and
+       sheen. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="glass" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.028" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
 
   <!-- The sheet: inset by --frame on every side so the page's own background
        shows through as a solid, untextured border. Everything readable lives
@@ -215,19 +228,10 @@
         <span>Back</span>
       </a>
 
-      <!-- Collapses the index so the piece is the only thing left on the
-           sheet. Hidden until a section opens; js/paper.js owns its state. -->
-      <button class="expand" id="expand" type="button" aria-pressed="false" hidden>
-        <svg class="expand-icon expand-icon--out" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M6.4 1.9H1.9v4.5M9.6 14.1h4.5V9.6"/>
-          <path d="M1.9 1.9l4.8 4.8M14.1 14.1L9.3 9.3"/>
-        </svg>
-        <svg class="expand-icon expand-icon--in" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M1.9 6.4h4.5V1.9M14.1 9.6H9.6v4.5"/>
-          <path d="M1.9 1.9l4.5 4.5M14.1 14.1L9.6 9.6"/>
-        </svg>
-        <span class="sr-only" id="expandLabel">Hide the index</span>
-      </button>
+      <!-- The accounts, right of the masthead, in a section. Empty in the
+           markup: js/paper.js copies the marks in from `.curl-links` so the
+           list lives in one place. Hidden at home, where the dog-ear has them. -->
+      <div class="mast-links" id="mastLinks"></div>
     </div>
 
     <!-- The reading spread: the index of titles on the left, the open piece on
@@ -238,12 +242,27 @@
         <ol class="index-list" id="indexList"></ol>
       </nav>
       <article class="page">
+        <!-- Hides / shows the index. Top-left of the card, and a sidebar mark
+             rather than a corner-arrows one: it is the sidebar it closes.
+             Hidden until a section opens; js/paper.js owns its state. -->
+        <button class="expand" id="expand" type="button" aria-pressed="false" hidden>
+          <svg class="expand-icon expand-icon--out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M9 4v16"/><path d="M15 10l-2 2l2 2"/>
+          </svg>
+          <svg class="expand-icon expand-icon--in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M9 4v16"/><path d="M14 10l2 2l-2 2"/>
+          </svg>
+          <span class="sr-only" id="expandLabel">Hide the index</span>
+        </button>
         <div class="page-scroll" id="pageScroll">
           <header class="page-head">
             <h2 class="page-title" id="pageTitle"></h2>
             <p class="page-meta" id="pageMeta"></p>
           </header>
           <div class="prose" id="prose"></div>
+          <!-- Two more posts, under a rule. Filled by showPost() once the piece
+               has loaded; hidden until then. -->
+          <aside class="read-next" id="readNext" aria-label="Read next" hidden></aside>
         </div>
       </article>
     </section>
@@ -280,6 +299,10 @@
       <a href="#photos">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/></svg>
         <span>Photos</span>
+      </a>
+      <a href="#career">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9"/><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/><path d="M12 12l0 .01"/><path d="M3 13a20 20 0 0 0 18 0"/></svg>
+        <span>Career</span>
       </a>
       <!-- ⚠️ A button, not a link: More opens a row, it doesn't go anywhere.
            js/more.js owns it (delegated off `.links`, because the erase swaps
@@ -346,6 +369,11 @@
           <a href="https://www.instagram.com/lukevanzyl/" rel="me noopener" title="Instagram" aria-label="Instagram"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4l0 -8"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M16.5 7.5v.01"/></svg></a>
           <a href="https://github.com/Lukevz" rel="me noopener" title="GitHub" aria-label="GitHub"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"/></svg></a>
         </footer>
+        <!-- Touch and narrow screens only (display: none otherwise). The ear
+             rests as a small stub carrying this mark; tapping it curls the
+             page the rest of the way and the accounts above it appear. The
+             tap is handled on `.curl` in js/paper.js. -->
+        <button class="curl-toggle" id="curlToggle" type="button" aria-expanded="false" aria-label="Social links">@</button>
       </div>
       <span class="curl-flap" aria-hidden="true"></span>
     </div>

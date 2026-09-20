@@ -15,6 +15,13 @@ The four sections in the top bar are Career, Writing, Videos, and Photos. Career
 
 Long-form posts and gardened notes live at /#writing. Each post has its own page. What's there now:
 
+- Most Useful Apps I Reach For Every Single Day, at /#writing/most-useful-apps-i-reach-for-every-single-day. HazeOver, CleanShot X, Granola, Meeter, Text Sniper, Wispr Flow, Bear, Mist, MyMind, and Swish, the apps I open daily. Posted July 2026.
+- Oura Ring vs Apple Watch: I Tried Both for a Year + A Personal Trainer's Take!, at /#writing/oura-ring-vs-apple-watch-i-tried-both-for-a-year--a-personal-trainers-take. Why I sold my Apple Watch for an Oura Ring and then bought it back, with my wife's take as a personal trainer. Posted May 2026.
+- I Spent Weeks Testing These 5K & 6K Monitors, Here's the Winner, at /#writing/i-spent-weeks-testing-these-5k--6k-monitors-heres-the-winner. LG 5K2K ultrawide, two ASUS ProArts and the BenQ 5K, and why I kept the BenQ. Posted April 2026.
+- 10 Tech Purchases I'd Make Again in 2026, at /#writing/10-tech-purchases-id-make-again-in-2026. Kindle, sunrise lamp, vacuum mop, iPad Mini, monitor arm, iPhone 17 Pro, tripod, Sonos Beam, Oura Ring, and XBloom. Posted March 2026.
+- I stopped daily planning and got more done, at /#writing/i-stopped-daily-planning-and-got-more-done. My weekly planning system: Things 3 for tasks, Bear for a weekly note, and the three principles behind it. Posted February 2026.
+- How to Separate Work From Home: The 9-5 Reset Guide, at /#writing/how-to-separate-work-from-home-the-9-5-reset-guide. Seven techniques for clocking out when you work from home, from a five-minute brain dump to weekend mode. Posted February 2026.
+- Building a Permanent System: My Top Takeaways from Atomic Habits, at /#writing/building-a-permanent-system-my-top-takeaways-from-atomic-habits. Identity over outcomes, environment design, and sustainable systems. Posted February 2026.
 - 7 habits and routines that regulate and bring me peace in 2026, at /#writing/7-habits-routines-that-regulate-and-bring-me-peace-in-2026. Morning pages, moving daily, scrapbooking, cleaning as you go, photo walks, social media off my phone, and a nightly turndown. See [[In 2026 I am building habits that regulate instead of optimize]].
 - 2025 Year in Review, at /#writing/2025-year-in-review. The year I left PwC for Instinct and we downsized from a house to an apartment, under the theme Remaking Possible.
 - 5 Reasons You Need a Digital Garden with Examples and Tools to Help, at /#writing/5-reasons-you-need-a-digital-garden-with-examples--tools-to-help. Why I stopped performing on social media and started gardening instead.

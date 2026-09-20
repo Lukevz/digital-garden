@@ -437,6 +437,4 @@ a.entry-in:focus-visible { outline: none; }
 @media (max-width: 640px) {
   .links-more { gap: 8px 18px; }
   .entry-mark { width: 48px; height: 48px; }
-  /* The dog-ear parks open here and sits over the foot of the page. */
-  .folio-scroll { padding-bottom: calc(var(--curl-open) + 24px); }
 }

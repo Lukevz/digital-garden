@@ -1,0 +1,118 @@
+{
+  "span": "2015 to today",
+  "resume": {
+    "label": "Resume",
+    "url": "https://drive.google.com/uc?export=download&id=12z8vaL3zClS4kFtPt13BdA91uxpIo91H"
+  },
+  "timeline": [
+    {
+      "company": "Instinct Science",
+      "role": "Head of Product Design",
+      "period": "Aug 2026 - Present",
+      "now": true,
+      "summary": "Head of Product Design at Instinct, leading a team of four Senior Product Designers. I set the design strategy across the veterinary product line and am building Instinct's internal design system, so the team ships one coherent product rather than a set of separate screens.",
+      "highlights": [
+        "Manage a team of four Senior Product Designers",
+        "Lead design strategy across Instinct's veterinary products",
+        "Building Instinct's internal design system, Axon"
+      ]
+    },
+    {
+      "company": "Instinct Science",
+      "role": "Senior Product Designer",
+      "period": "Dec 2025 - Aug 2026",
+      "summary": "Lead designer on Instinct's veterinary software, working close to the live product. Alongside the day-to-day product work I manage Axon, the internal design system, and a code-prototyping workflow that keeps iteration fast, so craft and delivery don't trade off against each other.",
+      "highlights": [
+        "Lead designer on Instinct EMR, a practice information management system for veterinary clinics",
+        "Lead designer on Standards and Plumbs, the clinical guidance product for veterinarians",
+        "Manage Axon, the design system that underpins product UI",
+        "Built a code-prototyping workflow that compressed iteration from weeks to hours",
+        "Focus: cut the admin burden by meeting vets in their real workflow"
+      ]
+    },
+    {
+      "company": "PwC Digital",
+      "role": "UX Design Manager",
+      "period": "Jun 2023 - Oct 2025",
+      "summary": "Promoted to manage craft and people at once: a team of designers, a design system serving thousands of products, and hands-on leadership on AI work the firm pitched to Fortune 500 clients. Built a suite of custom GPTs that automated the busywork (release notes, copy, tasks, reviews) so managers and designers could spend their time on judgment, not formatting.",
+      "highlights": [
+        "Managed and mentored a team of three designers while owning craft standards across product lines",
+        "Ran the design system that serviced 3,000+ products globally",
+        "Led GenAI workflow tooling that gave managers back up to 30 percent of their week",
+        "Lead designer on SDLC Canvas, taking the firm's flagship AI product from POC to Fortune 500 pitches"
+      ]
+    },
+    {
+      "company": "PwC Digital",
+      "role": "Senior UX Designer",
+      "period": "Dec 2021 - Jun 2023",
+      "summary": "Came into a Sketch, Abstract and InVision stack that was burning hours on versioning fights and blocking remote collaboration. Built the business case, piloted Figma, rebuilt 30+ system components natively, wrote 100+ pages of docs, and ran months of office hours until the whole department was on one tool. That cut about 3.5 hours a week of lost-work thrash to near zero and retired three redundant licenses.",
+      "highlights": [
+        "Led the org-wide Figma migration and upskilled 120+ designers with curriculum, docs and office hours",
+        "Audited and rebuilt the design system in Figma: atomic components, variants, real interaction states",
+        "Led a UX pattern library for 50+ product teams, with 86+ fewer one-off requests and 12 patterns shipped to the system site",
+        "Cut prototype cycles from weeks to days and unblocked concurrent, conflict-free collaboration"
+      ]
+    },
+    {
+      "company": "Blue Corona",
+      "role": "Senior Digital Designer",
+      "period": "Feb 2021 - Dec 2021",
+      "summary": "Agency pace, marketing pressure, dozens of concurrent home-service brands. Instead of redrawing the same site structure every time, I built a modular Figma block system with client theming so designers could ship faster without tanking craft. Some smaller projects dropped from a full day to about 30 minutes.",
+      "highlights": [
+        "Designed and shipped custom sites for 80+ home-service companies",
+        "Led the Rapid Page Template Builder, with about 80 percent less time on repeat layout work",
+        "Raised visual quality on templated builds without slowing delivery"
+      ]
+    },
+    {
+      "company": "Inovo",
+      "role": "Freelance Designer",
+      "period": "Jun 2015 - Feb 2021",
+      "summary": "Years of owning the whole job: discovery, brand, web, product UI and handoff, first as a freelancer and then as a formalized creative studio. I learned how to sell work, keep clients and ship without a team to hide behind. The foundation under everything that came after.",
+      "highlights": [
+        "Delivered 40+ client projects across branding, web and product design",
+        "Grew a self-taught Mac tutorial channel to 30k+ subscribers and multi-million views",
+        "Turned one-off gigs into retainers and formalized the practice into a creative studio"
+      ]
+    }
+  ],
+  "principles": {
+    "title": "Core principles",
+    "headline": "Design from the Ask to the Experience",
+    "intro": "Design today goes beyond UX. It touches everything from advocacy and alignment to accessibility and authentic experiences. In a world where mockups can be automated, it's leadership, clarity and heart that set products apart.",
+    "lead": "Here are the traits I bring to every project and every team:",
+    "traits": [
+      {
+        "icon": "adaptability",
+        "title": "Adaptability",
+        "text": "I listen deeply, adjust quickly, and thrive within shifting constraints."
+      },
+      {
+        "icon": "boldness",
+        "title": "Boldness",
+        "text": "I challenge assumptions, embrace new ideas, and push teams toward excellence."
+      },
+      {
+        "icon": "inclusivity",
+        "title": "Inclusivity",
+        "text": "I design with empathy, ensuring experiences are accessible and welcoming to all."
+      },
+      {
+        "icon": "articulation",
+        "title": "Articulation",
+        "text": "I bring clarity to collaboration, helping teams move forward with shared understanding."
+      },
+      {
+        "icon": "curiosity",
+        "title": "Curiosity",
+        "text": "I explore relentlessly, always seeking better ways to solve problems and create value."
+      },
+      {
+        "icon": "resilience",
+        "title": "Resilience",
+        "text": "I navigate ambiguity, learn from setbacks, and persist toward meaningful outcomes."
+      }
+    ]
+  }
+}

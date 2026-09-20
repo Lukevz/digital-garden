@@ -8,6 +8,7 @@
        into a bar of their own (Bartender). Only the class and `inert` change
        here; the motion is more.css.
      • the PAGES it links to — `#bookshelf`, `#gear`, `#appstack`, `#places` —
+       and `#career`, which is not behind More but rides the same surface —
        painted into `#folio`, the plainest of the sheet's surfaces: a title and
        a list. Registers itself as `window.moreSection`, and js/paper.js hands
        it the route once the sheet has opened, exactly as it does photographs.
@@ -99,9 +100,12 @@
     return cache[url];
   }
 
-  const head = (title, meta) => `
-    <header class="folio-head">
+  // `action` is an optional control set inline with the title, far right
+  // (Career's resume download). The meta line drops below both.
+  const head = (title, meta, action) => `
+    <header class="folio-head${action ? ' folio-head--action' : ''}">
       <h2 class="page-title">${txt(title)}</h2>
+      ${action || ''}
       <p class="page-meta" id="folioMeta">${txt(meta || '')}</p>
     </header>`;
 
@@ -182,11 +186,80 @@
       <p class="map-note" id="mapNote" hidden></p>`;
   }
 
+  /* Career: the timeline, then the principles. Both are content/career.json.
+
+     The timeline is a vertical rail with the period in the margin and a dot on
+     the rail for each role, newest first — the old site's horizontal
+     scroll-jacked rail, put on the paper as a column you fall down, which is
+     what this surface already is. The current role's dot is filled.
+
+     The principles are the A -> X lockup rebuilt from the old site: a struck
+     "UX" over a display "A -> X", the headline, and six traits. The lockup is
+     live type and the arrow is drawn (the face has no arrow glyph).
+
+     ⚠️ The face has no `%` or `~`, so the copy says "percent" and "about". */
+  const TRAIT_ICONS = {
+    adaptability: '<circle cx="8.6" cy="12" r="5.9"/><circle cx="15.4" cy="12" r="5.9"/>',
+    boldness: '<path d="M13.5 2L4 13.5h6L9 22l10-11.5h-6.2L13.5 2z"/>',
+    inclusivity: '<circle cx="7.2" cy="5.4" r="1.9"/><path d="M4 10.3a3.2 3.2 0 0 1 6.4 0"/><circle cx="16.8" cy="5.4" r="1.9"/><path d="M13.6 10.3a3.2 3.2 0 0 1 6.4 0"/><circle cx="7.2" cy="14.4" r="1.9"/><path d="M4 19.3a3.2 3.2 0 0 1 6.4 0"/><circle cx="16.8" cy="14.4" r="1.9"/><path d="M13.6 19.3a3.2 3.2 0 0 1 6.4 0"/>',
+    articulation: '<path d="M21 14.5a2 2 0 0 1-2 2H8l-5 4.5V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9.5z"/>',
+    curiosity: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4L21 21"/>',
+    resilience: '<path d="M12 21.5c4.6-2.1 7-5.6 7-10.2V4.8L12 2.5 5 4.8v6.5c0 4.6 2.4 8.1 7 10.2z"/>',
+  };
+  const ico = key => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${TRAIT_ICONS[key] || ''}</svg>`;
+
+  function renderCareer(d) {
+    const roles = d.timeline.map((r, i) => `
+      <li class="role${r.now ? ' role--now' : ''}" style="--i:${i}">
+        <p class="role-period">${txt(r.period)}</p>
+        <div class="role-body">
+          <h3 class="role-title">${txt(r.role)}</h3>
+          <p class="role-company">${txt(r.company)}</p>
+          <p class="role-summary">${txt(r.summary)}</p>
+          <ul class="role-notes">${r.highlights.map(h => `<li>${txt(h)}</li>`).join('')}</ul>
+        </div>
+      </li>`).join('');
+
+    const p = d.principles;
+    const traits = p.traits.map((t, i) => `
+      <li class="trait" style="--i:${i}">
+        ${ico(t.icon)}
+        <h4 class="trait-title">${txt(t.title)}</h4>
+        <p class="trait-text">${txt(t.text)}</p>
+      </li>`).join('');
+
+    const resume = d.resume ? `
+      <a class="resume-btn" href="${esc(d.resume.url)}" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>
+        <span>${txt(d.resume.label)}</span>
+      </a>` : '';
+
+    return head('Career', d.span, resume) + `
+      <ol class="roles">${roles}</ol>
+
+      <section class="principles" aria-labelledby="principlesTitle">
+        <h3 class="principles-label" id="principlesTitle">${txt(p.title)}</h3>
+        <div class="ax" role="img" aria-label="From UX to A, Ask, to X, Experience">
+          <span class="ax-ux" aria-hidden="true">UX</span>
+          <span class="ax-mark" aria-hidden="true">
+            <span class="ax-letter">A</span>
+            <svg class="ax-arrow" viewBox="0 0 100 40"><path d="M0 20H93M77 5l16 15l-16 15"/></svg>
+            <span class="ax-letter">X</span>
+          </span>
+        </div>
+        <h3 class="principles-headline">${txt(p.headline)}</h3>
+        <p class="principles-intro">${txt(p.intro)}</p>
+        <p class="principles-lead">${txt(p.lead)}</p>
+        <ul class="traits">${traits}</ul>
+      </section>`;
+  }
+
   const PAGES = {
     bookshelf: { title: 'Bookshelf', data: '/content/more/bookshelf.json', render: renderBooks },
     gear:      { title: 'Gear',      data: '/content/more/gear.json',      render: renderGear },
     appstack:  { title: 'App stack', data: '/content/more/appstack.json',  render: renderApps },
     places:    { title: 'Places',    map: true,                             render: renderPlaces },
+    career:    { title: 'Career',    data: '/content/career.json',         render: renderCareer },
   };
 
   let current = null;   // the page on screen

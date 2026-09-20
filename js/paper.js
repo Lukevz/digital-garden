@@ -44,6 +44,7 @@
   const letterhead = document.querySelector('.letterhead');
   const links      = document.querySelector('.links');
   const backLink   = $('back');
+  const masthead   = document.querySelector('.masthead');
   const expandBtn  = $('expand');
   const expandLbl  = $('expandLabel');
   const spread     = $('spread');
@@ -61,6 +62,35 @@
 
   const body = document.body;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── The dog-ear's toggle ──────────────────────────────────────────────
+     Touch and narrow screens only (styles.css, "No hover to give"): the ear
+     rests small with an "@" on it and a tap curls it open. Everywhere else
+     `.is-open` has no CSS attached and the hover does the job. */
+  const curl = document.querySelector('.curl');
+  const curlBtn = $('curlToggle');
+  function setCurl(on) {
+    if (!curl || !curlBtn) return;
+    curl.classList.toggle('is-open', on);
+    curlBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  // The sections' accounts: the same marks, flat, at the right of the masthead
+  // where the expand control used to be. Cloned from the dog-ear's so there is
+  // one list to keep.
+  const mastLinks = $('mastLinks');
+  if (mastLinks && curl) {
+    curl.querySelectorAll('.curl-links a').forEach(a => mastLinks.appendChild(a.cloneNode(true)));
+  }
+
+  if (curl) {
+    curl.addEventListener('click', e => {
+      if (e.target.closest('.curl-links a')) return;
+      setCurl(!curl.classList.contains('is-open'));
+    });
+    document.addEventListener('pointerdown', e => { if (!curl.contains(e.target)) setCurl(false); });
+    window.addEventListener('hashchange', () => setCurl(false));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setCurl(false); });
+  }
 
   /* ── Tunables ──────────────────────────────────────────────────────────
      Live-editable from the console the way the v2 site's warp was
@@ -137,6 +167,28 @@
     const closeBQ = () => { if (inBQ) { html += '</blockquote>'; inBQ = false; } };
     const closeAll = () => { closeUL(); closeOL(); closeBQ(); };
 
+    /* A YouTube link that is the WHOLE line becomes an embed; the same link
+       inside a sentence stays a link. Posts open with the video they were made
+       from, written as a plain markdown link (`[Title](https://youtu.be/ID)`),
+       so the markdown stays readable anywhere and only this render turns it
+       into a player.
+
+       ⚠️ Built here and not written into the markdown as an <iframe>: inline()
+       runs fold(), which turns every straight `"` into a curly one, and an
+       attribute in curly quotes is not an attribute. nocookie so a visitor who
+       never presses play is never tracked. A `t=` start time is honoured. */
+    function youtubeEmbed(href, label) {
+      let u;
+      try { u = new URL(href); } catch (e) { return ''; }
+      const host = u.hostname.replace(/^www\./, '');
+      const id = host === 'youtu.be' ? u.pathname.slice(1)
+        : host === 'youtube.com' && u.pathname === '/watch' ? u.searchParams.get('v') : '';
+      if (!/^[\w-]{11}$/.test(id || '')) return '';
+      const start = parseInt(u.searchParams.get('t'), 10);
+      const title = (label || 'YouTube video').replace(/"/g, '&quot;');
+      return `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${id}${start > 0 ? '?start=' + start : ''}" title="${title}" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`;
+    }
+
     function inline(t) {
       return fold(t)
         .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
@@ -187,7 +239,12 @@
         if (!inOL) { html += '<ol>'; inOL = true; }
         html += `<li>${inline(t.replace(/^\d+\. /, ''))}</li>`;
       }
-      else { closeAll(); html += `<p>${inline(t)}</p>`; }
+      else {
+        closeAll();
+        const link = t.match(/^\[([^\]]*)\]\((https?:[^)\s]+)\)$/) || t.match(/^()(https?:\/\/\S+)$/);
+        const embed = link ? youtubeEmbed(link[2], link[1]) : '';
+        html += embed || `<p>${inline(t)}</p>`;
+      }
     }
     closeAll();
     return html;
@@ -478,10 +535,10 @@
      A section opens onto one of these. They are siblings inside the sheet and
      only one is ever unhidden, so the masthead, the flight and the erase can
      stay ignorant of which section is actually being routed to. */
-  /* Four of the routes are one surface: `#bookshelf`, `#gear`, `#appstack` and
-     `#places` all open the folio, and js/more.js decides which page to put in
+  /* Five of the routes are one surface: `#bookshelf`, `#gear`, `#appstack`,
+     `#places` and `#career` all open the folio, and js/more.js decides which page to put in
      it. `surfaceKey` is the ROUTE, so the router knows which page to paint. */
-  const FOLIO = ['bookshelf', 'gear', 'appstack', 'places'];
+  const FOLIO = ['bookshelf', 'gear', 'appstack', 'places', 'career'];
   const SURFACES = { writing: spread, photos: plates };
   FOLIO.forEach(k => { SURFACES[k] = folio; });
   let surfaceKey = 'writing';
@@ -549,8 +606,60 @@
     });
   }
 
+  /* On a narrow screen the spread is two panes and `.is-post` is which one
+     is showing (styles.css, "Narrow screens"). It is set from the ROUTE, so
+     the class means "the URL names a piece" and carries no meaning on a wide
+     sheet, where both columns are always there. */
+  const narrow = matchMedia('(max-width: 640px)');
+
+  function setPostOpen(on) {
+    spread.classList.toggle('is-post', on);
+    backLink.setAttribute('aria-label', on && narrow.matches ? 'Back to all posts' : 'Back to the sheet');
+  }
+
+  // Back steps out one level: a piece goes to the list, the list goes home.
+  const backGoesToList = () =>
+    narrow.matches && surfaceKey === 'writing' && !spread.hidden &&
+    body.classList.contains('reading') && spread.classList.contains('is-post');
+
+  /* Two more pieces under the rule: the ones that follow this one in the index
+     (older), wrapping round to the newest so the last post still has somewhere
+     to send you. */
+  const readNext = $('readNext');
+  function paintReadNext(item) {
+    if (!readNext) return;
+    const at = items.findIndex(i => i.slug === item.slug);
+    const picks = [];
+    for (let k = 1; k < items.length && picks.length < 2; k++) {
+      picks.push(items[(at + k) % items.length]);
+    }
+    readNext.textContent = '';
+    if (!picks.length) { readNext.hidden = true; return; }
+    const head = document.createElement('h3');
+    head.className = 'read-next-title';
+    head.textContent = 'Read next';
+    const list = document.createElement('div');
+    list.className = 'read-next-list';
+    picks.forEach(it => {
+      const a = document.createElement('a');
+      a.className = 'read-next-item';
+      a.href = '#writing/' + it.slug;
+      const d = document.createElement('span');
+      d.className = 'read-next-date';
+      d.textContent = it.date;
+      const t = document.createElement('span');
+      t.className = 'read-next-name';
+      t.textContent = it.title;
+      a.append(d, t);
+      list.appendChild(a);
+    });
+    readNext.append(head, list);
+    readNext.hidden = false;
+  }
+
   function showPost(item) {
     if (current === item.slug) return;
+    if (readNext) readNext.hidden = true;
     current = item.slug;
     const mine = ++token;
 
@@ -571,6 +680,7 @@
         // second printing of it.
         const h1 = prose.querySelector('h1');
         if (h1) h1.remove();
+        paintReadNext(item);
         pageScroll.scrollTop = 0;
         requestAnimationFrame(() => prose.classList.add('is-in'));
       })
@@ -618,6 +728,7 @@
     if (photoSection()) photoSection().leave();
     if (moreSection()) moreSection().leave();
     expandBtn.hidden = true;
+    setPostOpen(false);
     current = null;
   }
 
@@ -754,10 +865,19 @@
     // would otherwise blink off at the end of the flight.
     const leaving = surface();
     leaving.classList.remove('is-in');
-    const sweep = fadeOut([leaving, backLink]);
+    const sweep = fadeOut([leaving, backLink, mastLinks]);
     const fly = flyName(from, to);
 
+    // The rule under the masthead closes from both edges to the middle: the
+    // home sheet's frame line drawing outward from its seam, run backwards.
+    const rule = masthead && masthead.animate(
+      [{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 50% 0 50%)' }],
+      { duration: Math.round(paper.dur * 0.8), easing: 'cubic-bezier(0.55, 0.05, 0.78, 0.25)',
+        fill: 'forwards', pseudoElement: '::after' }
+    );
+
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
+      if (rule) rule.cancel();
       body.classList.remove('reading');
       // ...and the paper draws back into its frame, under the copy settling
       // on. The lockup is centred in a row whose own centre doesn't move as
@@ -768,7 +888,7 @@
       fly.cancel();
       nameEl.style.transformOrigin = '';
       landLetterhead(mark);
-      restore([leaving, backLink]);
+      restore([leaving, backLink, mastLinks]);
       hideSurface();
       // Let the bio and the social row settle back on rather than snapping —
       // the same entrance they get on a cold load. Restarting a CSS animation
@@ -842,9 +962,15 @@
       surfaceKey = 'writing';
       done = loadIndex().then(list => {
           if (!list.length) return;
-          const target = (parsed.item && list.find(i => i.slug === parsed.item)) || list[0];
+          const found = parsed.item && list.find(i => i.slug === parsed.item);
+          // Narrow screens: bare `#writing` is the list of titles, not the
+          // newest piece. Wide screens always have a piece open beside it.
+          const asList = narrow.matches && !found;
+          const target = found || list[0];
           paintIndex();
+          setPostOpen(!asList);
           return enterReading(instant).then(() => {
+            if (asList) { markCurrent(current); return; }
             showPost(target);
             // Landing on bare #writing opens the newest piece, so put its
             // route in the bar — the URL should say what's on screen.
@@ -878,7 +1004,22 @@
 
   expandBtn.addEventListener('click', () => setSolo(!body.classList.contains('solo')));
 
+  // Widening past the breakpoint with the bare list showing: the wide layout
+  // has no such state, so open a piece beside it.
+  narrow.addEventListener('change', () => {
+    if (!narrow.matches && items && items.length && surfaceKey === 'writing' &&
+        !spread.hidden && !spread.classList.contains('is-post')) {
+      const target = items.find(i => i.slug === current) || items[0];
+      setPostOpen(true);
+      showPost(target);
+      history.replaceState(null, '', '#writing/' + target.slug);
+    } else {
+      setPostOpen(spread.classList.contains('is-post'));
+    }
+  });
+
   backLink.addEventListener('click', e => {
+    if (backGoesToList()) { e.preventDefault(); location.hash = '#writing'; return; }
     // href="#" clears the hash and route() does the rest; with no hash there
     // is nothing for it to change, so leave directly.
     if (!location.hash) { e.preventDefault(); leaveReading(); }
@@ -890,7 +1031,61 @@
     // also unwinds the section, so shutting a lightbox drops the visitor all
     // the way back to the home sheet.
     if (e.defaultPrevented) return;
-    if (e.key === 'Escape' && body.classList.contains('reading')) location.hash = '';
+    if (e.key === 'Escape' && body.classList.contains('reading')) {
+      location.hash = backGoesToList() ? '#writing' : '';
+    }
+  });
+
+  /* ══ The fades under overflowing content ══════════════════════════════
+     styles.css draws them; this decides when. Each scroller you can actually
+     see gets its own: the index (`.spread.is-fade-index`), the piece
+     (`.page.is-fade`), and the photographs / More surfaces (`.is-fade`).
+     ⚠️ On a narrow screen the spread's two panes are both laid out (the
+     hidden one has only slid away), so only the pane that is showing counts. */
+  const platesScroll = $('platesScroll');
+  const folioScroll = $('folioScroll');
+  const pageEl = pageScroll && pageScroll.parentElement;
+  const isPostOpen = () => spread.classList.contains('is-post');
+  const fadeTargets = [
+    { host: spread,  cls: 'is-fade-index', scroller: indexEl,    on: () => !narrow.matches || !isPostOpen() },
+    { host: pageEl,  cls: 'is-fade',       scroller: pageScroll, on: () => !narrow.matches || isPostOpen() },
+    { host: plates,  cls: 'is-fade',       scroller: platesScroll, on: () => true },
+    { host: folio,   cls: 'is-fade',       scroller: folioScroll,  on: () => true },
+  ];
+  let fadeQueued = false;
+  function updateFade() {
+    fadeQueued = false;
+    fadeTargets.forEach(({ host, cls, scroller, on }) => {
+      if (!host || !scroller) return;
+      const shown = !host.closest('[hidden]') && on();
+      const more = shown && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight > 4;
+      host.classList.toggle(cls, more);
+    });
+  }
+  const queueFade = () => {
+    if (fadeQueued) return;
+    fadeQueued = true;
+    setTimeout(updateFade, 30);
+  };
+  // `scroll` doesn't bubble and `load` (an image landing and changing the
+  // height) doesn't either; capturing on the document catches both.
+  document.addEventListener('scroll', queueFade, { capture: true, passive: true });
+  document.addEventListener('load', queueFade, true);
+  // The glass under the piece: its bands of light travel with the scroll.
+  if (pageScroll && pageEl) {
+    pageScroll.addEventListener('scroll', () => {
+      const max = pageScroll.scrollHeight - pageScroll.clientHeight;
+      pageEl.style.setProperty('--glass-pos', (max > 0 ? (pageScroll.scrollTop / max) * 100 : 0).toFixed(1) + '%');
+    }, { passive: true });
+  }
+  window.addEventListener('resize', queueFade);
+  window.addEventListener('hashchange', queueFade);
+  const fadeObserver = new MutationObserver(queueFade);
+  [pageScroll, indexEl, platesScroll, folioScroll].forEach(el => {
+    if (el) fadeObserver.observe(el, { childList: true, subtree: true });
+  });
+  [spread, plates, folio].forEach(el => {
+    if (el) fadeObserver.observe(el, { attributes: true, attributeFilter: ['hidden', 'class'] });
   });
 
   window.addEventListener('hashchange', route);

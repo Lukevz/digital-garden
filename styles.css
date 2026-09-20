@@ -993,30 +993,79 @@ body:not(.reading) .name {
 }
 
 /* ── No hover to give ──────────────────────────────────────────────────────
-   A touch device never fires the hover, so the corner sits open and the nav
-   is simply there. */
+   A touch device never fires the hover, and on a phone a fold parked open is
+   a third of the page and sits over the navigation (More was hidden under it).
+   So here the corner RESTS as a small stub with an "@" on it, and tapping the
+   stub (js/paper.js toggles `.is-open`) curls the page the rest of the way and
+   reveals the accounts. The base hover rules would still fire — a tap leaves
+   `:hover` stuck on — so they are put back to the resting size, and only
+   `.is-open` opens the fold.
+
+   ⚠️ The "@" is the bottom item of the column when open, sitting exactly where
+   it rested, so tapping it again is what closes the fold. Column bottom = the
+   button's bottom (8) + its height (28) + 4. Top-mark fit, per the rule under
+   .curl-links: 140 · (280 − 40 − 148) / 280 = 46 against the 34 it needs.
+   ⚠️ Closed links are `visibility: hidden`, not just transparent, so they are
+   out of the tab order until the fold is open. */
+.curl-toggle { display: none; }
+
 @media (hover: none), (max-width: 640px) {
+  :root { --curl-rest: 48px; --curl-open: 280px; }
+
   .curl-zone { display: none; }
-  .curl {
+
+  .curl,
+  .curl:hover,
+  .curl:focus-within {
+    width: var(--curl-rest);
+    height: var(--curl-rest-h);
+  }
+  .curl.is-open {
     width: var(--curl-open-w);
     height: var(--curl-open);
   }
-  .curl-links { opacity: 1; }
-}
 
-@media (max-width: 640px) {
-  /* ⚠️ The corner stays small here. On a 375px screen it is parked open, and
-     a fold as big as the desktop one would be a third of the page. It
-     shrinks and so do the marks (one font-size, since .ico is sized in em and
-     the stroke rides the box); 120 × 240 with 20px marks and a 12px gap is
-     40 against the 34 the top mark needs (see .curl-links). */
-  :root { --curl-open: 240px; }
+  .curl-toggle {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--ink-soft);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .curl-toggle:active,
+  .curl-toggle:focus-visible { color: var(--ink); outline: none; }
 
   .curl-links {
     right: 14px;
-    bottom: 12px;
+    bottom: 40px;
     gap: 12px;
     font-size: 20px;
+  }
+  .curl:not(.is-open) .curl-links {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 160ms ease, visibility 0s linear 160ms;
+  }
+  .curl.is-open .curl-links {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 160ms ease 200ms, visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .curl:not(.is-open) .curl-links,
+    .curl.is-open .curl-links { transition: none; }
   }
 }
 
@@ -1036,9 +1085,9 @@ body:not(.reading) .name {
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --index-w: clamp(148px, 19vw, 232px);
+  --index-w: clamp(190px, 24vw, 300px);
   --index-h: clamp(96px, 22vh, 180px);   /* the stacked, narrow-screen variant */
-  --index-gutter: clamp(14px, 2vw, 26px);
+  --index-gutter: clamp(6px, 0.9vw, 12px);
   /* ⚠️ A px measure, not `ch`. The cap sits on the scroller so the header and
      the body share one left edge (below), but the scroller is set at 1rem
      while the prose is set smaller — so a `ch` measure resolves against the
@@ -1067,6 +1116,14 @@ body.solo {
    spread taller than the sheet instead of scrolling inside it. */
 body.reading .sheet {
   grid-template-rows: auto minmax(0, 1fr);
+  /* ⚠️ Section pages run tighter than the landing page: the home sheet wants a
+     wide margin round a small block of type, a page of reading wants the room.
+     It is the VARIABLE, so the monogram's position and photos.css's full-bleed
+     cover (both read --sheet-pad) follow it. The class is applied inside the
+     same task the flights measure their target in, so nothing pops. The foot is
+     tighter than the sides, so the content runs further down the screen. */
+  --sheet-pad: clamp(16px, 2.6vw, 32px);
+  padding-bottom: max(calc(var(--sheet-pad) * 0.6), env(safe-area-inset-bottom));
 }
 
 body.reading {
@@ -1086,9 +1143,20 @@ body.reading .masthead {
   min-height: var(--bar-h);
   justify-content: space-between;
   gap: clamp(16px, 3vw, 40px);
-  padding-bottom: clamp(12px, 1.8vh, 20px);
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: clamp(16px, 2.6vh, 32px);
+  /* The rule is a pseudo-element, not a border, so leaveReading() can draw it
+     back in from the edges. The 1px is the border's old height. */
+  padding-bottom: calc(clamp(10px, 1.4vh, 14px) + 1px);
+  margin-bottom: clamp(10px, 1.6vh, 18px);
+}
+
+body.reading .masthead::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--rule);
 }
 
 /* ⚠️ The lockup is out of the row and out of sight, NOT `display: none`: the
@@ -1103,6 +1171,175 @@ body.reading .lockup {
 }
 body.reading .bio,
 body.reading .links { display: none; }
+
+/* ── No dog-ear off the home page ──────────────────────────────────────────
+   The corner is the landing page's. In a section it fades away and the
+   accounts run along the foot of the sheet as a plain horizontal row (the
+   marks are copied in from `.curl-links` by js/paper.js). Faded rather than
+   removed, so it doesn't pop at the end of the flight in either direction. */
+.curl,
+.curl-zone {
+  transition-property: width, height, opacity, visibility;
+}
+body.reading .curl,
+body.reading .curl-zone {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ── The accounts, in the masthead ─────────────────────────────────────────
+   Right of the row, where the expand control used to be. Empty until
+   js/paper.js clones the marks in, and out of sight at home. */
+.mast-links { display: none; }
+body.reading .mast-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 17px;
+  animation: back-in 420ms ease both;
+}
+body.reading .mast-links .ico { width: 1em; height: 1em; }
+body.reading .mast-links a {
+  display: grid;
+  place-items: center;
+  /* A comfortable tap target round a small mark. */
+  padding: 6px;
+  margin: -6px;
+  color: var(--ink-soft);
+  transition: color 180ms ease;
+}
+body.reading .mast-links a:hover,
+body.reading .mast-links a:focus-visible { color: var(--ink); outline: none; }
+
+/* ── The fades under overflowing content ──────────────────────────────────
+   A soft wash and a little blur over the bottom of a scroller while there is
+   more to scroll to; gone once the end is on screen. js/paper.js toggles the
+   classes (scroll, resize, content changes). Pseudo-elements on the scroller's
+   own container, so there is no markup and the sections' repaints don't touch
+   them. There are two on the writing spread, one per column, and each one
+   fades to what is BEHIND that column:
+
+     .page::after     the piece  → white   (`--frame`, the card's own colour;
+                                             near-black in dark mode)
+     .spread::before  the index  → the paper (`--sheet-mid`, the sheet's tone)
+     .plates / .folio            → the paper, they sit on the sheet
+
+   ⚠️ The blur is feathered by a MASK on the same element, not by a hard-edged
+   strip: `backdrop-filter` on its own would show a straight line where it
+   starts. */
+.spread,
+.plates,
+.folio { position: relative; }
+
+.spread::before,
+.page::after,
+.plates::after,
+.folio::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: clamp(56px, 9vh, 88px);
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--fade-tone) var(--fade-amt, 70%), transparent),
+    transparent);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  -webkit-mask-image: linear-gradient(to top, #000 20%, transparent);
+  mask-image: linear-gradient(to top, #000 20%, transparent);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.spread::before,
+.plates::after,
+.folio::after {
+  /* ⚠️ These three float over the PAPER, and a blurred / washed rectangle on a
+     textured sheet shows its edges — the top was feathered but the sides were
+     hard, and so was the bottom, where the blur stops against unblurred paper. A
+     second mask, intersected with the first, feathers the sides, and the
+     vertical one now fades at both ends. */
+  -webkit-mask-image:
+    linear-gradient(to top, transparent, #000 38%, transparent),
+    linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+  mask-image:
+    linear-gradient(to top, transparent, #000 38%, transparent),
+    linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  --fade-tone: var(--sheet-mid);
+  /* ⚠️ Lighter than the card's: the sheet is a lit gradient with darker
+     corners, and a flat mid-tone at full strength shows as a paler band where
+     the paper is shaded. The blur does most of the work here. */
+  --fade-amt: 40%;
+}
+.page::after { --fade-tone: var(--frame); }
+
+/* ── The piece's fade is glass ─────────────────────────────────────────────
+   Taller than the paper ones, and built as a pane rather than a wash: the text
+   behind it is blurred and over-saturated (so what scrolls underneath is still
+   legible as colour and shape — the reflection), and in Chromium refracted
+   through `#glass` (index.html). Three bands of light lie across it, and
+   js/paper.js slides them along as the piece scrolls (`--glass-pos`), so the
+   pane catches the light differently at each point in the post. The bottom edge
+   is bevelled: a bright hairline, and a soft inner glow just above it.
+
+   ⚠️ The bands are white on a white card in light mode, where they would be
+   invisible, so each is paired with a cool grey one (`--glass-lo`). On the dark
+   card the highs do the work and the lows deepen it. */
+.page {
+  --glass-hi: rgba(255, 255, 255, 0.85);
+  --glass-lo: rgba(70, 90, 110, 0.12);
+}
+@media (prefers-color-scheme: dark) {
+  .page {
+    --glass-hi: rgba(255, 255, 255, 0.16);
+    --glass-lo: rgba(0, 0, 0, 0.32);
+  }
+}
+
+.page::after {
+  height: clamp(110px, 17vh, 170px);
+  background:
+    linear-gradient(100deg,
+      transparent 0%,   var(--glass-hi) 9%,  var(--glass-lo) 19%, transparent 30%,
+      var(--glass-hi) 46%, transparent 58%,  var(--glass-lo) 72%,
+      var(--glass-hi) 88%, transparent 100%)
+      var(--glass-pos, 0%) 0 / 260% 100% no-repeat,
+    linear-gradient(to top,
+      color-mix(in srgb, var(--frame) 74%, transparent),
+      color-mix(in srgb, var(--frame) 12%, transparent));
+  box-shadow:
+    inset 0 -1px 0 var(--glass-hi),
+    inset 0 -22px 30px -24px var(--glass-hi);
+  -webkit-backdrop-filter: blur(9px) saturate(1.7) brightness(1.04);
+  backdrop-filter: blur(9px) saturate(1.7) brightness(1.04);
+  -webkit-mask-image: linear-gradient(to top, #000 34%, transparent);
+  mask-image: linear-gradient(to top, #000 34%, transparent);
+}
+@supports (backdrop-filter: url(#glass)) {
+  .page::after { backdrop-filter: url(#glass) blur(8px) saturate(1.7) brightness(1.04); }
+}
+
+/* The index's fade covers its column only (the column is `--index-w` wide,
+   gutter included). */
+.spread::before { right: auto; width: var(--index-w); }
+
+/* The sidebar's own fade is BLUR ONLY. The colour it should arrive at is the
+   real background, and no flat tone matches a lit, grained sheet — so the
+   titles themselves are masked out to transparent instead, which lands on the
+   paper exactly. */
+.spread::before { --fade-amt: 0%; }
+.spread.is-fade-index .index {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 76px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 76px), transparent);
+}
+
+.spread.is-fade-index::before,
+.page.is-fade::after,
+.plates.is-fade::after,
+.folio.is-fade::after { opacity: 1; }
 
 /* ── The monogram stays in the middle ─────────────────────────────────────
    Off the home page the letterhead does not go to a corner: it shrinks to the
@@ -1177,10 +1414,15 @@ body.reading .spec-dim,
 body.reading .spec-label { display: none; }
 
 /* ── The expand control ────────────────────────────────────────────────────
-   Drawn as a drafting mark rather than a button: a hairline square in the
-   same ink as `.spec`. Two icons, one per state, swapped by `body.solo`. */
+   A bare icon, like the nav's: no box, just the mark, with the 30px
+   square kept as its hit area. Two icons, one per state, swapped by `body.solo`.
+   The glyphs are Tabler's (`arrows-diagonal`, `arrows-diagonal-minimize-2`),
+   drawn by `.ico` like the nav's, so the weight is the nav's. */
 .expand {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1188,21 +1430,19 @@ body.reading .spec-label { display: none; }
   height: 30px;
   padding: 0;
   background: none;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
+  border: 0;
   color: var(--ink-soft);
   cursor: pointer;
-  transition: color 200ms ease, border-color 200ms ease;
+  transition: color 200ms ease;
 }
 .expand:hover,
 .expand:focus-visible {
   color: var(--ink);
-  border-color: var(--ink-soft);
   outline: none;
 }
 .expand[hidden] { display: none; }
 
-.expand-icon { display: block; width: 14px; height: 14px; }
+.expand-icon { display: block; width: 18px; height: 18px; }
 .expand-icon--in { display: none; }
 body.solo .expand-icon--out { display: none; }
 body.solo .expand-icon--in { display: block; }
@@ -1234,10 +1474,8 @@ body.solo .expand-icon--in { display: block; }
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: var(--index-gutter);
-  border-right: 1px solid var(--rule);
   transition:
     opacity 260ms ease,
-    border-color 260ms ease,
     padding-right 460ms cubic-bezier(0.22, 0.75, 0.18, 1);
   scrollbar-width: none;
 }
@@ -1246,7 +1484,6 @@ body.solo .expand-icon--in { display: block; }
 body.solo .index {
   opacity: 0;
   pointer-events: none;
-  border-right-color: transparent;
 }
 
 .index-list {
@@ -1292,34 +1529,37 @@ body.solo .index {
 }
 .index-title { display: block; }
 
-.index-item.is-current .index-link { color: var(--ink); }
-
-/* A leader ruled out to the gutter line, tying the open title to the page
-   beside it. It lives in the column's own padding, which `overflow` does not
-   clip — clipping is to the padding box, not the content box. */
-.index-item.is-current .index-link::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: calc(-1 * var(--index-gutter) - 1px);
-  width: var(--index-gutter);
-  height: 1px;
-  background: var(--ink);
+/* The open title is a filled chip, not a leader ruled out to the page. The
+   text is indented by the chip's own padding so the fill has room round it.
+   ⚠️ The rules between entries are dropped on either side of it, or a hairline
+   would run through the top and bottom of the fill. */
+.index-link { padding-inline: 12px; }
+.index-item.is-current .index-link {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  border-radius: 8px;
 }
+.index-item.is-current .index-link,
+.index-item.is-current + .index-item .index-link { border-top-color: transparent; }
 
 /* ── The page ──────────────────────────────────────────────────────────── */
+/* The piece sits on a white card — `--frame`, the same "white" as the photo
+   cards and near-black in dark mode — that fills the whole column. */
 .page {
   position: relative;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  background: var(--frame);
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .page-scroll {
   min-height: 0;
   overflow-y: auto;
-  padding-right: clamp(6px, 1.2vw, 16px);
-  /* Clear the dog-ear so the last line never ends under the corner. */
+  padding-top: clamp(52px, 7vh, 60px);
+  /* Room under the last line (and its footer). */
   padding-bottom: clamp(36px, 6vh, 72px);
 }
 
@@ -1332,8 +1572,11 @@ body.solo .index {
    into the middle of the sheet as the track closes instead of leaving the
    text hanging off one edge. */
 .page-scroll {
-  max-width: var(--measure);
-  margin-inline: auto;
+  /* ⚠️ The scroller is the card's full width, so the wheel scrolls anywhere on
+     it, and the measure comes from PADDING: half of whatever the card has over
+     the measure each side, never less than a gutter. Header and prose are
+     still inside one box, so they still share one left edge. */
+  padding-inline: max(clamp(20px, 3vw, 32px), calc((100% - var(--measure)) / 2));
 }
 
 /* ⚠️ The face has ONE weight and `font-synthesis: none`, so a heavier heading
@@ -1460,6 +1703,27 @@ body.solo .index {
 /* ⚠️ Capped by HEIGHT as well as width. At `width: 100%` a square plate fills
    the measure and then some — 600px wide is 600px tall, which is most of the
    reading pane, and every post that opens on an image opened on nothing else. */
+/* A YouTube embed (see youtubeEmbed() in js/paper.js). A hairline and no
+   shadow, like the images — and the tint behind it is what shows while the
+   player loads, so the column doesn't jump. */
+.prose .video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin: 1.6em 0;
+  /* The wrapper clips the iframe, so this rounds the player itself. */
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+.prose .video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .prose img {
   display: block;
   max-width: 100%;
@@ -1472,6 +1736,58 @@ body.solo .index {
 }
 
 .prose-empty { color: var(--ink-soft); }
+
+/* ── Read next ─────────────────────────────────────────────────────────────
+   A rule under the piece and the two that follow it in the index. Outside
+   `.prose`, so none of the prose's element styling reaches it. */
+.read-next {
+  margin-top: clamp(36px, 6vh, 56px);
+  padding-top: clamp(18px, 3vh, 26px);
+  border-top: 1px solid var(--rule);
+}
+.read-next[hidden] { display: none; }
+.read-next-title {
+  margin: 0 0 14px;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: normal;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.read-next-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.read-next-item {
+  display: block;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 200ms ease;
+}
+.read-next-item:hover,
+.read-next-item:focus-visible {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  outline: none;
+}
+.read-next-date {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  opacity: 0.62;
+}
+.read-next-name {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
 
 /* ── Entrances ─────────────────────────────────────────────────────────────
    The index writes itself on a line at a time. Reuses the landing page's own
@@ -1556,49 +1872,99 @@ body.is-erasing .erase { opacity: 1; }
 }
 
 /* ── Narrow screens ────────────────────────────────────────────────────────
-   Two columns need two columns' worth of width. Below that the spread stacks:
-   the index becomes a short ruled strip across the top with the page beneath,
-   and the expand control still closes it — the same affordance, on the other
-   axis. */
+   Two columns need two columns' worth of width. Below that the spread is a
+   pair of full-width PANES instead: the index lists every title across the
+   sheet, and picking one slides the piece over it from the right
+   (`.is-post`, set by js/paper.js from the route — bare `#writing` is the
+   list, `#writing/<slug>` is the piece). Back steps out one level: piece →
+   list → home.
+
+   ⚠️ The off-screen pane goes `visibility: hidden` AFTER the slide (the delay
+   on that transition), not `display: none` — it has to stay laid out to slide
+   — so its links are out of the tab order and out of the reader's way.
+   ⚠️ The expand control collapses a column that no longer exists here, and a
+   persisted `solo` must not blank the list, so both are neutralised. */
 @media (max-width: 640px) {
   .spread:not([hidden]) {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: var(--index-h) minmax(0, 1fr);
-    row-gap: 14px;
-    transition:
-      grid-template-rows 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
-      opacity 380ms ease;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    transition: opacity 380ms ease;
+  }
+
+  .expand { display: none; }
+
+  .index,
+  .page {
+    position: absolute;
+    inset: 0;
   }
 
   .index {
     padding-right: 0;
     padding-bottom: 12px;
-    border-right: 0;
-    border-bottom: 1px solid var(--rule);
+    transition:
+      transform 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+      opacity 320ms ease;
   }
   body.solo .index {
-    border-bottom-color: transparent;
-    padding-bottom: 0;
+    opacity: 1;
+    pointer-events: auto;
   }
 
-  /* The leader has no gutter rule to run out to once the index is stacked. */
-  .index-item.is-current .index-link::after { display: none; }
+  /* Titles run the full width, so they can be set to be read. */
+  .index-link {
+    padding: 15px 12px;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+  }
+  .index-date { margin-bottom: 5px; }
+
+  .page {
+    transform: translateX(100%);
+    visibility: hidden;
+    transition:
+      transform 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+      visibility 0s linear 460ms;
+  }
+
+  .spread.is-post .page {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+      visibility 0s;
+  }
+  .spread.is-post .index {
+    transform: translateX(-22%);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      transform 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+      opacity 320ms ease,
+      visibility 0s linear 460ms;
+  }
+
+  /* No expand control here, so no row for it above the title. */
+  .page-scroll { padding-top: clamp(24px, 4vh, 40px); }
+  .read-next-list { grid-template-columns: minmax(0, 1fr); }
+  body.reading .mast-links { gap: 10px; font-size: 16px; }
+
+  /* The index is a full-width pane here, so its fade is too. */
+  .spread::before { right: 0; width: auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .index,
+    .page,
+    .spread.is-post .index,
+    .spread.is-post .page { transition: none; }
+  }
 
   body.reading .masthead {
-    padding-bottom: 10px;
+    padding-bottom: 11px;
     margin-bottom: 14px;
   }
 
-  /* A touch screen never fires the hover, so the dog-ear is parked open — and
-     in a section that puts it over the foot of the article. Hold the last
-     lines clear of the corner.
-     ⚠️ This only fixes the END of a piece. Text still passes UNDER the corner
-     on its way up, because the corner is opaque and pinned above the content.
-     The dog-ear needs its own answer on narrow screens; padding is a floor,
-     not the fix. */
-  body.reading .page-scroll {
-    padding-bottom: calc(var(--curl-open) + 24px);
-  }
 }
 
 /* ── Screen-reader only ────────────────────────────────────────────────── */

@@ -1,0 +1,293 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   paperlike — Career.
+
+   `#career` opens the folio (more.css), the same plain surface the pages behind
+   More use, so the masthead, the scroller and the fade are all theirs. This file
+   is only what goes ON it: a timeline of roles down a hairline rail, then the
+   principles. Kept out of more.css for the reason more.css is kept out of
+   styles.css — it adds to the sheet and never touches it. Its data is
+   content/career.json and its markup is renderCareer() in js/more.js.
+
+   ⚠️ The face has no `%` or `~`. The copy says "percent" and "about" — check
+   that when editing content/career.json, or one character of a sentence is set
+   in the fallback font.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ══ The resume button ═════════════════════════════════════════════════════
+   Inline with the page title, far right: the header becomes a two-column grid
+   (title | button) and the meta line spans under both. A hairline pill, the
+   nav row's own type — a control on the paper, not a slab of colour.
+   ⚠️ The label's trailing letter-space is taken back the way `.links a > span`
+   does it, or the word sits a fifth of an em left of centre in its pill. */
+.folio-head--action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 16px;
+}
+.folio-head--action .page-meta { grid-column: 1 / -1; }
+
+.resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.62em;
+  padding: 0.7em 1.2em 0.7em 1.05em;
+  font-size: clamp(0.62rem, 1vw, 0.78rem);
+  line-height: 1;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.resume-btn > span { margin-right: -0.2em; }
+.resume-btn:hover,
+.resume-btn:focus-visible {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  outline: none;
+}
+.resume-btn:focus-visible { box-shadow: 0 0 0 2px var(--ink-soft); }
+
+/* ══ The timeline ══════════════════════════════════════════════════════════
+   Newest role first. The period stands in the margin, a dot for each role sits
+   on the rail, the role hangs off the rail on the right. The rail is drawn per
+   role (`::before`, from this role's dot down through its own padding into the
+   next) so it stays continuous however tall a role is, and the last role's
+   stops at its dot.
+
+   ⚠️ The period and the title share `--row` as their line-height, and the dot
+   is centred on it — so the dot is on the first line of BOTH, however the
+   sizes clamp. */
+.roles {
+  --per: clamp(7.5rem, 14vw, 11rem);      /* the period column */
+  --gap: clamp(20px, 3vw, 40px);          /* period to rail, and rail to text */
+  --row: clamp(1.35rem, 2vw, 1.65rem);
+  --dot: 9px;
+  list-style: none;
+  /* Shrink-wrapped to the widest role (the copy is capped at 64ch), then
+     centred on the folio rather than hugging its left edge. */
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.role {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--per) minmax(0, 1fr);
+  column-gap: calc(2 * var(--gap));
+  padding-bottom: clamp(30px, 5vh, 54px);
+}
+
+.role::before {                            /* the rail */
+  content: '';
+  position: absolute;
+  left: calc(var(--per) + var(--gap));
+  top: calc(var(--row) / 2);
+  bottom: calc(-1 * var(--row) / 2);
+  width: 1px;
+  background: var(--rule);
+}
+.role:last-child::before { display: none; }
+
+.role::after {                             /* the dot */
+  content: '';
+  position: absolute;
+  left: calc(var(--per) + var(--gap) - var(--dot) / 2 + 0.5px);
+  top: calc(var(--row) / 2 - var(--dot) / 2);
+  width: var(--dot);
+  height: var(--dot);
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-soft);
+  background: var(--paper-mid);
+}
+.role--now::after {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.role-period {
+  margin: 0;
+  line-height: var(--row);
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.role-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  line-height: var(--row);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.035em currentColor;
+}
+
+.role-company {
+  margin: 2px 0 0;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* The one place this page is set in sentence case, like the prose. */
+.role-summary,
+.principles-intro,
+.trait-text {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.1vw, 1.02rem);
+  line-height: 1.8;
+  color: var(--ink);
+}
+.role-summary { margin-top: clamp(12px, 1.8vh, 18px); max-width: 64ch; }
+
+.role-notes {
+  list-style: none;
+  margin: clamp(10px, 1.6vh, 16px) 0 0;
+  padding: 0;
+  max-width: 64ch;
+  color: var(--ink-soft);
+  font-size: clamp(0.84rem, 1vw, 0.94rem);
+  line-height: 1.7;
+}
+.role-notes li {
+  position: relative;
+  padding-left: 22px;
+}
+.role-notes li + li { margin-top: 6px; }
+.role-notes li::before {                   /* a tick, not a bullet: the page's marks are hairlines */
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.85em;
+  width: 12px;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ══ The principles ════════════════════════════════════════════════════════ */
+.principles {
+  margin-top: clamp(20px, 5vh, 60px);
+  padding-top: clamp(26px, 5vh, 52px);
+  border-top: 1px solid var(--rule);
+}
+
+.principles-label {
+  margin: 0 0 clamp(18px, 3vh, 28px);
+  font-weight: 400;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* A struck "UX" over a display "A -> X": live type, so it themes and stays
+   selectable. ⚠️ The arrow is drawn — the face has no arrow glyph — and its
+   stroke is in viewBox units, so it thickens and thins with the letters. */
+.ax { display: block; }
+.ax-ux {
+  display: inline-block;
+  font-size: clamp(0.9rem, 1.6vw, 1.25rem);
+  letter-spacing: 0.2em;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--ink-soft);
+}
+.ax-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.28em;
+  margin-top: 0.1em;
+  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  line-height: 1;
+}
+.ax-letter {
+  font-family: var(--font-display);
+  -webkit-text-stroke: 0.05em currentColor;
+}
+.ax-arrow {
+  width: 1.05em;
+  height: 0.42em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.principles-headline {
+  margin: clamp(20px, 3.4vh, 34px) 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(0.95rem, 1.8vw, 1.35rem);
+  line-height: 1.4;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.035em currentColor;
+}
+.principles-intro { margin-top: clamp(12px, 2vh, 20px); max-width: 64ch; }
+.principles-lead {
+  margin: clamp(22px, 3.6vh, 34px) 0 clamp(14px, 2vh, 20px);
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Six traits, ruled the way the list pages are: a hairline above each. */
+.traits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: clamp(22px, 3.4vw, 52px);
+}
+@media (max-width: 900px) { .traits { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .traits { grid-template-columns: minmax(0, 1fr); } }
+
+.trait {
+  border-top: 1px solid var(--rule);
+  padding: clamp(16px, 2.4vh, 22px) 0 clamp(20px, 3vh, 30px);
+}
+.trait .ico { font-size: 1.15rem; color: var(--ink); }
+.trait-title {
+  margin: 10px 0 6px;
+  font-weight: 400;
+  font-size: clamp(0.62rem, 1vw, 0.78rem);
+  line-height: 1.6;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.trait-text { color: var(--ink-soft); font-size: clamp(0.84rem, 1vw, 0.94rem); line-height: 1.7; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .folio-body.is-in .role,
+  .folio-body.is-in .trait {
+    animation: settle 520ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+    animation-delay: calc(min(var(--i), 18) * 45ms);
+  }
+}
+
+/* ══ Narrow screens ════════════════════════════════════════════════════════
+   One column: the rail moves to the left edge and the period drops in above
+   the role, since there is no margin for it to stand in. */
+@media (max-width: 640px) {
+  .roles { --per: 0px; --gap: 9px; }
+  .role {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 30px;
+  }
+  .role::before { left: 4px; }
+  .role::after  { left: calc(4px - var(--dot) / 2 + 0.5px); }
+}

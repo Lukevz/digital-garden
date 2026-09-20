@@ -2,9 +2,22 @@
 updated: 2026-05
 ---
 
+## Head of Product Design
+**Company:** Instinct Science
+**Period:** August 2026 – Present
+**Location:** Atlanta, GA
+
+Leading product design at Instinct: managing a team of four Senior Product Designers, setting design strategy, and building the internal design system.
+
+- Manage a team of four Senior Product Designers
+- Lead design strategy across Instinct's veterinary products
+- Building Axon, Instinct's internal design system
+
+**Focus areas:** Leadership · Strategy · Systems · Veterinary software
+
 ## Senior Product Designer
 **Company:** Instinct Science
-**Period:** December 2025 – Present
+**Period:** December 2025 – August 2026
 **Location:** Atlanta, GA
 
 Designing software for veterinarians across two core products while also managing an internal design system.

@@ -378,17 +378,41 @@ At the floor (160 × 320 fold, 24px marks, 16px gap): 59 against 42. Check the t
 when retuning. ⚠️ The gap is a flat 16px, not a `vw` clamp: the triangle sizes off
 `--curl-open`, and a viewport-sized gap stops agreeing with it at either end of its
 clamp. Under 640px it is 120 × 240 with 20px marks and a 12px gap (40 against 34).
-⚠️ The phone layout is untested in a real narrow viewport.
+⚠️ The 120 × 240 phone size described here is superseded by the tap-to-open ear below.
 
 **`#writing`, `#photos` and the four pages behind More are all live** (see
 **Sections**, **Photographs** and **More**); the router sends anything it doesn't
 recognise — `#more` included — back to the sheet. `More` is a toggle, not a link.
 
-⚠️ **On narrow screens the parked-open corner sits over the article.** `hover: none`
-parks it open, which is right on the landing page and wrong over a column of prose.
-`body.reading .page-scroll` carries bottom padding so the END of a piece clears it,
-but text still scrolls *under* the opaque corner on its way past. That needs its own
-answer on narrow screens; the padding is a floor, not a fix.
+**Touch and narrow screens: the ear rests small and an "@" opens it.** Under 640px or
+`hover: none` the corner used to be parked open (120 × 240), which covered the nav's
+"More". It now rests as a 48 × 96 stub carrying an `@` (`.curl-toggle`, the face has the
+glyph); tapping anywhere on `.curl` toggles `.is-open` (`js/paper.js`), which opens the
+fold to 140 × 280 and shows the five accounts with the `@` as the bottom item of the
+column, so tapping it again closes. Outside tap, Escape and any hash change also close it.
+⚠️ The base `:hover` / `:focus-within` open rules still fire on touch (a tap leaves
+`:hover` stuck), so that media block puts them back to the resting size and only
+`.is-open` opens the fold. ⚠️ Closed links are `visibility: hidden` so they are out of the
+tab order. The top-mark fit is 46 against 34 (see `.curl-links`).
+
+**The dog-ear is the landing page's only.** In a section (`body.reading`) `.curl` /
+`.curl-zone` are `visibility: hidden` and the accounts move to the RIGHT OF THE MASTHEAD
+(`.mast-links`), copied in from `.curl-links` by `paper.js` so the list lives once (it
+was a footer at the end of each scroller for a while; taken out on request). It fades
+with the surface on the way home (`fadeOut([leaving, backLink, mastLinks])`). ⚠️ On a
+phone the row is 16px marks with a 10px gap so it clears the centred monogram
+(back 11–69 / monogram 172–221 / marks 257–377 at 393 wide). ⚠️ intro.css's finished
+`intro-in` fill holds `.curl`'s opacity, so the corner disappears rather than fades.
+
+**The index toggle is in the card, top-left** (`#expand`, inside `.page`, a Tabler
+`layout-sidebar-left-collapse` / `-expand` pair swapped by `body.solo`), not in the
+masthead. `.page-scroll` carries extra top padding on wide screens for its row; on narrow
+screens the toggle is `display: none` and the padding goes back.
+
+**Read next** (`#readNext`, `paintReadNext()` in `js/paper.js`): under a rule at the end
+of each piece, the two posts that follow it in the index (older), wrapping round to the
+newest so the last post still has somewhere to send you. Plain `#writing/<slug>` links,
+filled once the piece has loaded and hidden while the next one is fetching.
 
 ## The marks (Tabler Icons)
 
@@ -537,7 +561,12 @@ quarter, which is right for a corner springing open and wrong for something cros
 the page; the flights use `EASE`.
 
 **The spread.** Index of titles left, the open piece right, each scrolling its own
-column. `body.solo` collapses the index to a zero-width track (transitioned, not
+column. ⚠️ **Under 640px it is two full-width PANES instead** (`.spread.is-post` is which
+is showing, set from the route by `setPostOpen()` in `js/paper.js`): bare `#writing` is
+the list of titles, `#writing/<slug>` slides the piece over it from the right, and Back
+steps out one level (piece → list → home; Escape does the same). The expand control is
+hidden there. On a wide sheet bare `#writing` still opens the newest piece; widening past
+the breakpoint from the bare list opens one via the `matchMedia` listener. `body.solo` collapses the index to a zero-width track (transitioned, not
 hidden) so the piece is the only thing on the sheet; the preference persists.
 
 ⚠️ **Two scroll containers, which the landing page's "no scroll container anywhere"
@@ -550,6 +579,42 @@ separately.** They're set at different sizes, so a cap on each gave them two dif
 widths and, once centred, two different left edges. It's also a px clamp, not `ch` —
 `ch` resolves against the element's own font, and capping the scroller in `ch` came
 out around 115 characters to the line.
+
+**Section pages run tighter than the landing page.** `body.reading .sheet` overrides
+`--sheet-pad` to `clamp(16px, 2.6vw, 32px)` (home is `clamp(28px, 5vw, 64px)`) and gives
+the foot only 0.6 of it, so the content runs further down the screen; the masthead's gaps
+are tighter too. It is the VARIABLE that changes, so the monogram and photos.css's
+full-bleed cover follow it, and it lands in the same task the flights measure in. There is
+no vertical rule between the index and the card any more — the gutter alone separates
+them.
+
+**The piece sits on a white card** (`.page`: `--frame`, 20px corners) that fills the whole
+right-hand column, and `.page-scroll` is now the card's full width so the wheel works
+anywhere on it. ⚠️ The measure therefore comes from PADDING —
+`padding-inline: max(gutter, (100% - --measure) / 2)` — not a `max-width` on the scroller;
+header and prose are still one box with one left edge. The open title in the index is a
+filled chip (`.is-current`, 9% ink) with the old leader line removed, and the rules on
+either side of it are dropped so no hairline runs through the fill.
+
+**The fades** (styles.css "The fades under overflowing content", toggled by `updateFade()`
+in `js/paper.js`): a soft wash plus a feathered `backdrop-filter` blur over the bottom of
+a scroller while it has more below, gone at the end. There is one PER SCROLLER, each fading
+to what is behind it: the piece (`.page.is-fade`, `::after`) fades to **white** (`--frame`),
+the index (`.spread.is-fade-index`, `::before`, `--index-w` wide) to the **paper**
+(`--sheet-mid`, at a lighter 40% because the sheet is a lit gradient and a flat tone shows
+as a band; ⚠️ the index's is blur only, and its titles are MASKED to transparent instead, which
+lands on the real background exactly), and `.plates` / `.folio` (`.is-fade`) to the paper too.
+⚠️ **The piece's fade is a glass pane** (`.page::after`, 110–170px tall): the text behind is
+blurred and over-saturated so it ghosts through, refracted by the `#glass` SVG filter
+(inline in index.html; `backdrop-filter: url()` is Chromium-only, so it sits behind
+`@supports` and other browsers keep blur + sheen), with three bands of light that
+`paper.js` slides along with the scroll (`--glass-pos` on `.page`), and a bright hairline +
+inner glow on the bottom edge. Each white band is paired with a cool grey one
+(`--glass-lo`) because white on the white card is invisible; dark mode swaps both.
+⚠️ The paper-toned ones are masked on BOTH axes (vertical fades at both ends, plus a horizontal
+feather) — a blurred rectangle on a grained sheet shows its edges otherwise. ⚠️ On a narrow sheet only
+the pane that is showing counts. ⚠️ Throttled with `setTimeout`, not rAF: a hidden tab never
+fires rAF, which wedged the "already queued" flag while testing.
 
 **The prose** is the one place on the site set in sentence case. The face has real
 lowercase (distinct glyphs, not a caps clone). `<strong>` can't get heavier — one
@@ -567,6 +632,14 @@ at least one**. An unmapped glyph doesn't fail loudly — it falls through to
 `ui-sans-serif` and sets one character of the sentence in a different typeface. The
 markdown stays correct; only what's rendered is folded down. Straight double quotes
 become real curly ones, since those the face does have.
+
+⚠️ **A YouTube link alone on its line renders as an embedded player.** Posts open with the
+video they were made from, written as a plain markdown link (`[Title](https://youtu.be/ID)`);
+`youtubeEmbed()` in `mdToHTML` turns a link that is the WHOLE line (markdown or bare URL,
+`youtu.be` or `youtube.com/watch`, a `t=` start time honoured) into a 16:9
+`youtube-nocookie.com` iframe (`.prose .video`), and leaves the same link mid-sentence as a
+link. It is not an `<iframe>` typed into the markdown because `fold()` curls every straight
+`"`, which would break the attributes.
 
 ⚠️ **`filenameToSlug()` is the v2 site's, character for character.** The second-brain
 vault hard-codes these routes in prose (`mocs/Site MOC.md`) and the chat hands them to
@@ -677,9 +750,38 @@ blank plate. The map is `remove()`d in `leave()` to free the WebGL context.
 animations freeze and every `finished` promise hangs, so a route appears to stall
 half-way. `paper.enabled = false` tests the routing logic on its own.
 
-⚠️ **Known, not fixed:** at phone widths the dog-ear is parked open (`hover: none`)
-and its flap covers the right end of the nav row — Photos and More included — so the
-row is reachable only where it clears the corner.
+## Career (`career.css`, `content/career.json`)
+
+`#career` is a fifth route onto the folio (the surface behind More), painted by
+`renderCareer()` in `js/more.js`: a vertical timeline of roles down a hairline
+rail (period in the margin, a dot per role, the current one filled), then the
+**A -> X principles** — a struck "UX" over a display "A -> X", the headline
+"Design from the Ask to the Experience", and six traits (Adaptability, Boldness,
+Inclusivity, Articulation, Curiosity, Resilience). Both are taken from the v2
+site: the timeline from `git show 8bda88c:_index.html` (`#homeTimeline`) and
+`js/timeline.js`, the principles from `#homePrinciples`. The horizontal
+scroll-jacked rail and the company logos did NOT come across — a pinned
+horizontal sweep has no place on a surface that is already a column you fall
+down, and colour logos are the one thing on a hairline sheet that isn't.
+
+**Career is live in the nav** (`<a href="#career">` between Photos and More). It was a
+"Soon" span for a while; the `.links .soon` rules are gone from `career.css` and `styles.css`.
+
+**The resume button** sits inline with the title, far right (`head()` in `js/more.js`
+takes an optional `action`; `.folio-head--action` is the two-column grid). Its URL is
+`resume.url` in `content/career.json` — the v2 site's Google Drive download link
+(`git show 8bda88c:js/main.js`, `renderResumeEmbed`), so the file is whatever is in that
+Drive file today. Swap it for a committed PDF if you'd rather it be self-hosted.
+The timeline is newest first, and the order is the order of `timeline` in that file.
+
+⚠️ **The face has no `%` or `~`** (it does have `+ ( ) * ; # $ =`). The copy in
+`content/career.json` says "percent" and "about"; check that when editing, or a
+character is set in the fallback font. Dashes are fine — `fold()` handles them.
+
+⚠️ **Instinct is two entries**: Head of Product Design (Aug 2026 - Present, `now`; four Senior
+Product Designers, design strategy, the internal design system) above Senior Product Designer
+(Dec 2025 - Aug 2026). `content/career.md` carries the same two. The landing bio already says
+Head of Design.
 
 ## Photographs (`js/photos.js`, `photos.css`)
 
