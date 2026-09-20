@@ -603,7 +603,9 @@ to what is behind it: the piece (`.page.is-fade`, `::after`) fades to **white** 
 the index (`.spread.is-fade-index`, `::before`, `--index-w` wide) to the **paper**
 (`--sheet-mid`, at a lighter 40% because the sheet is a lit gradient and a flat tone shows
 as a band; ⚠️ the index's is blur only, and its titles are MASKED to transparent instead, which
-lands on the real background exactly), and `.plates` / `.folio` (`.is-fade`) to the paper too.
+lands on the real background exactly). ⚠️ **Only the writing spread has fades.** Photos and the
+More pages (bookshelf, gear, app stack, places, career) are standalone and have none — they
+were built and removed on request; don't add them back.
 ⚠️ **The piece's fade is a glass pane** (`.page::after`, 110–170px tall): the text behind is
 blurred and over-saturated so it ghosts through, refracted by the `#glass` SVG filter
 (inline in index.html; `backdrop-filter: url()` is Chromium-only, so it sits behind
@@ -611,7 +613,7 @@ blurred and over-saturated so it ghosts through, refracted by the `#glass` SVG f
 `paper.js` slides along with the scroll (`--glass-pos` on `.page`), and a bright hairline +
 inner glow on the bottom edge. Each white band is paired with a cool grey one
 (`--glass-lo`) because white on the white card is invisible; dark mode swaps both.
-⚠️ The paper-toned ones are masked on BOTH axes (vertical fades at both ends, plus a horizontal
+⚠️ The index's is masked on BOTH axes (vertical fades at both ends, plus a horizontal
 feather) — a blurred rectangle on a grained sheet shows its edges otherwise. ⚠️ On a narrow sheet only
 the pane that is showing counts. ⚠️ Throttled with `setTimeout`, not rAF: a hidden tab never
 fires rAF, which wedged the "already queued" flag while testing.

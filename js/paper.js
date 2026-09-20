@@ -1039,18 +1039,15 @@
   /* ══ The fades under overflowing content ══════════════════════════════
      styles.css draws them; this decides when. Each scroller you can actually
      see gets its own: the index (`.spread.is-fade-index`), the piece
-     (`.page.is-fade`), and the photographs / More surfaces (`.is-fade`).
+     (`.page.is-fade`). Only the writing spread has them: Photos and the More
+     pages are standalone and get no fade.
      ⚠️ On a narrow screen the spread's two panes are both laid out (the
      hidden one has only slid away), so only the pane that is showing counts. */
-  const platesScroll = $('platesScroll');
-  const folioScroll = $('folioScroll');
   const pageEl = pageScroll && pageScroll.parentElement;
   const isPostOpen = () => spread.classList.contains('is-post');
   const fadeTargets = [
     { host: spread,  cls: 'is-fade-index', scroller: indexEl,    on: () => !narrow.matches || !isPostOpen() },
     { host: pageEl,  cls: 'is-fade',       scroller: pageScroll, on: () => !narrow.matches || isPostOpen() },
-    { host: plates,  cls: 'is-fade',       scroller: platesScroll, on: () => true },
-    { host: folio,   cls: 'is-fade',       scroller: folioScroll,  on: () => true },
   ];
   let fadeQueued = false;
   function updateFade() {
@@ -1081,12 +1078,10 @@
   window.addEventListener('resize', queueFade);
   window.addEventListener('hashchange', queueFade);
   const fadeObserver = new MutationObserver(queueFade);
-  [pageScroll, indexEl, platesScroll, folioScroll].forEach(el => {
+  [pageScroll, indexEl].forEach(el => {
     if (el) fadeObserver.observe(el, { childList: true, subtree: true });
   });
-  [spread, plates, folio].forEach(el => {
-    if (el) fadeObserver.observe(el, { attributes: true, attributeFilter: ['hidden', 'class'] });
-  });
+  if (spread) fadeObserver.observe(spread, { attributes: true, attributeFilter: ['hidden', 'class'] });
 
   window.addEventListener('hashchange', route);
   route();

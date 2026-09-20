@@ -1217,25 +1217,22 @@ body.reading .mast-links a:focus-visible { color: var(--ink); outline: none; }
    more to scroll to; gone once the end is on screen. js/paper.js toggles the
    classes (scroll, resize, content changes). Pseudo-elements on the scroller's
    own container, so there is no markup and the sections' repaints don't touch
-   them. There are two on the writing spread, one per column, and each one
-   fades to what is BEHIND that column:
+   them. There are two, both on the writing spread and one per column, and each
+   fades to what is BEHIND that column. ⚠️ Standalone pages (Photos, and the More
+   pages: bookshelf, gear, app stack, places, career) have NONE — they were
+   built and taken out on request:
 
      .page::after     the piece  → white   (`--frame`, the card's own colour;
                                              near-black in dark mode)
      .spread::before  the index  → the paper (`--sheet-mid`, the sheet's tone)
-     .plates / .folio            → the paper, they sit on the sheet
 
    ⚠️ The blur is feathered by a MASK on the same element, not by a hard-edged
    strip: `backdrop-filter` on its own would show a straight line where it
    starts. */
-.spread,
-.plates,
-.folio { position: relative; }
+.spread { position: relative; }
 
 .spread::before,
-.page::after,
-.plates::after,
-.folio::after {
+.page::after {
   content: '';
   position: absolute;
   inset: auto 0 0 0;
@@ -1252,10 +1249,8 @@ body.reading .mast-links a:focus-visible { color: var(--ink); outline: none; }
   opacity: 0;
   transition: opacity 260ms ease;
 }
-.spread::before,
-.plates::after,
-.folio::after {
-  /* ⚠️ These three float over the PAPER, and a blurred / washed rectangle on a
+.spread::before {
+  /* ⚠️ This one floats over the PAPER, and a blurred / washed rectangle on a
      textured sheet shows its edges — the top was feathered but the sides were
      hard, and so was the bottom, where the blur stops against unblurred paper. A
      second mask, intersected with the first, feathers the sides, and the
@@ -1337,9 +1332,7 @@ body.reading .mast-links a:focus-visible { color: var(--ink); outline: none; }
 }
 
 .spread.is-fade-index::before,
-.page.is-fade::after,
-.plates.is-fade::after,
-.folio.is-fade::after { opacity: 1; }
+.page.is-fade::after { opacity: 1; }
 
 /* ── The monogram stays in the middle ─────────────────────────────────────
    Off the home page the letterhead does not go to a corner: it shrinks to the
