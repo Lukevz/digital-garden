@@ -1,0 +1,31 @@
+{
+  "slug": "disney-2024",
+  "source": "/Users/lukevz/Library/CloudStorage/GoogleDrive-lukevz12@gmail.com/My Drive/1 Projects/Personal Site/Photos/Disney",
+  "start": "2024-12-01",
+  "title": "Disney",
+  "byline": "Walt Disney World, December 2024",
+  "dates": "Dec 1 — 7, 2024",
+  "index": { "title": "Disney 2024", "dates": "Dec 1 — 7", "kicker": "Disney 2024", "feature": false },
+  "cover": "DSCF5377.jpg",
+  "coverAlt": "Cinderella Castle under an evening sky",
+  "days": [
+    { "key": "dec-02", "date": "2024-12-02", "title": "", "place": "Animal Kingdom" },
+    { "key": "dec-03", "date": "2024-12-03", "title": "", "place": "Hollywood Studios" },
+    { "key": "dec-05", "date": "2024-12-05", "title": "", "place": "Magic Kingdom" },
+    { "key": "dec-06", "date": "2024-12-06", "title": "", "place": "EPCOT" }
+  ],
+  "keep": [
+    "DSCF5038.jpg", "DSCF5041.jpg", "DSCF5048.jpg", "DSCF5069.jpg", "DSCF5076.jpg",
+    "DSCF5080.jpg", "DSCF5092.jpg", "DSCF5099.jpg",
+    "DSCF5117.jpg", "DSCF5127.jpg", "DSCF5129.jpg", "DSCF5135.jpg", "DSCF5138.jpg",
+    "DSCF5146.jpg", "DSCF5149.jpg", "DSCF5153.jpg", "DSCF5158.jpg", "DSCF5171.jpg",
+    "DSCF5181.jpg", "DSCF5182.jpg", "DSCF5230.jpg", "DSCF5262.jpg", "DSCF5280.jpg",
+    "DSCF5284.jpg", "DSCF5287.jpg",
+    "DSCF5309.jpg", "DSCF5313.jpg", "DSCF5318.jpg", "DSCF5321.jpg", "DSCF5322.jpg",
+    "DSCF5339.jpg", "DSCF5350.jpg", "DSCF5352.jpg", "DSCF5353.jpg", "DSCF5357.jpg",
+    "DSCF5364.jpg", "DSCF5374.jpg", "DSCF5376.jpg", "DSCF5378.jpg",
+    "DSCF5386.jpg", "DSCF5391.jpg", "DSCF5395.jpg", "DSCF5402.jpg", "DSCF5410.jpg",
+    "DSCF5418.jpg", "DSCF5422.jpg"
+  ],
+  "alts": {}
+}

@@ -2,319 +2,808 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## What this branch is
 
-This is a personal digital garden / portfolio website that simulates the Bear notes app interface. It features:
-- An interactive black hole particle simulation background
-- Bear-style 3-pane note browser with tag navigation
-- OS-style window management system (draggable, resizable windows)
-- Music player with YouTube integration
-- Tasks/goals viewer
-- Static site - no build process required for core functionality
+`paperlike` is a **reset**. The v2 site — the fixed starfield hero, the world-descent
+director, the Bear-style feed, the section pages, the chat dock island — is gone from
+the working tree. In its place is one file's worth of site: a single, non-scrollable,
+text-only landing page.
+
+⚠️ **Nothing was lost, and nothing here should be reconstructed from memory.** The whole
+v2 front-end plus ~40KB of notes describing it (worlds, passages, the genie drain, the
+starfield warp, per-scene ink, section pages vs. the section modal) lives on `main`.
+`git show main:CLAUDE.md` and `git show main:js/worlds.js` are the references. If a task
+needs any of that back, take it from `main` rather than rewriting it.
+
+**Removed here:** `_index.html`, `styles.css` (the old 280KB one), `js/`, `about.html`,
+`now.html`, `work.html`, `flipboard.*`, `fonts/chillax/`, `src/img/`, most of `images/`,
+and `api/home.js` (it existed only to serve the v2 shell with a theme-aware OG image).
+
+**Kept and still working:** `content/` (the writing, photos, and the second-brain vault),
+`api/` minus `home.js`, `build/`, `src/data/`, and `v1/` — the original v1 site, still
+served at `/v1`, and still what `build/build.js` generates manifests for.
 
 ## Development Commands
 
-**Start development server:**
 ```bash
-node build/dev.js
-```
-This starts a local server at http://localhost:3000, watches the `/posts`, `/sounds`, `/labs`, and `/thought-train` folders for changes, and auto-regenerates their corresponding manifest files when content is added/modified.
-
-**CRITICAL - Dev Server API Endpoints:**
-The dev server (`build/dev.js`) provides API proxy endpoints for the music player:
-- `/api/youtube/playlist?id=PLAYLIST_ID` - Fetches YouTube playlist tracks (query parameter format)
-- Requires `music-config.js` with YouTube API key configuration
-- Returns playlist items in format expected by `fetchPlaylistWithCache()` in js/app.js
-
-**Build manifests:**
-```bash
-node build/build.js
-```
-Scans folders and generates manifest files:
-- `posts.js` - Markdown files from `/posts` folder
-- `sounds.js` - Audio files from `/sounds` folder
-- `labs.js` - Lab projects from `/labs` folder
-- `thought-trains.js` - Thought trains from `/thought-train` folder
-
-**Running the site:**
-Simply open `index.html` in a browser, or use any static file server. No build step required for core functionality. However, for the music player to fetch YouTube playlists in development, you must use `node build/dev.js` which provides the API proxy.
-
-## Architecture
-
-### File Structure
-```
-/
-├── index.html              - Main entry point, contains all views
-├── styles.css              - All styles (window system, Bear UI, Zen player)
-├── background.js           - Black hole particle simulation
-├── cursor-trail.js         - Mouse cursor trail effect
-├── /js/                    - Modular JavaScript (ES6 modules)
-│   ├── app.js              - Main application orchestration
-│   ├── /config/            - Configuration modules
-│   │   ├── icons.js        - SVG icon definitions (tags, music folders, weather)
-│   │   ├── constants.js    - App constants (folders, hidden tags, keys)
-│   │   └── state.js        - Centralized state initialization
-│   ├── /utils/             - Utility functions
-│   │   ├── dom.js          - DOM utilities (formatDate, filenameToSlug)
-│   │   ├── storage.js      - LocalStorage helpers
-│   │   ├── yaml.js         - Shared YAML frontmatter parser
-│   │   └── markdown.js     - Markdown to HTML parser (12KB)
-│   ├── /parsers/           - Content parsers
-│   │   ├── post-parser.js  - Bear-style post parsing
-│   │   ├── train-parser.js - Thought train parsing
-│   │   └── lab-parser.js   - Lab project parsing
-│   └── /build/             - Build utilities
-│       └── manifest-builder.js - Shared manifest generation
-├── /build/                 - Build scripts
-│   ├── build.js            - Generate all manifests
-│   └── dev.js              - Dev server with file watching & API proxy
-├── /posts/                 - Markdown notes
-├── /thought-train/         - Thought train markdown files
-├── /labs/                  - Lab project markdown files
-├── /sounds/                - Local audio files
-└── /api/                   - Vercel serverless functions (production)
+npm run dev      # static server + watchers on :3000; serves index.html at /
+npm run build    # v1 manifests — this is Vercel's buildCommand
+npm run index    # rebuild the committed chat index from the vault
+npm run gaps     # re-check the KB gap list against the committed index
 ```
 
-**Auto-generated manifests:**
-- `posts.js` - Markdown files from `/posts` folder
-- `sounds.js` - Audio files from `/sounds` folder
-- `labs.js` - Lab projects from `/labs` folder
-- `thought-trains.js` - Thought trains from `/thought-train` folder
+## The landing page
 
-**Configuration files:**
-- `music.md` - YouTube videos, playlists, and channels
-- `music-config.js` - YouTube API key configuration (gitignored, required for dev)
-- `goals.md` - Task list with checkboxes
+`index.html` and `styles.css`, plus `intro.css` for the loading sequence. The
+sections add `photos.css`, `js/paper.js` and `js/photos.js` — none of which the
+landing page itself uses. No build step, no framework.
 
-### Key Systems
+⚠️ **The landing page itself is still script-free.** Both scripts are deferred and do
+nothing until a section route is on the hash — with scripting blocked, `/` renders
+exactly as it always did. See **Sections** and **Photographs** below.
 
-**Modular Architecture:**
-The codebase uses ES6 modules for clean separation of concerns:
-- **Configuration** (`/js/config/`) - Icons, constants, and state initialization
-- **Utilities** (`/js/utils/`) - Shared helper functions (DOM, storage, YAML, markdown parsing)
-- **Parsers** (`/js/parsers/`) - Content parsing logic (posts, thought trains, labs)
-- **Build** (`/js/build/`) - Manifest generation utilities
-- **Main App** (`js/app.js`) - Application orchestration and UI logic
+**Two surfaces, and the distinction is the whole design.** `<body>` is a flat,
+untextured **frame** in a single solid colour (white in light mode, near-black in dark).
+`.sheet` is the **paper**: `position: fixed`, `inset: var(--frame-w)`, rounded by
+`--sheet-radius`, carrying the texture. The frame being the only untextured colour on
+the page is what makes the grey field read as a sheet laid down on something rather
+than as a page background.
 
-**Bear-Style Note Browser:**
-- Uses `parsePost()` from `js/parsers/post-parser.js` to extract frontmatter, hashtags, and content from markdown
-- Supports nested tags (e.g., `#business/career`)
-- Tag hierarchy rendered as collapsible tree
-- Posts manifest at `posts.js` includes creation dates from filesystem
-- URL routing: `#note/slug` for deep linking to notes
+⚠️ **The paper is NOT tinted, and was tried.** A per-session pastel (seven colours
+off the branding file, mixed into the ramp at 24% light / 11% dark and picked by
+`js/paper.js`) was built and taken back out: colour on the page-sized field read as a
+tinted page background, which is not what the sheet is for. The ramp is the plain slate
+grey again, `--curl-fold` / `--curl-tip` are plain greys to match, and `paper.js` no
+longer touches the landing page at all. Don't reintroduce a `--tint`.
 
-**Black Hole Simulation (background.js)**
-- Canvas-based particle physics with gravitational attraction
-- 400 particles orbiting the black hole
-- Mouse interaction creates repulsion effects
-- Celestial bodies (moons/planets) orbit at different speeds
-- Frame-limited to 30 FPS for performance
+- `--frame-w` (20px) and `--sheet-radius` (36px) are the two dials, halved on the
+  `max-width: 640px` breakpoint. The `inset` is written twice — the second uses
+  `max(--frame-w, env(safe-area-inset-*))` so a notch can widen one side without the
+  first declaration's uniform value being lost on browsers that don't support `env()`.
+- `isolation: isolate` on `.sheet` is load-bearing: without it the grain's blend modes
+  reach through to the frame and the "solid colour" stops being solid.
+- **The frame is the landing page's, and only the landing page's.** `body.full`
+  takes the inset to `0` and the corners to square, so a section zooms the paper
+  up to the edges of the screen and gives the whole viewport to the reading. See
+  **The zoom** under **Sections** for why that class is not `body.reading`.
 
-**Music Player (app.js:2814-3355)**
-- **CRITICAL**: Zen Mosaic-style music player with embedded playback for YouTube videos and local audio
-- **Folder Order**: Music, Podcasts, Ambience, Sounds (defined in `defaultMusicFolders` at app.js:308)
-- **Auto-play**: Tracks automatically start playing when clicked from playlist
-- **Dual Playback Support**:
-  - YouTube videos: Embedded via YouTube IFrame API (`ensureYouTubePlayer()` at app.js:3351)
-  - Local audio: HTML5 audio player (`ensureAudioPlayer()` at app.js:3344) for files in `/sounds` directory
-- **Track Sources**:
-  - `music.md`: YouTube videos, playlists, and channels
-  - `sounds.js`: Auto-generated manifest of local audio files (built by `node build.js`)
-- **Data Flow**:
-  1. `loadMusic()` (app.js:2915) loads tracks from music.md and sounds.js
-  2. `parseMusicMd()` (app.js:3010) parses markdown to extract videos, playlists, channels
-  3. YouTube playlists expand via API (`fetchPlaylistWithCache()` at app.js:2874)
-  4. `loadSounds()` (app.js:2814) imports sounds.js manifest
-  5. All tracks combined in `musicState.allTracks`
-  6. `applyFolderFilter()` (app.js:3210) filters tracks by active folder
-  7. `renderPlaylist()` (app.js:3251) displays filtered tracks
-  8. `playTrack()` (app.js:3315) handles playback for both YouTube and local audio
-- **NO THUMBNAILS for Sounds folder** (app.js:3287-3294) - thumbnails hidden to keep UI clean
-- **Styling**: `.zen-device` has NO box-shadow (styles.css:2441) per design requirements
+**The paper texture is generated, not an image.** Two `feTurbulence` tiles as data
+URIs — `.sheet::before` is fine speckle, `.sheet::after` is slow tonal mottle (640px)
+— over a soft radial tone ramp. No asset to load, resolution-independent, and
+re-tintable per theme, which a photographed paper scan is not.
 
-### Data Format
+**The register is a notebook, not a watercolour block.** The texture is something you
+should only notice once it's gone: small, even, and everywhere. Depth comes from the
+LIGHTING, not from marks on the stock — `.sheet`'s background is three washes over the
+base ramp (one `--pool` up and to the right, two `--burn` corners at two different
+sizes, none of them concentric with the sheet or each other), plus `--sheet-inner`, an
+inset `box-shadow` giving the sheet its own thickness: a lit top edge and two unequal
+pools of shade. Like `--curl-shadow` it is the **whole shadow value** in a variable,
+because all its stops have to move together between themes.
 
-**posts.js format:**
-```javascript
-export default [
-  {
-    "file": "My Note.md",
-    "created": "2025-01-19"
-  }
-]
+⚠️ **Two things were built here and deliberately taken back out**, so they read as
+options rather than oversights:
+
+- **Torn-edged blooms** — an ellipse pushed through an `feDisplacementMap` and
+  stretched over the sheet, which gave the page real depth and a feathered, dried-wash
+  edge. They also read as *stains*: big soft shapes you look AT, on a page whose whole
+  job is to be looked THROUGH.
+- **Mid-scale detail** — a 320px "tooth" tile and a five-octave ridged blotch. Real
+  stock has fibre at a pixel and tonal drift across inches with almost nothing in
+  between; anything in the **4–16px band** stops reading as paper and starts reading
+  as a badly compressed photograph of paper.
+
+⚠️ **The grain is sized in DEVICE pixels** (`--grain-pitch`, 180px, dropping to 116px
+under `min-resolution: 2dppx`). `feTurbulence` is generated in its tile's own user
+space, so at a 180px pitch a grain is about a CSS pixel — which on a 2× display is a
+two-device-pixel grain, and looks precisely like paper photographed at half
+resolution. It is not a straight halving: at exactly half, every grain lands on one
+device pixel and the field aliases into a shimmer.
+
+⚠️ **Three things about that noise, each of which looked broken before it was fixed:**
+
+1. **`feTurbulence` writes noise into the ALPHA channel too**, not just RGB, so half the
+   speckle is erased by its own transparency and the grain comes out invisible. The
+   `feColorMatrix` folds the red channel across RGB and pins alpha to 1 — opaque
+   greyscale noise.
+2. **It also emits *colour*.** Straight out of the filter the "paper" picks up faint
+   yellow and olive blotches. Same `feColorMatrix` fixes it; a `type='saturate'`
+   matrix alone does not, because it leaves the alpha noise in place.
+3. **`fractalNoise` clusters tightly around 0.5**, so the untouched output is a smooth
+   grey wash. The `feComponentTransfer` stretches it (`slope` 2.8 for the fine grain)
+   — that stretch is the difference between visible paper stock and a flat fill.
+
+Because the noise is centred on mid-grey and opaque, it rides `mix-blend-mode: overlay`
+with **no net shift in the sheet's tone** — the palette and the texture are independent.
+Multiply would darken the paper as a side effect of graining it.
+
+⚠️ **The mottle wants to be almost invisible** (`--mottle-opacity: 0.12` light, `0.09`
+dark). At 0.5 it reads as marble, not paper. It is tonal unevenness you should only
+notice when it's gone.
+
+**Typeface.** One face, everywhere: TAY Wingman (`fonts/taywingman/`), a hand-drawn
+1950s monoline caps face. woff2 + woff are what the page loads; the `.otf` is the
+desktop original, kept for reference. The woff2 is `<link rel="preload">`ed because
+*every* glyph on the page is set in it — a swap flash here reflows the whole layout,
+not one heading.
+
+- The page is set in **caps via `text-transform`**, not typed in caps, so screen readers
+  and copy-paste get real sentence case.
+- Letter-spacing adds a trailing gap after a line's last letter, which pushes a centred
+  line half a space right. `.name` and `.bio` each carry a negative `margin-right` equal
+  to their own tracking to take it back.
+- The font has no em dash, en dash, or middle dot — its punctuation is `!&',-./:?@’`.
+  Separators must come from that set, or they render as tofu.
+
+**One screen, always.** `html, body { height: 100%; overflow: hidden }` and no scroll
+container anywhere inside, so there is nothing for a stray overflow to start scrolling.
+`.name` sizes off `vw` (`clamp(2.4rem, 8.5vw, 6.25rem)`), which is what keeps
+"LUKE VAN ZYL" on one line at every width without a `nowrap` that could overflow.
+⚠️ Don't put a `max-width` on `.lockup` — it was there once and broke the name across
+three lines and overrode the bio's hand-set `<br>`s. The measure belongs on `.bio`.
+
+**Theme is automatic** (`prefers-color-scheme`), with no toggle. This is not the v2
+dark-lock coming back: that whole mechanism — `THEME_LOCK_DARK`, the pinned
+`data-theme="dark"` attribute, the hidden `#themeToggle` — went with `js/main.js`.
+Every colour here is a `:root` custom property redefined in one media query.
+
+## The draughtsman's layer
+
+`.spec` is a decorative overlay of rulers, registration crosses and dimension
+notes, drawn over the paper the way a codex page carries its own measurements
+around the figure. It is `aria-hidden` with `pointer-events: none`, and nothing
+on it carries information the page needs — the numerals are notation, not live
+values (there is no JS to compute any).
+
+It is built from positioned boxes and repeating gradients, not an inline SVG:
+the sheet is fully fluid, and an SVG with a fixed viewBox would have to stretch,
+which puts the ticks on a different pitch top vs. side and tapers the hairlines.
+
+⚠️ **Corners are concentric: `inner = outer − gap`.** `--spec-radius` derives
+the frame line's corner from `--sheet-radius` rather than restating it, so the
+two curves stay parallel instead of drifting apart at the diagonal — the one
+place the eye checks — and so the relationship survives a retune of the sheet.
+The `max(0px, …)` is load-bearing: once the gap exceeds the outer radius the
+correct inner corner is **square**, not a clamped curve.
+
+That rule is also why there is no radius-annotation arc, though one was drawn
+first. A concentric arc inside a 24px corner has ~9px of curve to show, which is
+smaller than the numeral labelling it; the only way to make it legible is to
+draw it non-concentric, at which point it annotates nothing.
+
+The layer settles on rulers all round plus the two dimension notes; the
+construction axes and the corner badges that were tried alongside them are gone
+(the axes ran a hairline through the middle of the name). The whole layer is
+`display: none` under 640px — the marks are margin furniture and a phone has no
+margin.
+
+## The intro (`intro.css`)
+
+The draughtsman's marks are no longer decoration — they are the loading
+sequence, and they do not survive it. The sheet arrives blank; the frame line
+draws outward from a seam at the centre and closes down the two short sides;
+the letterhead is printed under it; the graduations strike themselves
+clockwise from the top-left; the copy settles; then every mark leaves. The
+resting page is paper, copy and the dog-ear.
+
+All CSS. The landing page has no script of its own, and `js/paper.js` never
+touches `.spec`. Six timings at the top of the file drive everything —
+`--t-frame`, `--t-mark`, `--t-tick`, `--t-name`, `--t-rest`, `--t-out` — and
+every delay is derived from them, so moving one moves its whole phase.
+
+**The copy arrives WITH the marks, not after them.** `--t-rest` is 1.05s: the bio,
+the nav row and the dog-ear fade on (opacity only, no rise) while the frame line is
+still drawing and the graduations are still striking. **One row at a time:** each of
+the bio's three lines is a `.bio-line` span (`--i` = its row, 260ms apart), then the
+nav row is the fourth. The spans are inline so the phone layout, which hides the
+`<br>`s and lets the bio wrap, still works. Like the monogram, gated on
+`:not(.intro-spent)` so a return from a section doesn't replay it. It used to wait for the sweep
+to finish at 3.45s, which made the page a blank sheet with rulers for three seconds.
+
+**The monogram is etched a letter at a time, and it is inline SVG now.** L, V, Z go on
+in turn: the L (a soft shaded shape) under a soft-edged mask that sweeps down it, the
+V and Z (straight strokes) drawn line by line via `pathLength="1"` + `stroke-dashoffset`,
+staggered by each path's `--i`. ⚠️ It is inlined in `index.html` because an `<img>`'s
+own animations can't be timed against the page's. (`images/lvz-monogram.svg` used to
+be the masthead corner's mark and is now unused: the masthead shows this same element.)
+⚠️ The etch rules are also gated on `:not(.intro-spent)`, which `enterReading()` sets
+the first time a section opens, so the mark isn't etched in again halfway through the
+flight home.
+
+⚠️ **It is the home sheet's sequence, and only the home sheet's.** Every rule
+in the file is scoped to `body:not(.no-intro)`, and `js/paper.js` sets that
+class — synchronously, the moment the deferred script runs, which is before
+the first mark is due at 250ms — when the URL it loaded on already names a
+section. Landing straight on a piece, the marks would otherwise draw
+themselves around an article that is already open and then wipe off again.
+`no-intro` lands the page settled: the same page reduced motion gets, which
+is why `.spec` is `display: none` in both cases.
+
+⚠️ **The frame line draws in two phases, and it has to.** `spec-draw` opens
+the horizontals from a centre seam; a clip with no vertical inset CANNOT draw
+the two short sides — the moment its edge crosses them they appear at full
+height at once. So phase one stops `--seam` (2px) short of the edges and
+`spec-close` takes the four tips on down the sides to meet in the middle of
+them, slower per pixel than phase one, closing the rect opposite the seam it
+opened from. `spec-close` is a polygon, not an inset, because a bite out of
+the middle of each side is not a rectangle; the two animations hand over at
+identical geometry, and the last keyframe pulls the bite back out to the edge
+so the resting shape is a plain rect rather than one with a zero-area sliver
+retraced down each side.
+
+⚠️ **It lives in its own file on purpose.** A second session is building the
+reading spread in `styles.css` and `js/paper.js`. Keeping the intro out of
+`styles.css` means the two can't overwrite each other; the only shared line is
+the `<link>` in `index.html`.
+
+⚠️ **Each side of the sweep is `linear`, and the ease-out is built from the
+durations lengthening** as it goes round (480 → 570 → 690 → 840ms). Four
+staggered ease-outs decelerate into every corner and read as four separate
+strokes; one lengthening sequence reads as a single hand slowing down.
+
+⚠️ **`.bio:not(.is-settling)` / `.links:not(.is-settling)` is load-bearing.**
+These rules have to beat the `settle` in `styles.css`, which means matching its
+specificity and winning on source order — and that would also beat
+`.is-settling`, silently killing the return-home replay `js/paper.js` arms.
+Excluding the class makes the rule stop matching the moment the replay is set
+up, so the other rule applies cleanly. `.lockup` needs no such guard; the
+replay is only ever put on the bio and the social row.
+
+⚠️ **The typewriter is a stepped `clip-path`, not an animated width.** A
+percentage width on an inline-block resolves against the containing block, not
+the text, so it would sweep the whole column instead of the name.
+
+⚠️ **The typewriter's hidden start state is a DECLARATION, and its fill is
+`forwards`, never `both`.** A stepped animation is already at 1/n at progress
+0, and engines disagree about whether the BEFORE phase clamps that back to 0:
+Chrome does, WebKit shows the first step — so on a backwards fill the letter L
+sits on screen for the whole delay before anything types. Declaring the start
+state sidesteps the disagreement instead of betting on one engine.
+
+⚠️ **The clip's vertical insets are negative** (`-0.3em`). The name's line box
+is `line-height: 1`, which is shorter than the font's own ascent, so a plain
+`inset(0 …)` shaves the tops off the caps.
+
+⚠️ **The clip rides `.name-home`, not the `<h1>`.** `js/paper.js` FLIPs the
+`<h1>` into the corner on a section open and measures its box to do it;
+shrink-wrapping that box moves the target out from under the measurement. The
+`:has()` fallback keeps the effect if the link is ever removed.
+
+⚠️ **The phone timeline is collapsed.** `.spec` is `display: none` under 640px,
+so the first three seconds would otherwise be a blank sheet with nothing
+drawing on it.
+
+**Reduced motion gets the settled page** — copy present, `.spec` hidden
+outright. The marks are gone by the end of the sequence, so that is the honest
+equivalent, not a static ruler nobody asked for.
+
+## The dog-ear (`.curl`)
+
+Hovering the right edge lifts the sheet's bottom-right corner, and the section
+nav is underneath it. The page is the thing you pick up, not a surface a menu
+slides over.
+
+Two triangles sized to the same square at the corner, with the fold along its
+diagonal:
+
+```
+  (0,0)────────(s,0)      .curl-flap = {(0,0) (s,0) (0,s)}  the folded corner
+    │  flap  ╱   │        .curl-hole = {(0,s) (s,0) (s,s)}  what it stopped covering
+    │      ╱     │        the fold   = the shared hypotenuse
+  (0,s)────────(s,s)      the sheet's own corner is (s,s)
 ```
 
-**Markdown frontmatter (optional):**
-```markdown
----
-title: Note Title
-date: 2025-01-19
-tags: [tag1, tag2]
----
+The corner that folds away is the lower-right triangle; reflected across the
+fold it lands on the upper-left one, which is why the flap points back into the
+page. The hole paints `--frame` — the same surface the sheet has been sitting on
+all along — and the nav lives inside it, clipped, so it is genuinely revealed
+rather than faded in over the top. Opening is a `width`/`height` transition on
+the wrapper; both triangles are `inset: 0` and follow.
+
+⚠️ **The wrapper cannot carry the clip.** A `clip-path` on `.curl` applies to its
+children, so clipping it to the hole's triangle erases the flap, which occupies
+the opposite half of the same box. Each triangle clips itself.
+
+⚠️ **The flap needs its own tones** (`--curl-fold` / `--curl-tip`), not the
+sheet's. Drawn in `--paper-*` the folded corner is the same value as the page it
+is lying on, and the only thing reading as a fold is the drop shadow.
+
+⚠️ **Those two are declared with the curl, below the theme block.** A media query
+adds no specificity, so a `prefers-color-scheme` override written *above* them
+never wins — it has to come after. `--curl-shadow` lives with them, and is the
+**whole `filter` value**, not a colour: it is three `drop-shadow()` stops (a
+tight contact edge for the sheet's thickness, a mid falloff, a wide dispersed
+one for the air the lifted corner holds open), and all three alphas have to move
+together between themes — plain CSS has no arithmetic on a colour's alpha.
+
+⚠️ **The dark shadow can't just scale up to compensate.** Its widest layer
+reaches up and left across the social row, and past roughly 0.2 alpha it stops
+reading as depth and starts smothering the dimmest type on the page.
+
+⚠️ **A small ear (`--curl-rest`) is always showing.** A pure hover-reveal with no
+resting affordance is a corner nobody finds.
+
+⚠️ **`.curl-zone` stops 104px short of the bottom.** The social row is centred,
+so as the viewport narrows its right end slides under a zone pinned to
+`bottom: 0` — and because the zone is invisible and sits above the row, the only
+symptom is GitHub quietly not being clickable. The corner it gives up is covered
+by `.curl:hover` anyway.
+
+⚠️ **`:focus-within` is not a nicety.** The nav links are clipped out of sight at
+rest but stay in the tab order, so tabbing to one has to be what opens the fold.
+`@media (hover: none)` parks the corner open, since a touch device never fires
+the hover.
+
+**Under the fold are the SOCIAL ACCOUNTS, not the nav.** The two rows swapped: the
+sections are what there is to reach for from the landing page, so they took the
+centred row at the foot of the sheet, and the accounts — the kind of thing you go
+looking for — moved into the corner as marks with no labels.
+
+⚠️ **`.curl-links` is a ROW along the bottom edge, where the old nav was a column up
+the right one.** The hole is the lower-right triangle, so the paper available at any
+height is exactly the distance down from the fold: a stack of five marks puts its top
+item where there are a few pixels to stand on and the corner clips it. The bottom edge
+is the one full-width line in the shape. The fit is one inequality, and it is written
+at the rule:
+
+```
+--curl-open  ≥  right + row width + bottom + mark height
 ```
 
-**Bear-style hashtags:**
-Tags can be placed anywhere in content using `#tagname` or `#parent/child` for nested tags.
+⚠️ **Which is why the row's gap is a flat 12px and not a `vw` clamp.** A clamp sizes
+the row off the VIEWPORT while the triangle sizes off `--curl-open`, and the two stop
+agreeing the moment `--curl-open` hits either end of its own clamp — at a 1000px window
+the gap was already at its 16px ceiling while the fold was still at its floor, and the
+leading mark sat 19px outside the paper. `--curl-open`'s floor went 160 → 200 for the
+same reason. Under 640px the corner does NOT grow to 200 (on a 375px screen that is
+over half the page, parked open); the row shrinks instead, off one `font-size`, since
+`.ico` is sized in `em`.
 
-**music.md format:**
-```markdown
-## Music
-- [Title](https://youtube.com/watch?v=...)
-- https://youtube.com/watch?v=...
+**`#writing` and `#photos` are both live** (see **Sections** and **Photographs**);
+`#more` is still a placeholder, and the router sends anything it doesn't recognise
+back to the sheet. `More` is a link, not a menu: a real overflow menu needs its own
+design.
 
-## Podcasts
-- [Channel Name](https://youtube.com/@handle)
-```
+⚠️ **`.curl-zone` is cut back in a section** (`body.reading .curl-zone`). At home it
+runs the full height of the right edge, which is free space. In a section that same
+strip lies over the article *and* over the expand control in the masthead corner — it
+swallowed the click that collapses the index, and unfurled the corner across the text
+on any mouse drift rightward while reading. In reading mode it is only the bottom
+block near the corner.
 
-Links can be in markdown format `[Title](url)` or just bare URLs. Folders are defined by `##` headings.
+⚠️ **On narrow screens the parked-open corner sits over the article.** `hover: none`
+parks it open, which is right on the landing page and wrong over a column of prose.
+`body.reading .page-scroll` carries bottom padding so the END of a piece clears it,
+but text still scrolls *under* the opaque corner on its way past. That needs its own
+answer on narrow screens; the padding is a floor, not a fix.
 
-**goals.md format:**
-```markdown
-# Section Name
-- [x] Completed task
-- [ ] Pending task
-- Regular list item (shows as active)
-```
+## The marks (Tabler Icons)
 
-**sounds.js format (auto-generated):**
-```javascript
-export default [
-  {
-    "file": "Sound Name.m4a",
-    "created": "2025-12-27"
-  }
-]
-```
-Supported audio formats: `.m4a`, `.mp3`, `.wav`, `.ogg`, `.aac`, `.flac`, `.webm`, `.qta`
+Eight glyphs from **Tabler Icons** (MIT), inlined in `index.html` rather than loaded:
+three in the navigation (`pencil`, `photo`, `dots`) and five brand marks under the fold
+(`brand-linkedin`, `brand-x`, `brand-youtube`, `brand-instagram`, `brand-github`).
 
-## Important Implementation Details
+⚠️ **Tabler rather than Lucide, and the reason is specific.** Lucide has REMOVED its
+brand icons — in the current release `github`, `linkedin`, `instagram`, `youtube` and
+`twitter` all 404. Tabler still ships them, including a real `brand-x` rather than the
+old bird, and draws on the same 24-grid stroke language, so one set covers the nav and
+the accounts. Simple Icons was the other candidate and is out for the same class of
+reason: it has dropped LinkedIn, and solid brand logos next to stroke UI glyphs are two
+visual languages on one sheet.
 
-**Music Player - CRITICAL Implementation Rules:**
+⚠️ **Tabler draws at 2px on a 24 grid and this page is drawn in HAIRLINES.** Dropped
+in at their own weight the icons are the boldest thing on the sheet by some distance.
+`.ico` sets the weight ONCE, for both rows. And the stroke does not scale with the box:
+`stroke-width` is in viewBox units, so a 24-unit mark rendered at 17px draws its 1.4 at
+17/24 — about a pixel, which is the rest of the page. Resize the icon and the line
+reweights with it, which is the intent.
 
-⚠️ **DO NOT modify these without careful consideration - this system has been debugged extensively**
+⚠️ **Tabler's leading `<path stroke="none" d="M0 0h24v24H0z"/>` is dropped from all
+eight.** It pads the bounding box in an icon FONT; inlined it is one invisible
+rectangle per mark.
 
-1. **Track Data Structure:**
-   - All tracks stored in `musicState.allTracks` (combined from all sources)
-   - Filtered tracks stored in `musicState.tracks` (current folder only)
-   - Track object must have: `title`, `artist`, `folder`
-   - YouTube tracks: also have `videoId`, `thumbnail`, `url`
-   - Local audio: also have `audioUrl`, `isLocalAudio: true`
-   - Channels: also have `isChannel: true` (opens in new tab, not playable)
+⚠️ **The erase had to learn about them.** `splitChars()` walks TEXT nodes and an
+`<svg>` has none, so the nav's labels rubbed out on schedule and the glyphs beside them
+stayed behind on a clean sheet. It now pushes every `.ico` in as a mark of its own.
+They need no `.ch` wrapper — that class only exists to make an inline box
+transformable, and an svg is replaced-inline already.
 
-2. **Playlist API Format:**
-   - Frontend calls: `/api/youtube/playlist?id=PLAYLIST_ID` (query parameter)
-   - Returns: `{ items: [...], pageInfo: {...} }` format
-   - Each item has: `snippet` and `contentDetails` matching YouTube API v3 structure
-   - Dev server (dev.js:241-305) must handle this endpoint
-   - Production uses Vercel serverless function (api/youtube/playlist.js)
+⚠️ **`.links` kept its class when its contents swapped.** `js/paper.js` rubs that
+element out by name and `intro.css` settles it by name; it is a POSITION on the sheet,
+not a description of what is standing in it, and renaming it drops the row out of both
+silently.
 
-3. **Playback Rules:**
-   - `playTrack(index)` (app.js:3315) is the ONLY entry point for playing tracks
-   - YouTube: calls `ensureYouTubePlayer(videoId)` which auto-plays
-   - Local audio: calls `ensureAudioPlayer(audioUrl)` with `autoplay` attribute
-   - Channels: don't call playTrack, they're `<a>` tags that open in new tab
+## Sections (`js/paper.js`)
 
-4. **Sounds Folder Special Rules:**
-   - NO thumbnails displayed (app.js:3287-3294 checks `track.folder !== 'Sounds'`)
-   - Files loaded from `sounds.js` manifest (auto-generated by build.js)
-   - Display: filename without extension as title, creation date as artist
-   - Sorted by creation date (newest first)
+`#writing` doesn't navigate away from the sheet — it clears it. One script, no
+dependencies, and none of it runs until a section route is on the hash.
 
-5. **Folder Management:**
-   - Default order defined ONCE at app.js:308: `['Music', 'Podcasts', 'Ambience', 'Sounds']`
-   - `mergeFolders()` (app.js:3195) combines default folders with folders from music.md
-   - `applyFolderFilter()` (app.js:3210) filters `allTracks` to current folder
-   - `switchFolder()` (app.js:3214) changes active folder and re-renders
+⚠️ **There are now two SURFACES a section can open onto**, and paper.js is the only
+file that knows the difference: `.spread` is writing's two-column reading layout and
+`.plates` is photographs' single full-width scroller (**Photographs**, below).
+Everything above them is shared — the erase, the masthead flight, the monogram, the
+dog-ear — and none of it knows which section is coming up behind it. The registry is
+five lines (`SURFACES` / `surfaceKey` / `surface()`); `showSurface`, `hideSurface`,
+`measureAs` and `leaveReading` all act on whichever one is current, and `swapSurface()`
+cross-fades when you go from one section straight into another without passing home.
 
-6. **Rendering Pipeline:**
-   ```
-   loadMusic() → parseMusicMd() + loadSounds() → combine into allTracks
-      ↓
-   applyFolderFilter() → filters to musicState.tracks
-      ↓
-   renderPlaylist() → displays playlist items
-      ↓
-   User clicks track → playTrack() → ensureYouTubePlayer() OR ensureAudioPlayer()
-   ```
+**The zoom.** A section isn't a page the sheet navigates to — it is the same sheet,
+opened, so the paper zooms up to the edges of the screen and the frame goes with it.
+`body.full` (styles.css) takes `.sheet`'s inset to `0` and squares its corners; the
+move is a plain `inset` / `border-radius` transition declared on `.sheet` itself, so
+it carries both ways.
 
-7. **DO NOT:**
-   - Add fallback tracks for failed playlist fetches (silently skip instead)
-   - Show thumbnails for Sounds folder tracks
-   - Add box-shadow to `.zen-device` class
-   - Change folder order without updating `defaultMusicFolders`
-   - Use path-based playlist API (`/api/youtube/playlist/ID`) - must use query param format
+⚠️ **`full` is a different class from `reading`, and the split is load-bearing.**
+Every flight here is a measured FLIP and `measureAs()` reads its target by applying
+`reading` for the length of one task. Fold the geometry into that class and the name
+and the monogram are measured against the sheet they will only occupy once the zoom
+is over — a frame-width away from where they actually have to land, which is a 20px
+pop at the handover. `setFull()` is called in the SAME task as the `reading` toggle,
+at the end of the flight, so the whole choreography is measured and flown in one
+geometry and the zoom is the beat behind it.
 
-**Tag System:**
-- Hidden tags (defined in `hiddenTags` array) are excluded from sidebar
-- Currently: `status` tag is hidden
-- Nested tags use `/` separator and render as collapsible tree
-- Tag icons defined in `tagIcons` object using Lucide SVG paths
+⚠️ **On the way home the un-zoom runs at the end too**, under the copy settling back
+on. It can, because the lockup is centred in a grid row whose own centre doesn't move
+as the sheet shrinks — the name lands and then sits still. The letterhead and the
+social row DO ride the edges in, from exactly where they were measured, so nothing
+pops there either.
 
-**Particle Simulation:**
-- Uses vis-viva equation for orbital mechanics (background.js:86)
-- Particles stabilized with tangential velocity correction (background.js:350-359)
-- Event horizon fading and accretion disk swirl effects
-- Edge fade system prevents harsh cutoff at viewport boundaries
+⚠️ **A cold load straight onto a section gets `full` synchronously**, next to
+`no-intro`, not from `setFull()` when the section finally opens: `route()` only
+reaches `enterReading()` after the index fetch resolves, so the framed sheet would sit
+on screen for the length of that request and then snap. `setFull(on, true)` parks
+`body.no-zoom` around the toggle for the same reason — there was no framed sheet on
+screen to zoom out of. If the section turns out not to be openable (`#photos` with
+js/photos.js missing), `leaveReading()`'s early return takes the geometry back.
 
-**Window Dragging:**
-- Only draggable by titlebar, not by interactive elements
-- Position stored as `left`/`top` CSS properties, not transforms
-- Z-index managed via `state.windows.highestZIndex`
+⚠️ **No safe-area `env()` on the full-bleed inset**, unlike the framed one. Full bleed
+is full bleed; what keeps copy off a notch is the sheet's own padding, and giving that
+padding an `env()` floor would break photos.css's full-bleed cover, which negates
+`--sheet-pad` exactly.
 
-**Note URL Routing:**
-- Format: `#note/slug` where slug is filename converted to URL-safe format
-- `filenameToSlug()` converts spaces and special chars to hyphens
-- `getNoteFromUrl()` parses hash and finds matching post
-- History API used for navigation without page reloads
+**The erase.** The hero copy is RUBBED OUT. A rubber tip travels along each line of
+type, left to right and then down to the next, and the letters it passes lift off:
+pale, blurred, tipped a couple of degrees off the baseline, gone. Letters and tip are
+driven off one polyline — a segment per line of text — so a letter goes exactly when
+the tip reaches it rather than on a timer that merely looks synchronised.
 
-**Section pages vs. the section modal (js/main.js):**
+⚠️ **The first version swept a soft-edged band down the whole sheet, and it read as a
+scanner.** A full-bleed horizontal edge is a machine's gesture, and most of its travel
+crossed blank paper that had nothing on it to remove. Keeping the erasure **on the
+ink** — scoped to the lines of type — is the entire difference. Don't reintroduce a
+sheet-wide sweep.
 
-The top-bar tabs are Career / Writing / Videos / Photos. **Career is the home view** — `navModeFromState()` returns `'career'` for life mode with no section route, so its tab is active from first paint.
+The `.rubber` tip has no `mix-blend-mode`: it has to lighten paper *and* lift dark ink
+in light mode and do the reverse on a dark sheet, and one blend mode only goes one
+way. It composites normally and the colour is themed, same pattern as `--curl-shadow`.
 
-The other three are *pages*, not modals (`SECTION_PAGES` in js/main.js). On `#writing` / `#videos` / `#photos`, `openSectionPage()` adds `body.section-mode`, which drops the home lockup + feed, shrinks the fixed hero to ~52vh with a left-aligned title + description (`#sectionHero`), and shows `#sectionBelow` as the page body. Every other section (Career, Case Studies, Labs, Portfolio, …) still opens in `#sModal`, unchanged.
+**The masthead: back link left, monogram centred.** In a section the row is `[‹ WRITING]
+… LVZ … [expand]`. The monogram does NOT go to a corner: the home letterhead, the
+same element, shrinks to `--mark-h` (1.15 × `--mast-size`) and stays centred, and the
+section's title behind a Tabler `chevron-left` (`#back`, `.back`) is the way home. The
+back link shares `.links a`'s rules — same face, tracking, ink, icon weight, underline
+hover — and `js/paper.js` fills its title (`Writing` / `Photos`) in `showSurface()`.
+It fades in with `body.reading` (`back-in`) and out with the surface on the way home
+(`fadeOut([leaving, backLink])`, so it doesn't blink off at the end of the flight).
 
-⚠️ The section renderers (`renderIndex`, `renderItem`, `renderPhotosGrid`, …) are **shared between the two surfaces** and paint wherever `sModalBody` points. It's a `let`, not a `const`: `openSectionPage()` repoints it at `#sectionPageBody` and `closeSectionPage()` puts it back. Don't turn it back into a `const` or capture it in a closure.
+⚠️ **The name is vestigial in a section.** `.lockup` is `position: absolute;
+visibility: hidden` there, and `flyName()` still flies the invisible word: it is now only
+the timing device `enterReading()`/`leaveReading()` wait on alongside the monogram. It
+is NOT `display: none` because `measureAs()` still reads its rect and a zero width gives
+an Infinity scale. The word is still measured, so `.name` keeps its 0.1em tracking.
 
-Item views work the same on both surfaces: renderers signal "this view has a parent" by setting `sModalBack.style.display = 'flex'`, and a MutationObserver on the page body mirrors that onto the hero via `syncSectionHero()`. That's what makes the photo detail — which is opened by a click, not a hash — get a working back control for free.
+**The monogram flies between two real layouts.** `flyLetterhead(from, to)` is a
+measured FLIP whose `from` and `to` are the letterhead's OWN rect, read with and without
+`body.reading` (`measureAs()` applies the class for one task, two forced layouts,
+nothing painted). It is symmetrical, so it needs no direction flag; the class lands as
+the flight ends and the animation is cancelled in the same task. There is no corner
+pseudo-element, `markRect()` or `is-homing` any more.
 
-On an item the hero switches to a **detail lockup** (`body.section-detail`): back button on top, icon and blurb hidden, the item's own title at a smaller size in place of the section name, and the header narrowed to the same reading column the body uses so both share one left edge. That title is **hoisted out of the rendered body** (`.cs-body h1`) rather than threaded through every renderer, and the original gets `.is-hoisted` so it isn't shown twice.
+⚠️ **`transform-origin: 0 0`, with the resting `translateX(-50%)` kept at the head of
+the transform list.** The mark is centred by that translate, so the rect it is
+measured at already includes it; scaling about the element's own top-left then makes
+the extra translate exactly the distance it travels. Drop the -50% and it jumps half
+its own width before it moves.
 
-Header and body cross-fade together on the way in (`fadeHeroCopy()` + `.section-page .sm-fade`, both 280ms). ⚠️ The header fade is gated on the header being **settled** — every render syncs twice, once on its `Loading…` placeholder and again on the real content, and fading on the placeholder starts the transition under the *old* title and swaps it mid-fade. Only one animation runs at a time (the previous is cancelled), or overlapping runs can strand the header dimmed.
+⚠️ **In a section the letterhead is positioned off the sheet's padding box, like at
+home** (`top: calc(var(--sheet-pad) + (var(--bar-h) - var(--mark-h)) / 2)`, `left: 50%`).
+`grid-area: 1 / 1` was tried and does not work: Chrome resolves the `left: 50%` of an
+absolutely positioned grid item against a different box than it measures the offset from,
+and the mark landed a padding-width right of centre. The row is `min-height: var(--bar-h)`
+(30px, the expand control) with `align-items: center`, so all three items share a centre
+line. The landscape-phone override now sets `--sheet-pad`, not `padding`, so this and
+photos.css's full-bleed cover follow it.
 
-**A single photo stays a modal.** It's the one item view that doesn't become a page: the modal is what carries the blurred-photo backdrop (`#sModalBg` + `.sm-photo`), which tints the whole panel to that photo. `openPhotoDetail()` repoints `sModalBody` back to the modal and opens it over the still-live grid, so closing it is the entire way back — no in-modal back step. `closeSModal()` checks `activeSectionPage` and hands the URL and the render target back to the page underneath instead of clearing the hash.
+⚠️ **The 20px the mark drops or rises during a flight is the zoom**, not an error: both
+ends are measured in the geometry the flight runs in and the sheet then moves to/from
+full bleed. Horizontally it lands exactly.
 
-**Video slugs:** `#videos/<title-slug>`, not the raw YouTube id. `videoSlugBase()` slugifies the title (90-char cap, truncated on a word boundary); `videoSlugMap(videos)` then assigns slugs **across the whole set** so same-title clips — Videos merges two channels, which do overlap — get `-2`, `-3` suffixes instead of colliding. The map is ordered by `videoId`, *not* display order, because the index and the item view build it independently and must agree. `renderVideoItem()` resolves a title slug first and falls back to a raw id, so `/#videos/<id>` links shared before the change still work. Since a slug's shape no longer distinguishes a clip from a markdown post in `content/videos/`, it asks the channel feed first and falls back to `renderMarkdownItem()`.
+⚠️ **`.name`'s easing is not the curl's.** That curve is ~80% done in its first
+quarter, which is right for a corner springing open and wrong for something crossing
+the page; the flights use `EASE`.
 
-**Video descriptions:** the detail view renders the description **in full** — no clamp. `api/youtube/channel-videos.js` reads it from `playlistItems.snippet`, which returns the whole thing (`search.list` is the endpoint that truncates), so there's nothing extra to fetch. It's plain text, not markdown: `.video-desc` uses `white-space: pre-wrap` to keep the author's line breaks and chapter lists, and `linkifyText()` turns bare URLs into links. ⚠️ That helper matches against the **raw** text and escapes each segment on the way out — escaping first and linkifying the result looks equivalent but breaks quoted URLs (the closing `"` has become `&quot;`, so `&quot` gets swallowed into the href).
+**The spread.** Index of titles left, the open piece right, each scrolling its own
+column. `body.solo` collapses the index to a zero-width track (transitioned, not
+hidden) so the piece is the only thing on the sheet; the preference persists.
 
-**Per-page starfield skies (js/grid.js):**
+⚠️ **Two scroll containers, which the landing page's "no scroll container anywhere"
+rule forbids.** The rule exists so a stray overflow can't scroll the SHEET. These
+scroll their own column and the sheet still can't move; `html, body { overflow:
+hidden }` is untouched.
 
-`SCENES` holds one sky per view. `home` is the authored full-viewport sky (grey moon top-left, twin suns lower-right). Writing / Videos / Photos each declare `compact: true` plus their own bodies, palette, star `density` and `seed`:
-- **compact** skies size their field by **measuring the hero**, so they track its responsive height instead of assuming a fraction, and stop exactly at the seam where the page body covers them.
-- compact skies **don't do the theme half-turn swing** (`computeFrameBodies`). The section hero's copy is left-aligned and fills the left half, so a 180° swing sweeps the bodies straight through the title. They sit in the right margin, opposite the copy, in both themes.
-- Bodies are generic: `kind: 'sun'` (with `core`/`edge` colours) or `kind: 'moon'`. `launchpad: true` marks the body ships peel off — only home has one.
+⚠️ **The reading measure is capped on `.page-scroll`, not on the header and the prose
+separately.** They're set at different sizes, so a cap on each gave them two different
+widths and, once centred, two different left edges. It's also a px clamp, not `ch` —
+`ch` resolves against the element's own font, and capping the scroller in `ch` came
+out around 115 characters to the line.
 
-⚠️ **js/main.js loads before js/grid.js.** On a page that comes up straight at a section route, `window.grid` doesn't exist yet, so main.js records the sky on `body[data-sky]` (`setSky()`) and grid.js reads that attribute when it initialises. Push the scene through `setSky()`, never `window.grid.scene()` directly.
+**The prose** is the one place on the site set in sentence case. The face has real
+lowercase (distinct glyphs, not a caps clone). `<strong>` can't get heavier — one
+weight, and `font-synthesis: none` — so emphasis is a pencil wash (`--wash`). `<em>`
+takes `font-synthesis: style` back: a sloped monoline still reads as the same face,
+whereas a faked bold thickens into mud. **Headings are the exception, and they get
+weight from a stroke, not a font-weight:** `-webkit-text-stroke: 0.035em currentColor`
+(`--heading-stroke`, on `.page-title` and `.prose h2-h4`) thickens a monoline evenly
+where synthesised bold smears. It is in `em`, so it scales with each heading.
+Body copy is `clamp(0.95rem, 1.2vw, 1.1rem)`.
 
-**Warping between skies (Career ↔ Writing ↔ Videos ↔ Photos):**
+⚠️ **The prose is transliterated on render** (`fold()`). The face has no em dash, en
+dash, ellipsis or straight double quote, and **every post in `content/writing/` uses
+at least one**. An unmapped glyph doesn't fail loudly — it falls through to
+`ui-sans-serif` and sets one character of the sentence in a different typeface. The
+markdown stays correct; only what's rendered is folded down. Straight double quotes
+become real curly ones, since those the face does have.
 
-`window.grid.scene()` doesn't cut from one sky to the next — the field *flies* there (`WARP` in js/grid.js, ~950ms). Every star in the outgoing sky is matched to its nearest star in the incoming one (greedy nearest-neighbour over a coarse spatial hash, each source claimable once so a star never visibly splits) and travels to it, stretching into a **streak scaled to how far it moves that frame**. The trip is eased with smootherstep, so the streaks bloom out at the midpoint and retract on their own — the hyperspace look falls out of the easing rather than being a separate sequenced state.
+⚠️ **`filenameToSlug()` is the v2 site's, character for character.** The second-brain
+vault hard-codes these routes in prose (`mocs/Site MOC.md`) and the chat hands them to
+visitors verbatim, so a tidier slug would silently 404 every link the bot has given
+out. It does not collapse runs: "7 habits  routines" has a double space and so a
+double hyphen.
 
-- **Unmatched stars never pop.** The section skies are thinner and half as tall as home, so hundreds are always left over: they streak *outward past the viewer* from the warp focus and fade, while the incoming sky's extra stars stream in along the same axis. Both directions point away from the focus, so the mismatch reads as flying forward instead of a cross-fade.
-- **Planets travel too.** Bodies are paired biggest-to-biggest and interpolate position, radius and colour, so home's twin suns *become* Videos' lamp pair. A pair that changes `kind` (moon ↔ sun) cross-fades the two renderings over one shared travelling position — that's what `parts` on a frame-body entry is for, and `wmax` shrinks the star-clearing disc of a body that's only partly there.
-- Three pieces of state make this work: `makeCells()` / `makeBodies()` build a scene's field **without installing it**, so the outgoing bundle stays alive alongside the incoming one; `snapshotCells()` freezes the field as it currently looks — *including mid-warp*, so clicking a third tab while the second is still flying picks up from where the stars actually are; and `drawList` is what the draw loop iterates (`cells`, plus the outgoing sky's partnerless stars while a warp runs).
-- The content hole (`cl.hidden`) **ramps** during a warp instead of switching, so a star that ends up under the incoming page's copy fades out over the jump rather than vanishing the instant the new hole rects are measured.
-- A warp forces the loop off its 30fps ambient cap (`fullRate`) — at 30fps the streaks strobe instead of trailing. Reduced-motion skips the warp entirely and swaps instantly.
+**Tuning it live**, the way the v2 warp worked: `paper.dur = 2600` to watch the rubber
+in slow motion, `paper.flyDelay` to re-time the name's exit, `paper.enabled = false`
+to compare against a hard cut. The zoom follows `paper.dur` (×0.67, written to
+`--zoom-dur` at each toggle) rather than carrying a duration of its own, so slowing
+the rubber down slows the paper down with it.
 
-Tune it live from the console: `grid.warp.dur = 1400`, `grid.warp.streak`, or `grid.warp.enabled = false` to compare against a hard cut.
+**Not built:** `#more`. It is still a link, not a menu — a real overflow menu needs
+its own design.
 
-## Development Workflow
+## Photographs (`js/photos.js`, `photos.css`)
 
-1. Add new markdown files to `/posts` folder
-2. Run `node dev.js` to auto-rebuild `posts.js` on changes
-3. Use Bear-style hashtags for organization: `#business/ideas`, `#writing`, etc.
-4. First H1 in markdown becomes the note title (if no frontmatter)
-5. Hashtags are automatically stripped from displayed content
+The second section, and much the larger of the two. It registers itself as
+`window.photoSection` and paper.js hands it the tail of the hash once the name is in
+the corner; everything before that moment is shared machinery.
+
+⚠️ **`js/photos.js` has to be loaded BEFORE `js/paper.js`.** Both are deferred, so
+they run in document order, and paper.js reads `window.photoSection` on its very first
+`route()` — which runs at the end of its own script. Swap the two `<script>` tags and
+landing straight on a `#photos` URL silently falls back to the sheet.
+
+Routes: `#photos` (the index), `#photos/<slug>` (a collection), `#photos/<slug>/<day>`
+(one day open, deep-linkable) and `#photos/<slug>/play`.
+
+⚠️ **The collection is painted once and the day is opened OVER it.** `paint()` diffs
+what changed since the last call rather than re-rendering, or the cover, the lede and
+all twelve stamps would restart every time a day is opened or closed.
+
+### Where the content lives
+
+Two static manifests under `content/photos/collections/`, both **generated from the
+files themselves** rather than hand-written:
+
+- `index.json` — the sets on the landing page, plus the loose frames under them.
+- `italy-2026.json` — the written collection: twelve days, each with its stamp, its
+  copy, its keepsakes and its frames.
+
+⚠️ **EXIF is baked into the manifests at build time**, not read per request. It is why
+the scan panel needs no API and no change to `api/content/list.js` (or to its duplicate
+in `build/dev.js`). The numbers beside a photograph are that photograph's own.
+
+⚠️ **The manifests are invisible to the photos listing API on purpose.** It filters
+`content/photos/` on image extensions and does not recurse, so `collections/` and
+everything under it is skipped — the grid never picks up a stamp or a cover.
+
+⚠️ **Most day frames are STAND-INS** — real photographs out of `content/photos/`, dealt
+out per day, each flagged `"standin": true` and rendered with a faint hatch
+(`.frame--standin`). Only `frames[0]` of each day is the real Italy frame. Drop the
+real files in, rebuild the manifest and the flag goes with them. An unmarked stand-in
+is just a wrong caption.
+
+⚠️ **There are no unwritten sets any more — those frames are all loose.** The date
+clusters (`24 May - 3 Jun 2026` and the rest) were folders with a provisional date
+title and no copy. They are gone from `index.json`'s `collections`, and every frame
+they held is in `loose` (sorted newest first with the frames that were already there),
+so the index is Italy plus one masonry of loose frames. The plain-set route
+(`paintPlainSet` in js/photos.js) is now unreachable but left in place; a set only
+comes back if an unwritten one is added to `collections` again. Anything that
+regenerates the manifest has to keep it that way.
+
+⚠️ **The featured set on the index is a 40/60 lockup on a white card** — type left
+with 32px of padding, cover right with none, so the photograph runs flush to the
+card's top, right and bottom edges; the type is vertically centred against it
+(`.pset--feature`, a two-column grid with named areas since the markup is
+cover-then-meta), with 20px corners that also clip the flush photograph. "White" is `--frame`, so it is near-black in dark mode rather than
+a literal #fff outshining the photograph. The card stays inside the page's column,
+carries no drop shadow, and the focus ring goes round the card. The title is coloured
+from the cover: `accent` in the collection's manifest entry (a saturation-weighted mean
+of the cover's non-white, non-black pixels — `#735d43` for Italy), lightened in dark
+mode. Recompute it if the cover changes. Under 640px it
+stacks, cover first, as it always did.
+
+⚠️ **The loose frames sit on a white card of their own** (`.ploose`: `--frame`, 20px
+corners, 32px padding — the featured set's card again) with 6px-rounded photographs,
+and the "Loose frames" title is gone. The rounding is scoped to `.ploose`; frames in
+a collection's own gallery are still square.
+
+⚠️ **Photographs carry no shadow, and the loose frames no hairline either.** `--plate-shadow` is a transparent no-op (kept as a
+variable so the hairline rules that share it needn't change), and the scan stage's
+`--stamp-shadow-lift` is gone. The **stamps** keep theirs — they are the perforated
+objects, not photographs. Don't add a shadow back to a plate to make it read.
+
+### The trips without stamps (Montana 2024, Disney 2024, British Columbia 2025)
+
+Three more written collections sit beside Italy on the index, as cards under the
+featured one, **newest trip first** (`start` in each `index.json` entry is the sort
+key; Italy is `feature`, so it is pulled out above the row regardless). None has
+engravings, so `paintCollection()` hands them to `paintDays()` (js/photos.js): the
+cover, then one white `.ploose` card per day — a header line, then that day's frames in
+the masonry — with no stamps, riffle, scan, day view or play button. The route
+`#photos/<slug>/<day>` just scrolls to that day's card. Give a day a `stamp` and the
+collection takes the stamp path with no other change.
+
+⚠️ **They are built by `build/make-collection.mjs` from a spec in `build/collections/`**
+(`npm install --no-save sharp` first, then `node build/make-collection.mjs
+build/collections/<slug>.json`). The spec lists the kept frames by filename; days are
+grouped by each frame's own EXIF date (a day can span several via `dates`), frames run
+in the order taken, `accent` is computed from the cover, and the index entry is
+upserted and re-sorted. It wipes and rewrites the collection's folder each run, so
+dropping a frame from the spec removes it. Baseline JPEGs, 1800px / 760px / 2000px+1000px
+cover, as above.
+
+⚠️ **No copy was invented.** Day titles are empty, there is no lede, captions are only
+what a sign in the frame says, and `place` is either a sign (Gibsons, Molly's Reach) or a
+park identified from landmarks. Days are only the dates that have photographs (Montana
+has nothing on Oct 6, Disney nothing on Dec 4). Fill titles / `lede` / `alts` in the spec
+and re-run.
+
+### The stamps
+
+Twelve engravings, one per day, drawn from Luke's own photographs (the source art is in
+Drive under `Photos/Italy/Stamps`, as `Day N.png` beside `Day N_real.jpg`).
+
+⚠️ **The captions were CROPPED OFF the artwork and are re-set in the page's own face.**
+The source images are a picture on a cream field with a typewriter caption beneath;
+only the picture is kept, cropped inside its stippled border, so every stamp can share
+one card, one aspect ratio and one themeable caption. The crop is two detections — the
+artwork (anchored on its densest band and grown out to the paper, because min-to-max
+swallows the caption and a longest-run truncates at a pale sky band), then a step
+inside the stipple.
+
+⚠️ **The perforation is drawn in CSS**, not baked into the artwork: four
+`radial-gradient` masks, one per edge, intersected. Every layer has to be FULL SIZE in
+its cross axis — a layer sized `pitch 51%` covers half the card and under `intersect`
+the half it does not cover is unpainted, which is to say the bottom of the stamp
+disappears. Where `mask-composite` is unsupported the card degrades to a plain
+rectangle, which is a stamp with no teeth rather than a broken one.
+
+⚠️ **The tilt comes from the data**, not from `Math.random()` at render. A random rake
+re-rolls on every paint, so a stamp moves when you come back to the page.
+
+⚠️ **The stamps are not lazy.** There are twelve and they ARE the page; one that has
+not arrived is a blank cream card with a caption under it, which reads as a missing
+image rather than as one on its way.
+
+**The route.** ONE line through all twelve, not a strand per row: along a row, out
+right, back across underneath, up into the start of the next — a Z. ⚠️ It is
+**measured off the laid-out stamps** by `drawRoute()` and redrawn on resize, rather
+than drawn into a stretched viewBox: the grid is fluid and the row turns are the only
+real curves in it, so `preserveAspectRatio="none"` would flatten precisely the parts
+that matter. ⚠️ `drawRoute` is **guarded against its own ResizeObserver** — it writes
+to the DOM from an observer, which is the shape of a loop; it bails unless the box
+actually changed size.
+
+**The riffle.** Hovering a stamp flicks through the frames it stands for, each wiped
+on from the left over the engraving rather than cross-faded. The images are built on
+first hover — twelve stamps times five frames is sixty photographs nobody has asked
+for yet. The first one shown is `frames[0]`, the photograph the engraving was drawn
+from.
+
+### The scan
+
+Clicking a stamp gathers the other eleven toward the middle, flies the one you picked
+into the centre of the sheet, and repaints the engraving into the photograph it came
+from — brushed on, with a lamp riding the edge, sparkle along it, and that frame's
+real EXIF printing in beside it.
+
+⚠️ **The ENGRAVING is masked away; the photograph is not masked in.** Built the other
+way round first and it did not paint: with the photograph masked on top of an opaque
+engraving it stayed invisible even after the sweep ended and its own `mask-image`
+computed to `none` — loaded, on top, hit-testable, and not drawn until the layer
+underneath was removed. Taking the engraving off instead leaves an ordinary opaque
+photograph at the bottom of the stack and a resting state with no mask on it at all.
+It is also the truer gesture: the brush is taking the drawing off the photograph that
+was always underneath, not laying a photograph over a drawing.
+
+⚠️ **The brushed edge is a DISPLACED GRADIENT**, not a straight wipe — an alpha ramp
+pushed through `feTurbulence` + `feDisplacementMap`, low frequency across and high
+down, so the ramp's iso-lines break into bristles. A plain `linear-gradient` mask reads
+as a photocopier. The mask is 300% wide and TRAVELS (`mask-position`); animating the
+gradient's stops instead re-rasterises the mask every frame.
+
+⚠️ **The mask's plateaus are sized around the displacement.** The element sees one
+third of the mask at a time and the filter pushes the edge up to 6.5% of the mask's
+width either way, so the opaque run must reach past `0.333 + 0.065` and the clear run
+must start before `0.667 - 0.065`. Hence the stops at 0.42 and 0.58 — tighten them and
+the engraving is breaking up before the brush has touched it, or a rag of it survives
+at the end.
+
+⚠️ **The flight is a centre-based FLIP** (`translate` from centre to centre, scale from
+`offsetWidth`). The stamp is pinned on an angle and `getBoundingClientRect` on a
+rotated element returns the axis-aligned box AROUND it — a box a couple of percent too
+wide, which is a couple of percent of scale error arriving exactly at the handover.
+
+⚠️ **`paint()` has a floor under it.** Everything downstream hangs off the flight's
+`finished` promise, and animations are frozen while the tab is in the background — so
+opening a day and glancing at another tab would come back to a stamp sitting in the
+middle of the sheet doing nothing.
+
+### Play
+
+⚠️ **`play` is not a slideshow and not a run of modals.** It clears the page below the
+banner and lays the whole trip out in one continuous field — no steps, nothing to page
+through. The cover stays, because it is what says which trip this is.
+
+### Tuning it live
+
+`photos.scanDur = 9000` to watch the brush work, `photos.riffle`, `photos.flyDur`,
+`photos.enabled = false` for a hard cut. Same pattern as `paper`.
+
+⚠️ **`--sheet-pad` is hoisted out of `.sheet`'s padding** (styles.css) so the full-bleed
+cover can negate it exactly. And the negative margin is on the SURFACE, not on the
+cover: `overflow` clips to the padding box, so a bleeding child of a scroller whose
+padding box stops at the text column is simply cut off there.
+
+⚠️ **`.pcol` carries `height: 100%`** and it is load-bearing. A percentage height
+against an auto-height parent computes to `auto`, so without it the 90%-tall cover
+quietly falls back to its image's intrinsic ratio — on a wide sheet, a photograph
+taller than the window with its byline below the fold. For the same reason the
+dog-ear clearance sits on `.pcol` / `.pindex` rather than on `.plates-scroll`: a padded
+scroller shortens its own content box, and the cover measures against that.
+
+### Rebuilding the assets
+
+Not a committed build step — `sharp` is deliberately absent from `package.json` (see
+**Photos**, below), and the source art lives in Drive. It was a one-off:
+
+- **Stamps** → `content/photos/collections/italy-2026/stamps/*.webp`, cropped inside
+  the stipple, 700px long edge, WebP q80.
+- **Photographs** → `photos/` at 1800px and `thumbs/` at 760px; `keepExif()` on the
+  full size, because the scan panel is the whole reason that data is there.
+- **Cover** → `cover.jpg` at 2000px, `cover-sm.jpg` at 1000px.
+
+⚠️ **Write them BASELINE, not progressive.** sharp's `mozjpeg: true` preset writes
+progressive scans, and the 2400px progressive cover would not rasterise in Chrome at
+all: the element laid out, the bitmap drew fine into a canvas, and the page painted the
+placeholder behind it — while `img.decode()` on it hung the renderer outright. The
+1000px version of the same file was fine. Baseline at a sane size is what actually
+shows up.
+
+⚠️ **`build/dev.js` had no `.webp` in its MIME map** and served the stamps as
+`application/octet-stream`. Fixed there; Vercel gets it right on its own.
+
+## Routing
+
+`vercel.json` has no `/` rewrite any more, so `index.html` is served statically at the
+root. `/v1` still rewrites to the v1 site. The `/work` and `/about` rewrites are gone
+with their pages. `build/dev.js` resolves `/` to `index.html` — ⚠️ it used to resolve
+to `_index.html`, and that one-line difference is the whole local-dev story.
+
+## Backend (unchanged from `main`, and currently unused by the landing page)
+
+The chat API, the vault index, the KB-gap pipeline, and the Instagram photo sync all
+still run — they just have no front end on this branch. Left intact so the branch can
+grow a UI back without re-deriving any of it.
 
 ## Chat Assistant (api/chat.js)
 
@@ -429,6 +918,6 @@ The detail row is `[ ‹ ][ photo ][ EXIF ][ › ]` — the chevrons are laid-ou
 
 ## Content Sources
 
-- Weather: Open-Meteo API (free, no key required) for Atlanta, GA
-- Music metadata: YouTube oEmbed API
-- Background image: `images/bg.jpg` (customizable via CSS variable `--bg-image`)
+Weather (Open-Meteo), YouTube oEmbed music metadata, and the v2 background image were
+all consumed by the deleted front end. They are documented on `main`; nothing on this
+branch reads them.

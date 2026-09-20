@@ -1,0 +1,1585 @@
+{
+ "slug": "italy-2026",
+ "title": "Luca e Chiara",
+ "byline": "Italy, September 2026",
+ "dates": "Aug 31 — Sept 11, 2026",
+ "cover": "/content/photos/collections/italy-2026/cover.jpg",
+ "coverSmall": "/content/photos/collections/italy-2026/cover-sm.jpg",
+ "coverAlt": "The oculus of the Pantheon, Rome",
+ "lede": "Embark on an unforgettable journey through the enchanting streets of Rome and the artistic wonders of Florence! Immerse yourself in the rich tapestry of history that these cities offer, as you stroll past ancient ruins and magnificent architecture. Indulge in mouthwatering Italian cuisine, from authentic pasta dishes to delectable gelato, and savor every bite. Marvel at iconic landmarks such as the majestic Colosseum and the renowned Uffizi Gallery, where masterpieces await your admiration. Experience the vibrant atmosphere of local markets, bustling with life and color, and take in the serene beauty of the picturesque Tuscan countryside, dotted with charming villages and rolling hills. This trip promises to be a true feast for the senses, filled with culture, art, and unforgettable memories that will last a lifetime. Don’t let this incredible adventure pass you by!",
+ "ledePlaceholder": true,
+ "days": [
+  {
+   "key": "day-01",
+   "title": "The Atlantic",
+   "day": "Day 1",
+   "dateLabel": "Aug 31, 2026",
+   "place": "ATL -> Rome",
+   "date": "2026-08-31",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-01.webp",
+   "stampW": 460,
+   "stampH": 700,
+   "tilt": -2,
+   "blurb": [
+    "Left Atlanta on the evening flight with two cameras and no plan past the first morning.",
+    "Eight hours over the Atlantic, most of them awake."
+   ],
+   "keepsakes": [
+    [
+     "boarding pass",
+     "DL 84  ATL — FCO"
+    ],
+    [
+     "bag tag",
+     "ATL / FCO"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-01.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-01.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "RICOH GR IIIx",
+      "lens": "GR LENS 26mm F2.8",
+      "focal": "26mm",
+      "focal35": "40mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/400s",
+      "iso": "ISO 200",
+      "date": "2026-08-31",
+      "time": "18:33",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "The Atlantic"
+    },
+    {
+     "src": "/content/photos/2026-07-19 1200 Rocket playground.jpg",
+     "thumb": "/content/photos/thumbs/2026-07-19 1200 Rocket playground.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": null,
+      "lens": null,
+      "focal": null,
+      "focal35": null,
+      "aperture": null,
+      "shutter": null,
+      "iso": null,
+      "date": null,
+      "time": null,
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/2026-07-25 1200 FJ Cruiser.jpg",
+     "thumb": "/content/photos/thumbs/2026-07-25 1200 FJ Cruiser.jpg",
+     "w": 1536,
+     "h": 2048,
+     "exif": {
+      "camera": null,
+      "lens": null,
+      "focal": null,
+      "focal35": null,
+      "aperture": null,
+      "shutter": null,
+      "iso": null,
+      "date": null,
+      "time": null,
+      "dimensions": "1536 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/2026-07-26 0820 Chamblee mural.jpg",
+     "thumb": "/content/photos/thumbs/2026-07-26 0820 Chamblee mural.jpg",
+     "w": 1630,
+     "h": 2048,
+     "exif": {
+      "camera": null,
+      "lens": null,
+      "focal": null,
+      "focal35": null,
+      "aperture": null,
+      "shutter": null,
+      "iso": null,
+      "date": null,
+      "time": null,
+      "dimensions": "1630 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/2026-07-26 1420 Rain on glass.jpg",
+     "thumb": "/content/photos/thumbs/2026-07-26 1420 Rain on glass.jpg",
+     "w": 1536,
+     "h": 2048,
+     "exif": {
+      "camera": null,
+      "lens": null,
+      "focal": null,
+      "focal35": null,
+      "aperture": null,
+      "shutter": null,
+      "iso": null,
+      "date": null,
+      "time": null,
+      "dimensions": "1536 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-02",
+   "title": "St. Peter’s Basilica",
+   "day": "Day 2",
+   "dateLabel": "Sept 1, 2026",
+   "place": "Rome, Italy",
+   "date": "2026-09-01",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-02.webp",
+   "stampW": 669,
+   "stampH": 700,
+   "tilt": 1,
+   "blurb": [
+    "Into the Vatican before the queue had properly formed.",
+    "Spent longer on the colonnade than inside it, which felt like the right mistake to make."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Basilica di San Pietro"
+    ],
+    [
+     "receipt",
+     "Caffe  2,40"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-02.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-02.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "32.3mm",
+      "focal35": "48mm",
+      "aperture": "ƒ/6.4",
+      "shutter": "1/1900s",
+      "iso": "ISO 320",
+      "date": "2026-09-01",
+      "time": "09:20",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "St. Peter’s Basilica"
+    },
+    {
+     "src": "/content/photos/DSCF3426.jpg",
+     "thumb": "/content/photos/thumbs/DSCF3426.jpg",
+     "w": 2048,
+     "h": 1365,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+      "focal": "70mm",
+      "focal35": "105mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/320s",
+      "iso": "ISO 640",
+      "date": "2024-09-27",
+      "time": "18:15",
+      "dimensions": "2048 × 1365"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF3434.jpg",
+     "thumb": "/content/photos/thumbs/DSCF3434.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+      "focal": "24mm",
+      "focal35": "36mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/450s",
+      "iso": "ISO 640",
+      "date": "2024-09-28",
+      "time": "11:53",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF3448.jpg",
+     "thumb": "/content/photos/thumbs/DSCF3448.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+      "focal": "70mm",
+      "focal35": "105mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/210s",
+      "iso": "ISO 400",
+      "date": "2024-09-28",
+      "time": "12:20",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF3458.jpg",
+     "thumb": "/content/photos/thumbs/DSCF3458.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+      "focal": "17mm",
+      "focal35": "26mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/400s",
+      "iso": "ISO 320",
+      "date": "2024-09-28",
+      "time": "12:25",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-03",
+   "title": "The Forum & Colloseum",
+   "day": "Day 3",
+   "dateLabel": "Sept 2, 2026",
+   "place": "Rome, Italy",
+   "date": "2026-09-02",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-03.webp",
+   "stampW": 556,
+   "stampH": 700,
+   "tilt": 0,
+   "blurb": [
+    "The Forum in the afternoon heat, then the Colosseum as the light went.",
+    "Rented e-bikes after dark and rode the whole thing again with nobody in it."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Parco Colosseo"
+    ],
+    [
+     "ticket",
+     "Foro Romano"
+    ],
+    [
+     "receipt",
+     "E-bike, 3h"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-03.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-03.jpg",
+     "w": 1350,
+     "h": 1800,
+     "exif": {
+      "camera": "Apple iPhone 17 Pro",
+      "lens": "iPhone 17 Pro back triple camera 6.765mm f/1.78",
+      "focal": "6.8mm",
+      "focal35": "35mm",
+      "aperture": "ƒ/1.8",
+      "shutter": "1/1217s",
+      "iso": "ISO 64",
+      "date": "2026-09-02",
+      "time": "18:01",
+      "dimensions": "1350 × 1800"
+     },
+     "alt": "The Forum & Colloseum"
+    },
+    {
+     "src": "/content/photos/DSCF3464.jpg",
+     "thumb": "/content/photos/thumbs/DSCF3464.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+      "focal": "46.4mm",
+      "focal35": "70mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/1900s",
+      "iso": "ISO 640",
+      "date": "2024-09-28",
+      "time": "12:30",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF3474.jpg",
+     "thumb": "/content/photos/thumbs/DSCF3474.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+      "focal": "17mm",
+      "focal35": "26mm",
+      "aperture": "ƒ/4.5",
+      "shutter": "1/1700s",
+      "iso": "ISO 640",
+      "date": "2024-09-28",
+      "time": "12:39",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF5752.JPG",
+     "thumb": "/content/photos/thumbs/DSCF5752.JPG",
+     "w": 4160,
+     "h": 6240,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/180s",
+      "iso": "ISO 1600",
+      "date": "2025-07-11",
+      "time": "16:16",
+      "dimensions": "4160 × 6240"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7517.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7517.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/320s",
+      "iso": "ISO 320",
+      "date": "2026-05-16",
+      "time": "11:26",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-04",
+   "title": "Pompeii & Mt. Vesuvius",
+   "day": "Day 4",
+   "dateLabel": "Sept 3, 2026",
+   "place": "Pompeii, Italy",
+   "date": "2026-09-03",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-04.webp",
+   "stampW": 504,
+   "stampH": 700,
+   "tilt": 1,
+   "blurb": [
+    "Train south, then Pompeii from the Porta Marina gate.",
+    "Vesuvius sat there the whole time doing nothing in particular."
+   ],
+   "keepsakes": [
+    [
+     "train ticket",
+     "Roma Termini — Pompei"
+    ],
+    [
+     "ticket",
+     "Scavi di Pompei"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-04.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-04.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "35.3mm",
+      "focal35": "53mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/1800s",
+      "iso": "ISO 320",
+      "date": "2026-09-03",
+      "time": "05:46",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Pompeii & Mt. Vesuvius"
+    },
+    {
+     "src": "/content/photos/DSCF7521.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7521.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/6.4",
+      "shutter": "1/320s",
+      "iso": "ISO 320",
+      "date": "2026-05-16",
+      "time": "11:48",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7535.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7535.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-M5",
+      "lens": "XF27mmF2.8 R WR",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.6",
+      "shutter": "1/160s",
+      "iso": "ISO 200",
+      "date": "2026-06-20",
+      "time": "14:07",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7542.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7542.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-M5",
+      "lens": "XF27mmF2.8 R WR",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/125s",
+      "iso": "ISO 100",
+      "date": "2026-06-20",
+      "time": "14:12",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7545.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7545.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-M5",
+      "lens": "XF27mmF2.8 R WR",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/640s",
+      "iso": "ISO 80",
+      "date": "2026-06-20",
+      "time": "14:13",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-05",
+   "title": "The Apian Way",
+   "day": "Day 5",
+   "dateLabel": "Sept 4, 2026",
+   "place": "Rome, Italy",
+   "date": "2026-09-04",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-05.webp",
+   "stampW": 700,
+   "stampH": 475,
+   "tilt": 0,
+   "blurb": [
+    "Out along the Appia Antica on bikes, aqueduct on the left the entire way.",
+    "Umbrella pines, cobbles older than most countries."
+   ],
+   "keepsakes": [
+    [
+     "receipt",
+     "Bici & Baci"
+    ],
+    [
+     "map",
+     "Appia Antica"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-05.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-05.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "RICOH GR IIIx",
+      "lens": "GR LENS 26mm F2.8",
+      "focal": "26mm",
+      "focal35": "40mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/640s",
+      "iso": "ISO 100",
+      "date": "2026-09-04",
+      "time": "07:08",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": "The Apian Way"
+    },
+    {
+     "src": "/content/photos/DSCF7569.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7569.jpg",
+     "w": 2048,
+     "h": 1365,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/180s",
+      "iso": "ISO 320",
+      "date": "2026-05-16",
+      "time": "12:48",
+      "dimensions": "2048 × 1365"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7570.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7570.jpg",
+     "w": 2048,
+     "h": 1365,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/200s",
+      "iso": "ISO 320",
+      "date": "2026-05-16",
+      "time": "12:53",
+      "dimensions": "2048 × 1365"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7720.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7720.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4.5",
+      "shutter": "1/220s",
+      "iso": "ISO 320",
+      "date": "2026-05-24",
+      "time": "14:14",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7724.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7724.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4.5",
+      "shutter": "1/1600s",
+      "iso": "ISO 400",
+      "date": "2026-05-24",
+      "time": "14:17",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-06",
+   "title": "Piazza Vechio",
+   "day": "Day 6",
+   "dateLabel": "Sept 5, 2026",
+   "place": "Florence, Italy",
+   "date": "2026-09-05",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-06.webp",
+   "stampW": 433,
+   "stampH": 700,
+   "tilt": 1,
+   "blurb": [
+    "Florence by mid-morning. Straight to the Piazza della Signoria.",
+    "Stood under the Neptune fountain until it made sense."
+   ],
+   "keepsakes": [
+    [
+     "train ticket",
+     "Roma — Firenze"
+    ],
+    [
+     "receipt",
+     "Trattoria, 31,00"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-06.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-06.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "50mm",
+      "focal35": "75mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/1250s",
+      "iso": "ISO 320",
+      "date": "2026-09-05",
+      "time": "12:09",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Piazza Vechio"
+    },
+    {
+     "src": "/content/photos/DSCF7726.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7726.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/70s",
+      "iso": "ISO 400",
+      "date": "2026-05-24",
+      "time": "14:20",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF7730.jpg",
+     "thumb": "/content/photos/thumbs/DSCF7730.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/3800s",
+      "iso": "ISO 400",
+      "date": "2026-05-24",
+      "time": "14:23",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8166.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8166.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.5",
+      "shutter": "1/4000s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "11:36",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8185.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8185.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/4000s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "16:20",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-07",
+   "title": "Galileo, Da Vinci, & Baboli",
+   "day": "Day 7",
+   "dateLabel": "Sept 6, 2026",
+   "place": "Florence, Italy",
+   "date": "2026-09-06",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-07.webp",
+   "stampW": 549,
+   "stampH": 700,
+   "tilt": -1,
+   "blurb": [
+    "Science museum first, then the Boboli gardens with the sun coming straight down the cypress avenue.",
+    "Best light of the trip and I nearly missed it."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Museo Galileo"
+    ],
+    [
+     "ticket",
+     "Giardino di Boboli"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-07.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-07.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "16mm",
+      "focal35": "24mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/950s",
+      "iso": "ISO 320",
+      "date": "2026-09-06",
+      "time": "11:50",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Galileo, Da Vinci, & Baboli"
+    },
+    {
+     "src": "/content/photos/DSCF8189.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8189.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/2000s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "16:23",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8195.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8195.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/1.2",
+      "shutter": "1/4000s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "16:26",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8230.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8230.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2",
+      "shutter": "1/4000s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "16:30",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8257.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8257.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4.5",
+      "shutter": "1/20s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "20:15",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-08",
+   "title": "Duomo di Santa Maria del Fiore",
+   "day": "Day 8",
+   "dateLabel": "Sept 7, 2026",
+   "place": "Florence, Italy",
+   "date": "2026-09-07",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-08.webp",
+   "stampW": 550,
+   "stampH": 700,
+   "tilt": 1,
+   "blurb": [
+    "Climbed the Duomo. Regretted it on the stairs, forgot about it at the top.",
+    "Marble in three colours and none of them quite what the photos promise."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Cupola del Brunelleschi"
+    ],
+    [
+     "receipt",
+     "Gelateria, 4,50"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-08.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-08.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "16mm",
+      "focal35": "24mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/850s",
+      "iso": "ISO 160",
+      "date": "2026-09-05",
+      "time": "11:14",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Duomo di Santa Maria del Fiore"
+    },
+    {
+     "src": "/content/photos/DSCF8270.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8270.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2",
+      "shutter": "1/150s",
+      "iso": "ISO 320",
+      "date": "2026-05-31",
+      "time": "20:26",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8425.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8425.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/500s",
+      "iso": "ISO 8000",
+      "date": "2026-05-31",
+      "time": "20:36",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8436.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8436.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/1.6",
+      "shutter": "1/4000s",
+      "iso": "ISO 320",
+      "date": "2026-06-01",
+      "time": "08:57",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8510.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8510.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.2",
+      "shutter": "1/200s",
+      "iso": "ISO 320",
+      "date": "2026-06-03",
+      "time": "20:00",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-09",
+   "title": "Castel Sant’Angelo",
+   "day": "Day 9",
+   "dateLabel": "Sept 8, 2026",
+   "place": "Rome, Italy",
+   "date": "2026-09-08",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-09.webp",
+   "stampW": 700,
+   "stampH": 662,
+   "tilt": -0.5,
+   "blurb": [
+    "Back in Rome. Crossed the Ponte Sant’Angelo with the Bernini angels doing their thing.",
+    "Castle first, terrace after."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Castel Sant’Angelo"
+    ],
+    [
+     "train ticket",
+     "Firenze — Roma"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-09.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-09.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "23.4mm",
+      "focal35": "35mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/1250s",
+      "iso": "ISO 160",
+      "date": "2026-09-08",
+      "time": "09:02",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": "Castel Sant’Angelo"
+    },
+    {
+     "src": "/content/photos/DSCF8515.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8515.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/1100s",
+      "iso": "ISO 320",
+      "date": "2026-06-03",
+      "time": "20:05",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8518.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8518.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/750s",
+      "iso": "ISO 320",
+      "date": "2026-06-03",
+      "time": "20:06",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8536.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8536.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/450s",
+      "iso": "ISO 320",
+      "date": "2026-06-03",
+      "time": "20:21",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8539.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8539.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/250s",
+      "iso": "ISO 320",
+      "date": "2026-06-03",
+      "time": "20:28",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-10",
+   "title": "Pantheon, Vicus Caprarius",
+   "day": "Day 10",
+   "dateLabel": "Sept 9, 2026",
+   "place": "Rome, Italy",
+   "date": "2026-09-09",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-10.webp",
+   "stampW": 519,
+   "stampH": 700,
+   "tilt": -1,
+   "blurb": [
+    "Pantheon at opening, before the floor filled.",
+    "Then down into the Vicus Caprarius, an entire Roman street sitting under a cinema."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Vicus Caprarius"
+    ],
+    [
+     "receipt",
+     "Sant’Eustachio, 1,30"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-10.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-10.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "16mm",
+      "focal35": "24mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/140s",
+      "iso": "ISO 12800",
+      "date": "2026-09-09",
+      "time": "04:26",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Pantheon, Vicus Caprarius"
+    },
+    {
+     "src": "/content/photos/DSCF8546.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8546.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/450s",
+      "iso": "ISO 320",
+      "date": "2026-06-03",
+      "time": "20:33",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8554.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8554.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/1.2 XF",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/1.2",
+      "shutter": "1/100s",
+      "iso": "ISO 400",
+      "date": "2026-06-03",
+      "time": "21:01",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8565.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8565.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/125s",
+      "iso": "ISO 1250",
+      "date": "2026-06-12",
+      "time": "19:55",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8569.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8569.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/250s",
+      "iso": "ISO 640",
+      "date": "2026-06-12",
+      "time": "19:56",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "day-11",
+   "title": "Galleria Doria Pamphilj",
+   "day": "Day 11",
+   "dateLabel": "Sept 10, 2026",
+   "place": "Rome, Italy",
+   "date": "2026-09-10",
+   "stamp": "/content/photos/collections/italy-2026/stamps/day-11.webp",
+   "stampW": 483,
+   "stampH": 700,
+   "tilt": -1.5,
+   "blurb": [
+    "Last full day. Doria Pamphilj, which almost nobody goes to.",
+    "A hall of mirrors and about four hundred paintings hung four deep."
+   ],
+   "keepsakes": [
+    [
+     "ticket",
+     "Galleria Doria Pamphilj"
+    ],
+    [
+     "receipt",
+     "Ultimo caffe, 1,20"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/day-11.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/day-11.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "RICOH GR IIIx",
+      "lens": "GR LENS 26mm F2.8",
+      "focal": "26mm",
+      "focal35": "40mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/125s",
+      "iso": "ISO 1600",
+      "date": "2026-09-10",
+      "time": "08:06",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Galleria Doria Pamphilj"
+    },
+    {
+     "src": "/content/photos/DSCF8574.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8574.jpg",
+     "w": 1365,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/125s",
+      "iso": "ISO 1000",
+      "date": "2026-06-12",
+      "time": "20:06",
+      "dimensions": "1365 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8584.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8584.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/170s",
+      "iso": "ISO 640",
+      "date": "2026-06-12",
+      "time": "20:27",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8588.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8588.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/140s",
+      "iso": "ISO 640",
+      "date": "2026-06-12",
+      "time": "20:28",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8592.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8592.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.2",
+      "shutter": "1/125s",
+      "iso": "ISO 8000",
+      "date": "2026-06-12",
+      "time": "20:55",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  },
+  {
+   "key": "bonus",
+   "title": "Bonus",
+   "day": "Day 1-12",
+   "dateLabel": "",
+   "place": "",
+   "date": "2026-09-11",
+   "stamp": "/content/photos/collections/italy-2026/stamps/bonus.webp",
+   "stampW": 463,
+   "stampH": 700,
+   "tilt": 1.5,
+   "blurb": [
+    "Everything that did not belong to a single day.",
+    "Mostly granita, mostly at the wrong time of the afternoon."
+   ],
+   "keepsakes": [
+    [
+     "receipt",
+     "Granita, 3,00"
+    ],
+    [
+     "receipt",
+     "Granita, 3,00"
+    ],
+    [
+     "receipt",
+     "Granita, 3,50"
+    ]
+   ],
+   "frames": [
+    {
+     "src": "/content/photos/collections/italy-2026/photos/bonus.jpg",
+     "thumb": "/content/photos/collections/italy-2026/thumbs/bonus.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "XF16-50mmF2.8-4.8 R LM WR",
+      "focal": "22mm",
+      "focal35": "33mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/1100s",
+      "iso": "ISO 320",
+      "date": "2026-09-09",
+      "time": "08:09",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": "Bonus"
+    },
+    {
+     "src": "/content/photos/DSCF8606.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8606.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/125s",
+      "iso": "ISO 8000",
+      "date": "2026-06-12",
+      "time": "21:01",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8615.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8615.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/125s",
+      "iso": "ISO 2500",
+      "date": "2026-06-12",
+      "time": "21:02",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/DSCF8625.jpg",
+     "thumb": "/content/photos/thumbs/DSCF8625.jpg",
+     "w": 1638,
+     "h": 2048,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/125s",
+      "iso": "ISO 10000",
+      "date": "2026-06-12",
+      "time": "21:05",
+      "dimensions": "1638 × 2048"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/IMG_0249.JPG",
+     "thumb": "/content/photos/thumbs/IMG_0249.JPG",
+     "w": 4032,
+     "h": 3024,
+     "exif": {
+      "camera": "Apple iPhone 17 Pro",
+      "lens": "iPhone 17 Pro back triple camera 6.765mm f/1.78",
+      "focal": "6.8mm",
+      "focal35": "48mm",
+      "aperture": "ƒ/1.8",
+      "shutter": "1/8772s",
+      "iso": "ISO 80",
+      "date": "2025-10-14",
+      "time": "10:40",
+      "dimensions": "4032 × 3024"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/IMG_0254.JPG",
+     "thumb": "/content/photos/thumbs/IMG_0254.JPG",
+     "w": 3024,
+     "h": 4032,
+     "exif": {
+      "camera": "Apple iPhone 17 Pro",
+      "lens": "iPhone 17 Pro back triple camera 16.8906mm f/2.79883",
+      "focal": "16.9mm",
+      "focal35": "200mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/120s",
+      "iso": "ISO 64",
+      "date": "2025-10-14",
+      "time": "11:07",
+      "dimensions": "3024 × 4032"
+     },
+     "alt": "",
+     "standin": true
+    },
+    {
+     "src": "/content/photos/IMG_0261.JPG",
+     "thumb": "/content/photos/thumbs/IMG_0261.JPG",
+     "w": 4032,
+     "h": 3024,
+     "exif": {
+      "camera": "Apple iPhone 17 Pro",
+      "lens": "iPhone 17 Pro back triple camera 16.8906mm f/2.79883",
+      "focal": "16.9mm",
+      "focal35": "201mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/286s",
+      "iso": "ISO 40",
+      "date": "2025-10-14",
+      "time": "11:55",
+      "dimensions": "4032 × 3024"
+     },
+     "alt": "",
+     "standin": true
+    }
+   ]
+  }
+ ]
+}

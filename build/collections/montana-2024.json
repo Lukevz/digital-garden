@@ -1,0 +1,36 @@
+{
+  "slug": "montana-2024",
+  "source": "/Users/lukevz/Library/CloudStorage/GoogleDrive-lukevz12@gmail.com/My Drive/1 Projects/Personal Site/Photos/Montana",
+  "start": "2024-10-06",
+  "title": "Montana",
+  "byline": "Montana, October 2024",
+  "dates": "Oct 6 — 10, 2024",
+  "index": { "title": "Montana 2024", "dates": "Oct 6 — 10", "kicker": "Montana 2024", "feature": false },
+  "cover": "DSCF4233.jpg",
+  "coverAlt": "A turquoise lake below a mountain, seen from the trail",
+  "days": [
+    { "key": "oct-07", "date": "2024-10-07", "title": "", "place": "Montana" },
+    { "key": "oct-08", "date": "2024-10-08", "title": "", "place": "Montana" },
+    { "key": "oct-09", "date": "2024-10-09", "title": "", "place": "Montana" },
+    { "key": "oct-10", "date": "2024-10-10", "title": "", "place": "" }
+  ],
+  "keep": [
+    "DSCF3506.jpg", "DSCF3508.jpg", "DSCF3528.jpg", "DSCF3530.jpg", "DSCF3533.jpg",
+    "DSCF3568.jpg", "DSCF3574.jpg", "DSCF3590.jpg", "DSCF3593.jpg", "DSCF3597.jpg",
+    "DSCF3618.jpg", "DSCF3669.jpg", "DSCF3675.jpg", "DSCF3678.jpg", "DSCF3681.jpg",
+    "DSCF3691.jpg", "DSCF3695.jpg", "DSCF3707.jpg", "DSCF3718.jpg", "DSCF3723.jpg",
+    "DSCF3801.jpg", "DSCF3821.jpg", "DSCF3832.jpg", "DSCF3839.jpg", "DSCF3863.jpg",
+    "DSCF3897.jpg", "DSCF3903.jpg", "DSCF3911.jpg", "DSCF3922.jpg",
+    "DSCF3929.jpg", "DSCF3932.jpg", "DSCF3937.jpg", "DSCF3955.jpg", "DSCF3961.jpg", "DSCF3968.jpg",
+    "DSCF4006.jpg", "DSCF4016.jpg", "DSCF4025.jpg", "DSCF4062.jpg", "DSCF4085.jpg",
+    "DSCF4114.jpg", "DSCF4123.jpg", "DSCF4125.jpg", "DSCF4154.jpg", "DSCF4167.jpg",
+    "DSCF4174.jpg", "DSCF4198.jpg", "DSCF4205.jpg", "DSCF4233.jpg", "DSCF4237.jpg",
+    "DSCF4242.jpg", "DSCF4251.jpg",
+    "IMG_8622.jpg"
+  ],
+  "alts": {
+    "DSCF3922.jpg": "Avalanche Lake trail sign",
+    "DSCF4114.jpg": "Cracker Lake, Piegan Pass trail sign",
+    "DSCF3528.jpg": "Canyon Critter Coffee Company sign"
+  }
+}
