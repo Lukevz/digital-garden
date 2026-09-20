@@ -8,13 +8,19 @@
 
    What this file owns:
 
-     • the hash router (`#writing`, `#writing/<slug>`, anything else → home)
+     • the hash router (`#writing`, `#photos`, `#<section>/<slug>`, else → home)
      • the ERASE: leaving the sheet doesn't cut, it gets swept clean
      • the masthead FLIP: the name is the one thing never erased — it travels
        out of the centre and shrinks into the top-left corner, and clicking it
        is the way back
      • the reading spread: index of titles left, the open piece right
      • markdown → HTML, including a transliteration pass the typeface needs
+
+   ⚠️ There are now TWO surfaces a section can open onto — `.spread`, which is
+   writing's two-column layout, and `.plates`, which is photographs' single
+   scroller (js/photos.js). Everything above is shared: the erase, the flight
+   and the masthead do not care which one is coming up behind them. Only
+   `surface()` knows the difference.
 
    ⚠️ Two scroll containers live in here (`.index` and `.page-scroll`), which
    is a deliberate departure from the landing page's "no scroll container
@@ -33,10 +39,14 @@
   const nameEl     = document.querySelector('.name');
   const nameLink   = document.querySelector('.name-home');
   const bio        = document.querySelector('.bio');
+  const letterhead = document.querySelector('.letterhead');
   const links      = document.querySelector('.links');
+  const backLink   = $('back');
+  const backTitle  = $('backTitle');
   const expandBtn  = $('expand');
   const expandLbl  = $('expandLabel');
   const spread     = $('spread');
+  const plates     = $('plates');
   const indexEl    = $('index');
   const indexList  = $('indexList');
   const pageScroll = $('pageScroll');
@@ -59,6 +69,9 @@
     dur: 780,        // how long the rubber takes to cross all the copy
     flyDelay: 400,   // ms before the name lifts clear of the rubber
     enabled: true,
+    // Published so js/photos.js can set its captions in the display face
+    // without keeping a second copy of the font's cmap in step with this one.
+    fold,
   };
   // ⚠️ NOT the curl's easing. That curve is ~80% done in its first quarter,
   // which is right for a corner springing open and wrong for something
@@ -231,6 +244,12 @@
       }
       node.parentNode.replaceChild(frag, node);
     }
+    /* ⚠️ An icon is a mark like any other. The walker above sees TEXT nodes
+       only and an <svg> has none, so without this the nav's labels rub out
+       on schedule and the five glyphs beside them stay behind on a clean
+       sheet. They need no .ch wrapper — the class only exists to make an
+       inline box transformable, and an svg is replaced-inline already. */
+    root.querySelectorAll('.ico').forEach(el => out.push(el));
     return out;
   }
 
@@ -342,6 +361,49 @@
     return Promise.all(anims.map(a => a.finished.catch(() => {})));
   }
 
+  /* ══ The letterhead's flight ═══════════════════════════════════════════
+     The monogram is never rubbed out and it is never faded off — it TRAVELS.
+     At home it is printed across the head of the sheet; in a section it is
+     the mark in the masthead corner. Those are one object, so it flies
+     between the two the way the name does, and flies back when you leave.
+
+     ⚠️ Its own FLIP rather than a second pass of flyName(). They cross the
+     page together but they are different boxes with different ends: the name
+     goes from a hidden hero to a transparent masthead line, the monogram
+     from the centre of the sheet to a corner a fifth of its size.
+
+     ⚠️ `transform-origin: 0 0` and the resting `translateX(-50%)` KEPT at the
+     head of the transform list. The mark is centred by that translate, so the
+     rect it is measured at already includes it; scaling about the element's
+     own top-left then makes the extra translate exactly the distance the mark
+     travels, with no scale-induced offset folded in. Drop the -50% and it
+     jumps half its own width before it moves. */
+  const CENTRED = 'translateX(-50%)';
+
+  /* `from` is where the mark is on screen now and `to` is where the layout the
+     flight is heading for will put it — both are the letterhead's own rect,
+     read with and without `body.reading` (see measureAs). The flight is the
+     same either way, so it does not care which direction it is going: at home
+     the mark is printed across the head of the sheet, in a section it is the
+     smaller one centred in the masthead. */
+  function flyLetterhead(from, to) {
+    if (!letterhead || reduced || !paper.enabled) return null;
+    if (!from.width || !to.width) return null;
+
+    letterhead.style.transformOrigin = '0 0';
+    return letterhead.animate([
+      { transform: CENTRED },
+      { transform: CENTRED +
+        ' translate(' + (to.left - from.left).toFixed(2) + 'px, ' + (to.top - from.top).toFixed(2) + 'px)' +
+        ' scale(' + (to.width / from.width).toFixed(4) + ')' }
+    ], { duration: paper.dur - paper.flyDelay + 180, delay: paper.flyDelay, easing: EASE, fill: 'both' });
+  }
+
+  function landLetterhead(anim) {
+    if (anim) anim.cancel();
+    letterhead.style.transformOrigin = '';
+  }
+
   function restore(els) {
     body.classList.remove('is-erasing');
     rubber.style.opacity = '0';
@@ -375,13 +437,14 @@
      ⚠️ Measure the <a>, not the <h1>. In reading mode the heading stretches to
      the sheet's width, so its box width is the column, not the word. */
   function measureAs(readingOn, fn) {
+    const el = surface();
     const was = body.classList.contains('reading');
-    const wasHidden = spread.hidden;
+    const wasHidden = el.hidden;
     body.classList.toggle('reading', readingOn);
-    spread.hidden = !readingOn;
+    el.hidden = !readingOn;
     const out = fn();
     body.classList.toggle('reading', was);
-    spread.hidden = wasHidden;
+    el.hidden = wasHidden;
     return out;
   }
 
@@ -402,6 +465,15 @@
     return anim;
   }
 
+  /* ══ Surfaces ══════════════════════════════════════════════════════════
+     A section opens onto one of these. They are siblings inside the sheet and
+     only one is ever unhidden, so the masthead, the flight and the erase can
+     stay ignorant of which section is actually being routed to. */
+  const SURFACES = { writing: spread, photos: plates };
+  let surfaceKey = 'writing';
+  const surface = () => SURFACES[surfaceKey] || spread;
+  const photoSection = () => window.photoSection || null;
+
   /* ══ Routing ═══════════════════════════════════════════════════════════ */
 
   let items = null;          // the writing index, newest first
@@ -409,11 +481,14 @@
   let current = null;        // slug on screen
   let token = 0;             // guards against a slow fetch landing after a nav
 
+  /* `rest` is everything after the section. Writing only ever needs the first
+     segment; photographs route three deep (`#photos/italy-2026/day-03`), so
+     the tail is handed on whole rather than being flattened to one item. */
   function parseHash() {
     const h = location.hash.replace(/^#/, '');
     if (!h) return null;
-    const [section, item] = h.split('/');
-    return { section, item: item || null };
+    const parts = h.split('/').filter(Boolean);
+    return { section: parts[0], item: parts[1] || null, rest: parts.slice(1) };
   }
 
   function loadIndex() {
@@ -510,68 +585,168 @@
     if (queued) { queued = false; setTimeout(route, 0); }
   }
 
-  function showSpread() {
-    expandBtn.hidden = false;
-    spread.hidden = false;
-    requestAnimationFrame(() => spread.classList.add('is-in'));
+  function showSurface() {
+    const el = surface();
+    // The expand control collapses the INDEX, and only writing has one.
+    expandBtn.hidden = surfaceKey !== 'writing';
+    backTitle.textContent = surfaceKey === 'photos' ? 'Photos' : 'Writing';
+    el.hidden = false;
+    requestAnimationFrame(() => el.classList.add('is-in'));
   }
 
-  function hideSpread() {
-    spread.hidden = true;
-    spread.classList.remove('is-in');
+  function hideSurface() {
+    Object.values(SURFACES).forEach(el => {
+      if (!el) return;
+      el.hidden = true;
+      el.classList.remove('is-in');
+    });
+    if (photoSection()) photoSection().leave();
     expandBtn.hidden = true;
     current = null;
+  }
+
+  /* Moving from one section straight into another, without going home first.
+     The name is already in the corner and the copy is already off the sheet,
+     so nothing needs to fly — only the surface under the masthead changes
+     hands, and it does it as a cross-fade rather than a cut. */
+  function swapSurface() {
+    const el = surface();
+    if (!el.hidden) return Promise.resolve();
+    const others = Object.values(SURFACES).filter(s => s && s !== el && !s.hidden);
+    if (!others.length || reduced || !paper.enabled) {
+      others.forEach(s => { s.hidden = true; s.classList.remove('is-in'); });
+      if (photoSection() && surfaceKey !== 'photos') photoSection().leave();
+      showSurface();
+      return Promise.resolve();
+    }
+    others.forEach(s => s.classList.remove('is-in'));
+    return fadeOut(others).then(() => {
+      restore(others);
+      others.forEach(s => { s.hidden = true; s.classList.remove('is-in'); });
+      if (photoSection() && surfaceKey !== 'photos') photoSection().leave();
+      current = null;
+      showSurface();
+    });
+  }
+
+  /* ══ The zoom ══════════════════════════════════════════════════════════
+     A section isn't a page the sheet navigates to — it is the same sheet,
+     opened. So the paper zooms up to the edges of the screen and the frame
+     goes with it: `body.full` in styles.css takes the inset to nothing and
+     squares the corners off, and the whole viewport becomes the reading.
+
+     ⚠️ It runs AFTER the flight, not under it, and `full` is deliberately a
+     different class from `reading`. Every flight here is a measured FLIP and
+     `measureAs()` reads its target by applying `reading` for one task — fold
+     the geometry into that class and the name and the monogram are measured
+     against the sheet they'll only occupy once the zoom is over, which is a
+     frame-width away from where they actually have to land. Toggling `full`
+     in the same task as `reading`, at the end, keeps every measurement and
+     every flight inside one geometry and makes the zoom the beat behind it.
+
+     ⚠️ `instant` is a cold load straight onto a section URL, or reduced
+     motion. There was no framed sheet on screen to leave, so the geometry has
+     to be right on the first frame rather than zooming out of one nobody saw;
+     `no-zoom` parks the transition for the length of the toggle. */
+  function setFull(on, instant) {
+    if (instant || reduced || !paper.enabled) {
+      body.classList.add('no-zoom');
+      body.classList.toggle('full', on);
+      void sheet.offsetWidth; // flush the new geometry with the transition off
+      body.classList.remove('no-zoom');
+      return;
+    }
+    // Kept in step with the rest of the choreography, so `paper.dur = 2600`
+    // slows the zoom down with everything else instead of leaving it behind.
+    sheet.style.setProperty('--zoom-dur', Math.round(paper.dur * 0.67) + 'ms');
+    body.classList.toggle('full', on);
   }
 
   // `instant` skips the choreography entirely: landing straight on a section
   // URL has no home page to erase — the lockup would flash up for one frame
   // just to be swept away — and reduced-motion wants the same short path.
   function enterReading(instant) {
-    if (body.classList.contains('reading')) return Promise.resolve();
+    if (body.classList.contains('reading')) return swapSurface();
+    // The home sheet's intro is over the moment it is left: letting it stand
+    // would replay the monogram's etching when the letterhead comes back.
+    body.classList.add('intro-spent');
     if (instant || reduced || !paper.enabled) {
       body.classList.add('reading');
-      showSpread();
+      setFull(true, true);
+      showSurface();
       return Promise.resolve();
     }
 
     const from = nameLink.getBoundingClientRect();
     const to = measureAs(true, () => nameLink.getBoundingClientRect());
 
+    // The monogram's own two ends, measured in the same pass.
+    const markFrom = letterhead ? letterhead.getBoundingClientRect() : null;
+    const markTo = markFrom && measureAs(true, () => letterhead.getBoundingClientRect());
+
     const sweep = rubOut([bio, links]);
     const fly = flyName(from, to);
+    const mark = markFrom && flyLetterhead(markFrom, markTo);
 
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
-      // Class first, then drop the transform: reading-mode CSS now holds the
-      // name exactly where the flight left it, so the handover is invisible.
+      // Class first, then drop the transforms: reading-mode CSS now holds the
+      // monogram exactly where the flight left it, so the handover is
+      // invisible.
       body.classList.add('reading');
       fly.cancel();
       nameEl.style.transformOrigin = '';
+      landLetterhead(mark);
       restore([bio, links]);
-      showSpread();
+      // Everything has landed in the framed geometry it was measured in, so
+      // the sheet is free to push out to the edges behind the arriving
+      // surface. Same task as the class above: nothing paints in between.
+      setFull(true);
+      showSurface();
     });
   }
 
   function leaveReading(instant) {
-    if (!body.classList.contains('reading')) return Promise.resolve();
+    if (!body.classList.contains('reading')) {
+      // A cold load that parked the sheet at full bleed for a section it then
+      // couldn't open (#photos with js/photos.js missing) still has to come
+      // back to its frame.
+      if (body.classList.contains('full')) setFull(false, true);
+      return Promise.resolve();
+    }
     if (instant || reduced || !paper.enabled) {
       body.classList.remove('reading');
-      hideSpread();
+      setFull(false, true);
+      hideSurface();
       return Promise.resolve();
     }
 
     const from = nameLink.getBoundingClientRect();
     const to = measureAs(false, () => nameLink.getBoundingClientRect());
 
-    spread.classList.remove('is-in');
-    const sweep = fadeOut([spread]);
+    const markFrom = letterhead ? letterhead.getBoundingClientRect() : null;
+    const markTo = markFrom && measureAs(false, () => letterhead.getBoundingClientRect());
+    const mark = markFrom && flyLetterhead(markFrom, markTo);
+
+    // The back link goes with the surface: it only exists in a section, and
+    // would otherwise blink off at the end of the flight.
+    const leaving = surface();
+    leaving.classList.remove('is-in');
+    const sweep = fadeOut([leaving, backLink]);
     const fly = flyName(from, to);
 
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
       body.classList.remove('reading');
+      // ...and the paper draws back into its frame, under the copy settling
+      // on. The lockup is centred in a row whose own centre doesn't move as
+      // the sheet shrinks, so the name — which has just landed there — sits
+      // still through it; the letterhead and the social row ride the edges
+      // in, from exactly where they were measured.
+      setFull(false);
       fly.cancel();
       nameEl.style.transformOrigin = '';
-      restore([spread]);
-      hideSpread();
+      landLetterhead(mark);
+      restore([leaving, backLink]);
+      hideSurface();
       // Let the bio and the social row settle back on rather than snapping —
       // the same entrance they get on a cold load. Restarting a CSS animation
       // needs the class off, a reflow, then the class back.
@@ -587,6 +762,28 @@
   // real navigation and gets the full erase.
   let cold = true;
 
+  /* ⚠️ …and a cold load that is already on a section gets NO INTRO. The
+     sequence in intro.css is the home sheet introducing itself; run over an
+     article it draws rulers and registration marks around a page of prose,
+     then wipes them off again. `no-intro` gates every rule in that file.
+
+     Decided here, synchronously, and not inside route(): route() only reaches
+     enterReading() after the index fetch resolves, and the first mark is due
+     250ms in. This runs the instant the deferred script does, which is before
+     any of the sequence has started. */
+  const landed = parseHash();
+  if (landed && SURFACES[landed.section]) {
+    body.classList.add('no-intro');
+    /* ⚠️ …and the sheet is parked at full bleed here, synchronously, rather
+       than left to setFull() when the section finally opens. route() only
+       reaches enterReading() after the index fetch resolves, so the framed
+       sheet would sit on screen for the length of that request and then snap
+       to full bleed with no zoom to cover it. A deep link should paint the
+       geometry it is going to keep. If the section turns out not to be
+       openable, leaveReading() takes it back. */
+    body.classList.add('full');
+  }
+
   function route() {
     if (busy) { queued = true; return; }
     const parsed = parseHash();
@@ -596,12 +793,25 @@
     // second, and the URL can move during it.
     const routedAt = location.hash;
 
-    // Writing is the only section that exists. Photos and More are still the
-    // placeholders the dog-ear shipped with, so they fall back to the sheet
-    // rather than opening an empty spread.
-    const done = (!parsed || parsed.section !== 'writing')
-      ? leaveReading(instant)
-      : loadIndex().then(list => {
+    // `#more` is still the placeholder the dog-ear shipped with, and anything
+    // unrecognised goes back to the sheet rather than opening an empty
+    // surface. Photographs are js/photos.js's from the moment the name is in
+    // the corner; everything before that is shared.
+    const section = parsed && SURFACES[parsed.section] ? parsed.section : null;
+    let done;
+
+    if (!section) {
+      done = leaveReading(instant);
+    } else if (section === 'photos') {
+      if (!photoSection()) {
+        done = leaveReading(instant);
+      } else {
+        surfaceKey = 'photos';
+        done = enterReading(instant).then(() => photoSection().paint(parsed.rest));
+      }
+    } else {
+      surfaceKey = 'writing';
+      done = loadIndex().then(list => {
           if (!list.length) return;
           const target = (parsed.item && list.find(i => i.slug === parsed.item)) || list[0];
           paintIndex();
@@ -619,6 +829,7 @@
             }
           });
         });
+    }
 
     busy = Promise.resolve(done).catch(() => {}).then(settle);
   }
@@ -638,13 +849,18 @@
 
   expandBtn.addEventListener('click', () => setSolo(!body.classList.contains('solo')));
 
-  nameLink.addEventListener('click', e => {
-    // At home the name is just the name; only in a section is it a way back.
-    if (!body.classList.contains('reading')) { e.preventDefault(); return; }
+  backLink.addEventListener('click', e => {
+    // href="#" clears the hash and route() does the rest; with no hash there
+    // is nothing for it to change, so leave directly.
     if (!location.hash) { e.preventDefault(); leaveReading(); }
   });
 
   document.addEventListener('keydown', e => {
+    // ⚠️ js/photos.js listens first (it loads first) and calls preventDefault
+    // when Escape closed a layer of its own. Without this guard the same press
+    // also unwinds the section, so shutting a lightbox drops the visitor all
+    // the way back to the home sheet.
+    if (e.defaultPrevented) return;
     if (e.key === 'Escape' && body.classList.contains('reading')) location.hash = '';
   });
 

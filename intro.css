@@ -13,22 +13,30 @@
    shared line is the <link> in index.html.
 
    Everything is CSS. The landing page has no script of its own, and the
-   section script (js/paper.js) never touches `.spec`.
+   section script (js/paper.js) never touches `.spec` — the one thing it does
+   touch is the gate: EVERY rule below is scoped to `body:not(.no-intro)`, and
+   js/paper.js sets that class when the URL already names a section. See the
+   note at the foot of this file.
 
-   Tune the whole sequence from the five timings below — every delay is
-   derived from them, so moving one moves its whole phase.
+   Tune the whole sequence from the timings below — every delay is derived
+   from them, so moving one moves its whole phase.
    ────────────────────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: no-preference) {
 
   :root {
     --t-frame: 0.25s;  /* the frame line starts drawing outward */
+    --t-mark:  calc(var(--t-frame) + 600ms);  /* the letterhead is printed */
     --t-tick:  0.70s;  /* the first graduation */
     /* ⚠️ The typewriter no longer runs on the home page — the hero has no
-       name on it. This still drives the corner monogram's reveal when you
-       land straight on a section URL, so it stays. */
+       name on it — and a section URL landed on cold is now `no-intro`, so it
+       no longer types the corner monogram on either. What is left for it is
+       the overlap: a section opened from home while this sequence is still
+       running, where the corner mark is mid-type as it arrives. */
     --t-name:  3.40s;  /* the typewriter, section routes only */
-    --t-rest:  3.45s;  /* bio, social row, dog-ear — straight off the sweep */
+    --t-rest:  1.05s;  /* bio, social row, dog-ear — while the frame is still drawing */
+    --t-v:     calc(var(--t-mark) + 450ms);   /* the V is etched */
+    --t-z:     calc(var(--t-mark) + 1000ms);  /* the Z is etched */
     --t-out:   3.90s;  /* every mark leaves */
   }
 
@@ -37,41 +45,114 @@
      through the sequence below. `.lockup` is safe to override outright — the
      return-home replay in js/paper.js puts `.is-settling` on `.bio` and
      `.links`, never on the lockup. */
-  .lockup { animation: none; }
+  body:not(.no-intro) .lockup { animation: none; }
 
-  /* ⚠️ `:not(.is-settling)` is doing real work, not tidiness. These two rules
-     have to beat the `settle` in styles.css, which means matching its
+  /* ── The copy arrives a row at a time ────────────────────────────────────
+     Each of the bio's three hand-broken lines is its own `.bio-line` (`--i` is
+     its row), then the nav row follows as the fourth. A plain fade, each row
+     starting a beat after the last.
+
+     ⚠️ The lines are INLINE spans, so on a phone — where the `<br>`s are
+     hidden and the bio wraps by itself — they still animate, in reading
+     order, instead of the rule breaking the wrap.
+
+     ⚠️ Gated on `:not(.intro-spent)` for the same reason the monogram is: the
+     bio is `display: none` in a section, and its lines would restart their
+     (delayed, so invisible) animation when it comes back. The return home has
+     its own `.is-settling` replay on the bio and the nav row instead.
+
+     ⚠️ `.links:not(.is-settling)` is doing real work, not tidiness. The rule
+     has to beat the `settle` in styles.css, which means matching its
      specificity and winning on source order — and that would also beat
      `.is-settling`, silently killing the replay when you come back from a
      section. Excluding the class makes the rule stop matching the moment the
      replay is armed, so the other rule applies cleanly. */
-  .bio:not(.is-settling) {
-    animation: intro-fade 700ms cubic-bezier(0.2, 0.7, 0.3, 1) var(--t-rest) both;
+  body:not(.no-intro):not(.intro-spent) .bio-line {
+    animation: intro-in 800ms ease-out calc(var(--t-rest) + var(--i) * 260ms) both;
   }
-  .links:not(.is-settling) {
-    animation: intro-fade 700ms cubic-bezier(0.2, 0.7, 0.3, 1)
-               calc(var(--t-rest) + 140ms) both;
+  body:not(.no-intro) .links:not(.is-settling) {
+    animation: intro-in 800ms ease-out calc(var(--t-rest) + 780ms) both;
   }
   /* The ear is an affordance for the copy, so it arrives with it. Opacity
      only — the curl owns its own width/height transition and a transform
      here would fight it. */
-  .curl {
-    animation: intro-in 700ms ease-out calc(var(--t-rest) + 70ms) both;
+  body:not(.no-intro) .curl {
+    animation: intro-in 800ms ease-out calc(var(--t-rest) + 880ms) both;
   }
 
-  /* The letterhead is printed stock, not something the sequence writes, so it
-     arrives first and never leaves — it is deliberately NOT part of `.spec`,
-     which fades out at the end. It also gives the opening beat something to
-     be, instead of an empty rectangle. */
-  .letterhead {
-    animation: letterhead-in 900ms ease-out 0.1s both;
+  /* ── The monogram is etched, one letter at a time ───────────────────────
+     It is stationery, not something the sequence writes, so it is deliberately
+     NOT part of `.spec` and never leaves. But it doesn't arrive as one image:
+     L, V and Z go on in turn, each drawn under the frame line rather than
+     ahead of it — the sheet registers itself first, and the printing is what
+     the marks are being drawn around.
+
+     The L is a soft shaded shape with no outline to trace, so a soft-edged
+     mask sweeps down it (`etch-l`, the rect inside the SVG's own `#etch-l`
+     mask). The V and the Z are made of straight strokes, so those are drawn:
+     every line is `pathLength="1"` and its dash walks on, staggered by the
+     `--i` each one carries so a letter builds stroke by stroke.
+
+     ⚠️ Inline SVG rather than the <img> it used to be: an image's own
+     animations can't be timed against the page's. (It is also the mark shown
+     centred in a section's masthead — the same element, shrunk.)
+
+     ⚠️ Gated on `:not(.intro-spent)` as well as `:not(.no-intro)`. The
+     letterhead is a different size in a section and flies back on the way
+     home; the rules here must not still be matching then, or the mark would
+     etch itself in again halfway through its own flight. js/paper.js sets
+     `intro-spent` the first time a section opens, and every rule here stops
+     matching, which leaves the letters at their resting, fully drawn state.
+
+     ⚠️ Its start is the one that has to be undone on a phone. `.spec` is
+     `display: none` there, so nothing else is on screen to arrive under —
+     held back, the monogram would be the sheet's only content and it would
+     turn up after the copy had already settled. */
+  body:not(.no-intro):not(.intro-spent) .etch-l-sweep {
+    animation: etch-l 850ms cubic-bezier(0.45, 0, 0.25, 1) var(--t-mark) both;
+  }
+  body:not(.no-intro):not(.intro-spent) .mono-line {
+    stroke-dasharray: 1;
+    animation: etch-line 520ms cubic-bezier(0.3, 0.1, 0.2, 1)
+               calc(var(--t-v) + var(--i) * 55ms) both;
+  }
+  body:not(.no-intro):not(.intro-spent) .mono-z {
+    animation-delay: calc(var(--t-z) + var(--i) * 50ms);
   }
 
-  /* ── The frame line draws outward ────────────────────────────────────────
-     From a zero-width seam at the centre out to both edges, so the long
-     horizontals extend and the corners close last. */
-  .spec-frame {
-    animation: spec-draw 950ms cubic-bezier(0.22, 0.75, 0.25, 1) var(--t-frame) both;
+  /* ── The frame line draws outward, then closes ───────────────────────────
+     One continuous stroke in two phases. It opens at a zero-width seam in
+     the centre: the long horizontals extend to both edges and round the
+     corners (`spec-draw`), and then the four tips carry on down the short
+     sides and meet in the middle of them (`spec-close`). The rect closes
+     opposite the seam it opened from.
+
+     ⚠️ The second phase exists because a purely horizontal reveal CANNOT
+     draw the verticals. The clip has no vertical inset, so the moment its
+     edge crosses the left and right borders they appear at full height at
+     once — the two long sides are drawn and the two short ones are simply
+     switched on. Phase one therefore stops `--seam` short of the edges and
+     leaves them to phase two.
+
+     ⚠️ `spec-close` is a polygon, not an inset, for the same reason: it has
+     to take a bite out of the middle of each short side and shrink it
+     towards the centre, which is not a rectangle. The two shapes never
+     interpolate into each other — separate animations, handing over at
+     identical geometry (`inset(0 --seam 0 --seam)` is the polygon's own
+     start state) — so the swap is invisible.
+
+     ⚠️ Phase two is deliberately slower per pixel than phase one: it covers
+     half the sheet's HEIGHT in more time than phase one spent on half its
+     WIDTH. A hand slows as it closes a loop, and the short sides are where
+     the eye is waiting to see the rectangle finish. */
+  body:not(.no-intro) .spec-frame {
+    /* Deep enough to hide the 1px border and the very tip of each corner
+       arc, shallow enough that the rest of the corner is drawn in phase one
+       and the pen only appears to pause there. */
+    --seam: 2px;
+    animation: spec-draw 950ms cubic-bezier(0.22, 0.75, 0.25, 1) var(--t-frame) both,
+               spec-close 1050ms cubic-bezier(0.35, 0.05, 0.25, 1)
+                 calc(var(--t-frame) + 950ms) forwards;
   }
 
   /* ── The graduations strike clockwise ────────────────────────────────────
@@ -82,36 +163,36 @@
      getting longer as the sweep goes round. Four staggered ease-outs would
      decelerate into every corner and read as four separate strokes; one
      lengthening sequence reads as a single hand slowing down. */
-  .spec-ruler--t {
+  body:not(.no-intro) .spec-ruler--t {
     animation: wipe-r 480ms linear var(--t-tick) both;
   }
-  .spec-ruler--r {
+  body:not(.no-intro) .spec-ruler--r {
     animation: wipe-d 570ms linear calc(var(--t-tick) + 480ms) both;
   }
-  .spec-ruler--b {
+  body:not(.no-intro) .spec-ruler--b {
     animation: wipe-l 690ms linear calc(var(--t-tick) + 1050ms) both;
   }
-  .spec-ruler--l {
+  body:not(.no-intro) .spec-ruler--l {
     animation: wipe-u 840ms linear calc(var(--t-tick) + 1740ms) both;
   }
 
   /* Each registration cross lands as the sweep reaches its corner. */
-  .spec-mark { animation: intro-in 380ms ease-out both; }
-  .spec-mark--tl { animation-delay: var(--t-tick); }
-  .spec-mark--tr { animation-delay: calc(var(--t-tick) + 480ms); }
-  .spec-mark--br { animation-delay: calc(var(--t-tick) + 1050ms); }
-  .spec-mark--bl { animation-delay: calc(var(--t-tick) + 1740ms); }
+  body:not(.no-intro) .spec-mark { animation: intro-in 380ms ease-out both; }
+  body:not(.no-intro) .spec-mark--tl { animation-delay: var(--t-tick); }
+  body:not(.no-intro) .spec-mark--tr { animation-delay: calc(var(--t-tick) + 480ms); }
+  body:not(.no-intro) .spec-mark--br { animation-delay: calc(var(--t-tick) + 1050ms); }
+  body:not(.no-intro) .spec-mark--bl { animation-delay: calc(var(--t-tick) + 1740ms); }
 
   /* The dimension notes are written in behind the sweep that exposed them. */
-  .spec-dim--w,
-  .spec-label--w { animation: intro-in 500ms ease-out calc(var(--t-tick) + 600ms) both; }
-  .spec-dim--h,
-  .spec-label--h { animation: intro-in 500ms ease-out calc(var(--t-tick) + 1900ms) both; }
+  body:not(.no-intro) .spec-dim--w,
+  body:not(.no-intro) .spec-label--w { animation: intro-in 500ms ease-out calc(var(--t-tick) + 600ms) both; }
+  body:not(.no-intro) .spec-dim--h,
+  body:not(.no-intro) .spec-label--h { animation: intro-in 500ms ease-out calc(var(--t-tick) + 1900ms) both; }
 
   /* ── …and the whole layer leaves ─────────────────────────────────────────
      On the parent, so the children keep the end states their own `both`
      fills are holding and simply go out together. */
-  .spec {
+  body:not(.no-intro) .spec {
     animation: intro-out 850ms cubic-bezier(0.3, 0, 0.6, 1) var(--t-out) both;
   }
 
@@ -124,8 +205,8 @@
      <h1> into the corner on a section open and measures its box to do it;
      shrink-wrapping that box would move the target out from under the
      measurement. `:has()` keeps the effect if the link is ever removed. */
-  .name-home,
-  .name:not(:has(.name-home)) {
+  body:not(.no-intro) .name-home,
+  body:not(.no-intro) .name:not(:has(.name-home)) {
     display: inline-block;
     /* ⚠️ The hidden state is a DECLARATION, and the fill is `forwards`, never
        `both`. A stepped animation is already at 1/n at progress 0, and engines
@@ -143,7 +224,7 @@
 
   /* The caret hangs off the <h1>, which is NOT the clipped box — so it needs
      its own hidden resting state rather than a backwards fill. */
-  .name::after {
+  body:not(.no-intro) .name::after {
     content: '';
     display: inline-block;
     width: 0.055em;
@@ -163,6 +244,7 @@
      timeline to just the copy. */
   @media (max-width: 640px) {
     :root {
+      --t-mark: 0.10s;
       --t-name: 0.30s;
       --t-rest: 1.35s;
       --t-out:  0s;
@@ -176,15 +258,35 @@
   .spec { display: none; }
 }
 
+/* ── No intro at all ──────────────────────────────────────────────────────
+   The sequence is the HOME sheet introducing itself. Landing straight on a
+   piece, it would draw three seconds of draughtsmanship around an article
+   that is already open and then wipe it all off again — and the marks would
+   be annotating prose rather than the empty sheet they are measuring.
+
+   `no-intro` is set on <body> by js/paper.js, synchronously, when the URL it
+   loads on already names a section. Every rule in the sequence above is
+   scoped against it, so the page lands settled — the same page reduced
+   motion gets, and for the same reason: the marks were always going to be
+   gone by the end. Hence the identical treatment of `.spec` here. */
+body.no-intro .spec { display: none; }
+
 @keyframes intro-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-/* Lands on the letterhead's authored weight, not on 1. */
-@keyframes letterhead-in {
-  from { opacity: 0; }
-  to   { opacity: var(--letterhead-opacity); }
+/* The L's sweep. The rect is 1360 tall with its soft edge in the last quarter,
+   and the mask window is the top 680 of it: at -1360 the edge has cleared the
+   window's top and the L is hidden, at -300 the edge has cleared its foot. */
+@keyframes etch-l {
+  from { transform: translateY(-1360px); }
+  to   { transform: translateY(-300px); }
+}
+
+@keyframes etch-line {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
 }
 
 @keyframes intro-out {
@@ -197,10 +299,58 @@
   to   { opacity: 1; transform: none; }
 }
 
-/* A zero-width seam at the centre, opening to both edges. */
+/* A zero-width seam at the centre, opening to both edges — and stopping
+   `--seam` short of them, so the short sides are still undrawn. */
 @keyframes spec-draw {
   from { clip-path: inset(0 50% 0 50%); }
-  to   { clip-path: inset(0 0 0 0); }
+  to   { clip-path: inset(0 var(--seam) 0 var(--seam)); }
+}
+
+/* The short sides, drawn from all four corners towards the middle. The shape
+   is the whole frame with a `--seam`-deep bite out of each short side; the
+   bite runs the full height to begin with (hiding both verticals) and closes
+   to nothing at the halfway mark.
+
+   Traced clockwise from the top-left: across the top, down the right edge to
+   the bite, in and around it, on to the bottom-right, across the bottom, up
+   the left edge to its bite, in and around that, home. The last keyframe also
+   pulls the bite back out to the edge (`0px` deep) as it closes, so the
+   resting shape is a plain rectangle rather than a rectangle with a
+   zero-area sliver retraced along each short side. */
+@keyframes spec-close {
+  from {
+    clip-path: polygon(
+      0 0, 100% 0,
+      100% 0%, calc(100% - var(--seam)) 0%,
+      calc(100% - var(--seam)) 100%, 100% 100%,
+      100% 100%, 0 100%,
+      0 100%, var(--seam) 100%,
+      var(--seam) 0%, 0 0%
+    );
+  }
+  /* Linear for the last sliver: the interval easing would otherwise decelerate
+     a second time and read as a stumble right at the close. */
+  94% {
+    animation-timing-function: linear;
+    clip-path: polygon(
+      0 0, 100% 0,
+      100% 48%, calc(100% - var(--seam)) 48%,
+      calc(100% - var(--seam)) 52%, 100% 52%,
+      100% 100%, 0 100%,
+      0 52%, var(--seam) 52%,
+      var(--seam) 48%, 0 48%
+    );
+  }
+  to {
+    clip-path: polygon(
+      0 0, 100% 0,
+      100% 50%, 100% 50%,
+      100% 50%, 100% 50%,
+      100% 100%, 0 100%,
+      0 50%, 0 50%,
+      0 50%, 0 50%
+    );
+  }
 }
 
 @keyframes wipe-r { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }

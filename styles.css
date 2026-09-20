@@ -48,12 +48,17 @@
   /* The two dials the brief is written in. */
   --frame-w: 20px;
   --sheet-radius: 24px;
+  /* How the sheet crosses between the two geometries below (see `body.full`).
+     js/paper.js overwrites --zoom-dur to keep the move in step with the rest
+     of the choreography — and with `paper.dur` when it's being tuned live. */
+  --zoom-dur: 520ms;
+  --zoom-ease: cubic-bezier(0.22, 0.75, 0.18, 1);
+  /* ⚠️ The sheet's own padding, held in a variable rather than written at the
+     rule. A full-bleed section (photos.css) has to negate it exactly, and two
+     copies of a clamp() drift the moment either is retuned. */
+  --sheet-pad: clamp(28px, 5vw, 64px);
 
-  /* Light: white frame, cool grey paper, near-black ink.
-     The stock is a slate grey — the warmth is gone, with a faint blue-green
-     cast left behind. ⚠️ The ink, the rules and the spec marks are cast the
-     same way. A warm ink on a cool sheet doesn't read as contrast, it reads
-     as two different printings on one page. */
+  /* Light: white frame, cool grey paper, near-black ink. */
   --frame: #ffffff;
   --paper-hi: #e9eced;
   --paper-mid: #e2e6e7;
@@ -62,15 +67,39 @@
   --ink-soft: rgba(18, 23, 26, 0.58);
   --rule: rgba(18, 23, 26, 0.22);
 
+  /* The two washes the sheet's unevenness is painted in: --pool is where the
+     light collects, --burn is where the paper goes off at the edges. Both are
+     laid on in several passes at sizes and positions that don't line up, so
+     nothing about the lighting is symmetrical. */
+  --pool: rgba(255, 255, 255, 0.16);
+  --burn: rgba(84, 99, 108, 0.18);
+
+  /* ⚠️ The WHOLE box-shadow value, not a colour — same reason --curl-shadow
+     is. It is three stops (a hairline catching the top edge, then two wide,
+     deliberately UNEQUAL pools of shade coming in from opposite corners), and
+     all three have to move together between themes; plain CSS has no
+     arithmetic on a colour's alpha. The offsets are what keep it from reading
+     as a vignette: an even ring around a rectangle is a lens, not a sheet. */
+  --sheet-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 18px 20px 54px -40px rgba(74, 88, 96, 0.45),
+    inset -38px -28px 88px -60px rgba(74, 88, 96, 0.4);
+
   /* Grain is tuned per theme: on paper it darkens (multiply), on a dark
      sheet a multiply has nothing left to take away, so it goes two-way. */
+  /* The monogram's weight. On :root rather than on .letterhead because the
+     masthead's corner mark is the same ink and has to read it too. */
+  --letterhead-opacity: 0.9;
+
   --grain-blend: overlay;
   --grain-opacity: 0.45;
+  --grain-pitch: 180px;
   --mottle-blend: soft-light;
-  --mottle-opacity: 0.13;
+  --mottle-opacity: 0.12;
 
-  /* Fine speckle, ~1px at 200px tile. */
-  --noise-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.4' intercept='-0.7'/%3E%3CfeFuncG type='linear' slope='2.4' intercept='-0.7'/%3E%3CfeFuncB type='linear' slope='2.4' intercept='-0.7'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Fine speckle — the fibre, and the ONLY thing between the sheet's tonal
+     drift and a flat fill, so it is drawn harder than it once was. */
+  --noise-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.8' intercept='-0.9'/%3E%3CfeFuncG type='linear' slope='2.8' intercept='-0.9'/%3E%3CfeFuncB type='linear' slope='2.8' intercept='-0.9'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
   /* Slow tonal blotching, so the sheet isn't perfectly even. */
   --noise-coarse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.011' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.9' intercept='0.05'/%3E%3CfeFuncG type='linear' slope='0.9' intercept='0.05'/%3E%3CfeFuncB type='linear' slope='0.9' intercept='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='640' height='640' filter='url(%23m)'/%3E%3C/svg%3E");
 }
@@ -85,10 +114,23 @@
     --ink-soft: rgba(229, 233, 234, 0.72);
     --rule: rgba(229, 233, 234, 0.22);
 
+    /* ⚠️ Declared again rather than scaled. On a dark sheet the light has to
+       be ADDED (a near-white pool at a few percent) while the shade is real
+       black — the light theme's grey-blue burn just goes muddy here. */
+    --pool: rgba(203, 219, 227, 0.035);
+    --burn: rgba(0, 0, 0, 0.3);
+
+    --sheet-inner:
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      inset 18px 20px 54px -40px rgba(0, 0, 0, 0.5),
+      inset -38px -28px 88px -60px rgba(0, 0, 0, 0.45);
+
+    --letterhead-opacity: 0.82;
+
     --grain-blend: overlay;
-    --grain-opacity: 0.32;
+    --grain-opacity: 0.34;
     --mottle-blend: soft-light;
-    --mottle-opacity: 0.08;
+    --mottle-opacity: 0.09;
   }
 }
 
@@ -126,17 +168,72 @@ body {
   overflow: hidden;
   isolation: isolate; /* keeps the grain's blend modes off the frame */
 
+  /* ⚠️ The lighting is OFF-CENTRE, and it is all the asymmetry the sheet
+     gets. A single symmetrical ramp reads as a gradient — a rectangle lit by
+     CSS — so the light pools somewhere in particular and two corners go off
+     at their own rates, none of the three concentric with the sheet or with
+     each other.
+
+     ⚠️ It stays at the scale of LIGHTING, never of marks. Torn-edged washes
+     (an ellipse through an feDisplacementMap, stretched over the sheet) were
+     built here and taken out again: they gave real depth and read as stains —
+     big soft shapes you look AT, where the whole point of this stock is a
+     texture you only notice once it's gone. The register is a notebook, not
+     a watercolour block. */
   background:
+    /* where the light collects, broadly: up and to the right */
+    radial-gradient(70% 58% at 64% 26%, var(--pool) 0%, transparent 70%),
+    /* and where it doesn't: two corners, at two different sizes */
+    radial-gradient(60% 52% at 2% 102%, var(--burn) 0%, transparent 66%),
+    radial-gradient(42% 38% at 100% 96%, var(--burn) 0%, transparent 60%),
     radial-gradient(135% 115% at 50% -12%,
       var(--paper-hi) 0%,
       var(--paper-mid) 52%,
       var(--paper-lo) 100%);
+  /* The sheet's own thickness: a lit top edge and shade drawing in from two
+     corners. Painted above the background and below every child, so the grain
+     still runs over it. */
 
   display: grid;
   grid-template-rows: 1fr auto;
-  padding: clamp(28px, 5vw, 64px);
+  padding: var(--sheet-pad);
   box-sizing: border-box;
+
+  /* The move between the framed sheet and the full-bleed one. Declared here
+     rather than on `body.full` so it carries BOTH ways: an override only ever
+     animates the trip out. */
+  transition:
+    inset var(--zoom-dur) var(--zoom-ease),
+    border-radius var(--zoom-dur) var(--zoom-ease);
 }
+
+/* ── Full bleed ────────────────────────────────────────────────────────────
+   The frame is the landing page's. Open a section and the paper zooms up to
+   the edges of the screen: inset to nothing, corners squared off, the whole
+   viewport given to the reading.
+
+   ⚠️ Driven by `body.full`, NOT by `body.reading`, and the two are separate
+   on purpose. Every flight in js/paper.js is a measured FLIP, and `measureAs()`
+   reads its target by applying `reading` for the length of one task — fold the
+   geometry into that class and every measurement comes back in the geometry
+   the sheet will only be in AFTER the zoom, which is 20px away from where the
+   name and the monogram actually have to land. `full` is toggled in the same
+   task as `reading`, at the end of the flight, so the choreography is measured
+   and flown in one geometry and the zoom is the beat that follows it.
+
+   ⚠️ No safe-area `env()` here, unlike the framed inset above. Full bleed is
+   full bleed; what keeps the copy off a notch is the sheet's own padding, and
+   giving that padding an `env()` floor would break photos.css's full-bleed
+   cover, which negates --sheet-pad exactly. */
+body.full .sheet {
+  inset: 0;
+  border-radius: 0;
+}
+
+/* ⚠️ Landing straight on a section URL has no zoom to play — there was no
+   framed sheet on screen to leave. js/paper.js parks this class around the
+   toggle so the geometry can move without the transition seeing it. */
+body.no-zoom .sheet { transition: none; }
 
 /* Fine grain and slow mottle. Separate elements rather than two layers on one,
    because each needs its own blend mode and opacity. */
@@ -149,16 +246,33 @@ body {
   z-index: 0;
 }
 
+/* ⚠️ Every tile starts OFF the sheet's own corner. A tile repeating from
+   (0,0) lines its seams up with the edges of the sheet, which is exactly
+   where the eye is already looking. */
 .sheet::before {
   background-image: var(--noise-fine);
-  background-size: 180px 180px;
+  background-size: var(--grain-pitch) var(--grain-pitch);
+  background-position: -37px -83px;
   mix-blend-mode: var(--grain-blend);
   opacity: var(--grain-opacity);
+}
+
+/* ⚠️ THE GRAIN IS SIZED IN DEVICE PIXELS, not CSS ones — the one place on
+   this page where that distinction earns a media query. feTurbulence is
+   generated in the tile's own user space, so at a 180px pitch a grain is
+   about a CSS pixel across; on a 2x display that is a TWO-device-pixel grain,
+   and paper photographed at half resolution is exactly what that looks like.
+   A shorter pitch puts the fibre back on the display's own. Not a straight
+   halving: at exactly half, every grain lands on one device pixel and the
+   field starts to alias into a shimmer as the page moves. */
+@media (min-resolution: 2dppx) {
+  :root { --grain-pitch: 116px; }
 }
 
 .sheet::after {
   background-image: var(--noise-coarse);
   background-size: 640px 640px;
+  background-position: -143px 57px;
   mix-blend-mode: var(--mottle-blend);
   opacity: var(--mottle-opacity);
 }
@@ -182,6 +296,10 @@ body {
    Kept as an <img> rather than inlined: an <img>-embedded SVG still honours
    its own stylesheet and media queries, which is all the theming this needs,
    and it keeps 6KB of paths out of the markup. */
+.letterhead .mono-stroke { stroke: #23272a; }
+@media (prefers-color-scheme: dark) {
+  .letterhead .mono-stroke { stroke: #dfe4e6; }
+}
 .letterhead {
   position: absolute;
   top: clamp(36px, 6.4vh, 62px);
@@ -191,20 +309,18 @@ body {
   height: auto;
   z-index: 1;
   pointer-events: none;
-  /* Held in a variable because the intro fades the letterhead ON, and a
-     generic 0 → 1 keyframe would overshoot this resting value and leave the
-     monogram heavier than it was authored to be. intro.css animates TO this. */
-  --letterhead-opacity: 0.9;
+  /* ⚠️ Held in a variable (on :root, with the palette) because the intro
+     fades the letterhead ON, and a generic 0 → 1 keyframe would overshoot
+     this resting value and leave the monogram heavier than it was authored
+     to be. intro.css animates TO this, and the masthead's corner mark rests
+     at the same weight so the flight between them can't pop. */
   opacity: var(--letterhead-opacity);
-}
-
-@media (prefers-color-scheme: dark) {
-  .letterhead { --letterhead-opacity: 0.82; }
 }
 
 /* ── Copy ──────────────────────────────────────────────────────────────── */
 .masthead,
 .spread,
+.plates,
 .links {
   position: relative;
   z-index: 1;
@@ -230,7 +346,12 @@ body {
   color: inherit;
   text-decoration: none;
   cursor: default;
-  transition: color 200ms ease;
+  /* ⚠️ NO colour transition. The only thing that ever changes this colour is
+     the swap to `transparent` in reading mode, and transitioning that means
+     the word fades out over 200ms — as a ghost of the wordmark sitting under
+     the monogram at the exact moment the monogram lands on it. Nothing else
+     moves this property: at home the link has no hover state, and in reading
+     mode hover is the same transparent. */
 }
 
 .name {
@@ -283,7 +404,41 @@ body:not(.reading) .name {
   pointer-events: none;
 }
 
-/* ── Links ─────────────────────────────────────────────────────────────── */
+/* ── Marks ──────────────────────────────────────────────────────────────────
+   Tabler Icons (MIT), inlined. Eight glyphs is fewer bytes than the request
+   that would fetch them, there is no build step here to tree-shake a package
+   with, and the landing page has to draw with scripting blocked.
+
+   ⚠️ Tabler is drawn at 2px on a 24 grid and THIS PAGE IS DRAWN IN
+   HAIRLINES — 1px rules, a light monoline face, spec marks at a fraction of
+   an em. Dropped in at their own weight the icons are the boldest thing on
+   the sheet by some distance. The weight is set here, once, rather than on
+   each svg's own attribute, so the nav and the accounts can't drift apart.
+
+   ⚠️ The stroke does NOT scale with the box. An svg's stroke-width is in
+   its own viewBox units, so a 24-unit mark rendered at 17px draws that 1.4
+   at 17/24 — about a pixel, which is the rest of the page. Resize the icon
+   and the line reweights with it, which is the intent.
+
+   ⚠️ Tabler's leading `<path stroke="none" d="M0 0h24v24H0z"/>` is dropped
+   from all eight. It pads the bounding box in an icon FONT; inlined it is
+   one invisible rectangle per mark. */
+.ico {
+  width: 1.45em;
+  height: 1.45em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── The navigation ─────────────────────────────────────────────────────────
+   The row at the foot of the sheet. It held the social accounts once; the
+   class stayed when the contents swapped, because js/paper.js rubs it out by
+   that name and intro.css settles it by that name — it is a place on the
+   page, not a description of what is standing in it. */
 .links {
   justify-self: center;
   display: flex;
@@ -295,7 +450,13 @@ body:not(.reading) .name {
   letter-spacing: 0.2em;
 }
 
-.links a {
+.links a,
+.back {
+  display: inline-flex;
+  align-items: center;
+  /* ⚠️ In em, so it tracks the label through the clamp above. A px gap set
+     at one end of that range is wrong at the other. */
+  gap: 0.62em;
   color: var(--ink-soft);
   text-decoration: none;
   padding-bottom: 3px;
@@ -303,13 +464,25 @@ body:not(.reading) .name {
   transition: color 200ms ease, border-color 200ms ease;
 }
 
+/* ⚠️ The label's trailing letter-space, taken back off the flex box the
+   same way .name and .bio take back their own. 0.2em of tracking is added
+   after the LAST letter too, so without this every word sits a fifth of an
+   em left of centre between its icon and the next item. */
+.links a > span,
+.back > span {
+  margin-right: -0.2em;
+}
+
 .links a:hover,
-.links a:focus-visible {
+.links a:focus-visible,
+.back:hover,
+.back:focus-visible {
   color: var(--ink);
   border-bottom-color: var(--rule);
 }
 
-.links a:focus-visible {
+.links a:focus-visible,
+.back:focus-visible {
   outline: none;
 }
 
@@ -342,7 +515,10 @@ body:not(.reading) .name {
 /* Landscape phones: the lockup and links have to share very little height. */
 @media (max-height: 460px) {
   .bio { margin-top: clamp(14px, 3vh, 24px); line-height: 1.85; }
-  .sheet { padding: clamp(18px, 4vw, 40px); }
+  /* ⚠️ The variable, not `padding`: the reading-mode monogram and photos.css's
+     full-bleed cover both read --sheet-pad, and a bare padding override left
+     them working from the tall-screen value. */
+  .sheet { --sheet-pad: clamp(18px, 4vw, 40px); }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -540,7 +716,11 @@ body:not(.reading) .name {
 
 :root {
   --curl-rest: 44px;
-  --curl-open: clamp(160px, 22vw, 276px);
+  /* ⚠️ The floor went up with the contents. Five marks in a row need more
+     bottom edge than three stacked words needed height; at the old 160px the
+     leftmost one lay across the fold. 200 is the inequality at .curl-links
+     plus about a mark's worth of air. */
+  --curl-open: clamp(200px, 22vw, 276px);
   /* The sheet's reverse: bright along the fold where it tilts into the light,
      falling away to the tip that is lying back down on the page. */
   --curl-fold: #f4f7f8;
@@ -640,34 +820,59 @@ body:not(.reading) .name {
   opacity: var(--grain-opacity);
 }
 
-/* ── The nav under the corner ──────────────────────────────────────────── */
-.curl-nav {
+/* ── The accounts under the corner ──────────────────────────────────────────
+   ⚠️ A ROW along the bottom edge, where the old nav was a column up the
+   right one. The hole is the lower-right triangle, so the paper available at
+   any height is exactly the distance down from the fold: a stack of five
+   marks puts its top item where there are a few pixels to stand on and the
+   corner clips it. The bottom edge is the one full-width line in the shape,
+   which is where five of anything goes.
+
+   The fit is one inequality, and it is worth keeping written down:
+
+       --curl-open  ≥  right + row width + bottom + mark height
+
+   — because the hole's left edge at the row's TOP is `bottom + height` in
+   from the corner, and the row's left edge is `right + width` in. Retune any
+   of them and check the LEFTMOST mark; the row's total width on its own
+   tells you nothing.
+
+   ⚠️ Which is why the gap is a FLAT 12px and not a vw clamp. A clamp sizes
+   the row off the viewport while the triangle sizes off --curl-open, and the
+   two stop agreeing the moment --curl-open hits either end of its own clamp:
+   at a 1000px window the gap was already at its 16px ceiling while the fold
+   was still at its floor, and the leading mark sat 19px outside the paper. */
+.curl-links {
   position: absolute;
-  right: 24px;
-  bottom: 20px;
+  right: 18px;
+  bottom: 13px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  font-size: clamp(0.62rem, 1.05vw, 0.78rem);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  /* Held back until the fold is most of the way open — copy appearing while
-     the corner is still a stub reads as text printed on the paper. */
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  /* Held back until the fold is most of the way open — marks appearing while
+     the corner is still a stub read as something printed on the paper. */
   opacity: 0;
   transition: opacity 160ms ease;
 }
 
-.curl-nav a {
-  color: var(--ink);
-  text-decoration: none;
-  padding-bottom: 2px;
-  border-bottom: 1px solid transparent;
-  transition: border-color 180ms ease;
+.curl-links .ico {
+  /* ⚠️ 1em of the size above, so the row has ONE dial. The stroke rides the
+     same number (see .ico): shrink these and the marks thin with them,
+     instead of becoming five heavy badges in the corner. */
+  width: 1em;
+  height: 1em;
 }
-.curl-nav a:hover,
-.curl-nav a:focus-visible {
-  border-bottom-color: var(--rule);
+
+.curl-links a {
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  transition: color 180ms ease;
+}
+.curl-links a:hover,
+.curl-links a:focus-visible {
+  color: var(--ink);
   outline: none;
 }
 
@@ -681,16 +886,16 @@ body:not(.reading) .name {
   height: var(--curl-open);
 }
 
-.curl-zone:hover ~ .curl .curl-nav,
-.curl:hover .curl-nav,
-.curl:focus-within .curl-nav {
+.curl-zone:hover ~ .curl .curl-links,
+.curl:hover .curl-links,
+.curl:focus-within .curl-links {
   opacity: 1;
   transition-delay: 200ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .curl { transition: none; }
-  .curl-nav { transition: none; }
+  .curl-links { transition: none; }
 }
 
 /* ── No hover to give ──────────────────────────────────────────────────────
@@ -702,11 +907,22 @@ body:not(.reading) .name {
     width: var(--curl-open);
     height: var(--curl-open);
   }
-  .curl-nav { opacity: 1; }
+  .curl-links { opacity: 1; }
 }
 
 @media (max-width: 640px) {
-  :root { --curl-open: 150px; }
+  /* ⚠️ The corner does NOT grow to 200 here. On a 375px screen that is over
+     half the width of the page, parked open. The row shrinks instead — one
+     font-size, since .ico is sized in em and the stroke rides the box — and
+     the inequality is satisfied from the other side. */
+  :root { --curl-open: 168px; }
+
+  .curl-links {
+    right: 14px;
+    bottom: 10px;
+    gap: 9px;
+    font-size: 15px;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -758,10 +974,21 @@ body.reading .sheet {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+body.reading {
+  /* The masthead's own scale. The bar is as tall as the expand control, the
+     monogram is 1.15 of the old wordmark's size, and both are read by the
+     letterhead below and by the row itself. */
+  --mast-size: clamp(1rem, 1.9vw, 1.5rem);
+  --bar-h: 30px;
+  --mark-h: calc(var(--mast-size) * 1.15);
+}
+
 body.reading .masthead {
   place-self: start stretch;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  box-sizing: content-box;
+  min-height: var(--bar-h);
   justify-content: space-between;
   gap: clamp(16px, 3vw, 40px);
   padding-bottom: clamp(12px, 1.8vh, 20px);
@@ -769,63 +996,84 @@ body.reading .masthead {
   margin-bottom: clamp(16px, 2.6vh, 32px);
 }
 
-body.reading .lockup { text-align: left; }
+/* ⚠️ The lockup is out of the row and out of sight, NOT `display: none`: the
+   masthead's flight (flyName in js/paper.js) still measures the name inside
+   it, and a zero-width rect gives an Infinity scale. Absolutely positioned it
+   keeps a real box and takes no space, so the row is the back link on the left
+   and the expand control on the right with the monogram between them. */
+body.reading .lockup {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
 body.reading .bio,
 body.reading .links { display: none; }
 
-/* ⚠️ The tracking does NOT change between the two states, though a masthead
-   this small would normally want more. The flight from centre to corner is a
-   measured FLIP (flyName() in js/paper.js) whose scale factor is the ratio of
-   the two rendered text widths — which only equals the font-size ratio while
-   the tracking is identical at both ends. Open the masthead up and the word
-   still lands at the right overall width, but with the glyphs and the gaps
-   divided differently, and the handover at the end of the flight pops. */
-body.reading .name { font-size: clamp(1rem, 1.9vw, 1.5rem); }
+/* ── The monogram stays in the middle ─────────────────────────────────────
+   Off the home page the letterhead does not go to a corner: it shrinks to the
+   masthead's size and stays centred, on the row between the back link and the
+   expand control. It is the SAME element in both places, so it flies between
+   them (flyLetterhead in js/paper.js) — measured at both ends, the flight is
+   just a scale and a drop.
 
-body.reading .name-home { cursor: pointer; position: relative; }
+   ⚠️ Positioned off the sheet's padding box, exactly as it is at home, and
+   NOT placed in the grid with `grid-area`. Tried first: an absolutely
+   positioned grid item takes the grid area as its containing block, but
+   Chrome resolves `left: 50%` against the area's width and measures the offset
+   from a different edge, which parked the mark a padding-width right of the
+   middle. The padding is symmetrical, so 50% of the sheet is the centre of the
+   row anyway; only `top` has to know about the padding, and it centres the
+   mark on the `--bar-h` bar the masthead is at least as tall as.
 
-/* ── The masthead is the monogram, not the word ────────────────────────────
-   Off the home page the name in the corner becomes the letterhead mark. It is
-   laid OVER the word rather than replacing it, and that is not a stylistic
-   choice — it is what keeps flyName() working.
-
-   ⚠️ `color: transparent`, never `display: none`, `font-size: 0` or swapping
-   the element's content. flyName() measures the <a> in both states and takes
-   its scale from `to.width / from.width`; the monogram is a different shape
-   from the word, so any change that alters the box makes the flying text
-   scale to the wrong size and snap at the handover — the exact failure the
-   tracking note above is about. Transparent text still lays out, so the
-   measurement is untouched.
-
-   ⚠️ The ::before is absolutely positioned for the same reason: in flow it
-   would widen the <a> and move the measurement again.
-
-   The swap needs no timing of its own. js/paper.js adds `body.reading` only
-   after the flight resolves, so the word flies as the word and the mark is
-   simply what is there when it lands. */
-body.reading .name-home,
-body.reading .name-home:hover,
-body.reading .name-home:focus-visible {
-  /* Keeps the accessible name and the measured box; hides the glyphs. */
-  color: transparent;
-  outline: none;
+   ⚠️ The resting `translateX(-50%)` is inherited from the base rule and has to
+   stay: flyLetterhead keeps it at the head of its transform list. */
+body.reading .letterhead {
+  top: calc(var(--sheet-pad) + (var(--bar-h) - var(--mark-h)) / 2);
+  width: calc(var(--mark-h) * 1641 / 621);
 }
 
-body.reading .name-home::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 1.15em;
-  aspect-ratio: 1641 / 621;
-  background: url("/images/lvz-monogram.svg") left center / contain no-repeat;
-  opacity: 0.92;
-  transition: opacity 200ms ease;
+/* The word itself is never seen in a section — the lockup is hidden and the
+   monogram is the mark — but flyName() still flies it, and its scale is the
+   ratio of two rendered text widths. That only equals the font-size ratio
+   while the tracking is identical at both ends, so it is not changed here. */
+body.reading .name { font-size: var(--mast-size); }
+
+/* ── The back link ─────────────────────────────────────────────────────────
+   The way home is the section's title with a chevron before it, top left, in
+   the same voice as the navigation it replaces: the same face, tracking, ink
+   and icon weight as `.links`. Only present in a section — at home there is
+   nothing to go back from.
+
+   ⚠️ It shares `.links a`'s rules rather than restating them (see there), and
+   only adds what the nav gets from its container: the type. */
+.back {
+  display: none;
+  font-size: clamp(0.68rem, 1.25vw, 0.88rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  /* Balances the 3px + 1px underline the shared rule puts under the label, so
+     the text sits on the bar's centre line and not 2px above it. */
+  padding-top: 4px;
+  /* The chevron is drawn 9 to 15 on a 24 grid, so its box carries about half
+     an em of air on the left. Pulled back so the stroke, not the box, lines up
+     with the column's edge. */
+  margin-left: -0.45em;
 }
 
-body.reading .name-home:hover::before,
-body.reading .name-home:focus-visible::before { opacity: 0.6; }
+body.reading .back {
+  display: inline-flex;
+  animation: back-in 420ms ease both;
+}
+
+@keyframes back-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* The chevron eases toward the edge it points at. */
+.back .ico { transition: transform 200ms ease; }
+.back:hover .ico,
+.back:focus-visible .ico { transform: translateX(-2px); }
 
 /* The dimension notes annotate an empty sheet. With a page of text under them
    the callouts run straight through the copy, so they come off — the rulers,
@@ -855,7 +1103,6 @@ body.reading .curl-zone {
   justify-content: center;
   width: 30px;
   height: 30px;
-  margin-bottom: 2px;
   padding: 0;
   background: none;
   border: 1px solid var(--rule);
@@ -1006,6 +1253,15 @@ body.solo .index {
   margin-inline: auto;
 }
 
+/* ⚠️ The face has ONE weight and `font-synthesis: none`, so a heavier heading
+   can't be asked for. A stroke laid over a monoline thickens every letter
+   evenly, which is what a bolder weight of it would do — unlike a synthesised
+   bold, which smears. In em so the weight scales with each heading's size. */
+.page-title,
+.prose h2,
+.prose h3,
+.prose h4 { --heading-stroke: 0.035em; }
+
 .page-title {
   font-family: var(--font-display);
   margin: 0;
@@ -1014,6 +1270,7 @@ body.solo .index {
   line-height: 1.32;
   text-transform: uppercase;
   letter-spacing: 0.07em;
+  -webkit-text-stroke: var(--heading-stroke) currentColor;
 }
 
 .page-meta {
@@ -1033,8 +1290,8 @@ body.solo .index {
    punctuation on render by fold() in js/paper.js, not fixed in the markdown. */
 .prose {
   margin-top: clamp(20px, 3vh, 34px);
-  font-size: clamp(0.8rem, 1vw, 0.94rem);
-  line-height: 1.95;
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  line-height: 1.9;
   color: var(--ink);
   opacity: 0;
   transform: translateY(6px);
@@ -1056,6 +1313,7 @@ body.solo .index {
   line-height: 1.5;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+  -webkit-text-stroke: var(--heading-stroke) currentColor;
 }
 .prose h2 { font-size: 1.05em; }
 .prose h3 { font-size: 0.95em; }

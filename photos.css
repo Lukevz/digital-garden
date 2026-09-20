@@ -1,0 +1,1199 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   paperlike — photographs.
+
+   The third surface. `.spread` is writing's two-column reading layout and this
+   is its sibling: ONE full-width scroller, because a photo essay is a column
+   you fall down rather than a text you read beside an index.
+
+   Both live inside the sheet and both are hidden until js/paper.js routes to
+   them, so with scripting off `/` is still the page it always was.
+
+   What is in here:
+
+     • the index of collections, and the loose frames under it
+     • a written collection: a full-bleed cover, a justified lede, and the
+       stamps
+     • the STAMPS — one per day, perforated in CSS, cycling their own
+       photographs on hover
+     • the day view: the stamp is repainted into the photograph it was drawn
+       from, with that frame's real EXIF printed beside it
+
+   ⚠️ Kept out of styles.css deliberately, the same way intro.css is. This file
+   only ever adds a surface; it changes nothing the landing page uses.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* The stamp's own stock. ⚠️ NOT --paper-*: a stamp is a separate object
+     lying ON the sheet, and drawn in the sheet's own tone the perforation has
+     nothing to bite into — the card disappears and the engraving looks like it
+     was printed straight onto the page. It stays cream in both themes for the
+     same reason a photograph does. */
+  --stamp-paper: #f2ebdd;
+  --stamp-edge: rgba(58, 48, 32, 0.16);
+
+  --stamp-w: clamp(132px, 15.5vw, 250px);
+  --stamp-gap: clamp(18px, 4.6vw, 72px);
+  /* Hole radius and pitch for the perforation. The pitch is what has to divide
+     into the card at least roughly, or the last notch on an edge is a sliver. */
+  --perf-r: 3.6px;
+  --perf-pitch: 11px;
+
+  /* ⚠️ The WHOLE filter value, not a colour — the same reason --curl-shadow is
+     one. A stamp casts a tight contact shadow plus a wider, softer one, and
+     both alphas have to move together between themes. */
+  --stamp-shadow:
+    drop-shadow(0 1px 1px rgba(28, 34, 38, 0.22))
+    drop-shadow(0 8px 16px rgba(28, 34, 38, 0.14));
+  --stamp-shadow-lift:
+    drop-shadow(0 2px 3px rgba(28, 34, 38, 0.26))
+    drop-shadow(0 18px 34px rgba(28, 34, 38, 0.2));
+
+  /* The scan. A warm developing light in both themes — it is a lamp being
+     passed over the print, not a UI accent. */
+  --scan-glow: rgba(255, 246, 222, 0.92);
+  --scan-spark: rgba(255, 250, 235, 0.95);
+
+  --plate-edge: rgba(18, 23, 26, 0.16);
+  --plate-shadow: 0 0 0 0 transparent;   /* photographs are flat: no shadow */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --stamp-paper: #e6ddcb;
+    --stamp-edge: rgba(0, 0, 0, 0.3);
+    --stamp-shadow:
+      drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5))
+      drop-shadow(0 10px 20px rgba(0, 0, 0, 0.42));
+    --stamp-shadow-lift:
+      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55))
+      drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+    --scan-glow: rgba(214, 232, 255, 0.9);
+    --scan-spark: rgba(232, 243, 255, 0.95);
+    --plate-edge: rgba(229, 233, 234, 0.16);
+    --plate-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ══ The surface ═══════════════════════════════════════════════════════════
+   ⚠️ `:not([hidden])` carries the `display`, exactly as `.spread` does.
+   `[hidden]` is only a UA `display: none`, so a `display` on the element
+   itself outranks it and the surface would sit in the home layout as an empty
+   grid row. */
+/* ⚠️ The SURFACE carries the negative margin, not the cover inside it.
+   `overflow` clips to the padding box, so a bleeding child of a scroller whose
+   padding box stops at the sheet's text column is simply cut off there. The
+   surface is pulled out to the sheet's own edges instead and the gutter is
+   handed to `.plates-scroll` as padding — which then gives `.bleed` something
+   to negate, and makes the clip happen at the sheet's edge where it belongs. */
+.plates:not([hidden]) {
+  display: block;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--sheet-pad));
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+.plates.is-in { opacity: 1; }
+
+/* Its own scroller, like `.page-scroll`. `html, body { overflow: hidden }` is
+   untouched and the sheet still cannot move. */
+.plates-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-inline: var(--sheet-pad);
+  box-sizing: border-box;
+  scrollbar-width: none;
+}
+.plates-scroll::-webkit-scrollbar { display: none; }
+
+/* ⚠️ The dog-ear clearance is on the VIEW, not on the scroller. A padded
+   scroller shortens its own content box, and the cover measures ninety percent
+   of that — so the one dial that decides how tall the cover is would quietly
+   be "ninety percent, less however much room the corner needs". */
+.pcol,
+.pindex {
+  padding-bottom: clamp(48px, 9vh, 110px);
+}
+
+/* Full bleed: back out the gutter the scroller just added. ⚠️ Derived from
+   --sheet-pad rather than restating the clamp, so the two cannot drift. */
+.bleed {
+  margin-inline: calc(-1 * var(--sheet-pad));
+  width: calc(100% + 2 * var(--sheet-pad));
+  max-width: none;
+}
+
+/* ══ The index ═════════════════════════════════════════════════════════════ */
+
+.pindex-head {
+  margin: 0 0 clamp(20px, 4vh, 40px);
+}
+
+.pindex-note {
+  margin: 10px 0 0;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+/* A set. The cover is the thing; the type sits under it like a plate caption
+   rather than over it, so the photograph is never asked to carry text. */
+.pset {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pset-cover {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper-lo);
+}
+
+.pset-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 900ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.pset:hover .pset-cover img,
+.pset:focus-visible .pset-cover img { transform: scale(1.028); }
+.pset:focus-visible { outline: none; }
+
+.pset-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 14px;
+}
+
+.pset-kicker,
+.pset-dates {
+  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.pset-name {
+  font-family: var(--font-display);
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(1rem, 2vw, 1.6rem);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* A featured set is a 40/60 lockup on a white card: the type on the left with
+   32px of padding all round, centred on the photograph's height rather than
+   hung off its top, and the cover on the right with NO padding, so it runs
+   flush to the card's top, right and bottom edges. The card sits inside the
+   same column as everything else on the page and is flat — no drop shadow — with
+   20px corners.
+
+   ⚠️ "White" is the FRAME's colour (`--frame`), which is white in light mode
+   and near-black in dark. A literal #fff card on a dark sheet would be the
+   brightest thing on the page and outshine the photograph it is presenting.
+
+   ⚠️ The markup is cover-then-meta and the grid reorders it with areas, so the
+   phone layout below can simply put them back in source order. */
+.pset--feature {
+  margin-bottom: clamp(36px, 7vh, 76px);
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  grid-template-areas: "meta cover";
+  align-items: center;
+  background: var(--frame);
+  /* Clips the photograph's corners too — it is flush, so it takes the card's. */
+  border-radius: 20px;
+  overflow: hidden;
+}
+.pset--feature .pset-cover {
+  grid-area: cover;
+  height: clamp(220px, 46vh, 520px);
+}
+/* The ring goes round the card, not the photograph inside it. */
+.pset--feature:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+.pset--feature .pset-meta {
+  grid-area: meta;
+  padding: 32px;
+  gap: 10px;
+}
+.pset--feature .pset-name {
+  font-size: clamp(1.6rem, 3.2vw, 2.9rem);
+  /* Set in a colour taken from the cover (`accent` in the manifest). It is
+     the photograph's own dominant hue, so it is tuned per theme rather than
+     used raw: a mid brown reads on white and disappears on the dark card. */
+  color: var(--accent, inherit);
+}
+.pset--feature .pset-dates { font-size: clamp(0.72rem, 1.15vw, 0.9rem); }
+@media (prefers-color-scheme: dark) {
+  .pset--feature .pset-name {
+    color: color-mix(in oklab, var(--accent, currentColor) 55%, #fff);
+  }
+}
+
+/* The rest: three equal columns of vertical white cards, the featured card's
+   surface again (`--frame`, 20px corners, flat) — the cover runs flush across
+   the top and clips to the corners, the type sits under it with its own
+   padding.
+
+   ⚠️ `minmax(0, 1fr)`, not `1fr`: a bare 1fr floors at min-content, so one long
+   title would widen its column and the three would stop being equal. */
+.pset-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 2vw, 24px);
+  margin-bottom: clamp(36px, 7vh, 76px);
+}
+.pset--card {
+  display: flex;
+  flex-direction: column;
+  background: var(--frame);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.pset--card .pset-cover { aspect-ratio: 4 / 5; }
+.pset--card .pset-meta {
+  padding: clamp(16px, 1.8vw, 24px);
+  gap: 8px;
+}
+.pset--card .pset-name { font-size: clamp(0.9rem, 1.5vw, 1.25rem); }
+/* The ring goes round the card, as it does on the featured one. */
+.pset--card:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+
+/* An unwritten set is a folder of frames, not a piece — it opens the frames
+   themselves, and says so. */
+.pset-tag {
+  display: inline-block;
+  margin-left: 0.7em;
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: 0.82em;
+  letter-spacing: 0.14em;
+}
+
+/* ── Loose frames ──────────────────────────────────────────────────────────
+   Masonry by CSS columns rather than grid. A grid has to be told each item's
+   row span, which means knowing every frame's aspect before layout; columns
+   just flow, and these are mixed portrait and landscape from six years of two
+   phones and three cameras. */
+.stamps-title {
+  font-family: var(--font-display);
+  margin: 0 0 clamp(14px, 2.4vh, 24px);
+  font-weight: 400;
+  font-size: clamp(0.8rem, 1.3vw, 1.05rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+}
+
+.masonry {
+  columns: clamp(140px, 17vw, 230px);
+  column-gap: clamp(8px, 1.4vw, 16px);
+}
+
+/* The loose frames sit on a white card of their own, the same one the featured
+   set is on (`--frame`, so near-black in dark mode), with 20px corners. The
+   photographs on it are lightly rounded.
+
+   ⚠️ The masonry gives every frame a bottom margin, including the last in each
+   column, which would leave the card's bottom padding 16px deeper than its
+   sides — the negative margin takes that back. */
+.ploose {
+  background: var(--frame);
+  border-radius: 20px;
+  padding: 32px;
+}
+.ploose .masonry { margin-bottom: calc(-1 * clamp(8px, 1.4vw, 16px)); }
+.ploose .frame {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.masonry .frame {
+  break-inside: avoid;
+  margin-bottom: clamp(8px, 1.4vw, 16px);
+  /* The frame's own ratio, so the column reserves its height before the image
+     lands and the masonry does not re-flow under the reader. */
+  aspect-ratio: var(--ar, 3 / 4);
+}
+
+/* A frame is a plate pasted onto the sheet: no hairline and no shadow, never a
+   border-radius. Prints do not have rounded corners. */
+.frame {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--paper-lo);
+  cursor: pointer;
+  overflow: hidden;
+}
+/* Fills whatever box the context gave the frame. In the masonry that box is
+   the image's own ratio and `cover` does nothing; in a day's grid it is a
+   square and `cover` is what crops to it. One rule, both layouts. */
+.frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 700ms cubic-bezier(0.2, 0.6, 0.2, 1),
+              filter 300ms ease;
+}
+.frame:hover img { transform: scale(1.03); }
+.frame:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ink); }
+
+/* ══ A collection ══════════════════════════════════════════════════════════ */
+
+/* ⚠️ `height: 100%` is what makes the cover's own percentage resolve, and it is
+   load-bearing. A percentage height against an AUTO-height parent computes to
+   `auto`, so without this the cover quietly falls back to its image's
+   intrinsic ratio — which on a wide sheet is a 2:3 photograph a third taller
+   than the window, and the byline under it is below the fold on arrival.
+   The article overflowing its own 100% is fine and intended: the scroller is
+   what the rest of the piece scrolls inside. */
+.pcol { height: 100%; }
+
+/* ⚠️ `height`, not `aspect-ratio`. The brief is ninety percent of the SCREEN,
+   and `.plates-scroll` has a definite height to resolve that against — an
+   aspect ratio would tie the cover to the sheet's width instead, which on a
+   wide monitor is a cover taller than the window. */
+.pcol-cover {
+  position: relative;
+  height: 90%;
+  min-height: 260px;
+  overflow: hidden;
+  background: var(--paper-lo);
+}
+
+.pcol-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The type sits in the photograph's own shadow. A scrim rather than a flat
+   overlay: the cover is a dark vault and the words are in the bottom-left of
+   it, so the wash is angled to where they are and stops short of the oculus. */
+.pcol-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(200deg, transparent 38%, rgba(10, 12, 14, 0.52) 100%),
+    linear-gradient(to top, rgba(10, 12, 14, 0.4) 0%, transparent 46%);
+  pointer-events: none;
+}
+
+.pcol-cover-type {
+  position: absolute;
+  left: var(--sheet-pad);
+  right: var(--sheet-pad);
+  bottom: clamp(26px, 6vh, 64px);
+  z-index: 1;
+  color: #fff;
+}
+
+/* ⚠️ Wingman, not the comp's Bricolage Grotesque. The site has exactly two
+   faces and the split between them is load-bearing (see styles.css); a third
+   one imported for a single word is how that stops being true. Set large and
+   tracked it carries the comp's weight without adding a family. */
+.pcol-title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(2.6rem, 9vw, 7rem);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  /* The type is white on a photograph, which is the one place on this site
+     something needs lifting off its ground. */
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45);
+}
+
+.pcol-byline {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(10px, 1.4vw, 20px);
+  margin: clamp(10px, 1.6vh, 20px) 0 0;
+  font-size: clamp(0.62rem, 1.1vw, 0.95rem);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 20px rgba(0, 0, 0, 0.5);
+}
+.pcol-byline .slash { opacity: 0.66; }
+
+/* The lede. Justified, per the comp — and the one paragraph on the site set
+   that way, which is what makes it read as a frontispiece rather than as body
+   copy that happens to be wide. */
+.pcol-lede {
+  max-width: min(1216px, 100%);
+  margin: clamp(30px, 6vh, 72px) auto clamp(28px, 5vh, 56px);
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 1.15vw, 1.05rem);
+  line-height: 1.65;
+  text-align: justify;
+  text-wrap: pretty;
+  hyphens: auto;
+  color: var(--ink-soft);
+}
+
+.pcol-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: clamp(30px, 6vh, 70px);
+}
+
+/* Drawn as a drafting mark, like `.expand` — a hairline box in the spec ink,
+   not a filled button. */
+.playbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: clamp(0.6rem, 0.92vw, 0.74rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.playbtn:hover,
+.playbtn:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  outline: none;
+}
+.playbtn svg { width: 11px; height: 11px; flex: 0 0 auto; }
+
+/* ══ The stamps ════════════════════════════════════════════════════════════
+   One per day, laid out four to a row the way they are in the comp, each
+   pinned on its own small angle.
+
+   ⚠️ The tilt comes from the data, not from `Math.random()` at render. A
+   random rake re-rolls on every paint, so a stamp moves when you come back to
+   the page — and the layout never settles. */
+.stamps { margin-top: clamp(10px, 2vh, 20px); }
+
+.stamp-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, var(--stamp-w)));
+  justify-content: center;
+  gap: clamp(26px, 5vh, 56px) var(--stamp-gap);
+  margin-bottom: clamp(26px, 5vh, 56px);
+}
+
+/* The route: ONE line through all twelve, drawn by js/photos.js off the
+   stamps' measured positions. It runs along a row, sweeps out right and back
+   across under it, and comes up into the start of the next — a Z rather than
+   three loose horizontal strands.
+
+   ⚠️ It spans `.stamps`, not a row, which is the whole point: the turns are
+   the bits that make it one journey. Pinned behind everything and
+   `pointer-events: none`, so it never eats a click meant for a stamp. */
+.stamp-route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  color: var(--ink);
+  opacity: 0.085;
+  overflow: visible;
+  pointer-events: none;
+}
+.stamp-route path { stroke-width: var(--route-w, 20); }
+
+.stamps { position: relative; }
+
+.stamp {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(9px, 1.5vh, 17px);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  /* The shadow rides the wrapper: the card itself is masked into a perforated
+     shape, and a `box-shadow` follows the border box rather than the mask —
+     it would draw a rectangle behind a scalloped card. */
+  filter: var(--stamp-shadow);
+  transition: filter 320ms ease, transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stamp:hover,
+  .stamp:focus-visible {
+    transform: translateY(-4px) scale(1.022);
+    filter: var(--stamp-shadow-lift);
+  }
+}
+.stamp:focus-visible { outline: none; }
+.stamp:focus-visible .stamp-card { box-shadow: 0 0 0 2px var(--ink); }
+
+/* ── The card, and its perforation ─────────────────────────────────────────
+   Four masks, one per edge: each is a tile one pitch wide (or tall) and FULL
+   height (or width), carrying a single notch at its own edge and solid
+   everywhere else. Intersected, only the four notch rows are taken out.
+
+   ⚠️ Every layer has to be full-size in its cross axis. A layer sized `pitch
+   51%` covers half the card, and under `intersect` the half it does not cover
+   is unpainted — which is to say the bottom of the stamp disappears.
+
+   ⚠️ Where `mask-composite` is not supported the card falls back to a plain
+   rectangle, which is a stamp with no teeth rather than a broken one. */
+.stamp-card {
+  position: relative;
+  width: 100%;
+  padding: clamp(5px, 0.7vw, 9px);
+  box-sizing: border-box;
+  background: var(--stamp-paper);
+
+  --notch-t: radial-gradient(circle var(--perf-r) at 50% 0, #0000 98%, #000 100%);
+  --notch-b: radial-gradient(circle var(--perf-r) at 50% 100%, #0000 98%, #000 100%);
+  --notch-l: radial-gradient(circle var(--perf-r) at 0 50%, #0000 98%, #000 100%);
+  --notch-r: radial-gradient(circle var(--perf-r) at 100% 50%, #0000 98%, #000 100%);
+
+  -webkit-mask-image: var(--notch-t), var(--notch-b), var(--notch-l), var(--notch-r);
+  mask-image: var(--notch-t), var(--notch-b), var(--notch-l), var(--notch-r);
+  -webkit-mask-size: var(--perf-pitch) 100%, var(--perf-pitch) 100%, 100% var(--perf-pitch), 100% var(--perf-pitch);
+  mask-size: var(--perf-pitch) 100%, var(--perf-pitch) 100%, 100% var(--perf-pitch), 100% var(--perf-pitch);
+  -webkit-mask-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  mask-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  -webkit-mask-position: 50% 0, 50% 100%, 0 50%, 100% 50%;
+  mask-position: 50% 0, 50% 100%, 0 50%, 100% 50%;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  mask-mode: alpha;
+}
+
+/* The picture window. A fixed ratio for every stamp, so a sheet of them is a
+   sheet — the twelve engravings are natively anywhere from 0.62 to 1.47, and
+   `cover` is what reconciles that without a destructive re-crop on disk. */
+.stamp-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 5 / 6;
+  overflow: hidden;
+  background: var(--stamp-paper);
+}
+.stamp-art > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── The photographs, cycling under the hand ───────────────────────────────
+   Hovering a stamp riffles the frames it stands for. Each one is wiped on
+   from the left over the engraving rather than cross-faded, so it reads as
+   somebody flicking through prints, not as a slideshow. */
+.stamp-cycle {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.stamp-cycle img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  clip-path: inset(0 100% 0 0);
+}
+.stamp-cycle img.is-on {
+  opacity: 1;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 190ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+/* The flash that sells the swipe: a hard bright edge travelling with the wipe.
+   It is the only thing on the stamp that is not paper or ink, and it is gone
+   in under a fifth of a second. */
+.stamp-cycle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 38%, var(--scan-glow) 50%, transparent 62%);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+.stamp.is-riffling .stamp-cycle::after {
+  animation: stamp-flash 190ms linear;
+}
+@keyframes stamp-flash {
+  from { opacity: 0.85; transform: translateX(-70%); }
+  to   { opacity: 0;    transform: translateX(70%); }
+}
+
+/* ── The caption ───────────────────────────────────────────────────────────
+   Three lines, exactly as the comp sets them: what it is, which day, where.
+   The stamp images carry no type of their own — the captions were cropped off
+   so they could be set in the page's own face and stay themeable. */
+.stamp-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-display);
+  font-size: clamp(0.52rem, 0.82vw, 0.8rem);
+  line-height: 1.25;
+  text-align: center;
+  color: var(--ink);
+}
+.stamp-cap-day,
+.stamp-cap-place { color: var(--ink-soft); }
+/* The long ones (`Duomo di Santa Maria del Fiore`) are stepped down in the
+   comp too, rather than wrapped. */
+.stamp-cap-title.is-long { font-size: 0.78em; }
+
+/* ── Gathering, when one is opened ─────────────────────────────────────────
+   The others do not simply vanish: they are drawn in toward the middle as
+   they go, so the sheet reads as being cleared for the one you picked. The
+   distance is handed in per stamp by js/photos.js. */
+.stamps.is-gathering .stamp {
+  transition: opacity 340ms ease, transform 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stamps.is-gathering .stamp:not(.is-open) {
+  opacity: 0;
+  transform: translate(var(--gx, 0px), var(--gy, 0px)) scale(0.82);
+  pointer-events: none;
+}
+/* The opened one is lifted out of the page and flown by the Web Animations
+   API; leaving its resting transform on would fight the flight. */
+.stamp.is-open {
+  opacity: 0;
+  transition: none;
+}
+
+/* ── Played through ───────────────────────────────────────────────────────
+   Everything below the banner comes off and the whole trip is laid out in one
+   continuous field. Not a slideshow and not a stack of modals — the cover
+   stays because it is what says which trip this is, and the rest is frames. */
+body.gallery .pcol-lede,
+body.gallery .stamps { display: none; }
+
+/* ── A collection with no stamps ──────────────────────────────────────────
+   Its days, one white card each (`.ploose`, the loose frames' card) under the
+   cover: a header line, then that day's frames in the same masonry. */
+.pdays {
+  display: grid;
+  gap: clamp(18px, 3vw, 34px);
+  margin-top: clamp(30px, 6vh, 72px);
+}
+.pday { scroll-margin-top: clamp(12px, 3vh, 32px); }
+.pday-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px clamp(10px, 1.4vw, 20px);
+  margin: 0 0 clamp(14px, 2.4vh, 24px);
+}
+.pday-title,
+.pday-meta {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.pday-title { font-size: clamp(0.9rem, 1.5vw, 1.2rem); }
+.pday-meta {
+  font-size: clamp(0.66rem, 1.05vw, 0.85rem);
+  color: var(--ink-soft);
+}
+
+.pgallery[hidden] { display: none; }
+.pgallery {
+  margin-top: clamp(8px, 1.6vh, 18px);
+}
+
+/* ══ The day view ══════════════════════════════════════════════════════════
+   The stamp lands in the middle of the sheet and is repainted into the
+   photograph it was drawn from, with that frame's real EXIF printed beside it.
+   Everything below the fold is the day itself. */
+.dayview {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.dayview[hidden] { display: none; }
+.dayview.is-in { opacity: 1; }
+
+/* A wash over the sheet rather than an opaque panel: the paper is still
+   underneath, the way a print laid on a desk does not hide the desk. */
+.dayview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--paper-mid);
+  opacity: 0.94;
+}
+
+.dayview-scroll {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: clamp(14px, 3vh, 34px) 0 clamp(48px, 9vh, 110px);
+  scrollbar-width: none;
+}
+.dayview-scroll::-webkit-scrollbar { display: none; }
+
+/* ── The stage ─────────────────────────────────────────────────────────────
+   The engraving and the photograph are the same box, stacked. The photograph
+   is masked in; the engraving simply stays where it is underneath. */
+.scan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(170px, 20vw, 260px);
+  align-items: center;
+  gap: clamp(18px, 3vw, 48px);
+  max-width: min(1000px, 100%);
+  margin: 0 auto clamp(24px, 5vh, 52px);
+  min-height: clamp(280px, 56vh, 620px);
+}
+
+.scan-stage {
+  position: relative;
+  justify-self: center;
+  width: min(100%, clamp(240px, 42vh, 460px));
+  aspect-ratio: 5 / 6;
+  background: var(--stamp-paper);
+  padding: clamp(6px, 0.8vw, 11px);
+  box-sizing: border-box;
+}
+
+.scan-plate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.scan-art,
+.scan-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ⚠️ THE ENGRAVING IS MASKED AWAY, not the photograph masked in.
+
+   Built the other way round first, and it did not paint: with the photograph
+   masked on top of an opaque engraving it stayed invisible even once the sweep
+   had ended and its own `mask-image` computed to `none` — loaded, on top,
+   hit-testable, and not drawn until the layer underneath was removed. Whatever
+   the compositor was doing there, taking the ENGRAVING off instead leaves an
+   ordinary opaque photograph at the bottom of the stack, and the resting state
+   is a plain image with no mask on it at all.
+
+   It is also the truer gesture. The brush is not laying a photograph down on
+   top of a drawing; it is taking the drawing off the photograph that was
+   always underneath it.
+
+   The mask itself is one SVG: an alpha ramp pushed through an feTurbulence /
+   feDisplacementMap pair whose frequency is low across and high down, so the
+   ramp's iso-lines break into bristles. A plain `linear-gradient` reads as a
+   photocopier — one straight edge crossing at a constant rate is a machine.
+
+   ⚠️ The mask is 300% wide and TRAVELS, rather than the gradient's stops being
+   animated. Animating colour stops re-rasterises the mask image every frame;
+   `mask-position` is only a composited offset.
+
+   ⚠️ The plateaus are sized around the DISPLACEMENT. The element sees one
+   third of the mask at a time and the filter pushes the edge up to 6.5% of the
+   mask's width either way, so the opaque run has to reach past 0.333 + 0.065
+   and the clear run has to start before 0.667 - 0.065. Hence 0.42 and 0.58:
+   tighten them and the engraving is already breaking up before the brush has
+   touched it, or a rag of it survives at the end. */
+.scan-art {
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='1'/%3E%3Cstop offset='0.42' stop-color='%23fff' stop-opacity='1'/%3E%3Cstop offset='0.58' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='b' x='-25%25' y='-25%25' width='150%25' height='150%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.055' numOctaves='4' seed='11' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='78' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='600' height='400' fill='url(%23g)' filter='url(%23b)'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--brush);
+  mask-image: var(--brush);
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  /* Untouched: the plate is showing the mask's fully opaque third. */
+  -webkit-mask-position: 0% 0;
+  mask-position: 0% 0;
+  mask-mode: alpha;
+}
+
+.scan.is-painting .scan-art {
+  animation: scan-paint var(--scan-dur, 2100ms) cubic-bezier(0.45, 0.02, 0.25, 1) forwards;
+}
+@keyframes scan-paint {
+  from { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+  to   { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+}
+
+/* And then it is simply gone. ⚠️ `opacity`, not a mask left parked at its last
+   offset: the whole point of masking the engraving rather than the photograph
+   is that the resting state owes the compositor nothing. */
+.scan.is-painted .scan-art {
+  animation: none;
+  opacity: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* The lamp travelling with the edge. Blurred and tilted a couple of degrees,
+   so it is a light being passed over the print rather than a progress bar. */
+.scan-line {
+  position: absolute;
+  top: -8%;
+  bottom: -8%;
+  left: 0;
+  width: 26%;
+  z-index: 2;
+  background: linear-gradient(95deg, transparent 0%, var(--scan-glow) 52%, transparent 100%);
+  filter: blur(7px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+.scan.is-painting .scan-line {
+  animation: scan-sweep var(--scan-dur, 2100ms) cubic-bezier(0.45, 0.02, 0.25, 1) forwards;
+}
+@keyframes scan-sweep {
+  0%   { transform: translateX(-120%) rotate(1.5deg); opacity: 0; }
+  10%  { opacity: 0.95; }
+  86%  { opacity: 0.95; }
+  100% { transform: translateX(420%) rotate(1.5deg); opacity: 0; }
+}
+
+/* The sparkle. One span per mote, each parked where the edge will pass and
+   told to twinkle at the moment it does — js/photos.js sets --t (where) and
+   the delay falls out of it. Cheap, and exactly in step with the brush,
+   because both are driven off the same duration. */
+.scan-sparks {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.scan-spark {
+  position: absolute;
+  left: calc(var(--t) * 100%);
+  top: calc(var(--y) * 100%);
+  width: var(--sz, 3px);
+  height: var(--sz, 3px);
+  margin: calc(var(--sz, 3px) / -2);
+  border-radius: 50%;
+  background: var(--scan-spark);
+  box-shadow: 0 0 6px 1px var(--scan-spark);
+  opacity: 0;
+}
+.scan.is-painting .scan-spark {
+  animation: spark 520ms ease-out both;
+  animation-delay: calc(var(--t) * var(--scan-dur, 2100ms) * 0.94);
+}
+@keyframes spark {
+  0%   { opacity: 0; transform: scale(0.4); }
+  35%  { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 0; transform: scale(0.5); }
+}
+
+/* ── The EXIF, printed as it develops ──────────────────────────────────────
+   Real values, read off the file itself at build time — which is the entire
+   reason the panel is here. It is the receipt for the photograph: this was a
+   frame on a real camera at a real f-stop, not the engraving you were just
+   looking at. */
+.scan-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  align-self: center;
+  font-size: clamp(0.5rem, 0.78vw, 0.62rem);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+
+.scan-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--rule);
+  opacity: 0;
+}
+.scan-meta-row:last-child { border-bottom: 0; }
+.scan-meta-key { opacity: 0.6; }
+.scan-meta-val { color: var(--ink); text-align: right; }
+
+.scan.is-painting .scan-meta-row,
+.scan.is-painted .scan-meta-row {
+  animation: meta-in 420ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+  animation-delay: calc(240ms + var(--i) * 110ms);
+}
+@keyframes meta-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── The day itself ────────────────────────────────────────────────────── */
+.dayview-body {
+  max-width: min(var(--measure), 100%);
+  margin-inline: auto;
+}
+
+.dayview-head { margin-bottom: clamp(16px, 3vh, 30px); }
+
+.dayview-title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(1.05rem, 2.2vw, 1.7rem);
+  line-height: 1.32;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.dayview-meta {
+  margin: 10px 0 0;
+  font-size: clamp(0.54rem, 0.88vw, 0.66rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.dayview-blurb {
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
+  line-height: 1.95;
+}
+.dayview-blurb p { margin: 0 0 1.35em; }
+
+/* ── Keepsakes ─────────────────────────────────────────────────────────────
+   The ticket stubs, receipts and boarding passes, before they have been
+   scanned. Drawn as empty slots rather than stand-in JPEGs: a slot says
+   plainly that something goes here, where a grey rectangle just looks like an
+   image that failed to load. */
+.keepsakes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(9px, 1.4vw, 15px);
+  margin: clamp(20px, 3.4vh, 34px) 0 clamp(26px, 4.4vh, 44px);
+}
+
+.keepsake {
+  position: relative;
+  flex: 1 1 clamp(120px, 20vw, 180px);
+  min-width: 118px;
+  aspect-ratio: 8 / 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 10px 11px;
+  box-sizing: border-box;
+  border: 1px dashed var(--rule);
+  border-radius: 2px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), transparent 60%);
+  font-size: clamp(0.46rem, 0.72vw, 0.58rem);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+.keepsake-kind { opacity: 0.6; }
+.keepsake-note { color: var(--ink); letter-spacing: 0.1em; }
+
+/* A stub is torn off down one side. Notches in the border colour, pinned to
+   the left edge — the same trick the stamp's perforation uses, at one edge. */
+.keepsake--stub::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: clamp(24px, 4vw, 38px);
+  border-left: 1px dashed var(--rule);
+}
+
+.daygrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(152px, 100%), 1fr));
+  gap: clamp(8px, 1.3vw, 14px);
+}
+.daygrid .frame { aspect-ratio: 1; }
+
+/* A frame that is standing in for one not yet in the repo. Marked, because an
+   unmarked stand-in is just a wrong caption. */
+.frame--standin::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  background: repeating-linear-gradient(
+    45deg, transparent 0 7px, rgba(127, 140, 148, 0.07) 7px 14px);
+  pointer-events: none;
+}
+
+/* ── The day view's own furniture ──────────────────────────────────────── */
+.dayview-close,
+.dayview-step {
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: color-mix(in srgb, var(--paper-hi) 78%, transparent);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.dayview-close:hover,
+.dayview-step:hover,
+.dayview-close:focus-visible,
+.dayview-step:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  outline: none;
+}
+.dayview-close { top: 0; right: 0; }
+.dayview-step svg { width: 13px; height: 13px; }
+.dayview-step--prev { left: 0; top: 50%; transform: translateY(-50%); }
+.dayview-step--next { right: 0; top: 50%; transform: translateY(-50%); }
+.dayview-step[disabled] { opacity: 0.3; pointer-events: none; }
+
+/* ══ A single frame, opened ════════════════════════════════════════════════
+   The plainest thing on the page on purpose: the photograph, its EXIF, and a
+   way out. */
+.lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: clamp(10px, 2.4vh, 26px);
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--paper-mid) 96%, transparent);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.lightbox[hidden] { display: none; }
+.lightbox.is-in { opacity: 1; }
+.lightbox img {
+  justify-self: center;
+  align-self: center;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 0 0 1px var(--plate-edge), var(--plate-shadow);
+}
+.lightbox-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px clamp(12px, 2vw, 24px);
+  font-size: clamp(0.48rem, 0.76vw, 0.6rem);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+
+/* ══ Narrow screens ════════════════════════════════════════════════════════
+   Four stamps to a row needs four stamps' worth of width. Below that a row of
+   four becomes two by two, and the route between them goes — it is drawn for
+   a line of four and joins nothing once they wrap. */
+@media (max-width: 900px) {
+  .stamp-row { grid-template-columns: repeat(2, minmax(0, var(--stamp-w))); }
+  /* The route is redrawn from the new positions rather than hidden — two to a
+     row is still a journey, it just folds six times instead of twice. */
+  :root { --route-w: 14; }
+  .scan {
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(14px, 3vh, 26px);
+  }
+  .scan-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px clamp(10px, 3vw, 22px);
+  }
+  .scan-meta-row {
+    border-bottom: 0;
+    padding-bottom: 0;
+    gap: 6px;
+  }
+  .scan-meta-row:not(:last-child)::after {
+    content: '/';
+    opacity: 0.4;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Three across is too narrow a measure for a caption at phone width. */
+  .pset-row { grid-template-columns: minmax(0, 1fr); }
+  .pset--card .pset-cover { aspect-ratio: 4 / 3; }
+  .pset--feature {
+    grid-template-columns: 1fr;
+    grid-template-areas: "cover" "meta";
+  }
+  .pset--feature .pset-cover { height: clamp(200px, 38vh, 340px); }
+  .pset--feature .pset-meta { padding: 32px; gap: 6px; }
+  .pcol-cover { height: 78%; }
+  /* The lede is justified at 1216px in the comp. At phone width justification
+     opens rivers through a short measure, so it comes off. */
+  .pcol-lede { text-align: left; hyphens: none; }
+  .dayview-step { display: none; }
+}
+
+/* ══ Reduced motion ════════════════════════════════════════════════════════
+   The scan is the one thing here that cannot simply be turned off — the whole
+   point of the moment is that the engraving becomes the photograph, and
+   without the transition there is no way to tell that the two are the same
+   picture. So it keeps a plain crossfade and loses the brush, the lamp and the
+   sparkle. Everything else settles instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .stamp,
+  .stamp-cycle img,
+  .frame img,
+  .pset-cover img { transition: none; }
+
+  .scan.is-painting .scan-art,
+  .scan.is-painting .scan-line,
+  .scan.is-painting .scan-spark,
+  .scan.is-painting .scan-meta-row,
+  .scan.is-painted .scan-meta-row { animation: none; }
+
+  .scan-line, .scan-sparks { display: none; }
+  .scan-art {
+    -webkit-mask-image: none;
+    mask-image: none;
+    transition: opacity 400ms ease;
+  }
+  .scan.is-painting .scan-art,
+  .scan.is-painted .scan-art { opacity: 0; }
+  .scan-meta-row { opacity: 1; }
+}
