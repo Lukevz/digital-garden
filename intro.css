@@ -1,0 +1,191 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   The intro.
+
+   The draughtsman's marks stop being decoration and become the loading
+   sequence: the sheet arrives blank, the frame line draws itself outward,
+   the graduations strike themselves clockwise from the top-left corner, the
+   name types on, the rest of the copy settles, and then every mark leaves.
+   Nothing is left behind — the resting page is paper, copy and the dog-ear.
+
+   ⚠️ THIS FILE IS SEPARATE ON PURPOSE. A second session is building the
+   reading spread in styles.css and js/paper.js at the same time. Keeping the
+   intro out of styles.css means the two can't overwrite each other; the only
+   shared line is the <link> in index.html.
+
+   Everything is CSS. The landing page has no script of its own, and the
+   section script (js/paper.js) never touches `.spec`.
+
+   Tune the whole sequence from the five timings below — every delay is
+   derived from them, so moving one moves its whole phase.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  :root {
+    --t-frame: 0.25s;  /* the frame line starts drawing outward */
+    --t-tick:  0.70s;  /* the first graduation */
+    --t-name:  3.40s;  /* the typewriter */
+    --t-rest:  4.55s;  /* bio, social row, dog-ear */
+    --t-out:   4.95s;  /* every mark leaves */
+  }
+
+  /* ── Hold the copy back ──────────────────────────────────────────────────
+     styles.css settles the lockup on at 900ms, which is most of the way
+     through the sequence below. `.lockup` is safe to override outright — the
+     return-home replay in js/paper.js puts `.is-settling` on `.bio` and
+     `.links`, never on the lockup. */
+  .lockup { animation: none; }
+
+  /* ⚠️ `:not(.is-settling)` is doing real work, not tidiness. These two rules
+     have to beat the `settle` in styles.css, which means matching its
+     specificity and winning on source order — and that would also beat
+     `.is-settling`, silently killing the replay when you come back from a
+     section. Excluding the class makes the rule stop matching the moment the
+     replay is armed, so the other rule applies cleanly. */
+  .bio:not(.is-settling) {
+    animation: intro-fade 700ms cubic-bezier(0.2, 0.7, 0.3, 1) var(--t-rest) both;
+  }
+  .links:not(.is-settling) {
+    animation: intro-fade 700ms cubic-bezier(0.2, 0.7, 0.3, 1)
+               calc(var(--t-rest) + 140ms) both;
+  }
+  /* The ear is an affordance for the copy, so it arrives with it. Opacity
+     only — the curl owns its own width/height transition and a transform
+     here would fight it. */
+  .curl {
+    animation: intro-in 700ms ease-out calc(var(--t-rest) + 70ms) both;
+  }
+
+  /* ── The frame line draws outward ────────────────────────────────────────
+     From a zero-width seam at the centre out to both edges, so the long
+     horizontals extend and the corners close last. */
+  .spec-frame {
+    animation: spec-draw 950ms cubic-bezier(0.22, 0.75, 0.25, 1) var(--t-frame) both;
+  }
+
+  /* ── The graduations strike clockwise ────────────────────────────────────
+     Each side is a wipe along its own length: top L→R, right T→B, bottom
+     R→L, left B→T.
+
+     ⚠️ Each side is `linear`, and the ease-out is built from the DURATIONS
+     getting longer as the sweep goes round. Four staggered ease-outs would
+     decelerate into every corner and read as four separate strokes; one
+     lengthening sequence reads as a single hand slowing down. */
+  .spec-ruler--t {
+    animation: wipe-r 480ms linear var(--t-tick) both;
+  }
+  .spec-ruler--r {
+    animation: wipe-d 570ms linear calc(var(--t-tick) + 480ms) both;
+  }
+  .spec-ruler--b {
+    animation: wipe-l 690ms linear calc(var(--t-tick) + 1050ms) both;
+  }
+  .spec-ruler--l {
+    animation: wipe-u 840ms linear calc(var(--t-tick) + 1740ms) both;
+  }
+
+  /* Each registration cross lands as the sweep reaches its corner. */
+  .spec-mark { animation: intro-in 380ms ease-out both; }
+  .spec-mark--tl { animation-delay: var(--t-tick); }
+  .spec-mark--tr { animation-delay: calc(var(--t-tick) + 480ms); }
+  .spec-mark--br { animation-delay: calc(var(--t-tick) + 1050ms); }
+  .spec-mark--bl { animation-delay: calc(var(--t-tick) + 1740ms); }
+
+  /* The dimension notes are written in behind the sweep that exposed them. */
+  .spec-dim--w,
+  .spec-label--w { animation: intro-in 500ms ease-out calc(var(--t-tick) + 600ms) both; }
+  .spec-dim--h,
+  .spec-label--h { animation: intro-in 500ms ease-out calc(var(--t-tick) + 1900ms) both; }
+
+  /* ── …and the whole layer leaves ─────────────────────────────────────────
+     On the parent, so the children keep the end states their own `both`
+     fills are holding and simply go out together. */
+  .spec {
+    animation: intro-out 850ms cubic-bezier(0.3, 0, 0.6, 1) var(--t-out) both;
+  }
+
+  /* ── The typewriter ──────────────────────────────────────────────────────
+     A stepped clip, not an animated width: a percentage width on an
+     inline-block resolves against the CONTAINING BLOCK, not the text, so it
+     would sweep the full column instead of the name.
+
+     ⚠️ The clip rides the inner link, not the <h1>. js/paper.js FLIPs the
+     <h1> into the corner on a section open and measures its box to do it;
+     shrink-wrapping that box would move the target out from under the
+     measurement. `:has()` keeps the effect if the link is ever removed. */
+  .name-home,
+  .name:not(:has(.name-home)) {
+    display: inline-block;
+    animation: type-on 950ms steps(12, jump-start) var(--t-name) both;
+  }
+
+  /* The caret hangs off the <h1>, which is NOT the clipped box — so it needs
+     its own hidden resting state rather than a backwards fill. */
+  .name::after {
+    content: '';
+    display: inline-block;
+    width: 0.055em;
+    height: 0.72em;
+    margin-left: 0.07em;
+    vertical-align: -0.03em;
+    background: currentColor;
+    opacity: 0;
+    /* The second animation starts later and so wins the property for good. */
+    animation: caret-blink 1s linear var(--t-name) infinite,
+               intro-out 320ms ease-out calc(var(--t-name) + 1.25s) forwards;
+  }
+
+  /* ── Phones ──────────────────────────────────────────────────────────────
+     ⚠️ `.spec` is `display: none` under 640px, so the first three seconds of
+     this sequence are a blank sheet with nothing drawing on it. Collapse the
+     timeline to just the copy. */
+  @media (max-width: 640px) {
+    :root {
+      --t-name: 0.30s;
+      --t-rest: 1.35s;
+      --t-out:  0s;
+    }
+  }
+}
+
+/* The marks are gone by the end of the sequence, so the honest reduced-motion
+   equivalent is the settled page: copy present, no marks at all. */
+@media (prefers-reduced-motion: reduce) {
+  .spec { display: none; }
+}
+
+@keyframes intro-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes intro-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes intro-fade {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A zero-width seam at the centre, opening to both edges. */
+@keyframes spec-draw {
+  from { clip-path: inset(0 50% 0 50%); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes wipe-r { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes wipe-d { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+@keyframes wipe-l { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+@keyframes wipe-u { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+
+@keyframes type-on {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes caret-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}

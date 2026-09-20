@@ -132,6 +132,54 @@ construction axes and the corner badges that were tried alongside them are gone
 `display: none` under 640px — the marks are margin furniture and a phone has no
 margin.
 
+## The intro (`intro.css`)
+
+The draughtsman's marks are no longer decoration — they are the loading
+sequence, and they do not survive it. The sheet arrives blank; the frame line
+draws outward from a seam at the centre; the graduations strike themselves
+clockwise from the top-left; the name types on; the rest of the copy settles;
+then every mark leaves. The resting page is paper, copy and the dog-ear.
+
+All CSS. The landing page has no script of its own, and `js/paper.js` never
+touches `.spec`. Five timings at the top of the file drive everything —
+`--t-frame`, `--t-tick`, `--t-name`, `--t-rest`, `--t-out` — and every delay
+is derived from them, so moving one moves its whole phase.
+
+⚠️ **It lives in its own file on purpose.** A second session is building the
+reading spread in `styles.css` and `js/paper.js`. Keeping the intro out of
+`styles.css` means the two can't overwrite each other; the only shared line is
+the `<link>` in `index.html`.
+
+⚠️ **Each side of the sweep is `linear`, and the ease-out is built from the
+durations lengthening** as it goes round (480 → 570 → 690 → 840ms). Four
+staggered ease-outs decelerate into every corner and read as four separate
+strokes; one lengthening sequence reads as a single hand slowing down.
+
+⚠️ **`.bio:not(.is-settling)` / `.links:not(.is-settling)` is load-bearing.**
+These rules have to beat the `settle` in `styles.css`, which means matching its
+specificity and winning on source order — and that would also beat
+`.is-settling`, silently killing the return-home replay `js/paper.js` arms.
+Excluding the class makes the rule stop matching the moment the replay is set
+up, so the other rule applies cleanly. `.lockup` needs no such guard; the
+replay is only ever put on the bio and the social row.
+
+⚠️ **The typewriter is a stepped `clip-path`, not an animated width.** A
+percentage width on an inline-block resolves against the containing block, not
+the text, so it would sweep the whole column instead of the name.
+
+⚠️ **The clip rides `.name-home`, not the `<h1>`.** `js/paper.js` FLIPs the
+`<h1>` into the corner on a section open and measures its box to do it;
+shrink-wrapping that box moves the target out from under the measurement. The
+`:has()` fallback keeps the effect if the link is ever removed.
+
+⚠️ **The phone timeline is collapsed.** `.spec` is `display: none` under 640px,
+so the first three seconds would otherwise be a blank sheet with nothing
+drawing on it.
+
+**Reduced motion gets the settled page** — copy present, `.spec` hidden
+outright. The marks are gone by the end of the sequence, so that is the honest
+equivalent, not a static ruler nobody asked for.
+
 ## The dog-ear (`.curl`)
 
 Hovering the right edge lifts the sheet's bottom-right corner, and the section
