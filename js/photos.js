@@ -106,18 +106,23 @@
 
   function setHTML(c) {
     const feature = c.feature;
-    return `<a class="pset ${feature ? 'pset--feature' : 'pset--card'}"
-               href="#photos/${esc(c.slug)}">
+    // `soon` is a set that is still WIP: same card, but not a link, and tagged.
+    const soon = !!c.soon;
+    const tag = soon ? 'div' : 'a';
+    const attrs = soon ? 'aria-disabled="true"' : `href="#photos/${esc(c.slug)}"`;
+    return `<${tag} class="pset ${feature ? 'pset--feature' : 'pset--card'}${soon ? ' pset--soon' : ''}"
+               ${attrs}>
       <div class="pset-cover">
-        <img src="${esc(c.cover)}" alt="${t(c.coverAlt || '')}" loading="lazy" decoding="async">
+        <img src="${esc(c.cover)}" alt="${t(c.coverAlt || '')}" loading="lazy" decoding="async">${
+          soon ? '<span class="pset-badge">Coming soon</span>' : ''}
       </div>
       <div class="pset-meta">
         <h3 class="pset-name"${c.accent ? ` style="--accent:${esc(c.accent)}"` : ''}>${t(c.title)}${
-          c.written ? '' : `<span class="pset-tag">${c.count} frames</span>`}</h3>
+          soon || c.written ? '' : `<span class="pset-tag">${c.count} frames</span>`}</h3>
         <span class="pset-dates">${t(c.dates || '')}${
           c.unit ? ' / ' + c.count + ' ' + t(c.unit) : ''}</span>
       </div>
-    </a>`;
+    </${tag}>`;
   }
 
   function paintIndex() {
@@ -732,7 +737,8 @@
 
     return loadIndex().then(() => {
       const meta = (index.collections || []).find(c => c.slug === slug);
-      if (!meta) { location.hash = '#photos'; return; }
+      // A `soon` set has no page yet: a deep link goes back to the index.
+      if (!meta || meta.soon) { location.hash = '#photos'; return; }
 
       if (!meta.written) {
         openKey = null;

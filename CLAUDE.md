@@ -859,6 +859,11 @@ variable so the hairline rules that share it needn't change), and the scan stage
 `--stamp-shadow-lift` is gone. The **stamps** keep theirs — they are the perforated
 objects, not photographs. Don't add a shadow back to a plate to make it read.
 
+⚠️ **Italy 2026 is `"soon": true` in `index.json` while it is WIP.** `setHTML()` renders a `soon`
+set as a `<div aria-disabled>` (no `href`) with a "Coming soon" badge over the photograph (`.pset-badge`) and a slightly muted cover
+(`.pset--soon`), and `paint()` sends a deep link to `#photos/<slug>` back to the index. Delete the
+one line to open it again; nothing else about the collection was touched.
+
 ### The trips without stamps (Montana 2024, Disney 2024, British Columbia 2025)
 
 Three more written collections sit beside Italy on the index, as cards under the

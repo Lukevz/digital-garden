@@ -266,6 +266,28 @@
 /* The ring goes round the card, as it does on the featured one. */
 .pset--card:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
 
+/* A set marked `soon` in the manifest is WIP: not a link, so no pointer, no
+   hover zoom, no focus ring. It reads as a card that has not opened yet. */
+.pset--soon { cursor: default; }
+.pset--soon:hover .pset-cover img { transform: none; }
+.pset--soon .pset-cover img { filter: grayscale(0.35); opacity: 0.85; }
+/* The badge sits ON the photograph, top-left, as a small card in the frame's
+   own colour so it reads in both themes. */
+.pset-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--frame);
+  color: var(--ink);
+  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
 /* An unwritten set is a folder of frames, not a piece — it opens the frames
    themselves, and says so. */
 .pset-tag {
