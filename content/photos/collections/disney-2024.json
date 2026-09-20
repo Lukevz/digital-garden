@@ -1,0 +1,925 @@
+{
+ "slug": "disney-2024",
+ "title": "Disney",
+ "byline": "Walt Disney World, December 2024",
+ "dates": "Dec 1 — 7, 2024",
+ "cover": "/content/photos/collections/disney-2024/cover.jpg",
+ "coverSmall": "/content/photos/collections/disney-2024/cover-sm.jpg",
+ "coverAlt": "Cinderella Castle under an evening sky",
+ "days": [
+  {
+   "key": "dec-02",
+   "title": "",
+   "day": "Day 2",
+   "dateLabel": "Dec 2, 2024",
+   "place": "Animal Kingdom",
+   "date": "2024-12-02",
+   "frames": [
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5038.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5038.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/2200s",
+      "iso": "ISO 640",
+      "date": "2024-12-02",
+      "time": "06:48",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5041.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5041.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/10",
+      "shutter": "1/35s",
+      "iso": "ISO 800",
+      "date": "2024-12-02",
+      "time": "07:07",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5048.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5048.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/10",
+      "shutter": "1/40s",
+      "iso": "ISO 800",
+      "date": "2024-12-02",
+      "time": "08:22",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5069.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5069.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/8",
+      "shutter": "1/250s",
+      "iso": "ISO 640",
+      "date": "2024-12-02",
+      "time": "09:31",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5076.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5076.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/1000s",
+      "iso": "ISO 640",
+      "date": "2024-12-02",
+      "time": "11:24",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5080.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5080.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/680s",
+      "iso": "ISO 640",
+      "date": "2024-12-02",
+      "time": "11:25",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5092.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5092.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/8",
+      "shutter": "1/200s",
+      "iso": "ISO 640",
+      "date": "2024-12-02",
+      "time": "11:44",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5099.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5099.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/250s",
+      "iso": "ISO 640",
+      "date": "2024-12-02",
+      "time": "11:46",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    }
+   ]
+  },
+  {
+   "key": "dec-03",
+   "title": "",
+   "day": "Day 3",
+   "dateLabel": "Dec 3, 2024",
+   "place": "Hollywood Studios",
+   "date": "2024-12-03",
+   "frames": [
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5117.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5117.jpg",
+     "w": 1013,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/8",
+      "shutter": "1/450s",
+      "iso": "ISO 640",
+      "date": "2024-12-03",
+      "time": "08:23",
+      "dimensions": "1013 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5127.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5127.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/13",
+      "shutter": "1/280s",
+      "iso": "ISO 640",
+      "date": "2024-12-03",
+      "time": "08:27",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5129.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5129.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/9",
+      "shutter": "1/1800s",
+      "iso": "ISO 640",
+      "date": "2024-12-03",
+      "time": "10:31",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5135.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5135.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/3000s",
+      "iso": "ISO 640",
+      "date": "2024-12-03",
+      "time": "14:16",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5138.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5138.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/4000s",
+      "iso": "ISO 640",
+      "date": "2024-12-03",
+      "time": "14:19",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5146.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5146.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/100s",
+      "iso": "ISO 8000",
+      "date": "2024-12-03",
+      "time": "16:47",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5149.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5149.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/100s",
+      "iso": "ISO 2500",
+      "date": "2024-12-03",
+      "time": "16:47",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5153.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5153.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/100s",
+      "iso": "ISO 5000",
+      "date": "2024-12-03",
+      "time": "16:48",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5158.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5158.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/100s",
+      "iso": "ISO 5000",
+      "date": "2024-12-03",
+      "time": "16:49",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5171.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5171.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4.5",
+      "shutter": "1/50s",
+      "iso": "ISO 12800",
+      "date": "2024-12-03",
+      "time": "16:54",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5181.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5181.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/100s",
+      "iso": "ISO 5000",
+      "date": "2024-12-03",
+      "time": "16:59",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5182.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5182.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/100s",
+      "iso": "ISO 8000",
+      "date": "2024-12-03",
+      "time": "17:00",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5230.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5230.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/75s",
+      "iso": "ISO 12800",
+      "date": "2024-12-03",
+      "time": "17:03",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5262.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5262.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1/80s",
+      "iso": "ISO 12800",
+      "date": "2024-12-03",
+      "time": "17:04",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5280.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5280.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/2.8",
+      "shutter": "1.5s",
+      "iso": "ISO 125",
+      "date": "2024-12-03",
+      "time": "17:05",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5284.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5284.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/7.1",
+      "shutter": "1s",
+      "iso": "ISO 250",
+      "date": "2024-12-03",
+      "time": "17:08",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5287.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5287.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/3.6",
+      "shutter": "1/100s",
+      "iso": "ISO 2500",
+      "date": "2024-12-03",
+      "time": "17:13",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    }
+   ]
+  },
+  {
+   "key": "dec-05",
+   "title": "",
+   "day": "Day 5",
+   "dateLabel": "Dec 5, 2024",
+   "place": "Magic Kingdom",
+   "date": "2024-12-05",
+   "frames": [
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5309.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5309.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/3200s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "10:43",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5313.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5313.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/300s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "10:44",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5318.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5318.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/6.4",
+      "shutter": "1/1700s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:05",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5321.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5321.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/2000s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:06",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5322.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5322.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/3500s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:06",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5339.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5339.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/1400s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:10",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5350.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5350.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/2400s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:14",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5352.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5352.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5.6",
+      "shutter": "1/2900s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:17",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5353.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5353.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/7.1",
+      "shutter": "1/900s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:18",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5357.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5357.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/7.1",
+      "shutter": "1/80s",
+      "iso": "ISO 12800",
+      "date": "2024-12-05",
+      "time": "13:19",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5364.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5364.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/9",
+      "shutter": "1/110s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "13:22",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5374.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5374.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/9",
+      "shutter": "1/550s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "15:01",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5376.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5376.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/9",
+      "shutter": "1/900s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "15:01",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5378.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5378.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/9",
+      "shutter": "1/640s",
+      "iso": "ISO 640",
+      "date": "2024-12-05",
+      "time": "15:01",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    }
+   ]
+  },
+  {
+   "key": "dec-06",
+   "title": "",
+   "day": "Day 6",
+   "dateLabel": "Dec 6, 2024",
+   "place": "EPCOT",
+   "date": "2024-12-06",
+   "frames": [
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5386.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5386.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/4",
+      "shutter": "1/1000s",
+      "iso": "ISO 320",
+      "date": "2024-12-06",
+      "time": "08:53",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5391.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5391.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/1250s",
+      "iso": "ISO 640",
+      "date": "2024-12-06",
+      "time": "09:01",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5395.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5395.jpg",
+     "w": 1200,
+     "h": 1800,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/350s",
+      "iso": "ISO 640",
+      "date": "2024-12-06",
+      "time": "09:02",
+      "dimensions": "1200 × 1800"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5402.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5402.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/1700s",
+      "iso": "ISO 640",
+      "date": "2024-12-06",
+      "time": "09:09",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5410.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5410.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/4000s",
+      "iso": "ISO 640",
+      "date": "2024-12-06",
+      "time": "09:11",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5418.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5418.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/1100s",
+      "iso": "ISO 640",
+      "date": "2024-12-06",
+      "time": "09:18",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    },
+    {
+     "src": "/content/photos/collections/disney-2024/photos/dscf5422.jpg",
+     "thumb": "/content/photos/collections/disney-2024/thumbs/dscf5422.jpg",
+     "w": 1800,
+     "h": 1200,
+     "exif": {
+      "camera": "FUJIFILM X-S20",
+      "lens": "AF 27/2.8",
+      "focal": "27mm",
+      "focal35": "41mm",
+      "aperture": "ƒ/5",
+      "shutter": "1/400s",
+      "iso": "ISO 640",
+      "date": "2024-12-06",
+      "time": "09:24",
+      "dimensions": "1800 × 1200"
+     },
+     "alt": ""
+    }
+   ]
+  }
+ ]
+}

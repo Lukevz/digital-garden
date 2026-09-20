@@ -1,0 +1,1263 @@
+{
+  "collections": [
+    {
+      "slug": "italy-2026",
+      "title": "Luca e Chiara • Italy 2026",
+      "dates": "Aug 31 — Sept 11",
+      "kicker": "Italy 2026",
+      "count": 12,
+      "unit": "days",
+      "cover": "/content/photos/collections/italy-2026/cover-sm.jpg",
+      "coverFull": "/content/photos/collections/italy-2026/cover.jpg",
+      "coverAlt": "The oculus of the Pantheon, Rome",
+      "feature": true,
+      "written": true,
+      "accent": "#735d43",
+      "start": "2026-08-31"
+    },
+    {
+      "slug": "british-columbia-2025",
+      "title": "British Columbia 2025",
+      "dates": "Dec 18 — 30",
+      "kicker": "British Columbia 2025",
+      "count": 4,
+      "unit": "days",
+      "cover": "/content/photos/collections/british-columbia-2025/cover-sm.jpg",
+      "coverFull": "/content/photos/collections/british-columbia-2025/cover.jpg",
+      "coverAlt": "The Canadian flag under storm clouds at a ferry terminal",
+      "feature": false,
+      "written": true,
+      "accent": "#566788",
+      "start": "2025-12-18"
+    },
+    {
+      "slug": "disney-2024",
+      "title": "Disney 2024",
+      "dates": "Dec 1 — 7",
+      "kicker": "Disney 2024",
+      "count": 4,
+      "unit": "days",
+      "cover": "/content/photos/collections/disney-2024/cover-sm.jpg",
+      "coverFull": "/content/photos/collections/disney-2024/cover.jpg",
+      "coverAlt": "Cinderella Castle under an evening sky",
+      "feature": false,
+      "written": true,
+      "accent": "#796759",
+      "start": "2024-12-01"
+    },
+    {
+      "slug": "montana-2024",
+      "title": "Montana 2024",
+      "dates": "Oct 6 — 10",
+      "kicker": "Montana 2024",
+      "count": 4,
+      "unit": "days",
+      "cover": "/content/photos/collections/montana-2024/cover-sm.jpg",
+      "coverFull": "/content/photos/collections/montana-2024/cover.jpg",
+      "coverAlt": "A turquoise lake below a mountain, seen from the trail",
+      "feature": false,
+      "written": true,
+      "accent": "#343e37",
+      "start": "2024-10-06"
+    }
+  ],
+  "loose": [
+    {
+      "src": "/content/photos/2026-07-26 1420 Rain on glass.jpg",
+      "thumb": "/content/photos/thumbs/2026-07-26 1420 Rain on glass.jpg",
+      "w": 1536,
+      "h": 2048,
+      "date": "2026-07-26",
+      "exif": {
+        "camera": null,
+        "lens": null,
+        "focal": null,
+        "focal35": null,
+        "aperture": null,
+        "shutter": null,
+        "iso": null,
+        "date": null,
+        "time": null,
+        "dimensions": "1536 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/2026-07-26 0820 Chamblee mural.jpg",
+      "thumb": "/content/photos/thumbs/2026-07-26 0820 Chamblee mural.jpg",
+      "w": 1630,
+      "h": 2048,
+      "date": "2026-07-26",
+      "exif": {
+        "camera": null,
+        "lens": null,
+        "focal": null,
+        "focal35": null,
+        "aperture": null,
+        "shutter": null,
+        "iso": null,
+        "date": null,
+        "time": null,
+        "dimensions": "1630 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/2026-07-25 1200 FJ Cruiser.jpg",
+      "thumb": "/content/photos/thumbs/2026-07-25 1200 FJ Cruiser.jpg",
+      "w": 1536,
+      "h": 2048,
+      "date": "2026-07-25",
+      "exif": {
+        "camera": null,
+        "lens": null,
+        "focal": null,
+        "focal35": null,
+        "aperture": null,
+        "shutter": null,
+        "iso": null,
+        "date": null,
+        "time": null,
+        "dimensions": "1536 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/2026-07-19 1200 Rocket playground.jpg",
+      "thumb": "/content/photos/thumbs/2026-07-19 1200 Rocket playground.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-07-19",
+      "exif": {
+        "camera": null,
+        "lens": null,
+        "focal": null,
+        "focal35": null,
+        "aperture": null,
+        "shutter": null,
+        "iso": null,
+        "date": null,
+        "time": null,
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7545.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7545.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-20",
+      "exif": {
+        "camera": "FUJIFILM X-M5",
+        "lens": "XF27mmF2.8 R WR",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/640s",
+        "iso": "ISO 80",
+        "date": "2026-06-20",
+        "time": "14:13",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7542.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7542.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-06-20",
+      "exif": {
+        "camera": "FUJIFILM X-M5",
+        "lens": "XF27mmF2.8 R WR",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/125s",
+        "iso": "ISO 100",
+        "date": "2026-06-20",
+        "time": "14:12",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7535.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7535.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-06-20",
+      "exif": {
+        "camera": "FUJIFILM X-M5",
+        "lens": "XF27mmF2.8 R WR",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.6",
+        "shutter": "1/160s",
+        "iso": "ISO 200",
+        "date": "2026-06-20",
+        "time": "14:07",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8625.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8625.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/5",
+        "shutter": "1/125s",
+        "iso": "ISO 10000",
+        "date": "2026-06-12",
+        "time": "21:05",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8615.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8615.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/125s",
+        "iso": "ISO 2500",
+        "date": "2026-06-12",
+        "time": "21:02",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8606.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8606.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/125s",
+        "iso": "ISO 8000",
+        "date": "2026-06-12",
+        "time": "21:01",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8592.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8592.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/125s",
+        "iso": "ISO 8000",
+        "date": "2026-06-12",
+        "time": "20:55",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8588.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8588.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/140s",
+        "iso": "ISO 640",
+        "date": "2026-06-12",
+        "time": "20:28",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8584.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8584.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/170s",
+        "iso": "ISO 640",
+        "date": "2026-06-12",
+        "time": "20:27",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8574.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8574.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4",
+        "shutter": "1/125s",
+        "iso": "ISO 1000",
+        "date": "2026-06-12",
+        "time": "20:06",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8569.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8569.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4",
+        "shutter": "1/250s",
+        "iso": "ISO 640",
+        "date": "2026-06-12",
+        "time": "19:56",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8565.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8565.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-12",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4",
+        "shutter": "1/125s",
+        "iso": "ISO 1250",
+        "date": "2026-06-12",
+        "time": "19:55",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8554.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8554.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/1.2",
+        "shutter": "1/100s",
+        "iso": "ISO 400",
+        "date": "2026-06-03",
+        "time": "21:01",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8546.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8546.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/450s",
+        "iso": "ISO 320",
+        "date": "2026-06-03",
+        "time": "20:33",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8539.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8539.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4",
+        "shutter": "1/250s",
+        "iso": "ISO 320",
+        "date": "2026-06-03",
+        "time": "20:28",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8536.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8536.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/450s",
+        "iso": "ISO 320",
+        "date": "2026-06-03",
+        "time": "20:21",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8518.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8518.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/750s",
+        "iso": "ISO 320",
+        "date": "2026-06-03",
+        "time": "20:06",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8515.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8515.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/1100s",
+        "iso": "ISO 320",
+        "date": "2026-06-03",
+        "time": "20:05",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8510.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8510.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-06-03",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.2",
+        "shutter": "1/200s",
+        "iso": "ISO 320",
+        "date": "2026-06-03",
+        "time": "20:00",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8436.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8436.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-06-01",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/1.6",
+        "shutter": "1/4000s",
+        "iso": "ISO 320",
+        "date": "2026-06-01",
+        "time": "08:57",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8425.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8425.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4",
+        "shutter": "1/500s",
+        "iso": "ISO 8000",
+        "date": "2026-05-31",
+        "time": "20:36",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8270.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8270.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2",
+        "shutter": "1/150s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "20:26",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8257.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8257.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4.5",
+        "shutter": "1/20s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "20:15",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8230.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8230.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2",
+        "shutter": "1/4000s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "16:30",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8195.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8195.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/1.2",
+        "shutter": "1/4000s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "16:26",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8189.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8189.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/2000s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "16:23",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8185.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8185.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/4000s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "16:20",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF8166.jpg",
+      "thumb": "/content/photos/thumbs/DSCF8166.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2026-05-31",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/2.5",
+        "shutter": "1/4000s",
+        "iso": "ISO 320",
+        "date": "2026-05-31",
+        "time": "11:36",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7730.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7730.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-24",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/3800s",
+        "iso": "ISO 400",
+        "date": "2026-05-24",
+        "time": "14:23",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7726.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7726.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-24",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/5.6",
+        "shutter": "1/70s",
+        "iso": "ISO 400",
+        "date": "2026-05-24",
+        "time": "14:20",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7724.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7724.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-24",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4.5",
+        "shutter": "1/1600s",
+        "iso": "ISO 400",
+        "date": "2026-05-24",
+        "time": "14:17",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7720.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7720.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-24",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/1.2 XF",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4.5",
+        "shutter": "1/220s",
+        "iso": "ISO 320",
+        "date": "2026-05-24",
+        "time": "14:14",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7570.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7570.jpg",
+      "w": 2048,
+      "h": 1365,
+      "date": "2026-05-16",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/5.6",
+        "shutter": "1/200s",
+        "iso": "ISO 320",
+        "date": "2026-05-16",
+        "time": "12:53",
+        "dimensions": "2048 × 1365"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7569.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7569.jpg",
+      "w": 2048,
+      "h": 1365,
+      "date": "2026-05-16",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/5.6",
+        "shutter": "1/180s",
+        "iso": "ISO 320",
+        "date": "2026-05-16",
+        "time": "12:48",
+        "dimensions": "2048 × 1365"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7521.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7521.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-16",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/6.4",
+        "shutter": "1/320s",
+        "iso": "ISO 320",
+        "date": "2026-05-16",
+        "time": "11:48",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF7517.jpg",
+      "thumb": "/content/photos/thumbs/DSCF7517.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2026-05-16",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/4",
+        "shutter": "1/320s",
+        "iso": "ISO 320",
+        "date": "2026-05-16",
+        "time": "11:26",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_0362.jpg",
+      "thumb": "/content/photos/thumbs/IMG_0362.jpg",
+      "w": 1536,
+      "h": 2048,
+      "date": "2025-10-18",
+      "exif": {
+        "camera": "Apple iPhone 17 Pro",
+        "lens": "iPhone 17 Pro back triple camera 16.8906mm f/2.79883",
+        "focal": "16.9mm",
+        "focal35": "100mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/400s",
+        "iso": "ISO 40",
+        "date": "2025-10-18",
+        "time": "14:55",
+        "dimensions": "1536 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_0338.jpg",
+      "thumb": "/content/photos/thumbs/IMG_0338.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2025-10-18",
+      "exif": {
+        "camera": "Apple iPhone 17 Pro",
+        "lens": "iPhone 17 Pro back triple camera 6.765mm f/1.78",
+        "focal": "6.8mm",
+        "focal35": "48mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/120s",
+        "iso": "ISO 64",
+        "date": "2025-10-18",
+        "time": "11:24",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_0337.jpg",
+      "thumb": "/content/photos/thumbs/IMG_0337.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2025-10-18",
+      "exif": {
+        "camera": "Apple iPhone 17 Pro",
+        "lens": "iPhone 17 Pro back triple camera 6.765mm f/1.78",
+        "focal": "6.8mm",
+        "focal35": "48mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/100s",
+        "iso": "ISO 100",
+        "date": "2025-10-18",
+        "time": "11:24",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_0261.JPG",
+      "thumb": "/content/photos/thumbs/IMG_0261.JPG",
+      "w": 4032,
+      "h": 3024,
+      "date": "2025-10-14",
+      "exif": {
+        "camera": "Apple iPhone 17 Pro",
+        "lens": "iPhone 17 Pro back triple camera 16.8906mm f/2.79883",
+        "focal": "16.9mm",
+        "focal35": "201mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/286s",
+        "iso": "ISO 40",
+        "date": "2025-10-14",
+        "time": "11:55",
+        "dimensions": "4032 × 3024"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_0254.JPG",
+      "thumb": "/content/photos/thumbs/IMG_0254.JPG",
+      "w": 3024,
+      "h": 4032,
+      "date": "2025-10-14",
+      "exif": {
+        "camera": "Apple iPhone 17 Pro",
+        "lens": "iPhone 17 Pro back triple camera 16.8906mm f/2.79883",
+        "focal": "16.9mm",
+        "focal35": "200mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/120s",
+        "iso": "ISO 64",
+        "date": "2025-10-14",
+        "time": "11:07",
+        "dimensions": "3024 × 4032"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_0249.JPG",
+      "thumb": "/content/photos/thumbs/IMG_0249.JPG",
+      "w": 4032,
+      "h": 3024,
+      "date": "2025-10-14",
+      "exif": {
+        "camera": "Apple iPhone 17 Pro",
+        "lens": "iPhone 17 Pro back triple camera 6.765mm f/1.78",
+        "focal": "6.8mm",
+        "focal35": "48mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/8772s",
+        "iso": "ISO 80",
+        "date": "2025-10-14",
+        "time": "10:40",
+        "dimensions": "4032 × 3024"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF5752.JPG",
+      "thumb": "/content/photos/thumbs/DSCF5752.JPG",
+      "w": 4160,
+      "h": 6240,
+      "date": "2025-07-11",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "AF 27/2.8",
+        "focal": "27mm",
+        "focal35": "41mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/180s",
+        "iso": "ISO 1600",
+        "date": "2025-07-11",
+        "time": "16:16",
+        "dimensions": "4160 × 6240"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_7711.JPG",
+      "thumb": "/content/photos/thumbs/IMG_7711.JPG",
+      "w": 3798,
+      "h": 5697,
+      "date": "2024-09-28",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "35.5mm",
+        "focal35": "53mm",
+        "aperture": "ƒ/3.5",
+        "shutter": "1/200s",
+        "iso": "ISO 320",
+        "date": "2024-09-28",
+        "time": "12:43",
+        "dimensions": "3798 × 5697"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF3474.jpg",
+      "thumb": "/content/photos/thumbs/DSCF3474.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2024-09-28",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "17mm",
+        "focal35": "26mm",
+        "aperture": "ƒ/4.5",
+        "shutter": "1/1700s",
+        "iso": "ISO 640",
+        "date": "2024-09-28",
+        "time": "12:39",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF3464.jpg",
+      "thumb": "/content/photos/thumbs/DSCF3464.jpg",
+      "w": 1365,
+      "h": 2048,
+      "date": "2024-09-28",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "46.4mm",
+        "focal35": "70mm",
+        "aperture": "ƒ/3.2",
+        "shutter": "1/1900s",
+        "iso": "ISO 640",
+        "date": "2024-09-28",
+        "time": "12:30",
+        "dimensions": "1365 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF3458.jpg",
+      "thumb": "/content/photos/thumbs/DSCF3458.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2024-09-28",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "17mm",
+        "focal35": "26mm",
+        "aperture": "ƒ/5",
+        "shutter": "1/400s",
+        "iso": "ISO 320",
+        "date": "2024-09-28",
+        "time": "12:25",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF3448.jpg",
+      "thumb": "/content/photos/thumbs/DSCF3448.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2024-09-28",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "70mm",
+        "focal35": "105mm",
+        "aperture": "ƒ/5",
+        "shutter": "1/210s",
+        "iso": "ISO 400",
+        "date": "2024-09-28",
+        "time": "12:20",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF3434.jpg",
+      "thumb": "/content/photos/thumbs/DSCF3434.jpg",
+      "w": 1638,
+      "h": 2048,
+      "date": "2024-09-28",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "24mm",
+        "focal35": "36mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/450s",
+        "iso": "ISO 640",
+        "date": "2024-09-28",
+        "time": "11:53",
+        "dimensions": "1638 × 2048"
+      }
+    },
+    {
+      "src": "/content/photos/DSCF3426.jpg",
+      "thumb": "/content/photos/thumbs/DSCF3426.jpg",
+      "w": 2048,
+      "h": 1365,
+      "date": "2024-09-27",
+      "exif": {
+        "camera": "FUJIFILM X-S20",
+        "lens": "17-70mm F/2.8 DiIII-A VC RXD B070X",
+        "focal": "70mm",
+        "focal35": "105mm",
+        "aperture": "ƒ/2.8",
+        "shutter": "1/320s",
+        "iso": "ISO 640",
+        "date": "2024-09-27",
+        "time": "18:15",
+        "dimensions": "2048 × 1365"
+      }
+    },
+    {
+      "src": "/content/photos/dclassic 2024-08-26 095259.217.jpg",
+      "thumb": "/content/photos/thumbs/dclassic 2024-08-26 095259.217.jpg",
+      "w": 2687,
+      "h": 4032,
+      "date": "2024-08-26",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back camera 6.765mm f/1.78",
+        "focal": "6.8mm",
+        "focal35": "24mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/448s",
+        "iso": "ISO 80",
+        "date": "2024-08-26",
+        "time": "09:52",
+        "dimensions": "2687 × 4032"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_7010.JPG",
+      "thumb": "/content/photos/thumbs/IMG_7010.JPG",
+      "w": 4032,
+      "h": 3024,
+      "date": "2024-06-27",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back triple camera 2.22mm f/2.2",
+        "focal": "2.2mm",
+        "focal35": "14mm",
+        "aperture": "ƒ/2.2",
+        "shutter": "1/120s",
+        "iso": "ISO 200",
+        "date": "2024-06-27",
+        "time": "15:55",
+        "dimensions": "4032 × 3024"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_5960.JPG",
+      "thumb": "/content/photos/thumbs/IMG_5960.JPG",
+      "w": 5712,
+      "h": 4284,
+      "date": "2024-02-08",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back triple camera 6.86mm f/1.78",
+        "focal": "6.9mm",
+        "focal35": "24mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/588s",
+        "iso": "ISO 80",
+        "date": "2024-02-08",
+        "time": "17:04",
+        "dimensions": "5712 × 4284"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_5921.JPG",
+      "thumb": "/content/photos/thumbs/IMG_5921.JPG",
+      "w": 4032,
+      "h": 3024,
+      "date": "2024-02-08",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back triple camera 2.22mm f/2.2",
+        "focal": "2.2mm",
+        "focal35": "14mm",
+        "aperture": "ƒ/2.2",
+        "shutter": "1/277s",
+        "iso": "ISO 40",
+        "date": "2024-02-08",
+        "time": "14:30",
+        "dimensions": "4032 × 3024"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_5471.JPG",
+      "thumb": "/content/photos/thumbs/IMG_5471.JPG",
+      "w": 4284,
+      "h": 5258,
+      "date": "2023-12-16",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back triple camera 6.86mm f/1.78",
+        "focal": "6.9mm",
+        "focal35": "24mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/60s",
+        "iso": "ISO 800",
+        "date": "2023-12-16",
+        "time": "21:32",
+        "dimensions": "4284 × 5258"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_4651.jpg",
+      "thumb": "/content/photos/thumbs/IMG_4651.jpg",
+      "w": 3024,
+      "h": 4032,
+      "date": "2023-09-23",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back triple camera 6.86mm f/1.78",
+        "focal": "6.9mm",
+        "focal35": "78mm",
+        "aperture": "ƒ/1.8",
+        "shutter": "1/3200s",
+        "iso": "ISO 64",
+        "date": "2023-09-23",
+        "time": "13:34",
+        "dimensions": "3024 × 4032"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_4649.jpg",
+      "thumb": "/content/photos/thumbs/IMG_4649.jpg",
+      "w": 3024,
+      "h": 4032,
+      "date": "2023-09-23",
+      "exif": {
+        "camera": "Apple iPhone 15 Pro",
+        "lens": "iPhone 15 Pro back triple camera 2.22mm f/2.2",
+        "focal": "2.2mm",
+        "focal35": "14mm",
+        "aperture": "ƒ/2.2",
+        "shutter": "1/1400s",
+        "iso": "ISO 50",
+        "date": "2023-09-23",
+        "time": "13:33",
+        "dimensions": "3024 × 4032"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_1132.jpeg",
+      "thumb": "/content/photos/thumbs/IMG_1132.jpeg",
+      "w": 3088,
+      "h": 2316,
+      "date": "2023-01-28",
+      "exif": {
+        "camera": "Apple iPhone 14 Pro",
+        "lens": "iPhone 14 Pro front camera 2.69mm f/1.9",
+        "focal": "2.7mm",
+        "focal35": "30mm",
+        "aperture": "ƒ/1.9",
+        "shutter": "1/1458s",
+        "iso": "ISO 25",
+        "date": "2023-01-28",
+        "time": "11:34",
+        "dimensions": "3088 × 2316"
+      }
+    },
+    {
+      "src": "/content/photos/IMG_1128.jpeg",
+      "thumb": "/content/photos/thumbs/IMG_1128.jpeg",
+      "w": 3088,
+      "h": 2316,
+      "date": "2023-01-28",
+      "exif": {
+        "camera": "Apple iPhone 14 Pro",
+        "lens": "iPhone 14 Pro front camera 2.69mm f/1.9",
+        "focal": "2.7mm",
+        "focal35": "30mm",
+        "aperture": "ƒ/1.9",
+        "shutter": "1/1125s",
+        "iso": "ISO 25",
+        "date": "2023-01-28",
+        "time": "11:32",
+        "dimensions": "3088 × 2316"
+      }
+    }
+  ]
+}

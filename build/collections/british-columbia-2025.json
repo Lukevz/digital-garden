@@ -1,0 +1,37 @@
+{
+  "slug": "british-columbia-2025",
+  "source": "/Users/lukevz/Library/CloudStorage/GoogleDrive-lukevz12@gmail.com/My Drive/1 Projects/Personal Site/Photos/BC 2025",
+  "start": "2025-12-18",
+  "title": "British Columbia",
+  "byline": "British Columbia, December 2025",
+  "dates": "Dec 18 — 30, 2025",
+  "index": { "title": "British Columbia 2025", "dates": "Dec 18 — 30", "kicker": "British Columbia 2025", "feature": false },
+  "cover": "DSCF5865.jpg",
+  "coverAlt": "The Canadian flag under storm clouds at a ferry terminal",
+  "days": [
+    { "key": "dec-19", "date": "2025-12-19", "dates": ["2025-12-19", "2025-12-20"], "dateLabel": "Dec 19 – 20, 2025", "title": "", "place": "Gibsons" },
+    { "key": "dec-22", "date": "2025-12-22", "title": "", "place": "British Columbia" },
+    { "key": "dec-23", "date": "2025-12-23", "title": "", "place": "British Columbia" },
+    { "key": "dec-26", "date": "2025-12-26", "title": "", "place": "British Columbia" }
+  ],
+  "keep": [
+    "DSCF5784.jpg", "DSCF5787.jpg", "DSCF5790.jpg", "DSCF5798.jpg", "DSCF5800.jpg",
+    "DSCF5805.jpg", "DSCF5817.jpg", "DSCF5830.jpg", "DSCF5831.jpg", "DSCF5838.jpg",
+    "DSCF5855.jpg", "DSCF5856.jpg",
+    "DSCF5857.jpg", "DSCF5862.jpg", "DSCF5865.jpg", "DSCF5866.jpg", "DSCF5878.jpg",
+    "DSCF5887.jpg", "DSCF5897.jpg", "DSCF5910.jpg", "DSCF5919.jpg", "DSCF5927.jpg",
+    "DSCF5931.jpg", "DSCF5959.jpg", "DSCF5966.jpg", "DSCF5984.jpg", "DSCF5991.jpg",
+    "DSCF6000.jpg", "DSCF6008.jpg", "DSCF6022.jpg",
+    "DSCF6026.jpg", "DSCF6028.jpg", "DSCF6054.jpg", "DSCF6057.jpg", "DSCF6073.jpg", "DSCF6079.jpg",
+    "DSCF6091.jpg", "DSCF6102.jpg", "DSCF6106.jpg", "DSCF6111.jpg", "DSCF6113.jpg",
+    "DSCF6122.jpg", "DSCF6144.jpg", "DSCF6148.jpg", "DSCF6157.jpg", "DSCF6169.jpg",
+    "DSCF6204.jpg", "DSCF6211.jpg", "DSCF6217.jpg", "DSCF6230.jpg", "DSCF6240.jpg",
+    "DSCF6241.jpg", "DSCF6249.jpg", "DSCF6259.jpg", "DSCF6273.jpg", "DSCF6293.jpg",
+    "DSCF6308.jpg", "DSCF6314.jpg"
+  ],
+  "alts": {
+    "DSCF5787.jpg": "Welcome to Gibsons sign",
+    "DSCF5805.jpg": "Molly's Reach",
+    "DSCF5966.jpg": "BC Ferries banners"
+  }
+}
