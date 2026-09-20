@@ -1,0 +1,50 @@
+[
+ {
+  "name": "Cursor",
+  "detail": "AI Code Editor",
+  "img": "/images/app-stack-cursor.png",
+  "url": "https://cursor.com"
+ },
+ {
+  "name": "CleanShot X",
+  "detail": "Screenshot & Recording",
+  "img": "/images/app-stack-cleanshotx.png",
+  "url": "https://cleanshot.com"
+ },
+ {
+  "name": "Raycast",
+  "detail": "Launcher & Productivity",
+  "img": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/85/69/31/8569314a-3114-1691-d952-7b950c41a9ca/AppIcon-Release-0-0-1x_U007epad-0-0-0-1-0-0-sRGB-85-220.png/512x512bb.jpg",
+  "url": "https://raycast.com"
+ },
+ {
+  "name": "MyMind",
+  "detail": "Visual Bookmarking",
+  "img": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/2e/57/10/2e571035-f756-32fb-d29d-52f9f40f84be/AppIcon-Release-1x_U007epad-0-1-sRGB-85-220-0.png/512x512bb.jpg",
+  "url": "https://mymind.com"
+ },
+ {
+  "name": "Bear",
+  "detail": "Notes & Writing",
+  "img": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/7a/25/bb/7a25bb6c-49d8-e236-86e5-ccad3a5bf8c2/AppIcon-26-0-0-1x_U007epad-0-0-0-1-0-0-sRGB-85-220.png/512x512bb.jpg",
+  "url": "https://bear.app"
+ },
+ {
+  "name": "Things 3",
+  "detail": "Task Manager",
+  "img": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/d0/1e/fe/d01efe6f-a09d-713e-0b02-b75c2865c215/AppIcon-0-0-1x_U007ephone-0-0-0-1-0-0-85-220.png/512x512bb.jpg",
+  "url": "https://culturedcode.com/things"
+ },
+ {
+  "name": "Claude",
+  "detail": "AI Assistant",
+  "img": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/82/9a/02/829a027f-3afc-0b36-a50a-d58dfc38d49b/AppIcon-0-0-1x_U007epad-0-1-85-220.png/512x512bb.jpg",
+  "url": "https://claude.ai"
+ },
+ {
+  "name": "Apple Journal",
+  "detail": "Daily Journaling",
+  "img": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/dc/8d/af/dc8daf9c-9da1-03f3-c341-c6c3eccd817e/journal-0-0-1x_U007epad-0-1-sRGB-85-220.png/512x512bb.jpg",
+  "url": "https://apps.apple.com/app/id6447391597"
+ }
+]

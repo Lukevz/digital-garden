@@ -16,11 +16,13 @@
      • the reading spread: index of titles left, the open piece right
      • markdown → HTML, including a transliteration pass the typeface needs
 
-   ⚠️ There are now TWO surfaces a section can open onto — `.spread`, which is
-   writing's two-column layout, and `.plates`, which is photographs' single
-   scroller (js/photos.js). Everything above is shared: the erase, the flight
-   and the masthead do not care which one is coming up behind them. Only
-   `surface()` knows the difference.
+   ⚠️ There are now THREE surfaces a section can open onto — `.spread`, which
+   is writing's two-column layout, `.plates`, which is photographs' single
+   scroller (js/photos.js), and `.folio`, the plain page behind More
+   (js/more.js: bookshelf, gear, app stack, places — four routes, one
+   surface). Everything above is shared: the erase, the flight and the
+   masthead do not care which one is coming up behind them. Only `surface()`
+   knows the difference.
 
    ⚠️ Two scroll containers live in here (`.index` and `.page-scroll`), which
    is a deliberate departure from the landing page's "no scroll container
@@ -42,11 +44,11 @@
   const letterhead = document.querySelector('.letterhead');
   const links      = document.querySelector('.links');
   const backLink   = $('back');
-  const backTitle  = $('backTitle');
   const expandBtn  = $('expand');
   const expandLbl  = $('expandLabel');
   const spread     = $('spread');
   const plates     = $('plates');
+  const folio      = $('folio');
   const indexEl    = $('index');
   const indexList  = $('indexList');
   const pageScroll = $('pageScroll');
@@ -226,7 +228,14 @@
   function splitChars(root) {
     const out = [];
     const texts = [];
-    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    // ⚠️ Not text under `[inert]`. That is the More row while it is folded
+    // away: its labels are laid out (visibility, not display) but nothing of
+    // them is on screen, and a mark for each would put a line of type under
+    // the nav for the rubber to travel along.
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => (n.parentElement && n.parentElement.closest('[inert]')
+        ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
     while (walk.nextNode()) texts.push(walk.currentNode);
     for (const node of texts) {
       if (!node.nodeValue.trim()) continue;
@@ -249,7 +258,7 @@
        on schedule and the five glyphs beside them stay behind on a clean
        sheet. They need no .ch wrapper — the class only exists to make an
        inline box transformable, and an svg is replaced-inline already. */
-    root.querySelectorAll('.ico').forEach(el => out.push(el));
+    root.querySelectorAll('.ico').forEach(el => { if (!el.closest('[inert]')) out.push(el); });
     return out;
   }
 
@@ -469,10 +478,17 @@
      A section opens onto one of these. They are siblings inside the sheet and
      only one is ever unhidden, so the masthead, the flight and the erase can
      stay ignorant of which section is actually being routed to. */
+  /* Four of the routes are one surface: `#bookshelf`, `#gear`, `#appstack` and
+     `#places` all open the folio, and js/more.js decides which page to put in
+     it. `surfaceKey` is the ROUTE, so the router knows which page to paint. */
+  const FOLIO = ['bookshelf', 'gear', 'appstack', 'places'];
   const SURFACES = { writing: spread, photos: plates };
+  FOLIO.forEach(k => { SURFACES[k] = folio; });
   let surfaceKey = 'writing';
   const surface = () => SURFACES[surfaceKey] || spread;
   const photoSection = () => window.photoSection || null;
+  const moreSection = () => window.moreSection || null;
+  const inFolio = () => FOLIO.includes(surfaceKey);
 
   /* ══ Routing ═══════════════════════════════════════════════════════════ */
 
@@ -589,7 +605,6 @@
     const el = surface();
     // The expand control collapses the INDEX, and only writing has one.
     expandBtn.hidden = surfaceKey !== 'writing';
-    backTitle.textContent = surfaceKey === 'photos' ? 'Photos' : 'Writing';
     el.hidden = false;
     requestAnimationFrame(() => el.classList.add('is-in'));
   }
@@ -601,6 +616,7 @@
       el.classList.remove('is-in');
     });
     if (photoSection()) photoSection().leave();
+    if (moreSection()) moreSection().leave();
     expandBtn.hidden = true;
     current = null;
   }
@@ -616,6 +632,7 @@
     if (!others.length || reduced || !paper.enabled) {
       others.forEach(s => { s.hidden = true; s.classList.remove('is-in'); });
       if (photoSection() && surfaceKey !== 'photos') photoSection().leave();
+      if (moreSection() && !inFolio()) moreSection().leave();
       showSurface();
       return Promise.resolve();
     }
@@ -624,6 +641,7 @@
       restore(others);
       others.forEach(s => { s.hidden = true; s.classList.remove('is-in'); });
       if (photoSection() && surfaceKey !== 'photos') photoSection().leave();
+      if (moreSection() && !inFolio()) moreSection().leave();
       current = null;
       showSurface();
     });
@@ -673,6 +691,8 @@
     if (instant || reduced || !paper.enabled) {
       body.classList.add('reading');
       setFull(true, true);
+      // No erase to restore from, but More may still be out.
+      if (moreSection()) moreSection().reset();
       showSurface();
       return Promise.resolve();
     }
@@ -697,6 +717,9 @@
       nameEl.style.transformOrigin = '';
       landLetterhead(mark);
       restore([bio, links]);
+      // The restore put back the nav as it was when the erase began — with the
+      // More row out, if it was. It is folded away again for the way home.
+      if (moreSection()) moreSection().reset();
       // Everything has landed in the framed geometry it was measured in, so
       // the sheet is free to push out to the edges behind the arriving
       // surface. Same task as the class above: nothing paints in between.
@@ -793,9 +816,8 @@
     // second, and the URL can move during it.
     const routedAt = location.hash;
 
-    // `#more` is still the placeholder the dog-ear shipped with, and anything
-    // unrecognised goes back to the sheet rather than opening an empty
-    // surface. Photographs are js/photos.js's from the moment the name is in
+    // Anything unrecognised (`#more` included — that is a toggle now, not a
+    // route) goes back to the sheet rather than opening an empty surface. Photographs are js/photos.js's from the moment the name is in
     // the corner; everything before that is shared.
     const section = parsed && SURFACES[parsed.section] ? parsed.section : null;
     let done;
@@ -808,6 +830,13 @@
       } else {
         surfaceKey = 'photos';
         done = enterReading(instant).then(() => photoSection().paint(parsed.rest));
+      }
+    } else if (FOLIO.includes(section)) {
+      if (!moreSection() || !moreSection().has(section)) {
+        done = leaveReading(instant);
+      } else {
+        surfaceKey = section;
+        done = enterReading(instant).then(() => moreSection().paint(section));
       }
     } else {
       surfaceKey = 'writing';

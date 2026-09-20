@@ -63,6 +63,10 @@
   --paper-hi: #e9eced;
   --paper-mid: #e2e6e7;
   --paper-lo: #d7dcde;
+  /* How far the session's colour (--sheet-tint, set inline in index.html) is
+     mixed into the ramp on the landing page. Pastels already sit near the
+     grey's lightness, so light takes most of it. */
+  --tint-max: 78%;
   --ink: #12171a;
   --ink-soft: rgba(18, 23, 26, 0.58);
   --rule: rgba(18, 23, 26, 0.22);
@@ -110,6 +114,9 @@
     --paper-hi: #2e3234;
     --paper-mid: #262a2c;
     --paper-lo: #1f2325;
+    /* A pastel at anything like the light amount would be a bright sheet; this
+       is a colour cast on dark stock. */
+    --tint-max: 24%;
     --ink: #e5e9ea;
     --ink-soft: rgba(229, 233, 234, 0.72);
     --rule: rgba(229, 233, 234, 0.22);
@@ -143,6 +150,44 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
 }
+
+/* ── The session tint ──────────────────────────────────────────────────────
+   The landing page's sheet takes one of the branding colours; every other
+   page is the plain grey, for reading. --tint-amt is how much of the colour
+   is in the paper right now, and it is what moves: 0 → --tint-max on the
+   landing page, back to 0 when a section opens.
+
+   ⚠️ REGISTERED, or it can't be transitioned. An unregistered custom property
+   is an opaque token to the animation engine and flips at the halfway point,
+   which would be a colour change with no fade. Registered as a percentage it
+   interpolates like any length, and everything that mixes it in (the sheet's
+   ramp and the dog-ear's flap) follows frame by frame.
+
+   ⚠️ It rides `body.full`, the same class as the zoom, so the paper loses its
+   colour AS it goes full bleed and gets it back as it returns to the frame,
+   on the zoom's own clock (--zoom-dur / --zoom-ease). Not `body.reading`:
+   that lands at the START of the flight, and the sheet would drain to grey
+   while the copy was still being rubbed out over it.
+
+   ⚠️ Gated on `html.tinted`, which the inline script in index.html adds. No
+   script → no class → --tint-amt stays 0% and every mix below is exactly the
+   grey it was before this existed.
+
+   ⚠️ A colour on the page-sized field was tried once before and taken out
+   (it read as a tinted page background). It is back because it was asked for,
+   on the landing page only; don't let it follow the reader into a section. */
+@property --tint-amt {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 0%;
+}
+
+body {
+  --tint-amt: 0%;
+  transition: --tint-amt var(--zoom-dur) var(--zoom-ease);
+}
+html.tinted body:not(.full) { --tint-amt: var(--tint-max); }
+body.no-zoom { transition: none; }
 
 body {
   margin: 0;
@@ -187,9 +232,9 @@ body {
     radial-gradient(60% 52% at 2% 102%, var(--burn) 0%, transparent 66%),
     radial-gradient(42% 38% at 100% 96%, var(--burn) 0%, transparent 60%),
     radial-gradient(135% 115% at 50% -12%,
-      var(--paper-hi) 0%,
-      var(--paper-mid) 52%,
-      var(--paper-lo) 100%);
+      var(--sheet-hi) 0%,
+      var(--sheet-mid) 52%,
+      var(--sheet-lo) 100%);
   /* The sheet's own thickness: a lit top edge and shade drawing in from two
      corners. Painted above the background and below every child, so the grain
      still runs over it. */
@@ -198,6 +243,13 @@ body {
   grid-template-rows: 1fr auto;
   padding: var(--sheet-pad);
   box-sizing: border-box;
+
+  /* The ramp with the session's colour in it. Declared HERE, not on :root,
+     because --tint-amt lives on body and a variable can only see what its own
+     element inherits. At 0% each is exactly its --paper-* stop. */
+  --sheet-hi:  color-mix(in srgb, var(--sheet-tint, var(--paper-hi))  var(--tint-amt), var(--paper-hi));
+  --sheet-mid: color-mix(in srgb, var(--sheet-tint, var(--paper-mid)) var(--tint-amt), var(--paper-mid));
+  --sheet-lo:  color-mix(in srgb, var(--sheet-tint, var(--paper-lo))  var(--tint-amt), var(--paper-lo));
 
   /* The move between the framed sheet and the full-bleed one. Declared here
      rather than on `body.full` so it carries BOTH ways: an override only ever
@@ -321,6 +373,7 @@ body.no-zoom .sheet { transition: none; }
 .masthead,
 .spread,
 .plates,
+.folio,
 .links {
   position: relative;
   z-index: 1;
@@ -451,6 +504,7 @@ body:not(.reading) .name {
 }
 
 .links a,
+.links .more-toggle,
 .back {
   display: inline-flex;
   align-items: center;
@@ -469,12 +523,16 @@ body:not(.reading) .name {
    after the LAST letter too, so without this every word sits a fifth of an
    em left of centre between its icon and the next item. */
 .links a > span,
+.links .more-toggle > span,
 .back > span {
   margin-right: -0.2em;
 }
 
 .links a:hover,
 .links a:focus-visible,
+.links .more-toggle:hover,
+.links .more-toggle:focus-visible,
+.links .more-toggle[aria-expanded="true"],
 .back:hover,
 .back:focus-visible {
   color: var(--ink);
@@ -482,6 +540,7 @@ body:not(.reading) .name {
 }
 
 .links a:focus-visible,
+.links .more-toggle:focus-visible,
 .back:focus-visible {
   outline: none;
 }
@@ -715,16 +774,26 @@ body:not(.reading) .name {
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --curl-rest: 44px;
-  /* ⚠️ The floor went up with the contents. Five marks in a row need more
-     bottom edge than three stacked words needed height; at the old 160px the
-     leftmost one lay across the fold. 200 is the inequality at .curl-links
-     plus about a mark's worth of air. */
-  --curl-open: clamp(200px, 22vw, 276px);
-  /* The sheet's reverse: bright along the fold where it tilts into the light,
-     falling away to the tip that is lying back down on the page. */
-  --curl-fold: #f4f7f8;
-  --curl-tip: #d0d6d9;
+  /* ⚠️ The fold is TALL: --curl-open is its HEIGHT, and it is twice as wide as
+     it is high on the short side (--curl-k). It used to be a square, which
+     made the fold a 45-degree diagonal; the paper now peels back further up
+     the edge than it does along the bottom, which also gives a column of five
+     marks somewhere to stand (see .curl-links).
+     --curl-rest is the resting ear's WIDTH, and it keeps the same 1 : 2 shape
+     so the flap's geometry (below) holds while the width/height transition
+     runs. */
+  --curl-rest: 30px;
+  --curl-rest-h: calc(var(--curl-rest) * 2);
+  --curl-open: clamp(320px, 30vw, 380px);
+  --curl-open-w: calc(var(--curl-open) / 2);
+  /* The flap's tones, as how far the sheet's own middle tone is lifted toward
+     white (the fold, where it tilts into the light) and sunk toward black (the
+     tip, lying back down on the page). They are mixes rather than two greys
+     so the folded corner is the same stock as the sheet whatever the sheet's
+     colour is doing (see the session tint). At no tint they land on the
+     #f4f7f8 / #d0d6d9 the flap used to be. */
+  --curl-lift: 60%;
+  --curl-sink: 8%;
   /* Three stops: a tight contact edge for the sheet's own thickness, a mid
      falloff, and a wide dispersed one for the air the lifted corner is
      holding open. The whole filter is the token, not a colour — the three
@@ -738,8 +807,8 @@ body:not(.reading) .name {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --curl-fold: #383d3f;
-    --curl-tip: #1c2022;
+    --curl-lift: 8%;
+    --curl-sink: 26%;
     /* A shadow has far less room to read on a dark sheet, so the same
        geometry carries more alpha. ⚠️ Not unboundedly more: the widest layer
        reaches up and left across the social row, and past about 0.2 it stops
@@ -753,17 +822,20 @@ body:not(.reading) .name {
 }
 
 /* The trigger.
-   ⚠️ It stops short of the bottom. The social row is centred, so as the
-   viewport narrows its right end slides under a zone pinned to `bottom: 0`
-   — and because the zone is invisible and sits above the row, the only
-   symptom is GitHub quietly not being clickable. The corner region it gives
-   up is covered by `.curl:hover` anyway, so nothing is lost. */
+   ⚠️ Small on purpose: the resting ear plus a 16px halo. It was the whole
+   height of the right edge and 36px wider than the open fold, which was
+   defensible while the corner held the navigation. It holds five social
+   marks now, and a strip that long opened the fold whenever the pointer
+   drifted anywhere near the right-hand side of the page. Once open, the fold
+   keeps itself open (`.curl:hover`), so the zone only has to be the approach.
+   It also no longer reaches up or along the foot of the sheet, so it can't
+   sit over the nav row on a narrow window. */
 .curl-zone {
   position: absolute;
-  top: 0;
   right: 0;
-  bottom: 104px;
-  width: calc(var(--curl-open) + 36px);
+  bottom: 0;
+  width: calc(var(--curl-rest) + 16px);
+  height: calc(var(--curl-rest-h) + 16px);
   z-index: 2;
 }
 
@@ -772,10 +844,15 @@ body:not(.reading) .name {
   right: 0;
   bottom: 0;
   width: var(--curl-rest);
-  height: var(--curl-rest);
+  height: var(--curl-rest-h);
   z-index: 3;
   transition: width 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
               height 460ms cubic-bezier(0.22, 0.75, 0.18, 1);
+
+  /* The flap's two tones, off the sheet's own (tinted) middle. Declared here
+     because --sheet-mid is inherited from .sheet and this is inside it. */
+  --curl-fold: color-mix(in srgb, white var(--curl-lift), var(--sheet-mid));
+  --curl-tip:  color-mix(in srgb, black var(--curl-sink), var(--sheet-mid));
 }
 
 .curl-hole,
@@ -798,13 +875,29 @@ body:not(.reading) .name {
   background: linear-gradient(315deg, transparent 54%, rgba(0, 0, 0, 0.26) 100%);
 }
 
-/* ── The folded-over corner ────────────────────────────────────────────── */
+/* ── The folded-over corner ────────────────────────────────────────────────
+   ⚠️ NOT inside the box, any more. In a square the reflection of the lost
+   corner lands on the box's own opposite corner; in a 1 : 2 box it lands off
+   the box, to the LEFT. With the fold from P = (0, h) to Q = (w, 0), the
+   corner (w, h) reflects to
+
+       C' = ( w(1 - k²) / (1 + k²),  h(k² - 1) / (1 + k²) )
+
+   which for k = h / w = 2 is (-0.6w, +0.6h). So the flap is its own bounding
+   box — 60% of the fold's width further left — and the polygon inside it is
+   P (37.5%, 100%), Q (100%, 0), C' (0, 60%). Change the ratio and those
+   numbers, the 297deg and the two stops below all change with it.
+
+   The gradient runs perpendicular to the fold (its normal, pointing up and
+   left, is atan2(-2, 1) = 297deg); the fold is 38% of the way along that line
+   and the tip 77%, so the brightest tone is on the fold itself. */
 .curl-flap {
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-  /* Brightest at the fold, falling off toward the tip lying on the page. */
-  background: linear-gradient(315deg,
+  inset: 0 0 0 -60%;
+  clip-path: polygon(37.5% 100%, 100% 0, 0 60%);
+  background: linear-gradient(297deg,
     var(--curl-fold) 0%,
-    var(--curl-fold) 8%,
+    var(--curl-fold) 38%,
+    var(--curl-tip) 77%,
     var(--curl-tip) 100%);
   filter: var(--curl-shadow);
 }
@@ -821,35 +914,36 @@ body:not(.reading) .name {
 }
 
 /* ── The accounts under the corner ──────────────────────────────────────────
-   ⚠️ A ROW along the bottom edge, where the old nav was a column up the
-   right one. The hole is the lower-right triangle, so the paper available at
-   any height is exactly the distance down from the fold: a stack of five
-   marks puts its top item where there are a few pixels to stand on and the
-   corner clips it. The bottom edge is the one full-width line in the shape,
-   which is where five of anything goes.
+   ⚠️ A COLUMN down the right edge, one mark per row. It was a row along the
+   bottom edge while the fold was a square, because in a 45-degree triangle
+   the bottom edge is the one full-width line and a stack puts its top mark
+   where there are a few pixels to stand on. The fold is tall now, so the
+   right edge has the room and the marks can be big.
 
-   The fit is one inequality, and it is worth keeping written down:
+   The hole's left edge at depth y below its apex is `w · y / h`, so the
+   TOPMOST mark is the one that can fall outside the paper, and the fit is:
 
-       --curl-open  ≥  right + row width + bottom + mark height
+       --curl-open-w · (--curl-open − bottom − column height) / --curl-open
+           ≥  right + mark width
 
-   — because the hole's left edge at the row's TOP is `bottom + height` in
-   from the corner, and the row's left edge is `right + width` in. Retune any
-   of them and check the LEFTMOST mark; the row's total width on its own
-   tells you nothing.
+   where the column is `5 · mark + 4 · gap`. At the floor of --curl-open
+   (320 × 160 fold, 24px marks, 16px gap) that is 160 · 118 / 320 = 59 against
+   the 42 it needs. Retune the mark, the gap or the ratio and check the top
+   mark, not the column's height on its own.
 
-   ⚠️ Which is why the gap is a FLAT 12px and not a vw clamp. A clamp sizes
-   the row off the viewport while the triangle sizes off --curl-open, and the
-   two stop agreeing the moment --curl-open hits either end of its own clamp:
-   at a 1000px window the gap was already at its 16px ceiling while the fold
-   was still at its floor, and the leading mark sat 19px outside the paper. */
+   ⚠️ The gap is a flat 16px and not a vw clamp, for the reason it was flat
+   when this was a row: a clamp sizes the column off the viewport while the
+   triangle sizes off --curl-open, and they stop agreeing the moment that
+   hits either end of its own clamp. */
 .curl-links {
   position: absolute;
   right: 18px;
-  bottom: 13px;
+  bottom: 18px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  font-size: 18px;
+  gap: 16px;
+  font-size: 24px;
   /* Held back until the fold is most of the way open — marks appearing while
      the corner is still a stub read as something printed on the paper. */
   opacity: 0;
@@ -882,7 +976,7 @@ body:not(.reading) .name {
 .curl-zone:hover ~ .curl,
 .curl:hover,
 .curl:focus-within {
-  width: var(--curl-open);
+  width: var(--curl-open-w);
   height: var(--curl-open);
 }
 
@@ -904,24 +998,25 @@ body:not(.reading) .name {
 @media (hover: none), (max-width: 640px) {
   .curl-zone { display: none; }
   .curl {
-    width: var(--curl-open);
+    width: var(--curl-open-w);
     height: var(--curl-open);
   }
   .curl-links { opacity: 1; }
 }
 
 @media (max-width: 640px) {
-  /* ⚠️ The corner does NOT grow to 200 here. On a 375px screen that is over
-     half the width of the page, parked open. The row shrinks instead — one
-     font-size, since .ico is sized in em and the stroke rides the box — and
-     the inequality is satisfied from the other side. */
-  :root { --curl-open: 168px; }
+  /* ⚠️ The corner stays small here. On a 375px screen it is parked open, and
+     a fold as big as the desktop one would be a third of the page. It
+     shrinks and so do the marks (one font-size, since .ico is sized in em and
+     the stroke rides the box); 120 × 240 with 20px marks and a 12px gap is
+     40 against the 34 the top mark needs (see .curl-links). */
+  :root { --curl-open: 240px; }
 
   .curl-links {
     right: 14px;
-    bottom: 10px;
-    gap: 9px;
-    font-size: 15px;
+    bottom: 12px;
+    gap: 12px;
+    font-size: 20px;
   }
 }
 
@@ -1080,18 +1175,6 @@ body.reading .back {
    frame and registration crosses stay, since those are edge furniture. */
 body.reading .spec-dim,
 body.reading .spec-label { display: none; }
-
-/* ⚠️ The dog-ear's trigger zone has to be cut back in a section. At home it
-   runs the full height of the right edge, which is free real estate — there
-   is nothing over there. In a section that same strip lies over the article
-   AND over the expand control in the masthead corner, so it (a) swallowed the
-   click that collapses the index and (b) unfurled the corner across the text
-   on any mouse drift to the right while reading. Here it is only the bottom
-   block near the corner; `.curl:hover` still covers the corner itself. */
-body.reading .curl-zone {
-  top: auto;
-  height: clamp(170px, 28vh, 300px);
-}
 
 /* ── The expand control ────────────────────────────────────────────────────
    Drawn as a drafting mark rather than a button: a hairline square in the

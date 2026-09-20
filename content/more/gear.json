@@ -1,0 +1,82 @@
+[
+ {
+  "name": "BenQ MA270S",
+  "detail": "27\" 5K Monitor",
+  "img": "https://image.benq.com/is/image/benqco/ma270s-thumbnail-right45?$ResponsivePreset$"
+ },
+ {
+  "name": "MacBook Pro 14\"",
+  "detail": "M3 Pro · Space Black",
+  "img": "/images/gear-macbook-pro-14.png"
+ },
+ {
+  "name": "Fujifilm X-S20",
+  "detail": "Mirrorless Camera",
+  "img": "https://fujifilm-x.b-cdn.net/wp-content/uploads/2023/05/dwga_x-s20_thum.jpg?resize=150,150&width=150&height=150"
+ },
+ {
+  "name": "XF 18–55mm f/2.8–4",
+  "detail": "Fujifilm Lens",
+  "img": "/images/gear-xf-18-55mm.png"
+ },
+ {
+  "name": "XF 70–300mm f/4.5–5.6",
+  "detail": "Fujifilm Lens",
+  "img": "https://fujifilm-x.b-cdn.net/wp-content/uploads/2021/01/xf70-300mmf45-56-r-lm-ois-wr_anim_11.png?width=1000&height=563"
+ },
+ {
+  "name": "Shure MV7",
+  "detail": "USB Microphone",
+  "img": "/images/gear-shure-mv7.png"
+ },
+ {
+  "name": "Bose QC Ultra",
+  "detail": "Headphones · Lunar Blue",
+  "img": "https://www.worldwidestereo.com/cdn/shop/files/1_0df5c049-5361-4790-bd0e-5f5400a3351b.jpg?v=1742307135"
+ },
+ {
+  "name": "MX Master 4",
+  "detail": "Wireless Mouse",
+  "img": "https://resource.logitech.com/c_fill,q_auto,f_auto,dpr_1.0/d_transparent.gif/content/dam/logitech/en/products/mice/mx-master-4/gallery/mx-master-4-graphite-front-3qtr-angle-gallery-10.png"
+ },
+ {
+  "name": "iPad mini",
+  "detail": "7th Gen · Space Gray",
+  "img": "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/ipad-mini-select-wifi-spacegray-202410?wid=940&hei=1112&fmt=png-alpha&.v=NmJhVkxMSzd4RmRrSjJwN2s4VWJVKzlBaHA1THNMUXlDa1dRMU1wTGcxYlRKc3dEODNneTBSZFNTOGZoVVpTaURPUU9BWmJWRXFZMEJicERYSS9tMXZ3UU5uUUpBVE5PT3lEMWJHa3h5c29tYUg4SmtKcW5xSGI3YTdpRVdNejg"
+ },
+ {
+  "name": "iPhone 17 Pro",
+  "detail": "Silver",
+  "img": "/images/gear-iphone-17-pro-silver.png"
+ },
+ {
+  "name": "Apple Watch Series 11",
+  "detail": "42mm · Silver",
+  "img": "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/watch-case-42-aluminum-silver-nc-s11_VW_PF?wid=752&hei=752&fmt=png-alpha&qlt=90"
+ },
+ {
+  "name": "Oura Ring 4",
+  "detail": "Silver",
+  "img": "/images/gear-oura-ring-4-silver.png"
+ },
+ {
+  "name": "Kindle Paperwhite",
+  "detail": "E-Reader",
+  "img": "https://target.scene7.com/is/image/Target/GUEST_8608ea59-7cd0-4700-9575-7624d4dc5a89?wid=1200&hei=1200&qlt=80"
+ },
+ {
+  "name": "Sonos Beam",
+  "detail": "Gen 2 · Soundbar",
+  "img": "https://media.sonos.com/images/znqtjj88/production/c79156fe93547d1b0a993dc1fb7b381d8773737a-3000x1834.png?q=75&fit=clip&auto=format"
+ },
+ {
+  "name": "Dreame H12 Pro",
+  "detail": "Wet & Dry Vacuum",
+  "img": "https://global.dreametech.com/cdn/shop/products/20220815140236_6fe97919-7f6d-4448-b2d8-855328f93a99_600x.png?v=1663898275"
+ },
+ {
+  "name": "Philips Wake-Up Light",
+  "detail": "HF3670/1",
+  "img": "https://images.philips.com/is/image/philipsconsumer/20c2088667884c1a9881adb801170b95?$pnglarge$&wid=960"
+ }
+]
