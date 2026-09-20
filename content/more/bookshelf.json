@@ -1,0 +1,1112 @@
+[
+ {
+  "title": "Phoebe Berman's Gonna Lose It",
+  "author": "Brooke Averick",
+  "series": null,
+  "desc": "A neurotic twenty-something's very modern quest to finally have sex leads her somewhere she never expected — a hilarious and heartfelt debut about love, anxiety, and knowing yourself.",
+  "rating": 0,
+  "dark": {
+   "bg": "#180410",
+   "fg": "#d04888"
+  },
+  "light": {
+   "bg": "#f8e5ef",
+   "fg": "#680a38"
+  },
+  "url": "https://www.amazon.com/dp/B0FNVHR7CL",
+  "cover": "/content/more/covers/phoebe-berman-s-gonna-lose-it.webp",
+  "ratio": 0.663,
+  "read": "2026-06-03",
+  "readSource": "read"
+ },
+ {
+  "title": "Heir to the Empire",
+  "author": "Timothy Zahn",
+  "series": "Thrawn Trilogy · I",
+  "desc": "Five years after Endor, Grand Admiral Thrawn emerges from the Unknown Regions with a plan to restore the Empire — the novel that reignited the entire Star Wars Expanded Universe.",
+  "rating": 0,
+  "dark": {
+   "bg": "#040c10",
+   "fg": "#28a8b0"
+  },
+  "light": {
+   "bg": "#ddf0f2",
+   "fg": "#065068"
+  },
+  "url": "https://www.amazon.com/dp/0553296124",
+  "cover": "/content/more/covers/heir-to-the-empire.webp",
+  "ratio": 0.612,
+  "read": "2026-06-03",
+  "readSource": "added"
+ },
+ {
+  "title": "Dark Force Rising",
+  "author": "Timothy Zahn",
+  "series": "Thrawn Trilogy · II",
+  "desc": "Thrawn's campaign intensifies as Luke discovers a hidden fleet of warships from the Clone Wars — with Mara Jade closing in on her mission and the New Republic stretched to its limits.",
+  "rating": 0,
+  "dark": {
+   "bg": "#060810",
+   "fg": "#5068a0"
+  },
+  "light": {
+   "bg": "#e4e8f2",
+   "fg": "#162050"
+  },
+  "url": "https://www.amazon.com/dp/0553560719",
+  "cover": "/content/more/covers/dark-force-rising.webp",
+  "ratio": 0.61,
+  "read": "2026-07-04",
+  "readSource": "read"
+ },
+ {
+  "title": "Ready Player One",
+  "author": "Ernest Cline",
+  "series": null,
+  "desc": "In a dystopian 2045, an obsessed teenager hunts for a billionaire's Easter egg hidden inside a vast virtual universe — the ultimate tribute to eighties pop culture and geek mythology.",
+  "rating": 0,
+  "dark": {
+   "bg": "#020810",
+   "fg": "#10d0f0"
+  },
+  "light": {
+   "bg": "#ddf6ff",
+   "fg": "#004870"
+  },
+  "url": "https://www.amazon.com/dp/0307887448",
+  "cover": "/content/more/covers/ready-player-one.webp",
+  "ratio": 0.648,
+  "read": "2018-12-01",
+  "readSource": "read"
+ },
+ {
+  "title": "Ready Player Two",
+  "author": "Ernest Cline",
+  "series": null,
+  "desc": "After claiming Halliday's fortune and control of the OASIS, Wade discovers a new set of hidden challenges — but the stakes are now real-world survival, not just a game.",
+  "rating": 0,
+  "dark": {
+   "bg": "#070415",
+   "fg": "#c028f8"
+  },
+  "light": {
+   "bg": "#f5e8ff",
+   "fg": "#4a0070"
+  },
+  "url": "https://www.amazon.com/dp/1524761338",
+  "cover": "/content/more/covers/ready-player-two.webp",
+  "ratio": 0.656,
+  "read": null,
+  "readSource": null
+ },
+ {
+  "title": "Tomorrow, and Tomorrow, and Tomorrow",
+  "author": "Gabrielle Zevin",
+  "series": null,
+  "desc": "Two childhood friends reunite to make video games together over three decades — a sweeping novel about love, ambition, creativity, and the complicated ways we shape each other's lives.",
+  "rating": 0,
+  "dark": {
+   "bg": "#0c0618",
+   "fg": "#b850e0"
+  },
+  "light": {
+   "bg": "#f2e8ff",
+   "fg": "#3c1078"
+  },
+  "url": "https://www.amazon.com/dp/0593321200",
+  "cover": "/content/more/covers/tomorrow-and-tomorrow-and-tomorrow.webp",
+  "ratio": 0.658,
+  "read": "2024-01-11",
+  "readSource": "read"
+ },
+ {
+  "title": "Tress of the Emerald Sea",
+  "author": "Brandon Sanderson",
+  "series": null,
+  "desc": "To rescue the man she loves from a deadly pirate captain, Tress sets sail on a spore-covered sea that turns to glass at a single drop of water — a fairytale adventure from the Cosmere.",
+  "rating": 0,
+  "dark": {
+   "bg": "#030e0a",
+   "fg": "#18bc88"
+  },
+  "light": {
+   "bg": "#ddf5ee",
+   "fg": "#055040"
+  },
+  "url": "https://www.amazon.com/dp/1250899656",
+  "cover": "/content/more/covers/tress-of-the-emerald-sea.webp",
+  "ratio": 0.656,
+  "read": "2024-01-08",
+  "readSource": "read"
+ },
+ {
+  "title": "The Midnight Library",
+  "author": "Matt Haig",
+  "series": null,
+  "desc": "Nora Seed finds a library between life and death where every book holds an alternative version of her life — a beautiful meditation on regret, possibility, and what makes a life worth living.",
+  "rating": 0,
+  "dark": {
+   "bg": "#050418",
+   "fg": "#6860e8"
+  },
+  "light": {
+   "bg": "#ece8ff",
+   "fg": "#1a1080"
+  },
+  "url": "https://www.amazon.com/dp/0525559477",
+  "cover": "/content/more/covers/the-midnight-library.webp",
+  "ratio": 0.663,
+  "read": "2023-05-01",
+  "readSource": "read"
+ },
+ {
+  "title": "Six of Crows",
+  "author": "Leigh Bardugo",
+  "series": "Six of Crows · I",
+  "desc": "A criminal prodigy assembles a crew of dangerous misfits for an impossible heist at the most heavily guarded location in the world — dark, witty, and utterly gripping fantasy.",
+  "rating": 0,
+  "dark": {
+   "bg": "#080604",
+   "fg": "#e0a830"
+  },
+  "light": {
+   "bg": "#f8f2e0",
+   "fg": "#604010"
+  },
+  "url": "https://www.amazon.com/dp/125007696X",
+  "cover": "/content/more/covers/six-of-crows.webp",
+  "ratio": 0.654,
+  "read": null,
+  "readSource": null
+ },
+ {
+  "title": "Crooked Kingdom",
+  "author": "Leigh Bardugo",
+  "series": "Six of Crows · II",
+  "desc": "Kaz Brekker and his crew have been betrayed and left with nothing — now they must stage a deadly comeback against the most powerful criminals in Ketterdam in the thrilling conclusion.",
+  "rating": 0,
+  "dark": {
+   "bg": "#0c0402",
+   "fg": "#d06828"
+  },
+  "light": {
+   "bg": "#f8ece0",
+   "fg": "#582008"
+  },
+  "url": "https://www.amazon.com/dp/1627792139",
+  "cover": "/content/more/covers/crooked-kingdom.webp",
+  "ratio": 0.658,
+  "read": null,
+  "readSource": null
+ },
+ {
+  "title": "Dark Matter",
+  "author": "Blake Crouch",
+  "series": null,
+  "desc": "A physicist wakes up in a life that isn't his — same face, different family, different career — and must navigate a mind-bending multiverse of alternate choices to find his way home.",
+  "rating": 0,
+  "dark": {
+   "bg": "#060408",
+   "fg": "#8830c8"
+  },
+  "light": {
+   "bg": "#f2e8f8",
+   "fg": "#3a0868"
+  },
+  "url": "https://www.amazon.com/dp/1524763241",
+  "cover": "/content/more/covers/dark-matter.webp",
+  "ratio": 0.558,
+  "read": "2023-06-04",
+  "readSource": "read"
+ },
+ {
+  "title": "Artemis",
+  "author": "Andy Weir",
+  "series": null,
+  "desc": "Jazz Bashara lives on the first city on the moon, scraping by as a smuggler — until a seemingly simple heist pulls her into a conspiracy that threatens all of Artemis.",
+  "rating": 3,
+  "dark": {
+   "bg": "#070d1c",
+   "fg": "#d4c8a8"
+  },
+  "light": {
+   "bg": "#e8edf5",
+   "fg": "#2a3a5c"
+  },
+  "url": "https://www.amazon.com/dp/0553448145",
+  "cover": "/content/more/covers/artemis.webp",
+  "ratio": 0.646,
+  "read": "2026-03-16",
+  "readSource": "read"
+ },
+ {
+  "title": "Ruthless Vows",
+  "author": "Rebecca Ross",
+  "series": "Letters of Enchantment · II",
+  "desc": "The stunning conclusion to the Letters of Enchantment duology — as war and ancient magic collide, Roman and Iris must choose between duty and each other.",
+  "rating": 4,
+  "dark": {
+   "bg": "#140820",
+   "fg": "#c8921e"
+  },
+  "light": {
+   "bg": "#f5eedf",
+   "fg": "#6a3010"
+  },
+  "url": "https://www.amazon.com/dp/1250883180",
+  "cover": "/content/more/covers/ruthless-vows.webp",
+  "ratio": 0.646,
+  "read": "2026-03-09",
+  "readSource": "read"
+ },
+ {
+  "title": "Divine Rivals",
+  "author": "Rebecca Ross",
+  "series": "Letters of Enchantment · I",
+  "desc": "Two rival journalists at a war-torn newspaper discover each other's secret letters — a dark fantasy romance where gods walk among soldiers and love is written in ink.",
+  "rating": 0,
+  "dark": {
+   "bg": "#1a0c06",
+   "fg": "#c88020"
+  },
+  "light": {
+   "bg": "#f8f0e0",
+   "fg": "#6a3010"
+  },
+  "url": "https://www.amazon.com/dp/1250883164",
+  "cover": "/content/more/covers/divine-rivals.webp",
+  "ratio": 0.658,
+  "read": "2026-03-01",
+  "readSource": "read"
+ },
+ {
+  "title": "Atomic Habits",
+  "author": "James Clear",
+  "series": null,
+  "desc": "Tiny changes, remarkable results — a proven system for building good habits and breaking bad ones through small improvements that compound relentlessly over time.",
+  "rating": 4,
+  "dark": {
+   "bg": "#0c0c0c",
+   "fg": "#f0c000"
+  },
+  "light": {
+   "bg": "#fff8e0",
+   "fg": "#7a5000"
+  },
+  "url": "https://www.amazon.com/dp/0735211299",
+  "cover": "/content/more/covers/atomic-habits.webp",
+  "ratio": 0.663,
+  "read": "2026-01-24",
+  "readSource": "read"
+ },
+ {
+  "title": "Project Hail Mary",
+  "author": "Andy Weir",
+  "series": null,
+  "desc": "A lone astronaut wakes up deep in space with no memory — his mission may be humanity's last hope, and his only ally is an alien from a completely different world.",
+  "rating": 5,
+  "dark": {
+   "bg": "#020810",
+   "fg": "#30c0b0"
+  },
+  "light": {
+   "bg": "#e0f5f3",
+   "fg": "#0a5858"
+  },
+  "url": "https://www.amazon.com/dp/0593135202",
+  "cover": "/content/more/covers/project-hail-mary.webp",
+  "ratio": 0.663,
+  "read": "2026-01-10",
+  "readSource": "read"
+ },
+ {
+  "title": "The Hero of Ages",
+  "author": "Brandon Sanderson",
+  "series": "Mistborn · III",
+  "desc": "The ultimate fate of the Final Empire is decided as ash swallows the sky and mists devour the land — the gripping conclusion to the original Mistborn trilogy.",
+  "rating": 3,
+  "dark": {
+   "bg": "#060810",
+   "fg": "#8ab8cc"
+  },
+  "light": {
+   "bg": "#e8eff5",
+   "fg": "#1a4870"
+  },
+  "url": "https://www.amazon.com/dp/0765356147",
+  "cover": "/content/more/covers/the-hero-of-ages.webp",
+  "ratio": 0.62,
+  "read": "2026-01-21",
+  "readSource": "read"
+ },
+ {
+  "title": "The Well of Ascension",
+  "author": "Brandon Sanderson",
+  "series": "Mistborn · II",
+  "desc": "With the Lord Ruler defeated, Vin and Elend struggle to hold a crumbling kingdom together while prophecy, politics, and an ancient secret close in from all sides.",
+  "rating": 4,
+  "dark": {
+   "bg": "#040810",
+   "fg": "#80b0cc"
+  },
+  "light": {
+   "bg": "#e5ecf3",
+   "fg": "#1a4870"
+  },
+  "url": "https://www.amazon.com/dp/0765356139",
+  "cover": "/content/more/covers/the-well-of-ascension.webp",
+  "ratio": 0.618,
+  "read": "2025-09-26",
+  "readSource": "read"
+ },
+ {
+  "title": "Mistborn: The Final Empire",
+  "author": "Brandon Sanderson",
+  "series": "Mistborn · I",
+  "desc": "In an empire where ash falls from the sky and a dark Lord Ruler reigns eternal, a crew of thieves plans the ultimate heist — to steal an entire empire.",
+  "rating": 0,
+  "dark": {
+   "bg": "#040608",
+   "fg": "#80b0c8"
+  },
+  "light": {
+   "bg": "#e0eaf2",
+   "fg": "#1a4068"
+  },
+  "url": "https://www.amazon.com/dp/0765350386",
+  "cover": "/content/more/covers/mistborn-the-final-empire.webp",
+  "ratio": 0.62,
+  "read": "2025-09-08",
+  "readSource": "added"
+ },
+ {
+  "title": "Iron Flame",
+  "author": "Rebecca Yarros",
+  "series": "The Empyrean · II",
+  "desc": "Violet Sorrengail returns to Basgiath War College for another brutal year — but the secrets buried in its walls run deeper than any dragon's fire.",
+  "rating": 0,
+  "dark": {
+   "bg": "#0a0408",
+   "fg": "#a07888"
+  },
+  "light": {
+   "bg": "#f0e8e5",
+   "fg": "#5a2838"
+  },
+  "url": "https://www.amazon.com/dp/1649374528",
+  "cover": "/content/more/covers/iron-flame.webp",
+  "ratio": 0.618,
+  "read": "2025-04-26",
+  "readSource": "read"
+ },
+ {
+  "title": "Show Your Work!",
+  "author": "Austin Kleon",
+  "series": null,
+  "desc": "Ten ways to share your creativity without selling out — a manifesto for getting discovered by doing the work you love and sharing the process openly.",
+  "rating": 0,
+  "dark": {
+   "bg": "#0e0e0e",
+   "fg": "#e8e8e8"
+  },
+  "light": {
+   "bg": "#f5f5f5",
+   "fg": "#181818"
+  },
+  "url": "https://www.amazon.com/dp/076116093X",
+  "cover": "/content/more/covers/show-your-work.webp",
+  "ratio": 1,
+  "read": "2025-04-26",
+  "readSource": "read"
+ },
+ {
+  "title": "Steal Like an Artist",
+  "author": "Austin Kleon",
+  "series": null,
+  "desc": "Nothing is truly original — the best creative work builds on what came before. An inspiring manifesto about influence, theft, and finding your own voice.",
+  "rating": 4,
+  "dark": {
+   "bg": "#141414",
+   "fg": "#d8d8d8"
+  },
+  "light": {
+   "bg": "#ebebeb",
+   "fg": "#1a1a1a"
+  },
+  "url": "https://www.amazon.com/dp/0761169253",
+  "cover": "/content/more/covers/steal-like-an-artist.webp",
+  "ratio": 1.006,
+  "read": "2025-01-12",
+  "readSource": "added"
+ },
+ {
+  "title": "The Ride of a Lifetime",
+  "author": "Robert Iger",
+  "series": null,
+  "desc": "Leadership lessons from twenty years transforming Disney — how optimism, decisiveness, and creative courage can reshape an iconic company and an entire industry.",
+  "rating": 4,
+  "dark": {
+   "bg": "#0c1230",
+   "fg": "#9098c8"
+  },
+  "light": {
+   "bg": "#eaecf8",
+   "fg": "#1a2878"
+  },
+  "url": "https://www.amazon.com/dp/0399592091",
+  "cover": "/content/more/covers/the-ride-of-a-lifetime.webp",
+  "ratio": 0.658,
+  "read": "2025-01-09",
+  "readSource": "read"
+ },
+ {
+  "title": "Rogue Protocol",
+  "author": "Martha Wells",
+  "series": "Murderbot Diaries · III",
+  "desc": "Murderbot pursues a new lead on the company trying to destroy it — going undercover, reluctant as ever, and still just trying to watch its shows in peace.",
+  "rating": 3,
+  "dark": {
+   "bg": "#060e18",
+   "fg": "#30a8c8"
+  },
+  "light": {
+   "bg": "#e0f0f5",
+   "fg": "#0a5068"
+  },
+  "url": "https://www.amazon.com/dp/1250191700",
+  "cover": "/content/more/covers/rogue-protocol.webp",
+  "ratio": 0.628,
+  "read": "2024-12-15",
+  "readSource": "read"
+ },
+ {
+  "title": "The Speed of Trust",
+  "author": "Stephen M.R. Covey",
+  "series": null,
+  "desc": "Trust is not a soft skill — it's a hard economic driver. High-trust organizations move faster, spend less, and outperform low-trust ones in every measurable way.",
+  "rating": 4,
+  "dark": {
+   "bg": "#080f28",
+   "fg": "#508ac8"
+  },
+  "light": {
+   "bg": "#e8f0f8",
+   "fg": "#0a2868"
+  },
+  "url": "https://www.amazon.com/dp/1982141066",
+  "cover": "/content/more/covers/the-speed-of-trust.webp",
+  "ratio": 0.901,
+  "read": "2024-12-15",
+  "readSource": "read"
+ },
+ {
+  "title": "Fourth Wing",
+  "author": "Rebecca Yarros",
+  "series": "The Empyrean · I",
+  "desc": "Violet Sorrengail is forced into the most brutal division of war college — Riders Quadrant — where dragons choose their riders or let them die trying.",
+  "rating": 4,
+  "dark": {
+   "bg": "#100408",
+   "fg": "#a82020"
+  },
+  "light": {
+   "bg": "#f8e8e5",
+   "fg": "#6a1010"
+  },
+  "url": "https://www.amazon.com/dp/1649374178",
+  "cover": "/content/more/covers/fourth-wing.webp",
+  "ratio": 0.667,
+  "read": "2024-12-04",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Philosopher's Stone",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · I",
+  "desc": "An orphaned boy discovers he's the son of two powerful wizards and is famous in a world he never knew existed — an invitation to Hogwarts changes everything.",
+  "rating": 0,
+  "dark": {
+   "bg": "#200608",
+   "fg": "#c89028"
+  },
+  "light": {
+   "bg": "#f8f0e0",
+   "fg": "#6a3808"
+  },
+  "url": "https://www.amazon.com/dp/059035342X",
+  "cover": "/content/more/covers/harry-potter-and-the-philosopher-s-stone.webp",
+  "ratio": 0.688,
+  "read": "2022-12-01",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Chamber of Secrets",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · II",
+  "desc": "A hidden chamber beneath Hogwarts has been opened and something is petrifying students — Harry, Ron, and Hermione must uncover the monster before the school is closed forever.",
+  "rating": 0,
+  "dark": {
+   "bg": "#030a04",
+   "fg": "#3aaa40"
+  },
+  "light": {
+   "bg": "#e2f5e4",
+   "fg": "#0c4010"
+  },
+  "url": "https://www.amazon.com/dp/0439064872",
+  "cover": "/content/more/covers/harry-potter-and-the-chamber-of-secrets.webp",
+  "ratio": 0.688,
+  "read": "2023-01-20",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Prisoner of Azkaban",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · III",
+  "desc": "A dangerous prisoner has escaped from Azkaban and seems to be hunting Harry — but Sirius Black's true connection to Harry's past holds a secret that will change everything.",
+  "rating": 0,
+  "dark": {
+   "bg": "#060a12",
+   "fg": "#7080b8"
+  },
+  "light": {
+   "bg": "#e8eaf5",
+   "fg": "#1a3070"
+  },
+  "url": "https://www.amazon.com/dp/0439136369",
+  "cover": "/content/more/covers/harry-potter-and-the-prisoner-of-azkaban.webp",
+  "ratio": 0.688,
+  "read": "2023-01-24",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Goblet of Fire",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · IV",
+  "desc": "Harry is mysteriously entered into a deadly magical tournament between three schools — but the real danger has nothing to do with the competition and everything to do with Voldemort's return.",
+  "rating": 0,
+  "dark": {
+   "bg": "#140600",
+   "fg": "#f08020"
+  },
+  "light": {
+   "bg": "#fef0e0",
+   "fg": "#702800"
+  },
+  "url": "https://www.amazon.com/dp/0439139600",
+  "cover": "/content/more/covers/harry-potter-and-the-goblet-of-fire.webp",
+  "ratio": 0.688,
+  "read": "2023-01-28",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Order of the Phoenix",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · V",
+  "desc": "The wizarding world refuses to believe Voldemort has returned — Harry must form a secret student army while battling a prophecy that places him at the center of the coming war.",
+  "rating": 0,
+  "dark": {
+   "bg": "#060810",
+   "fg": "#5870c0"
+  },
+  "light": {
+   "bg": "#e5eaf5",
+   "fg": "#0c1878"
+  },
+  "url": "https://www.amazon.com/dp/0439358078",
+  "cover": "/content/more/covers/harry-potter-and-the-order-of-the-phoenix.webp",
+  "ratio": 0.688,
+  "read": "2023-02-01",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Half-Blood Prince",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · VI",
+  "desc": "Dumbledore takes Harry on a private mission to discover Voldemort's greatest secret — and Harry inherits a mysterious annotated potions textbook that changes his sixth year completely.",
+  "rating": 0,
+  "dark": {
+   "bg": "#0c0800",
+   "fg": "#c08030"
+  },
+  "light": {
+   "bg": "#f5f0e0",
+   "fg": "#5a3008"
+  },
+  "url": "https://www.amazon.com/dp/0439784549",
+  "cover": "/content/more/covers/harry-potter-and-the-half-blood-prince.webp",
+  "ratio": 0.663,
+  "read": "2023-02-15",
+  "readSource": "read"
+ },
+ {
+  "title": "Harry Potter and the Deathly Hallows",
+  "author": "J.K. Rowling",
+  "series": "Harry Potter · VII",
+  "desc": "Harry, Ron, and Hermione abandon Hogwarts to hunt down and destroy Voldemort's Horcruxes — a final hunt that leads back to the school and the greatest battle the wizarding world has ever seen.",
+  "rating": 0,
+  "dark": {
+   "bg": "#060608",
+   "fg": "#a8a0b0"
+  },
+  "light": {
+   "bg": "#f0eff2",
+   "fg": "#282038"
+  },
+  "url": "https://www.amazon.com/dp/0545010225",
+  "cover": "/content/more/covers/harry-potter-and-the-deathly-hallows.webp",
+  "ratio": 0.696,
+  "read": "2023-03-28",
+  "readSource": "read"
+ },
+ {
+  "title": "Artificial Condition",
+  "author": "Martha Wells",
+  "series": "Murderbot Diaries · II",
+  "desc": "Murderbot hitches a ride on a research A.I. to investigate a massacre in its past — a past it only partially remembers and suspects it caused.",
+  "rating": 4,
+  "dark": {
+   "bg": "#040e12",
+   "fg": "#20a898"
+  },
+  "light": {
+   "bg": "#e0f5f2",
+   "fg": "#0a5850"
+  },
+  "url": "https://www.amazon.com/dp/1250186927",
+  "cover": "/content/more/covers/artificial-condition.webp",
+  "ratio": 0.628,
+  "read": "2024-06-17",
+  "readSource": "read"
+ },
+ {
+  "title": "All Systems Red",
+  "author": "Martha Wells",
+  "series": "Murderbot Diaries · I",
+  "desc": "A part-human, part-robot security unit has secretly hacked its own governor module — now it just wants to watch TV shows and avoid talking to the humans it keeps saving.",
+  "rating": 4,
+  "dark": {
+   "bg": "#060c16",
+   "fg": "#3090b8"
+  },
+  "light": {
+   "bg": "#e0ecf5",
+   "fg": "#0a4070"
+  },
+  "url": "https://www.amazon.com/dp/1250185440",
+  "cover": "/content/more/covers/all-systems-red.webp",
+  "ratio": 0.626,
+  "read": "2024-05-26",
+  "readSource": "read"
+ },
+ {
+  "title": "Recursion",
+  "author": "Blake Crouch",
+  "series": null,
+  "desc": "A neuroscientist's memory-preservation technology seems to give people back their lost loved ones — until it begins rewriting reality and trapping the world in recursive timelines.",
+  "rating": 5,
+  "dark": {
+   "bg": "#030814",
+   "fg": "#4880d8"
+  },
+  "light": {
+   "bg": "#e5ecf8",
+   "fg": "#102868"
+  },
+  "url": "https://www.amazon.com/dp/1984820613",
+  "cover": "/content/more/covers/recursion.webp",
+  "ratio": 0.658,
+  "read": "2024-04-05",
+  "readSource": "read"
+ },
+ {
+  "title": "Creativity, Inc.",
+  "author": "Ed Catmull",
+  "series": null,
+  "desc": "The inside story of how Pixar built a culture of creative excellence — a blueprint for leading teams through fear, failure, and the relentless pursuit of originality.",
+  "rating": 5,
+  "dark": {
+   "bg": "#1a0828",
+   "fg": "#d880f8"
+  },
+  "light": {
+   "bg": "#f8e8ff",
+   "fg": "#5a1080"
+  },
+  "url": "https://www.amazon.com/dp/0812998960",
+  "cover": "/content/more/covers/creativity-inc.webp",
+  "ratio": 0.658,
+  "read": "2024-03-30",
+  "readSource": "read"
+ },
+ {
+  "title": "The Chalice of the Gods",
+  "author": "Rick Riordan",
+  "series": "Percy Jackson: Senior Year · I",
+  "desc": "Percy Jackson needs three impossible letters of recommendation from the gods to get into college — and of course each one requires a perilous new quest.",
+  "rating": 3,
+  "dark": {
+   "bg": "#061820",
+   "fg": "#28a8c0"
+  },
+  "light": {
+   "bg": "#e0f0f8",
+   "fg": "#0a5070"
+  },
+  "url": "https://www.amazon.com/dp/1368078796",
+  "cover": "/content/more/covers/the-chalice-of-the-gods.webp",
+  "ratio": 0.676,
+  "read": "2024-03-17",
+  "readSource": "read"
+ },
+ {
+  "title": "The Last Olympian",
+  "author": "Rick Riordan",
+  "series": "Percy Jackson · V",
+  "desc": "The ultimate battle for Olympus has arrived — Percy leads his friends to defend New York City as the Titan lord Kronos and his army launch their final assault.",
+  "rating": 4,
+  "dark": {
+   "bg": "#0a0c08",
+   "fg": "#c8b020"
+  },
+  "light": {
+   "bg": "#f5f2d5",
+   "fg": "#6a5808"
+  },
+  "url": "https://www.amazon.com/dp/1423101480",
+  "cover": "/content/more/covers/the-last-olympian.webp",
+  "ratio": 0.65,
+  "read": "2024-02-27",
+  "readSource": "read"
+ },
+ {
+  "title": "The Battle of the Labyrinth",
+  "author": "Rick Riordan",
+  "series": "Percy Jackson · IV",
+  "desc": "Percy and his friends must navigate Daedalus's infinite labyrinth before Luke's army can use it to invade the last safe haven for half-bloods.",
+  "rating": 4,
+  "dark": {
+   "bg": "#160e04",
+   "fg": "#c07828"
+  },
+  "light": {
+   "bg": "#f8edd8",
+   "fg": "#5a3008"
+  },
+  "url": "https://www.amazon.com/dp/1423101472",
+  "cover": "/content/more/covers/the-battle-of-the-labyrinth.webp",
+  "ratio": 0.667,
+  "read": "2024-02-11",
+  "readSource": "read"
+ },
+ {
+  "title": "Feel-Good Productivity",
+  "author": "Ali Abdaal",
+  "series": null,
+  "desc": "Forget hustle culture — discover how joy, play, and positive energy make you not just happier but genuinely more productive, creative, and effective.",
+  "rating": 4,
+  "dark": {
+   "bg": "#061808",
+   "fg": "#30c068"
+  },
+  "light": {
+   "bg": "#e5f5ec",
+   "fg": "#0a5028"
+  },
+  "url": "https://www.amazon.com/dp/0063349336",
+  "cover": "/content/more/covers/feel-good-productivity.webp",
+  "ratio": 0.652,
+  "read": "2024-01-29",
+  "readSource": "read"
+ },
+ {
+  "title": "The Titan's Curse",
+  "author": "Rick Riordan",
+  "series": "Percy Jackson · III",
+  "desc": "Percy must rescue Annabeth and the goddess Artemis with the help of the Hunters — but an ancient monster and a chilling prophecy stand in the way.",
+  "rating": 4,
+  "dark": {
+   "bg": "#0e0618",
+   "fg": "#8848c8"
+  },
+  "light": {
+   "bg": "#f0e8fc",
+   "fg": "#3a0a90"
+  },
+  "url": "https://www.amazon.com/dp/1423101456",
+  "cover": "/content/more/covers/the-titan-s-curse.webp",
+  "ratio": 0.678,
+  "read": "2024-01-29",
+  "readSource": "read"
+ },
+ {
+  "title": "The Sea of Monsters",
+  "author": "Rick Riordan",
+  "series": "Percy Jackson · II",
+  "desc": "Percy races to the Sea of Monsters — the Bermuda Triangle — to rescue his best friend Grover from the cyclops Polyphemus and restore the magical borders of Camp Half-Blood.",
+  "rating": 3,
+  "dark": {
+   "bg": "#060c18",
+   "fg": "#1890c0"
+  },
+  "light": {
+   "bg": "#ddf0f8",
+   "fg": "#0a4870"
+  },
+  "url": "https://www.amazon.com/dp/1423103349",
+  "cover": "/content/more/covers/the-sea-of-monsters.webp",
+  "ratio": 0.612,
+  "read": "2024-01-20",
+  "readSource": "read"
+ },
+ {
+  "title": "Building a Second Brain",
+  "author": "Tiago Forte",
+  "series": null,
+  "desc": "A method for externalizing your thinking and organizing information so your past learning is available whenever you need it — a trusted system that never forgets.",
+  "rating": 5,
+  "dark": {
+   "bg": "#100620",
+   "fg": "#8840d8"
+  },
+  "light": {
+   "bg": "#f0e8ff",
+   "fg": "#4808a0"
+  },
+  "url": "https://www.amazon.com/dp/1982167386",
+  "cover": "/content/more/covers/building-a-second-brain.webp",
+  "ratio": 0.658,
+  "read": "2024-01-13",
+  "readSource": "read"
+ },
+ {
+  "title": "The Lightning Thief",
+  "author": "Rick Riordan",
+  "series": "Percy Jackson · I",
+  "desc": "A troubled twelve-year-old discovers he's the son of a Greek god, is accused of stealing Zeus's master lightning bolt, and must journey across America to prevent an Olympian war.",
+  "rating": 4,
+  "dark": {
+   "bg": "#060c20",
+   "fg": "#5088e8"
+  },
+  "light": {
+   "bg": "#e8eef8",
+   "fg": "#0a2888"
+  },
+  "url": "https://www.amazon.com/dp/0786838655",
+  "cover": "/content/more/covers/the-lightning-thief.webp",
+  "ratio": 0.679,
+  "read": "2023-12-17",
+  "readSource": "read"
+ },
+ {
+  "title": "Interesting Facts about Space",
+  "author": "Emily R. Austin",
+  "series": null,
+  "rating": 4,
+  "isbn": "1668014238",
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1700273916l/176443380._SY475_.jpg",
+  "gid": "176443380",
+  "source": "goodreads",
+  "read": "2026-08-08",
+  "readSource": "added",
+  "cover": "/content/more/covers/interesting-facts-about-space.webp",
+  "ratio": 0.648
+ },
+ {
+  "title": "Light of the Jedi",
+  "author": "Charles Soule",
+  "series": "The High Republic",
+  "rating": 4,
+  "isbn": "0593157710",
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1582619576l/51637946.jpg",
+  "gid": "51637946",
+  "source": "goodreads",
+  "read": "2026-08-04",
+  "readSource": "read",
+  "cover": "/content/more/covers/light-of-the-jedi.webp",
+  "ratio": 0.658
+ },
+ {
+  "title": "Thrawn",
+  "author": "Timothy Zahn",
+  "series": "Thrawn / 1",
+  "rating": 4,
+  "isbn": "1780894848",
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1468787895l/31140332._SY475_.jpg",
+  "gid": "31140332",
+  "source": "goodreads",
+  "read": "2026-05-30",
+  "readSource": "read",
+  "cover": "/content/more/covers/thrawn.webp",
+  "ratio": 0.658
+ },
+ {
+  "title": "The PARA Method",
+  "author": "Tiago Forte",
+  "series": null,
+  "rating": 0,
+  "isbn": "1668045575",
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1683399809l/134634583._SX318_.jpg",
+  "gid": "134634583",
+  "source": "goodreads",
+  "read": "2023-12-10",
+  "readSource": "read",
+  "cover": "/content/more/covers/the-para-method.webp",
+  "ratio": 0.742
+ },
+ {
+  "title": "Foundryside",
+  "author": "Robert Jackson Bennett",
+  "series": "The Founders Trilogy / 1",
+  "rating": 0,
+  "isbn": "1524760374",
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1520460880l/37173847._SY475_.jpg",
+  "gid": "37173847",
+  "source": "goodreads",
+  "read": "2023-10-01",
+  "readSource": "read",
+  "cover": "/content/more/covers/foundryside.webp",
+  "ratio": 0.659
+ },
+ {
+  "title": "Fractal Noise",
+  "author": "Christopher Paolini",
+  "series": "Fractalverse / 0",
+  "rating": 4,
+  "isbn": "1250862485",
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1667492518l/62711641.jpg",
+  "gid": "62711641",
+  "source": "goodreads",
+  "read": "2023-07-14",
+  "readSource": "read",
+  "cover": "/content/more/covers/fractal-noise.webp",
+  "ratio": 0.658
+ },
+ {
+  "title": "Animal Farm",
+  "author": "George Orwell",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1683712895l/152094522._SY475_.jpg",
+  "gid": "152094522",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/animal-farm.webp",
+  "ratio": 0.667
+ },
+ {
+  "title": "Twenty Thousand Leagues Under the Sea",
+  "author": "Jules Verne",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1410786444l/8147904._SX318_.jpg",
+  "gid": "8147904",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/twenty-thousand-leagues-under-the-sea.webp",
+  "ratio": 0.648
+ },
+ {
+  "title": "Divergent",
+  "author": "Veronica Roth",
+  "series": "Divergent / 1",
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1374773761l/9717320.jpg",
+  "gid": "9717320",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/divergent.webp",
+  "ratio": 0.632
+ },
+ {
+  "title": "The Fault in Our Stars",
+  "author": "John Green",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1631245020l/12970552._SY475_.jpg",
+  "gid": "12970552",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/the-fault-in-our-stars.webp",
+  "ratio": 0.644
+ },
+ {
+  "title": "Eleanor & Park",
+  "author": "Rainbow Rowell",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1357154054l/17204095.jpg",
+  "gid": "17204095",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/eleanor-park.webp",
+  "ratio": 0.63
+ },
+ {
+  "title": "Looking for Alaska",
+  "author": "John Green",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1575397677l/49085770._SY475_.jpg",
+  "gid": "49085770",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/looking-for-alaska.webp",
+  "ratio": 0.667
+ },
+ {
+  "title": "We Were Liars",
+  "author": "E. Lockhart",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1752679021l/39673241.jpg",
+  "gid": "39673241",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/we-were-liars.webp",
+  "ratio": 0.646
+ },
+ {
+  "title": "The Everything Store",
+  "author": "Brad Stone",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1593885588l/54388921._SY475_.jpg",
+  "gid": "54388921",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/the-everything-store.webp",
+  "ratio": 0.644
+ },
+ {
+  "title": "Elon Musk",
+  "author": "Ashlee Vance",
+  "series": null,
+  "rating": 0,
+  "isbn": null,
+  "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1504053105l/36147818._SY475_.jpg",
+  "gid": "36147818",
+  "source": "goodreads",
+  "read": null,
+  "readSource": null,
+  "cover": "/content/more/covers/elon-musk.webp",
+  "ratio": 0.663
+ }
+]

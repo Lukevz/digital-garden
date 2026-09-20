@@ -38,9 +38,11 @@ npm run gaps     # re-check the KB gap list against the committed index
 sections add `photos.css`, `js/paper.js` and `js/photos.js` — none of which the
 landing page itself uses. No build step, no framework.
 
-⚠️ **The landing page itself is still script-free.** Both scripts are deferred and do
-nothing until a section route is on the hash — with scripting blocked, `/` renders
-exactly as it always did. See **Sections** and **Photographs** below.
+⚠️ **The landing page has one inline script, and it only picks a colour.** The two
+`.js` files are deferred and do nothing until a section route is on the hash. The
+inline `<head>` script in `index.html` picks the session's sheet colour (**The session
+tint**, below). With scripting blocked, `/` renders as the plain grey it always did.
+See **Sections** and **Photographs** below.
 
 **Two surfaces, and the distinction is the whole design.** `<body>` is a flat,
 untextured **frame** in a single solid colour (white in light mode, near-black in dark).
@@ -49,12 +51,29 @@ untextured **frame** in a single solid colour (white in light mode, near-black i
 the page is what makes the grey field read as a sheet laid down on something rather
 than as a page background.
 
-⚠️ **The paper is NOT tinted, and was tried.** A per-session pastel (seven colours
-off the branding file, mixed into the ramp at 24% light / 11% dark and picked by
-`js/paper.js`) was built and taken back out: colour on the page-sized field read as a
-tinted page background, which is not what the sheet is for. The ramp is the plain slate
-grey again, `--curl-fold` / `--curl-tip` are plain greys to match, and `paper.js` no
-longer touches the landing page at all. Don't reintroduce a `--tint`.
+**The session tint.** The landing page's sheet takes one of the seven colours off the
+branding file (Figma, Personal branding, node 31:217: `#91c3d8 #d3aad0 #eb7d95 #f8c4ae
+#94cecb #e0d6ab #aed8a6`, sampled from the blobs), picked at random per session. An
+inline script in `<head>` picks it and holds it in `sessionStorage` (reload keeps it, a
+new tab rolls again), writes `--sheet-tint` on `<html>` and adds `html.tinted`.
+
+- ⚠️ **Inline, not in `paper.js`.** A deferred script runs after first paint, and the
+  sheet would arrive grey and then change.
+- `--tint-amt` (registered `@property <percentage>`, on `body`) is how much colour is in
+  the paper: `--tint-max` (78% light, 24% dark) on the landing page, `0%` under
+  `body.full`. **It must stay registered** or it flips instead of fading.
+- ⚠️ **It rides `body.full`, not `body.reading`.** The paper drains to grey with the
+  zoom, on `--zoom-dur`, rather than while the copy is still being rubbed out on it.
+  `body.no-zoom` parks the transition, so a cold load on a section never shows colour.
+- `.sheet` derives `--sheet-hi/mid/lo` from the `--paper-*` ramp and the tint; other
+  surfaces keep using `--paper-*`, which is why every section is exactly the grey.
+- The flap's `--curl-fold` / `--curl-tip` are mixes off `--sheet-mid` (white by
+  `--curl-lift`, black by `--curl-sink`), so the folded corner is the sheet's colour.
+- ⚠️ **This was built once and taken out** (it read as a tinted page background), and
+  put back on request for the landing page only. Don't let it follow the reader into a
+  section.
+- Small type (`--ink-soft`) is ~3.3–3.9 : 1 on the tinted sheet (rose is worst), down
+  from ~4.4 : 1 on the grey.
 
 - `--frame-w` (20px) and `--sheet-radius` (36px) are the two dials, halved on the
   `max-width: 640px` breakpoint. The `inset` is written twice — the second uses
@@ -323,11 +342,18 @@ reading as depth and starts smothering the dimmest type on the page.
 ⚠️ **A small ear (`--curl-rest`) is always showing.** A pure hover-reveal with no
 resting affordance is a corner nobody finds.
 
-⚠️ **`.curl-zone` stops 104px short of the bottom.** The social row is centred,
-so as the viewport narrows its right end slides under a zone pinned to
-`bottom: 0` — and because the zone is invisible and sits above the row, the only
-symptom is GitHub quietly not being clickable. The corner it gives up is covered
-by `.curl:hover` anyway.
+⚠️ **The fold is TALL, and `--curl-open` is its HEIGHT.** 1 : 2 (`--curl-open-w` is half),
+not a square. A non-square fold's flap lands OFF the box, so `.curl-flap` is its own
+bounding box (`inset: 0 0 0 -60%`) with the polygon and the gradient angle (297deg)
+derived from the ratio; the derivation is at the rule, and changing the ratio changes
+all three. The resting ear keeps the same 1 : 2 shape so it holds while the size
+transition runs.
+
+⚠️ **`.curl-zone` is small on purpose** — the ear plus a 16px halo. It used to be the
+full height of the right edge and wider than the open fold, so the corner opened
+whenever the pointer drifted near the right side. Once open the fold keeps itself open
+via `.curl:hover`; the zone is only the approach. The old `body.reading .curl-zone`
+cut-back is gone because the base zone is already small.
 
 ⚠️ **`:focus-within` is not a nicety.** The nav links are clipped out of sight at
 rest but stay in the tab order, so tabbing to one has to be what opens the fold.
@@ -339,37 +365,24 @@ sections are what there is to reach for from the landing page, so they took the
 centred row at the foot of the sheet, and the accounts — the kind of thing you go
 looking for — moved into the corner as marks with no labels.
 
-⚠️ **`.curl-links` is a ROW along the bottom edge, where the old nav was a column up
-the right one.** The hole is the lower-right triangle, so the paper available at any
-height is exactly the distance down from the fold: a stack of five marks puts its top
-item where there are a few pixels to stand on and the corner clips it. The bottom edge
-is the one full-width line in the shape. The fit is one inequality, and it is written
-at the rule:
+⚠️ **`.curl-links` is a COLUMN down the right edge, one mark per row.** It was a row
+along the bottom while the fold was a square; now the fold is tall, the right edge has
+the room and the marks are 24px. The hole's left edge at depth `y` is `w · y / h`, so
+the TOPMOST mark is the one that can fall outside the paper:
 
 ```
---curl-open  ≥  right + row width + bottom + mark height
+--curl-open-w · (--curl-open − bottom − column height) / --curl-open  ≥  right + mark width
 ```
 
-⚠️ **Which is why the row's gap is a flat 12px and not a `vw` clamp.** A clamp sizes
-the row off the VIEWPORT while the triangle sizes off `--curl-open`, and the two stop
-agreeing the moment `--curl-open` hits either end of its own clamp — at a 1000px window
-the gap was already at its 16px ceiling while the fold was still at its floor, and the
-leading mark sat 19px outside the paper. `--curl-open`'s floor went 160 → 200 for the
-same reason. Under 640px the corner does NOT grow to 200 (on a 375px screen that is
-over half the page, parked open); the row shrinks instead, off one `font-size`, since
-`.ico` is sized in `em`.
+At the floor (160 × 320 fold, 24px marks, 16px gap): 59 against 42. Check the top mark
+when retuning. ⚠️ The gap is a flat 16px, not a `vw` clamp: the triangle sizes off
+`--curl-open`, and a viewport-sized gap stops agreeing with it at either end of its
+clamp. Under 640px it is 120 × 240 with 20px marks and a 12px gap (40 against 34).
+⚠️ The phone layout is untested in a real narrow viewport.
 
-**`#writing` and `#photos` are both live** (see **Sections** and **Photographs**);
-`#more` is still a placeholder, and the router sends anything it doesn't recognise
-back to the sheet. `More` is a link, not a menu: a real overflow menu needs its own
-design.
-
-⚠️ **`.curl-zone` is cut back in a section** (`body.reading .curl-zone`). At home it
-runs the full height of the right edge, which is free space. In a section that same
-strip lies over the article *and* over the expand control in the masthead corner — it
-swallowed the click that collapses the index, and unfurled the corner across the text
-on any mouse drift rightward while reading. In reading mode it is only the bottom
-block near the corner.
+**`#writing`, `#photos` and the four pages behind More are all live** (see
+**Sections**, **Photographs** and **More**); the router sends anything it doesn't
+recognise — `#more` included — back to the sheet. `More` is a toggle, not a link.
 
 ⚠️ **On narrow screens the parked-open corner sits over the article.** `hover: none`
 parks it open, which is right on the landing page and wrong over a column of prose.
@@ -477,12 +490,13 @@ The `.rubber` tip has no `mix-blend-mode`: it has to lighten paper *and* lift da
 in light mode and do the reverse on a dark sheet, and one blend mode only goes one
 way. It composites normally and the colour is themed, same pattern as `--curl-shadow`.
 
-**The masthead: back link left, monogram centred.** In a section the row is `[‹ WRITING]
+**The masthead: back link left, monogram centred.** In a section the row is `[‹ BACK]
 … LVZ … [expand]`. The monogram does NOT go to a corner: the home letterhead, the
 same element, shrinks to `--mark-h` (1.15 × `--mast-size`) and stays centred, and the
-section's title behind a Tabler `chevron-left` (`#back`, `.back`) is the way home. The
+word "Back" behind a Tabler `chevron-left` (`#back`, `.back`) is the way home. The
 back link shares `.links a`'s rules — same face, tracking, ink, icon weight, underline
-hover — and `js/paper.js` fills its title (`Writing` / `Photos`) in `showSurface()`.
+hover. ⚠️ It says only "Back" and names no page: every section carries its own, bolder
+title just under the rule, and a second copy of it in the corner was noise.
 It fades in with `body.reading` (`back-in`) and out with the surface on the way home
 (`fadeOut([leaving, backLink])`, so it doesn't blink off at the end of the flight).
 
@@ -566,8 +580,106 @@ to compare against a hard cut. The zoom follows `paper.dur` (×0.67, written to
 `--zoom-dur` at each toggle) rather than carrying a duration of its own, so slowing
 the rubber down slows the paper down with it.
 
-**Not built:** `#more`. It is still a link, not a menu — a real overflow menu needs
-its own design.
+## More (`js/more.js`, `more.css`)
+
+The third nav item is a toggle. Opening it drops a second row of links UNDER the
+first — the way the macOS menu bar's hidden icons drop into a bar of their own
+(Bartender) — holding **Bookshelf, Gear, App stack, Places**. The pages are the v2
+site's More menu, moved onto the sheet and kept plain: a title and a ruled list.
+
+⚠️ **The toggle is a `<button>` and is delegated off `.links`.** The erase
+(`rubOut()`) snapshots `.links`' innerHTML and `restore()` puts it back, replacing
+every node in it, so a listener on the button itself would be attached to a node
+that no longer exists. State lives in a class on `.links` (`.is-more`), which
+survives; `aria-expanded` and `inert` live in the innerHTML, which does not — hence
+`moreSection.reset()`, called from `enterReading()` on BOTH its paths (after the
+restore on the animated one, and directly on the instant one).
+
+⚠️ **The row is `position: absolute` inside `.links`**, hanging into the sheet's
+bottom padding, so opening it moves nothing — the name is centred in the grid's
+other row and would otherwise slide up every time the menu was touched. Where the
+padding is too shallow (`--sheet-pad` bottoms out at 28px) more.js writes the row's
+height into `--more-h` and `.links` rides up by the shortfall. That uses `translate`,
+NOT `transform`: `.links` carries the entrance's `settle` animation with fill-mode
+`both`, and an animated `transform` beats a declared one for as long as the fill
+holds.
+
+⚠️ **Closed means `inert`, and `splitChars()` skips `[inert]`.** The closed row is
+laid out (visibility, not display) so it can be measured; without the skip the
+erase would put a line of type under the nav for the rubber to travel along.
+
+**One surface, four routes.** `#bookshelf`, `#gear`, `#appstack`, `#places` all open
+`.folio`; `SURFACES` maps each key to it, and `surfaceKey` is the ROUTE so the router
+knows which page to paint. Moving between two of them never runs `showSurface()`, so
+`paint()` cross-fades the content itself.
+
+⚠️ **The folio is exactly as wide as the masthead** — the title, the list and the rule
+over them share one left and one right edge. It had a `max-width` once and the header
+ran past the body on both sides. Writing (reading measure) and photos (their own
+inset) are deliberately NOT matched to the header. `js/more.js` loads BEFORE `js/paper.js` for the same reason
+`js/photos.js` does.
+
+**The bookshelf is grouped by the year each book was read**, newest year first and newest
+read first inside a year, each year a band that alternates between plain paper and a faint
+wash of `--ink` (`.year:nth-child(odd)`; `color-mix` on `--ink`, so one declaration serves
+both themes). Books with no usable date are filed last under **"< [oldest year we can
+date]"**, currently `< 2018`. ⚠️ The `<` is the site's chevron icon, not a character: the
+face has no `<` glyph and the fallback font's would be the one wrong mark on the page.
+
+⚠️ **The dates are `read` in `content/more/bookshelf.json`, stamped by
+`build/read-dates.mjs`** from the public Goodreads RSS feed (`list_rss/<user id>`; no login
+or key — the normal `review/list` page is behind a sign-in wall). `readSource` says where
+each came from: `"read"` is Goodreads' own date read, `"added"` is the day it was added
+(an estimate, used only when there is no date read), `null` is undated. Several Goodreads
+read dates sit on the 1st of a month, which is month precision — the shelf only uses the
+year. A day with five or more additions is a bulk import, not a reading day, and is never
+used as a fallback (2023-06-19 is one; it is why Six of Crows and Crooked Kingdom are
+undated). Matching is against the `read` shelf only, so an unread copy (to-read, DNF)
+cannot lend its date. The script also ADDS any book on the Goodreads read shelf that the
+site lacks (15 so far: `source: "goodreads"`, carrying `isbn` / `image` instead of an
+Amazon link), then `build/make-covers.mjs` fetches their covers. Re-run both after
+finishing a book.
+
+**The bookshelf is covers only** — no titles, blurbs or ratings on the page (they stay in
+the JSON), eight to a row on a wide sheet, six under 1100px, four under 760px. Bottom-
+aligned and never cropped to one shape (a few covers are square); each `<img>` carries
+its own `aspect-ratio` so the shelf doesn't jump as they land. The covers are not
+clickable: several of the Amazon links in the v2 data point at the wrong book.
+
+⚠️ **Covers come from `build/make-covers.mjs`** (`npm install --no-save sharp` first;
+files land in `content/more/covers/`, 320px WebP). Amazon's image host by ISBN comes
+first, because the ISBN is the ASIN in the row's link and so the edition Luke picked.
+**Open Library by ISBN is NOT to be trusted** — it returned the wrong book for several
+Percy Jackson titles. Even Amazon is wrong where the v2 data is: the "Iron Flame" and
+"Fourth Wing" ASINs are each other's, and the Last Olympian / Battle of the Labyrinth
+ones are shuffled. Those are pinned in the script (`PINNED`, `ISBN_FIX`) and were
+chosen by looking at them; check the contact sheet by eye after any re-run.
+
+**Data is static JSON** in `content/more/` (`bookshelf`, `gear`, `appstack`),
+extracted from the arrays in the v2 `js/main.js` (`git show 8bda88c:js/main.js`).
+The local product images (`images/gear-*`, `images/app-stack-*`) were restored from
+the same commit; the rest still hotlink the vendor, as v2 did, and hide themselves
+on error.
+
+⚠️ **Gear shots sit on a light tile** (`.entry-mark--gear`). They are a mixed set —
+white-background photos, cut-out PNGs, a few on black — and set straight on grey
+paper they are a scatter of bright rectangles and holes. `mix-blend-mode: multiply`
+was tried and blacks out the transparent ones.
+
+⚠️ **Places is the v2 Mapbox map, on the paper.** Land fill is taken off so the
+sheet is the land, roads are hidden, the sea is a wash. Mapbox loads on the FIRST
+visit to the page (~700KB). The token comes from `/api/mapbox-token`
+(`MAPBOX_PUBLIC_TOKEN` on Vercel), else the gitignored local `mapbox-config.js`;
+pins from `/api/places` (`GOOGLE_MY_MAPS_ID`). No token → a one-line note, not a
+blank plate. The map is `remove()`d in `leave()` to free the WebGL context.
+
+⚠️ **The tab must be VISIBLE to test the transitions.** In a background tab
+animations freeze and every `finished` promise hangs, so a route appears to stall
+half-way. `paper.enabled = false` tests the routing logic on its own.
+
+⚠️ **Known, not fixed:** at phone widths the dog-ear is parked open (`hover: none`)
+and its flap covers the right end of the nav row — Photos and More included — so the
+row is reachable only where it clears the corner.
 
 ## Photographs (`js/photos.js`, `photos.css`)
 

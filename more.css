@@ -1,0 +1,442 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   More — the row behind the third nav item, and the four plain pages it opens
+   (bookshelf, gear, app stack, places).
+
+   Kept out of styles.css for the reason photos.css and intro.css are: it only
+   ever adds to the sheet and never touches it. The one thing it shares with
+   styles.css is the nav's own rules — `.links a` already styles the row's
+   anchors (they are descendants of `.links`), and the toggle was added to that
+   selector list there.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Air between the nav row and the row under it. */
+  --more-gap: 14px;
+}
+
+/* ══ The Bartender row ═════════════════════════════════════════════════════
+   More opens a second row UNDER the first — the way the macOS menu bar's
+   hidden icons drop into a bar of their own — and the first row stays put.
+
+   ⚠️ Absolutely positioned inside `.links`, so opening it changes no layout:
+   the name is centred in the grid's other row and would otherwise slide up
+   every time the menu was touched. It hangs into the sheet's own bottom
+   padding, which is where there is room for it.
+
+   ⚠️ …and where there isn't (`--sheet-pad` bottoms out at 28px), js/more.js
+   writes the row's height into `--more-h` and the nav rides up by exactly the
+   shortfall. `translate`, not `transform`: `.links` carries the entrance's
+   `settle` animation with fill-mode `both`, and an animated `transform` beats
+   a declared one for as long as that fill holds — which is forever. */
+.links.is-more {
+  translate: 0 calc(-1 * max(0px, var(--more-h, 26px) + var(--more-gap) - var(--sheet-pad)));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .links { transition: translate 320ms cubic-bezier(0.22, 0.75, 0.18, 1); }
+}
+
+.links-more {
+  position: absolute;
+  top: calc(100% + var(--more-gap));
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px clamp(16px, 3.5vw, 40px);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--frame-w) - 2 * var(--sheet-pad));
+  /* Closed: out of sight, out of the tab order (`inert`, set in the markup and
+     by js/more.js), and — via visibility — out of hit-testing while it fades. */
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 240ms;
+}
+.links.is-more .links-more {
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* A hairline drawn out from the middle above the row — the bar the row sits
+   in, as far as this page draws one. */
+.links-more::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: calc(-0.5 * var(--more-gap));
+  height: 1px;
+  background: var(--rule);
+  transform: scaleX(0);
+  transition: transform 280ms cubic-bezier(0.22, 0.75, 0.18, 1);
+}
+.links.is-more .links-more::before { transform: scaleX(1); }
+
+.links-more a {
+  opacity: 0;
+  transform: translateY(-7px);
+  transition:
+    opacity 200ms ease,
+    transform 260ms cubic-bezier(0.22, 0.75, 0.18, 1),
+    color 200ms ease,
+    border-color 200ms ease;
+}
+.links.is-more .links-more a {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(90ms + var(--i, 0) * 45ms), calc(90ms + var(--i, 0) * 45ms), 0s, 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .links,
+  .links-more,
+  .links-more::before,
+  .links-more a { transition: none !important; }
+}
+
+/* The toggle is a <button>: everything a link gets from the browser, it has to
+   be told. */
+.links .more-toggle {
+  appearance: none;
+  background: none;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-inline: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+/* The three dots turn a quarter when the row is out, so the control says what
+   it will do next: there is something to fold back. */
+.more-toggle .ico { transition: transform 260ms cubic-bezier(0.22, 0.75, 0.18, 1); }
+.more-toggle[aria-expanded="true"] .ico { transform: rotate(90deg); }
+
+/* ══ The page ══════════════════════════════════════════════════════════════
+   The fourth surface a section can open onto, and the plainest: a title and
+   a list, in the sheet's own face, on the same grid cell the writing spread
+   uses, and exactly as wide as the masthead above it: the title, the list and
+   the rule over them share one left and one right edge. Its own scroller, like `.page-scroll` — `html, body { overflow:
+   hidden }` is untouched and the sheet still cannot move.
+
+   ⚠️ `:not([hidden])` carries the `display` for the reason `.spread` does. */
+.folio:not([hidden]) {
+  display: block;
+  min-height: 0;
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+.folio.is-in { opacity: 1; }
+
+.folio-scroll {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  /* Clear the dog-ear so the last row never ends under the corner. */
+  padding-bottom: clamp(36px, 6vh, 72px);
+  scrollbar-width: none;
+}
+.folio-scroll::-webkit-scrollbar { display: none; }
+
+.folio-head { margin-bottom: clamp(18px, 3vh, 30px); }
+
+/* Content swaps by fading, not cutting — a page moving to another page in the
+   same surface (gear → bookshelf) never passes through the home sheet. */
+.folio-body {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 320ms ease, transform 320ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.folio-body.is-in { opacity: 1; transform: none; }
+
+/* ── The list ──────────────────────────────────────────────────────────────
+   Ruled rows, the way the writing index is ruled: a hairline above each, and
+   none below the last. Columns only as far as the width allows. */
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  column-gap: clamp(22px, 3.4vw, 52px);
+}
+
+.entry {
+  border-top: 1px solid var(--rule);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .folio-body.is-in .entry {
+    animation: settle 520ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+    animation-delay: calc(min(var(--i), 18) * 35ms);
+  }
+}
+
+.entry-in {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 1.8vw, 20px);
+  padding: 14px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.entry-in--top { align-items: flex-start; }
+
+.entry-text { min-width: 0; display: block; }
+
+.entry-name {
+  display: block;
+  font-size: clamp(0.62rem, 1vw, 0.78rem);
+  line-height: 1.6;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid transparent;
+  width: fit-content;
+  transition: border-color 200ms ease;
+}
+a.entry-in:hover .entry-name,
+a.entry-in:focus-visible .entry-name { border-bottom-color: var(--rule); }
+a.entry-in:focus-visible { outline: none; }
+
+.entry-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ── Marks beside the text ─────────────────────────────────────────────────
+   Small, and set on the sheet rather than on cards: a hairline, no shadow —
+   the same rule photos.css holds its plates to. */
+.entry-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+}
+.entry-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* ⚠️ The gear shots are a mixed set: product photographs on white, cut-out
+   PNGs with transparency, a few on black. Set straight on grey paper they are
+   a scatter of bright rectangles and holes, so every one sits on the same
+   light tile — a plate, the way a photograph is pasted onto the sheet. */
+.entry-mark--gear {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 6px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+/* An app icon is already a rounded square; give it the OS's own proportions. */
+.entry-mark--app img {
+  width: 100%;
+  height: 100%;
+  border-radius: 22%;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+/* ── Years ─────────────────────────────────────────────────────────────────
+   One band per year read, stacked with no gap and alternating between the
+   plain paper and a faint wash of ink, so the rows are told apart by tone and
+   not by a rule. Derived from --ink, so the one declaration is right in both
+   themes.
+
+   ⚠️ Bands are the folio's own width — they do not bleed past the title and the
+   header rule the way a zebra table would. The covers inside are inset by the
+   band's padding instead. */
+.years { display: block; }
+
+.year {
+  padding: clamp(14px, 1.8vw, 24px);
+  border-radius: 6px;
+}
+.year:nth-child(odd) { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+
+.year-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(12px, 1.6vw, 20px);
+}
+.year-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  letter-spacing: 0.16em;
+  -webkit-text-stroke: 0.035em currentColor;
+}
+/* The chevron is a mark, not a word: same hairline weight as the nav's, and
+   pulled in so the "<" and the year read as one unit. */
+.year-label .ico { width: 1.15em; height: 1.15em; stroke-width: 1.6; margin-left: -0.35em; }
+.year-count {
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ── The shelf ─────────────────────────────────────────────────────────────
+   Covers only: eight to a row on a wide sheet, six on a laptop, and fewer as it
+   narrows. Bottom-aligned, so the odd square one sits on the same line as the
+   rest, the way books stand on a shelf. A hairline, no shadow — the rule
+   photos.css holds its plates to. */
+.shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(14px, 1.8vw, 24px) clamp(12px, 1.6vw, 22px);
+}
+@media (max-width: 1100px) { .shelf { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 760px)  { .shelf { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 480px)  { .shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.book {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rule);
+  /* Held until the image lands, so a slow cover is a pale slot, not a gap. */
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .folio-body.is-in .shelf-item {
+    animation: settle 520ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+    animation-delay: calc(min(var(--i), 24) * 25ms);
+  }
+}
+
+/* ── Places ────────────────────────────────────────────────────────────────
+   One plate: the map, on a hairline. The scroller becomes a column so the
+   map takes whatever height the title leaves it. */
+.folio-scroll--map {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.folio-scroll--map .folio-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.map {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--rule);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.map.is-in { opacity: 1; }
+
+.map-note {
+  margin: 0;
+  padding-top: 14px;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* When the map can't load (no token, blocked script), the places are a list
+   instead — the page should never be a blank plate. */
+.folio-scroll--map .entries { overflow-y: auto; scrollbar-width: none; }
+
+/* Mapbox's own chrome, brought into the sheet's voice. */
+.map .mapboxgl-ctrl-group {
+  background: var(--frame);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+.map .mapboxgl-ctrl-group button + button { border-top-color: var(--rule); }
+.map .mapboxgl-ctrl button .mapboxgl-ctrl-icon { filter: none; }
+@media (prefers-color-scheme: dark) {
+  .map .mapboxgl-ctrl button .mapboxgl-ctrl-icon { filter: invert(1); }
+}
+.map .mapboxgl-ctrl-attrib { background: transparent; color: var(--ink-soft); }
+.map .mapboxgl-ctrl-attrib a { color: inherit; }
+
+.map .mapboxgl-popup-content {
+  padding: 14px 16px 16px;
+  border-radius: 4px;
+  background: var(--frame);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--rule), 0 8px 24px rgba(0, 0, 0, 0.14);
+  font-family: inherit;
+}
+.map .mapboxgl-popup-close-button { color: var(--ink-soft); font-size: 18px; }
+.map .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.map .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+.map .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip { border-bottom-color: var(--frame); }
+.map .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.map .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.map .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip { border-top-color: var(--frame); }
+.map .mapboxgl-popup-anchor-left .mapboxgl-popup-tip { border-right-color: var(--frame); }
+.map .mapboxgl-popup-anchor-right .mapboxgl-popup-tip { border-left-color: var(--frame); }
+
+.pop-name {
+  margin: 0;
+  padding-right: 14px;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.pop-meta {
+  margin: 2px 0 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.pop-desc {
+  margin: 8px 0 0;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.pop-photos {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  overflow-x: auto;
+}
+.pop-photos img {
+  height: 76px;
+  width: auto;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+/* ── Narrow screens ────────────────────────────────────────────────────────
+   Marks shrink a touch; the list is one column already (auto-fill), so
+   nothing else has to change. */
+@media (max-width: 640px) {
+  .links-more { gap: 8px 18px; }
+  .entry-mark { width: 48px; height: 48px; }
+  /* The dog-ear parks open here and sits over the foot of the page. */
+  .folio-scroll { padding-bottom: calc(var(--curl-open) + 24px); }
+}
