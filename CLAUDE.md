@@ -688,9 +688,11 @@ erase would put a line of type under the nav for the rubber to travel along.
 knows which page to paint. Moving between two of them never runs `showSurface()`, so
 `paint()` cross-fades the content itself.
 
-⚠️ **The folio is exactly as wide as the masthead** — the title, the list and the rule
-over them share one left and one right edge. It had a `max-width` once and the header
-ran past the body on both sides. Writing (reading measure) and photos (their own
+⚠️ **The folio is capped at `--folio-measure` (960px, on `.folio`), centred** — via
+`padding-inline` on `.folio-scroll`, not a `max-width`, so the wheel works across the whole
+sheet. Title, list and rule still share one left and one right edge (it once had a
+`max-width` on the body alone and the header ran past it on both sides). Below 960px it is
+the masthead's width again. Writing (reading measure) and photos (their own
 inset) are deliberately NOT matched to the header. `js/more.js` loads BEFORE `js/paper.js` for the same reason
 `js/photos.js` does.
 

@@ -125,6 +125,7 @@
 
    ⚠️ `:not([hidden])` carries the `display` for the reason `.spread` does. */
 .folio:not([hidden]) {
+  --folio-measure: 960px;
   display: block;
   min-height: 0;
   opacity: 0;
@@ -140,6 +141,10 @@
   box-sizing: border-box;
   /* Clear the dog-ear so the last row never ends under the corner. */
   padding-bottom: clamp(36px, 6vh, 72px);
+  /* The column is capped by PADDING, not a max-width, so the scroller stays the
+     folio's full width and the wheel works anywhere on the sheet — the same
+     reason `.page-scroll` does it (styles.css). */
+  padding-inline: max(0px, calc((100% - var(--folio-measure)) / 2));
   scrollbar-width: none;
 }
 .folio-scroll::-webkit-scrollbar { display: none; }
