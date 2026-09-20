@@ -167,6 +167,17 @@ replay is only ever put on the bio and the social row.
 percentage width on an inline-block resolves against the containing block, not
 the text, so it would sweep the whole column instead of the name.
 
+⚠️ **The typewriter's hidden start state is a DECLARATION, and its fill is
+`forwards`, never `both`.** A stepped animation is already at 1/n at progress
+0, and engines disagree about whether the BEFORE phase clamps that back to 0:
+Chrome does, WebKit shows the first step — so on a backwards fill the letter L
+sits on screen for the whole delay before anything types. Declaring the start
+state sidesteps the disagreement instead of betting on one engine.
+
+⚠️ **The clip's vertical insets are negative** (`-0.3em`). The name's line box
+is `line-height: 1`, which is shorter than the font's own ascent, so a plain
+`inset(0 …)` shaves the tops off the caps.
+
 ⚠️ **The clip rides `.name-home`, not the `<h1>`.** `js/paper.js` FLIPs the
 `<h1>` into the corner on a section open and measures its box to do it;
 shrink-wrapping that box moves the target out from under the measurement. The

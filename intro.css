@@ -116,7 +116,18 @@
   .name-home,
   .name:not(:has(.name-home)) {
     display: inline-block;
-    animation: type-on 950ms steps(12, jump-start) var(--t-name) both;
+    /* ⚠️ The hidden state is a DECLARATION, and the fill is `forwards`, never
+       `both`. A stepped animation is already at 1/n at progress 0, and engines
+       disagree about whether the BEFORE phase clamps that back to 0 — Chrome
+       does, WebKit shows the first step. Where it doesn't clamp, the letter L
+       sits on screen for the whole delay before anything types. Declaring the
+       start state sidesteps the disagreement entirely.
+
+       The vertical insets are negative so the clip can't trim the caps: the
+       line box is `line-height: 1`, which is shorter than the font's own
+       ascent, so an `inset(0 …)` would shave the tops off. */
+    clip-path: inset(-0.3em 100% -0.3em 0);
+    animation: type-on 950ms steps(12, jump-start) var(--t-name) forwards;
   }
 
   /* The caret hangs off the <h1>, which is NOT the clipped box — so it needs
@@ -181,8 +192,8 @@
 @keyframes wipe-u { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
 
 @keyframes type-on {
-  from { clip-path: inset(0 100% 0 0); }
-  to   { clip-path: inset(0 0 0 0); }
+  from { clip-path: inset(-0.3em 100% -0.3em 0); }
+  to   { clip-path: inset(-0.3em 0 -0.3em 0); }
 }
 
 @keyframes caret-blink {
