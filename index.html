@@ -18,8 +18,10 @@
 
   <link rel="icon" href="/v1/images/favicon.svg" type="image/svg+xml">
 
-  <!-- The single typeface. Preloaded because every glyph on the page is set in
-       it — a swap flash here is the whole layout reflowing, not one heading. -->
+  <!-- Both faces are preloaded: Geist sets everything that is read and Wingman
+       the wordmark and headings, so a swap flash in either is the layout
+       reflowing rather than one line of type. -->
+  <link rel="preload" href="/fonts/geist/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/taywingman/TAYWingman.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
   <!-- The loading sequence. Kept out of styles.css so it can be worked on
@@ -55,14 +57,59 @@
       <span class="spec-label spec-label--h">24</span>
     </div>
 
-    <main class="lockup">
-      <h1 class="name">Luke van Zyl</h1>
-      <p class="bio">
-        I&rsquo;m a product designer, digital tinkerer,<br>
-        and systems thinker. Currently head<br>
-        of design at Instinct.
-      </p>
-    </main>
+    <!-- Letterhead. Printed on the stationery, so it is there before anything
+         is written on the sheet and it outlives the draughtsman's marks. -->
+    <img class="letterhead" src="/images/lvz-monogram.svg" alt="" width="1641" height="621" decoding="async">
+
+    <!-- The masthead row. At home this is nothing but the centred lockup, laid
+         out exactly as it always was; in a section it stretches to the sheet's
+         width, the name shrinks into the top-left corner, and the reader's
+         expand control joins it on the right. Wrapping the lockup rather than
+         restyling it is what keeps the home layout untouched. -->
+    <div class="masthead">
+      <main class="lockup">
+        <!-- The name is the one thing the erase never takes. In a section the
+             small version of it is the way back, which is why it's a link. -->
+        <h1 class="name"><a class="name-home" href="#">Luke van Zyl</a></h1>
+        <p class="bio">
+          I&rsquo;m a product designer, digital tinkerer,<br>
+          and systems thinker. Currently head<br>
+          of design at Instinct.
+        </p>
+      </main>
+
+      <!-- Collapses the index so the piece is the only thing left on the
+           sheet. Hidden until a section opens; js/paper.js owns its state. -->
+      <button class="expand" id="expand" type="button" aria-pressed="false" hidden>
+        <svg class="expand-icon expand-icon--out" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6.4 1.9H1.9v4.5M9.6 14.1h4.5V9.6"/>
+          <path d="M1.9 1.9l4.8 4.8M14.1 14.1L9.3 9.3"/>
+        </svg>
+        <svg class="expand-icon expand-icon--in" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1.9 6.4h4.5V1.9M14.1 9.6H9.6v4.5"/>
+          <path d="M1.9 1.9l4.5 4.5M14.1 14.1L9.6 9.6"/>
+        </svg>
+        <span class="sr-only" id="expandLabel">Hide the index</span>
+      </button>
+    </div>
+
+    <!-- The reading spread: the index of titles on the left, the open piece on
+         the right, each scrolling its own column. Empty and hidden until a
+         section is routed to, so with JS off it never exists. -->
+    <section class="spread" id="spread" hidden aria-label="Writing">
+      <nav class="index" id="index">
+        <ol class="index-list" id="indexList"></ol>
+      </nav>
+      <article class="page">
+        <div class="page-scroll" id="pageScroll">
+          <header class="page-head">
+            <h2 class="page-title" id="pageTitle"></h2>
+            <p class="page-meta" id="pageMeta"></p>
+          </header>
+          <div class="prose" id="prose"></div>
+        </div>
+      </article>
+    </section>
 
     <footer class="links">
       <a href="https://www.linkedin.com/in/lukevz/" rel="me noopener">LinkedIn</a>
@@ -71,6 +118,11 @@
       <a href="https://www.instagram.com/lukevanzyl/" rel="me noopener">Instagram</a>
       <a href="https://github.com/Lukevz" rel="me noopener">GitHub</a>
     </footer>
+
+    <!-- The rubber tip. Rides along each line of type as the copy is erased;
+         its position is driven from js/paper.js. Sits above everything, so it
+         passes over the words rather than under them. -->
+    <div class="erase" aria-hidden="true"><span class="rubber" id="rubber"></span></div>
 
     <!-- Hover the right edge and the bottom-right corner lifts, the way you
          lift a page to see what's under it. The dog-ear is two triangles:
@@ -90,6 +142,10 @@
     </div>
 
   </div>
+
+  <!-- Sections only. The landing page itself needs none of this — with the
+       script blocked, `/` is the page it has always been. -->
+  <script src="/js/paper.js" defer></script>
 
 </body>
 </html>

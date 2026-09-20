@@ -13,6 +13,25 @@
    paper scan is not.
    ────────────────────────────────────────────────────────────────────────── */
 
+/* ── Type ──────────────────────────────────────────────────────────────────
+   Two families with one job each. Wingman is a hand-drawn 1950s caps face: it
+   has one weight, no italic, and no lowercase worth setting — everything that
+   makes it a good wordmark makes it a bad paragraph. It is the DISPLAY face,
+   used for the wordmark, the draughtsman's numerals and a section's headings.
+   Geist sets everything anyone actually reads.
+
+   ⚠️ Reach for --font-display / --font-body rather than naming either family
+   at a rule. The split is the point; a hardcoded family is how a paragraph
+   quietly ends up in the display face again. */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-Variable.woff2') format('woff2-variations'),
+       url('/fonts/geist/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'TAY Wingman';
   src: url('/fonts/taywingman/TAYWingman.woff2') format('woff2'),
@@ -23,6 +42,9 @@
 }
 
 :root {
+  --font-display: 'TAY Wingman', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
   /* The two dials the brief is written in. */
   --frame-w: 20px;
   --sheet-radius: 24px;
@@ -84,7 +106,7 @@ body {
   margin: 0;
   background: var(--frame);
   color: var(--ink);
-  font-family: 'TAY Wingman', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -141,21 +163,79 @@ body {
   opacity: var(--mottle-opacity);
 }
 
+/* ── Letterhead ────────────────────────────────────────────────────────────
+   The monogram at the head of the sheet. It is *stationery*, not content —
+   pre-printed on the paper, so it is there before anything is written and it
+   is still there after the draughtsman's marks have gone.
+
+   ⚠️ The greyscale is BAKED INTO THE ARTWORK, not applied as a CSS filter,
+   because the monogram is two different kinds of thing and no single filter
+   serves both themes. The L is a solid shape filled with soft colour blobs;
+   the V and the Z are thin strokes. Desaturating leaves the blobs light
+   (fine on either sheet) and the strokes near-black (invisible on a dark
+   one) — and adding `invert()` for dark fixes the strokes by pushing the
+   blobs dark instead, so the two halves end up in opposite registers. The
+   only part that actually needs to flip is the strokes, so the SVG carries
+   its own `prefers-color-scheme` rule for them (see the file) and the fills
+   are converted once, scaled down a little so they read on pale paper too.
+
+   Kept as an <img> rather than inlined: an <img>-embedded SVG still honours
+   its own stylesheet and media queries, which is all the theming this needs,
+   and it keeps 6KB of paths out of the markup. */
+.letterhead {
+  position: absolute;
+  top: clamp(36px, 6.4vh, 62px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(88px, 10.5vw, 146px);
+  height: auto;
+  z-index: 1;
+  pointer-events: none;
+  /* Held in a variable because the intro fades the letterhead ON, and a
+     generic 0 → 1 keyframe would overshoot this resting value and leave the
+     monogram heavier than it was authored to be. intro.css animates TO this. */
+  --letterhead-opacity: 0.9;
+  opacity: var(--letterhead-opacity);
+}
+
+@media (prefers-color-scheme: dark) {
+  .letterhead { --letterhead-opacity: 0.82; }
+}
+
 /* ── Copy ──────────────────────────────────────────────────────────────── */
-.lockup,
+.masthead,
+.spread,
 .links {
   position: relative;
   z-index: 1;
 }
 
-.lockup {
+/* The masthead is the grid item; the lockup inside it only sets the copy. At
+   home the two are indistinguishable — the wrapper exists so a section can
+   stretch the row and hang the expand control off its right edge without the
+   centred home layout having to know about either. */
+.masthead {
   place-self: center;
+  max-width: 100%;
+}
+
+.lockup {
   text-align: center;
   max-width: 100%;
 }
 
+/* The name is a link because in a section the small version of it is the way
+   back. At home it has nothing to point at, so it reads as plain type. */
+.name-home {
+  color: inherit;
+  text-decoration: none;
+  cursor: default;
+  transition: color 200ms ease;
+}
+
 .name {
   margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(2.4rem, 8.5vw, 6.25rem);
   font-weight: 400;
   line-height: 1;
@@ -166,14 +246,41 @@ body {
   margin-right: -0.1em;
 }
 
+/* With the name gone from the hero this is the lead copy, so it carries a
+   little more weight. The old top margin was the gap under the name; with
+   nothing above it, it only pushed a centred block off centre. */
 .bio {
-  margin: clamp(28px, 4.5vh, 52px) 0 0;
-  font-size: clamp(0.8rem, 1.85vw, 1.25rem);
+  margin: 0;
+  /* The hero line stays in the display face. It is the one piece of running
+     copy that is set as a lockup rather than read as a paragraph — three
+     hand-broken lines, no name above them — so it belongs with the wordmark,
+     not with the body text. The social row below it is Geist: those are
+     utility labels, and Wingman has no legibility to spare at that size. */
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2.3vw, 1.6rem);
   line-height: 2.15;
   text-transform: uppercase;
   letter-spacing: 0.155em;
   margin-right: -0.155em;
   color: var(--ink);
+}
+
+/* ── The hero has no name on it ────────────────────────────────────────────
+   The letterhead is the identity at home now; the wordmark only exists in the
+   corner of a section.
+
+   ⚠️ Hidden with `visibility` + `position: absolute`, NOT `display: none`.
+   flyName() in js/paper.js measures this element on the way into a section
+   and divides by its width — `display: none` gives a zero-width rect, so the
+   scale comes out Infinity and the flight paints garbage for a few frames.
+   Taking it out of flow keeps the box real and measurable while showing
+   nothing, so the flight degrades to an invisible no-op instead of breaking.
+   `visibility` also inherits, which is what keeps the typewriter's caret from
+   blinking away on an empty sheet. */
+body:not(.reading) .name {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ── Links ─────────────────────────────────────────────────────────────── */
@@ -283,6 +390,7 @@ body {
   z-index: 1;
   pointer-events: none;
   color: var(--spec-ink);
+  font-family: var(--font-display);
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -599,4 +707,569 @@ body {
 
 @media (max-width: 640px) {
   :root { --curl-open: 150px; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Sections — the reading spread.
+
+   A section doesn't navigate away from the sheet; it clears it. The bio and
+   the social row are ERASED (a soft-edged line sweeps down the paper, see
+   `.erase` below and `erase()` in js/paper.js), the name survives and flies
+   into the top-left corner as a masthead, and the spread takes the room the
+   lockup was standing in: the index of titles on the left, the open piece on
+   the right.
+
+   Everything here is inert until `body.reading` is on, and the spread itself
+   doesn't exist in the DOM's flow until js/paper.js unhides it — so with
+   scripting off, `/` is exactly the page it was before any of this.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --index-w: clamp(148px, 19vw, 232px);
+  --index-h: clamp(96px, 22vh, 180px);   /* the stacked, narrow-screen variant */
+  --index-gutter: clamp(14px, 2vw, 26px);
+  /* ⚠️ A px measure, not `ch`. The cap sits on the scroller so the header and
+     the body share one left edge (below), but the scroller is set at 1rem
+     while the prose is set smaller — so a `ch` measure resolves against the
+     WRONG font and came out around 115 characters to the line. */
+  --measure: clamp(420px, 44vw, 620px);
+  /* Pencil-wash emphasis. The face has one weight and `font-synthesis: none`,
+     so <strong> cannot get heavier — it gets highlighted instead. */
+  --wash: rgba(18, 23, 26, 0.10);
+}
+
+/* Collapsing the index is a reading preference, so it persists (js/paper.js).
+   Zeroing the track rather than hiding the column is what lets the change be
+   a transition instead of a jump. */
+body.solo {
+  --index-w: 0px;
+  --index-h: 0px;
+  --index-gutter: 0px;
+}
+
+/* ── Reading mode ──────────────────────────────────────────────────────────
+   The sheet's grid inverts: at home it is [1fr lockup / auto links], which
+   centres the name in the page and parks the social row at the foot. Here it
+   becomes [auto masthead / 1fr spread], which pins the masthead to the top
+   and gives everything else to the reader. `minmax(0, 1fr)` rather than `1fr`
+   — a bare `1fr` floors at min-content, and a long article would push the
+   spread taller than the sheet instead of scrolling inside it. */
+body.reading .sheet {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+body.reading .masthead {
+  place-self: start stretch;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(16px, 3vw, 40px);
+  padding-bottom: clamp(12px, 1.8vh, 20px);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: clamp(16px, 2.6vh, 32px);
+}
+
+body.reading .lockup { text-align: left; }
+body.reading .bio,
+body.reading .links { display: none; }
+
+/* ⚠️ The tracking does NOT change between the two states, though a masthead
+   this small would normally want more. The flight from centre to corner is a
+   measured FLIP (flyName() in js/paper.js) whose scale factor is the ratio of
+   the two rendered text widths — which only equals the font-size ratio while
+   the tracking is identical at both ends. Open the masthead up and the word
+   still lands at the right overall width, but with the glyphs and the gaps
+   divided differently, and the handover at the end of the flight pops. */
+body.reading .name { font-size: clamp(1rem, 1.9vw, 1.5rem); }
+
+body.reading .name-home { cursor: pointer; position: relative; }
+
+/* ── The masthead is the monogram, not the word ────────────────────────────
+   Off the home page the name in the corner becomes the letterhead mark. It is
+   laid OVER the word rather than replacing it, and that is not a stylistic
+   choice — it is what keeps flyName() working.
+
+   ⚠️ `color: transparent`, never `display: none`, `font-size: 0` or swapping
+   the element's content. flyName() measures the <a> in both states and takes
+   its scale from `to.width / from.width`; the monogram is a different shape
+   from the word, so any change that alters the box makes the flying text
+   scale to the wrong size and snap at the handover — the exact failure the
+   tracking note above is about. Transparent text still lays out, so the
+   measurement is untouched.
+
+   ⚠️ The ::before is absolutely positioned for the same reason: in flow it
+   would widen the <a> and move the measurement again.
+
+   The swap needs no timing of its own. js/paper.js adds `body.reading` only
+   after the flight resolves, so the word flies as the word and the mark is
+   simply what is there when it lands. */
+body.reading .name-home,
+body.reading .name-home:hover,
+body.reading .name-home:focus-visible {
+  /* Keeps the accessible name and the measured box; hides the glyphs. */
+  color: transparent;
+  outline: none;
+}
+
+body.reading .name-home::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1.15em;
+  aspect-ratio: 1641 / 621;
+  background: url("/images/lvz-monogram.svg") left center / contain no-repeat;
+  opacity: 0.92;
+  transition: opacity 200ms ease;
+}
+
+body.reading .name-home:hover::before,
+body.reading .name-home:focus-visible::before { opacity: 0.6; }
+
+/* The dimension notes annotate an empty sheet. With a page of text under them
+   the callouts run straight through the copy, so they come off — the rulers,
+   frame and registration crosses stay, since those are edge furniture. */
+body.reading .spec-dim,
+body.reading .spec-label { display: none; }
+
+/* ⚠️ The dog-ear's trigger zone has to be cut back in a section. At home it
+   runs the full height of the right edge, which is free real estate — there
+   is nothing over there. In a section that same strip lies over the article
+   AND over the expand control in the masthead corner, so it (a) swallowed the
+   click that collapses the index and (b) unfurled the corner across the text
+   on any mouse drift to the right while reading. Here it is only the bottom
+   block near the corner; `.curl:hover` still covers the corner itself. */
+body.reading .curl-zone {
+  top: auto;
+  height: clamp(170px, 28vh, 300px);
+}
+
+/* ── The expand control ────────────────────────────────────────────────────
+   Drawn as a drafting mark rather than a button: a hairline square in the
+   same ink as `.spec`. Two icons, one per state, swapped by `body.solo`. */
+.expand {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 2px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.expand:hover,
+.expand:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  outline: none;
+}
+.expand[hidden] { display: none; }
+
+.expand-icon { display: block; width: 14px; height: 14px; }
+.expand-icon--in { display: none; }
+body.solo .expand-icon--out { display: none; }
+body.solo .expand-icon--in { display: block; }
+
+/* ── The spread ────────────────────────────────────────────────────────────
+   ⚠️ `:not([hidden])` carries the `display`, not the bare class. `[hidden]`
+   only sets `display: none` from the UA sheet, so any `display` declared on
+   the element itself outranks it and the spread would sit in the home layout
+   as an empty grid row. */
+.spread:not([hidden]) {
+  display: grid;
+  grid-template-columns: var(--index-w) minmax(0, 1fr);
+  column-gap: var(--index-gutter);
+  min-height: 0;
+  opacity: 0;
+  transition:
+    grid-template-columns 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+    column-gap 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+    opacity 380ms ease;
+}
+.spread.is-in { opacity: 1; }
+
+/* ── The index ─────────────────────────────────────────────────────────────
+   A ruled column, the way a contents page is ruled. Its own scroller, so a
+   long list never reaches the sheet's edge — `html, body { overflow: hidden }`
+   still holds, and the sheet itself cannot move. */
+.index {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: var(--index-gutter);
+  border-right: 1px solid var(--rule);
+  transition:
+    opacity 260ms ease,
+    border-color 260ms ease,
+    padding-right 460ms cubic-bezier(0.22, 0.75, 0.18, 1);
+  scrollbar-width: none;
+}
+.index::-webkit-scrollbar { display: none; }
+
+body.solo .index {
+  opacity: 0;
+  pointer-events: none;
+  border-right-color: transparent;
+}
+
+.index-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.index-link {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 11px 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid transparent;
+  text-align: left;
+  font: inherit;
+  font-size: clamp(0.58rem, 0.92vw, 0.7rem);
+  line-height: 1.7;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+/* Rules BETWEEN entries only — a leading rule would double up on the
+   masthead's own, which sits a few pixels above it. */
+.index-item + .index-item .index-link { border-top-color: var(--rule); }
+
+.index-link:hover,
+.index-link:focus-visible {
+  color: var(--ink);
+  outline: none;
+}
+
+.index-date {
+  display: block;
+  font-size: 0.86em;
+  letter-spacing: 0.18em;
+  opacity: 0.62;
+  margin-bottom: 3px;
+}
+.index-title { display: block; }
+
+.index-item.is-current .index-link { color: var(--ink); }
+
+/* A leader ruled out to the gutter line, tying the open title to the page
+   beside it. It lives in the column's own padding, which `overflow` does not
+   clip — clipping is to the padding box, not the content box. */
+.index-item.is-current .index-link::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: calc(-1 * var(--index-gutter) - 1px);
+  width: var(--index-gutter);
+  height: 1px;
+  background: var(--ink);
+}
+
+/* ── The page ──────────────────────────────────────────────────────────── */
+.page {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: clamp(6px, 1.2vw, 16px);
+  /* Clear the dog-ear so the last line never ends under the corner. */
+  padding-bottom: clamp(36px, 6vh, 72px);
+}
+
+/* ⚠️ The measure is capped on the SCROLLER, not on the header and the prose
+   individually. A cap on each gave them two different widths — they are set
+   at different sizes — and, once centred, two different left edges. One box
+   around both is what keeps the title and its first line on one margin.
+
+   Centred rather than pinned left, so collapsing the index glides the column
+   into the middle of the sheet as the track closes instead of leaving the
+   text hanging off one edge. */
+.page-scroll {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(1.05rem, 2.2vw, 1.7rem);
+  line-height: 1.32;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.page-meta {
+  margin: 12px 0 0;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+/* ── The prose ─────────────────────────────────────────────────────────────
+   The one place on the site set in sentence case. The face has real lowercase
+   (distinct glyphs, not a caps clone), but it is a monoline drawn for display
+   — so it gets a generous leading and a short measure and is left to breathe.
+   ⚠️ It has no em dash, en dash, ellipsis or straight double quote; every post
+   in content/writing/ uses at least one. They are folded into the font's own
+   punctuation on render by fold() in js/paper.js, not fixed in the markdown. */
+.prose {
+  margin-top: clamp(20px, 3vh, 34px);
+  font-size: clamp(0.8rem, 1vw, 0.94rem);
+  line-height: 1.95;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 420ms ease, transform 420ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.prose.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.prose p { margin: 0 0 1.35em; }
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-display);
+  margin: 2em 0 0.7em;
+  font-weight: 400;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.prose h2 { font-size: 1.05em; }
+.prose h3 { font-size: 0.95em; }
+.prose h4 { font-size: 0.85em; color: var(--ink-soft); }
+
+.prose a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  transition: border-color 180ms ease;
+}
+.prose a:hover { border-bottom-color: var(--ink); }
+
+/* One weight, and `font-synthesis: none` on the body means the browser will
+   not fake a second one. Emphasis is a pencil wash instead — the mark you'd
+   actually make on paper. */
+.prose strong {
+  font-weight: inherit;
+  background: linear-gradient(to bottom, transparent 58%, var(--wash) 58%);
+}
+
+/* Italic is the one synthesis worth taking back: a sloped monoline still
+   reads as the same face, whereas a faked bold just thickens into mud. */
+.prose em {
+  font-style: italic;
+  font-synthesis: style;
+}
+
+.prose ul,
+.prose ol {
+  margin: 0 0 1.35em;
+  padding-left: 1.4em;
+}
+.prose li { margin-bottom: 0.5em; }
+
+.prose .task-list {
+  list-style: none;
+  padding-left: 0;
+}
+.prose .task-item {
+  display: flex;
+  gap: 0.6em;
+}
+
+.prose blockquote {
+  margin: 1.6em 0;
+  padding-left: 1.2em;
+  border-left: 1px solid var(--rule);
+  color: var(--ink-soft);
+}
+.prose blockquote p:last-child { margin-bottom: 0; }
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.2em 0;
+}
+
+/* Plates pasted onto the sheet: a hairline rather than a shadow, so they sit
+   IN the paper rather than floating above it. */
+/* ⚠️ Capped by HEIGHT as well as width. At `width: 100%` a square plate fills
+   the measure and then some — 600px wide is 600px tall, which is most of the
+   reading pane, and every post that opens on an image opened on nothing else. */
+.prose img {
+  display: block;
+  max-width: 100%;
+  max-height: 58vh;
+  width: auto;
+  height: auto;
+  margin: 1.6em auto;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.prose-empty { color: var(--ink-soft); }
+
+/* ── Entrances ─────────────────────────────────────────────────────────────
+   The index writes itself on a line at a time. Reuses the landing page's own
+   `settle` so a section arrives the way the home copy does. */
+@media (prefers-reduced-motion: no-preference) {
+  .spread.is-in .index-item {
+    animation: settle 520ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+    animation-delay: calc(var(--i) * 45ms);
+  }
+
+  /* Replayed on the way back home (js/paper.js removes it, forces a reflow,
+     and puts it back), so the bio and the social row settle on rather than
+     snapping in behind the returning name. */
+  .is-settling {
+    animation: settle 620ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+  }
+}
+
+/* ── The rubber ────────────────────────────────────────────────────────────
+   The tip that travels along each line of type while the letters under it
+   lift off (rubOut() in js/paper.js drives where it is; this is what it looks
+   like). A soft bright smudge, not a drawn object — what you see when a
+   rubber is working is the paper coming back, not the rubber itself.
+
+   ⚠️ This replaced a full-bleed band that swept the whole sheet. That reads
+   as a scanner: a horizontal edge running edge to edge is a machine's
+   gesture, and most of its travel crossed blank paper with nothing on it to
+   erase. Keeping the effect ON THE INK is the whole difference.
+
+   ⚠️ No `mix-blend-mode`. The tip has to lighten paper AND lift dark ink in
+   light mode and do the reverse on a dark sheet; one blend mode can only go
+   one way, so it composites normally and the colour is themed instead. */
+:root {
+  --rubber: radial-gradient(closest-side,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.55) 46%,
+    rgba(255, 255, 255, 0) 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wash: rgba(229, 233, 234, 0.13);
+    --rubber: radial-gradient(closest-side,
+      rgba(34, 38, 40, 0.94) 0%,
+      rgba(34, 38, 40, 0.58) 46%,
+      rgba(34, 38, 40, 0) 100%);
+  }
+}
+
+.erase {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+}
+body.is-erasing .erase { opacity: 1; }
+
+.rubber {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 62px;
+  height: 34px;
+  /* Centre the tip on the point js hands it, so the path is the line of type
+     itself rather than a corner of a box. */
+  margin: -17px 0 0 -31px;
+  border-radius: 50%;
+  opacity: 0;
+  background: var(--rubber);
+  filter: blur(4px);
+  will-change: transform, opacity;
+}
+
+/* One character mid-lift. `inline-block` is what lets it move off its
+   baseline at all — an inline box ignores transforms. Only ever present
+   while an erase is running; restore() puts the original markup back. */
+.ch {
+  display: inline-block;
+  white-space: pre;
+  will-change: opacity, transform, filter;
+}
+
+/* ── Narrow screens ────────────────────────────────────────────────────────
+   Two columns need two columns' worth of width. Below that the spread stacks:
+   the index becomes a short ruled strip across the top with the page beneath,
+   and the expand control still closes it — the same affordance, on the other
+   axis. */
+@media (max-width: 640px) {
+  .spread:not([hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--index-h) minmax(0, 1fr);
+    row-gap: 14px;
+    transition:
+      grid-template-rows 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
+      opacity 380ms ease;
+  }
+
+  .index {
+    padding-right: 0;
+    padding-bottom: 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  body.solo .index {
+    border-bottom-color: transparent;
+    padding-bottom: 0;
+  }
+
+  /* The leader has no gutter rule to run out to once the index is stacked. */
+  .index-item.is-current .index-link::after { display: none; }
+
+  body.reading .masthead {
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  /* A touch screen never fires the hover, so the dog-ear is parked open — and
+     in a section that puts it over the foot of the article. Hold the last
+     lines clear of the corner.
+     ⚠️ This only fixes the END of a piece. Text still passes UNDER the corner
+     on its way up, because the corner is opaque and pinned above the content.
+     The dog-ear needs its own answer on narrow screens; padding is a floor,
+     not the fix. */
+  body.reading .page-scroll {
+    padding-bottom: calc(var(--curl-open) + 24px);
+  }
+}
+
+/* ── Screen-reader only ────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

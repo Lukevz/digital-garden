@@ -24,9 +24,12 @@
   :root {
     --t-frame: 0.25s;  /* the frame line starts drawing outward */
     --t-tick:  0.70s;  /* the first graduation */
-    --t-name:  3.40s;  /* the typewriter */
-    --t-rest:  4.55s;  /* bio, social row, dog-ear */
-    --t-out:   4.95s;  /* every mark leaves */
+    /* ⚠️ The typewriter no longer runs on the home page — the hero has no
+       name on it. This still drives the corner monogram's reveal when you
+       land straight on a section URL, so it stays. */
+    --t-name:  3.40s;  /* the typewriter, section routes only */
+    --t-rest:  3.45s;  /* bio, social row, dog-ear — straight off the sweep */
+    --t-out:   3.90s;  /* every mark leaves */
   }
 
   /* ── Hold the copy back ──────────────────────────────────────────────────
@@ -54,6 +57,14 @@
      here would fight it. */
   .curl {
     animation: intro-in 700ms ease-out calc(var(--t-rest) + 70ms) both;
+  }
+
+  /* The letterhead is printed stock, not something the sequence writes, so it
+     arrives first and never leaves — it is deliberately NOT part of `.spec`,
+     which fades out at the end. It also gives the opening beat something to
+     be, instead of an empty rectangle. */
+  .letterhead {
+    animation: letterhead-in 900ms ease-out 0.1s both;
   }
 
   /* ── The frame line draws outward ────────────────────────────────────────
@@ -168,6 +179,12 @@
 @keyframes intro-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* Lands on the letterhead's authored weight, not on 1. */
+@keyframes letterhead-in {
+  from { opacity: 0; }
+  to   { opacity: var(--letterhead-opacity); }
 }
 
 @keyframes intro-out {

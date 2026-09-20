@@ -34,7 +34,12 @@ npm run gaps     # re-check the KB gap list against the committed index
 
 ## The landing page
 
-Two files: `index.html` and `styles.css`. No build step, no JavaScript, no framework.
+Two files plus one script: `index.html`, `styles.css`, and `js/paper.js`. No build
+step, no framework.
+
+⚠️ **The landing page itself is still script-free.** `js/paper.js` is deferred and does
+nothing until a section route is on the hash — with scripting blocked, `/` renders
+exactly as it always did. See **Sections** below.
 
 **Two surfaces, and the distinction is the whole design.** `<body>` is a flat,
 untextured **frame** in a single solid colour (white in light mode, near-black in dark).
@@ -248,10 +253,105 @@ rest but stay in the tab order, so tabbing to one has to be what opens the fold.
 `@media (hover: none)` parks the corner open, since a touch device never fires
 the hover.
 
-**The nav's destinations are placeholders** (`#writing`, `#photos`, `#more`) —
-those pages don't exist on this branch. `More` is a link, not a menu: a real
-overflow menu needs JS or a `<details>`, and the page is deliberately
-script-free.
+**`#writing` is live** (see **Sections**); `#photos` and `#more` are still
+placeholders, and the router sends anything it doesn't recognise back to the
+sheet. `More` is a link, not a menu: a real overflow menu needs its own design.
+
+⚠️ **`.curl-zone` is cut back in a section** (`body.reading .curl-zone`). At home it
+runs the full height of the right edge, which is free space. In a section that same
+strip lies over the article *and* over the expand control in the masthead corner — it
+swallowed the click that collapses the index, and unfurled the corner across the text
+on any mouse drift rightward while reading. In reading mode it is only the bottom
+block near the corner.
+
+⚠️ **On narrow screens the parked-open corner sits over the article.** `hover: none`
+parks it open, which is right on the landing page and wrong over a column of prose.
+`body.reading .page-scroll` carries bottom padding so the END of a piece clears it,
+but text still scrolls *under* the opaque corner on its way past. That needs its own
+answer on narrow screens; the padding is a floor, not a fix.
+
+## Sections (`js/paper.js`)
+
+`#writing` doesn't navigate away from the sheet — it clears it. One script, no
+dependencies, ~430 lines, and none of it runs until a section route is on the hash.
+
+**The erase.** The hero copy is RUBBED OUT. A rubber tip travels along each line of
+type, left to right and then down to the next, and the letters it passes lift off:
+pale, blurred, tipped a couple of degrees off the baseline, gone. Letters and tip are
+driven off one polyline — a segment per line of text — so a letter goes exactly when
+the tip reaches it rather than on a timer that merely looks synchronised.
+
+⚠️ **The first version swept a soft-edged band down the whole sheet, and it read as a
+scanner.** A full-bleed horizontal edge is a machine's gesture, and most of its travel
+crossed blank paper that had nothing on it to remove. Keeping the erasure **on the
+ink** — scoped to the lines of type — is the entire difference. Don't reintroduce a
+sheet-wide sweep.
+
+The `.rubber` tip has no `mix-blend-mode`: it has to lighten paper *and* lift dark ink
+in light mode and do the reverse on a dark sheet, and one blend mode only goes one
+way. It composites normally and the colour is themed, same pattern as `--curl-shadow`.
+
+**The masthead flip.** The name is the one thing never erased. It flies from the
+centre of the sheet into the top-left corner and shrinks, and in a section that small
+version is the way home. It's a measured FLIP: `measureAs()` applies `body.reading`,
+reads the target rect and reverts inside one task (two forced layouts, nothing
+painted), then the name animates to it and the class lands as the flight ends.
+
+⚠️ **The masthead keeps `.name`'s 0.1em tracking**, though a line that small would
+normally want more. The scale factor is the ratio of the two rendered TEXT widths,
+which only equals the font-size ratio while the tracking matches at both ends. Change
+it and the word lands at the right overall width with the glyphs and gaps divided
+differently — the handover at the end of the flight pops.
+
+⚠️ **Measure the `<a>`, not the `<h1>`.** In reading mode the heading stretches to the
+sheet's width, so its box is the column, not the word.
+
+⚠️ **`.name`'s easing is not the curl's.** That curve is ~80% done in its first
+quarter, which is right for a corner springing open and wrong for something crossing
+the page — the name arrived in the corner before the rubber had reached where it
+started.
+
+**The spread.** Index of titles left, the open piece right, each scrolling its own
+column. `body.solo` collapses the index to a zero-width track (transitioned, not
+hidden) so the piece is the only thing on the sheet; the preference persists.
+
+⚠️ **Two scroll containers, which the landing page's "no scroll container anywhere"
+rule forbids.** The rule exists so a stray overflow can't scroll the SHEET. These
+scroll their own column and the sheet still can't move; `html, body { overflow:
+hidden }` is untouched.
+
+⚠️ **The reading measure is capped on `.page-scroll`, not on the header and the prose
+separately.** They're set at different sizes, so a cap on each gave them two different
+widths and, once centred, two different left edges. It's also a px clamp, not `ch` —
+`ch` resolves against the element's own font, and capping the scroller in `ch` came
+out around 115 characters to the line.
+
+**The prose** is the one place on the site set in sentence case. The face has real
+lowercase (distinct glyphs, not a caps clone). `<strong>` can't get heavier — one
+weight, and `font-synthesis: none` — so emphasis is a pencil wash (`--wash`). `<em>`
+takes `font-synthesis: style` back: a sloped monoline still reads as the same face,
+whereas a faked bold thickens into mud.
+
+⚠️ **The prose is transliterated on render** (`fold()`). The face has no em dash, en
+dash, ellipsis or straight double quote, and **every post in `content/writing/` uses
+at least one**. An unmapped glyph doesn't fail loudly — it falls through to
+`ui-sans-serif` and sets one character of the sentence in a different typeface. The
+markdown stays correct; only what's rendered is folded down. Straight double quotes
+become real curly ones, since those the face does have.
+
+⚠️ **`filenameToSlug()` is the v2 site's, character for character.** The second-brain
+vault hard-codes these routes in prose (`mocs/Site MOC.md`) and the chat hands them to
+visitors verbatim, so a tidier slug would silently 404 every link the bot has given
+out. It does not collapse runs: "7 habits  routines" has a double space and so a
+double hyphen.
+
+**Tuning it live**, the way the v2 warp worked: `paper.dur = 2600` to watch the rubber
+in slow motion, `paper.flyDelay` to re-time the name's exit, `paper.enabled = false`
+to compare against a hard cut.
+
+**Not built:** `#photos` and `#more`. The renderers are writing-specific (`fold()`,
+the `/content/writing/` image base, the date + reading-time meta line), so a second
+section is a real piece of work rather than a config change.
 
 ## Routing
 

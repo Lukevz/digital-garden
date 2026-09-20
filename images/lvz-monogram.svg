@@ -1,0 +1,110 @@
+<svg width="1641" height="621" viewBox="0 0 1641 621" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style><![CDATA[
+  /* Served as an image, so this cannot inherit currentColor from the page and
+     carries its own theme switch instead. An SVG embedded this way resolves
+     prefers-color-scheme against the user's system setting, which is the same
+     thing the page follows.
+
+     The CDATA wrapper is not decoration: SVG is parsed as XML, so an angle
+     bracket anywhere in here — even inside a CSS comment — is read as a tag
+     and the whole file fails to parse. It renders as a broken image, with no
+     console error to say why. */
+  .mono-stroke { stroke: #23272a; }
+  @media (prefers-color-scheme: dark) {
+    .mono-stroke { stroke: #dfe4e6; }
+  }
+]]></style>
+<mask id="mask0_29_16" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="3" width="482" height="615">
+<path d="M77.6719 3C120.569 3 155.344 37.7749 155.344 80.6719V426.394C155.344 446.276 171.462 462.394 191.344 462.395H404.293C447.19 462.395 481.966 497.169 481.966 540.066C481.966 582.963 447.19 617.738 404.293 617.738H100.396C44.9491 617.738 0.000244782 572.789 0 517.342V80.6719C0.000131236 37.7749 34.7749 3.00013 77.6719 3Z" fill="#D9D9D9"/>
+</mask>
+<g mask="url(#mask0_29_16)">
+<g opacity="0.9" filter="url(#filter0_f_29_16)">
+<circle cx="69.7054" cy="80.6722" r="170.613" fill="#939393"/>
+</g>
+<g opacity="0.9" filter="url(#filter1_f_29_16)">
+<circle cx="-13.2774" cy="301.739" r="196.504" fill="#999999"/>
+</g>
+<g opacity="0.9" filter="url(#filter2_f_29_16)">
+<circle cx="26.5541" cy="434.512" r="196.504" fill="#777777"/>
+</g>
+<g opacity="0.9" filter="url(#filter3_f_29_16)">
+<circle cx="171.277" cy="637.654" r="116.84" fill="#999999"/>
+</g>
+<g opacity="0.9" filter="url(#filter4_f_29_16)">
+<circle cx="362.47" cy="495.587" r="196.504" fill="#a9a9a9"/>
+</g>
+<g opacity="0.9" filter="url(#filter5_f_29_16)">
+<circle cx="527.754" cy="502.226" r="196.504" fill="#a2a2a2"/>
+</g>
+<g opacity="0.9" filter="url(#filter6_f_29_16)">
+<ellipse cx="285.311" cy="285.087" rx="196.655" ry="167.64" fill="#a9a9a9"/>
+</g>
+<g opacity="0.9" filter="url(#filter7_f_29_16)">
+<circle cx="-0.57048" cy="204.43" r="170.613" fill="#959595"/>
+</g>
+<circle cx="402.301" cy="397.335" r="246.957" fill="black" fill-opacity="0.1"/>
+</g>
+<path class="mono-stroke" d="M1175.9 3L1626.48 3.50181" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1175.9 3L1175.9 116.125" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1626.48 3.50195L1626.48 91.7014" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1175.9 519.277L1175.9 617.063" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1637.99 500.103L1637.99 617.063" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1175.9 116.125L1473.09 116.627" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1333.12 500.103L1637.99 500.103" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1220 60.5215H1580.47" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1220 560.044H1593.89" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1175.9 617.063L1637.99 617.565" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1220 559.542L1582.38 59.1059" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1333.12 500.573L1626.48 91.7012" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1175.9 519.277L1473.99 116.501" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M586.639 70.561L785.661 617.37" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M628.687 3L852.309 617.396" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M1076.64 3L853.02 617.396" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M486.801 3L710.423 617.396" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M934.756 3L711.134 617.396" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M486.801 3H628.687" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M935.467 3H1077.35" stroke="#212121" stroke-width="6"/>
+<path class="mono-stroke" d="M984.934 70.1084L785.911 616.917" stroke="#212121" stroke-width="6"/>
+<defs>
+<filter id="filter0_f_29_16" x="-160.908" y="-149.941" width="461.226" height="461.226" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter1_f_29_16" x="-269.781" y="45.2349" width="513.008" height="513.008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter2_f_29_16" x="-229.95" y="178.008" width="513.008" height="513.008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter3_f_29_16" x="-5.56348" y="460.814" width="353.68" height="353.68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter4_f_29_16" x="105.966" y="239.083" width="513.008" height="513.008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter5_f_29_16" x="271.25" y="245.722" width="513.008" height="513.007" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter6_f_29_16" x="28.6558" y="57.4468" width="513.31" height="455.28" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+<filter id="filter7_f_29_16" x="-231.184" y="-26.1826" width="461.226" height="461.226" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+</filter>
+</defs>
+</svg>
