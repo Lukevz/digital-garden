@@ -757,16 +757,41 @@ half-way. `paper.enabled = false` tests the routing logic on its own.
 ## Career (`career.css`, `content/career.json`)
 
 `#career` is a fifth route onto the folio (the surface behind More), painted by
-`renderCareer()` in `js/more.js`: a vertical timeline of roles down a hairline
-rail (period in the margin, a dot per role, the current one filled), then the
-**A -> X principles** — a struck "UX" over a display "A -> X", the headline
-"Design from the Ask to the Experience", and six traits (Adaptability, Boldness,
-Inclusivity, Articulation, Curiosity, Resilience). Both are taken from the v2
-site: the timeline from `git show 8bda88c:_index.html` (`#homeTimeline`) and
-`js/timeline.js`, the principles from `#homePrinciples`. The horizontal
-scroll-jacked rail and the company logos did NOT come across — a pinned
-horizontal sweep has no place on a surface that is already a column you fall
-down, and colour logos are the one thing on a hairline sheet that isn't.
+`renderCareer()` in `js/more.js`: three sections — a **horizontal timeline** of roles
+(period above a hairline rail, a dot per role, the current one filled, the role below),
+the **A -> X principles** (a struck "UX" over a display "A -> X", the headline "Design
+from the Ask to the Experience", six traits), and **case studies** — with a sticky nav of
+anchors to them in the left gutter. The timeline and principles are taken from the v2
+site (`git show 8bda88c:_index.html`, `#homeTimeline` / `#homePrinciples`, and
+`js/timeline.js`). The company logos did NOT come across — colour logos are the one thing
+on a hairline sheet that isn't.
+
+**The page is a three-column grid** (`.career`): nav gutter | the 960px measure | a right
+gutter the same width. `.folio-scroll--wide` (set by `paint()` from `wide: true` in
+`PAGES`) drops the folio's own measure padding so the grid can span the whole folio.
+⚠️ `--inset` (the gutter width, for descendants) is written in `cqw` off `.career`'s
+container, not `%`, because the timeline uses it from inside the measure column. Under
+1000px there are no gutters and the nav is a row under the title.
+
+**The timeline spills out of the measure.** `.tl` reaches into the right gutter with a
+negative `--inset` margin and is masked to nothing across it; `paintTimeline()` sets
+`--out` on each role by how far it has crossed the column edge, which career.css turns
+into blur + fade (on the role's CHILDREN — the role's own `settle` fill holds its opacity).
+The roles' right padding is the gutter, so the last one scrolls fully into the measure.
+
+⚠️ **The page's scroll drives the timeline sideways** ("Career: the timeline's lock" in
+`js/more.js`). Scrolling down stops at the PIN (section bottom on the view's bottom if
+it fits, else its top on the top) and spends the wheel sideways until the last role is
+in; scrolling up rewinds it. Two paths, both needed: a cancelled `wheel` (smooth), and a
+`scroll` fallback that puts the page back on the pin, because Chrome only lets the first
+wheel event of a gesture be cancelled and keys never fire `wheel`. Nav jumps set
+`jumping` so they can pass it. Touch screens (`hover: none`) get no lock; the timeline
+snaps role by role instead — and snap is touch-only because a mandatory snap would undo
+the lock's small `scrollLeft` steps.
+
+**Case studies are placeholders**: `cases.items` in `content/career.json`, titled from the
+roles' own highlights. A card with no `image` shows the placeholder plate; add `image`
+(and `url` to make it a link) as they're written.
 
 **Career is live in the nav** (`<a href="#career">` between Photos and More). It was a
 "Soon" span for a while; the `.links .soon` rules are gone from `career.css` and `styles.css`.

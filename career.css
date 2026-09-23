@@ -3,8 +3,8 @@
 
    `#career` opens the folio (more.css), the same plain surface the pages behind
    More use, so the masthead, the scroller and the fade are all theirs. This file
-   is only what goes ON it: a timeline of roles down a hairline rail, then the
-   principles. Kept out of more.css for the reason more.css is kept out of
+   is only what goes ON it: a nav of anchors, a sideways timeline of roles,
+   the principles, and the case studies. Kept out of more.css for the reason more.css is kept out of
    styles.css — it adds to the sheet and never touches it. Its data is
    content/career.json and its markup is renderCareer() in js/more.js.
 
@@ -51,45 +51,177 @@
 }
 .resume-btn:focus-visible { box-shadow: 0 0 0 2px var(--ink-soft); }
 
-/* ══ The timeline ══════════════════════════════════════════════════════════
-   Newest role first. The period stands in the margin, a dot for each role sits
-   on the rail, the role hangs off the rail on the right. The rail is drawn per
-   role (`::before`, from this role's dot down through its own padding into the
-   next) so it stays continuous however tall a role is, and the last role's
-   stops at its dot.
+/* ══ The page ══════════════════════════════════════════════════════════════
+   Three columns: the nav in the left gutter, the measure, and a right gutter
+   the same width so the measure stays centred. Only the timeline uses the
+   right gutter. The folio's own measure padding is taken off
+   (`.folio-scroll--wide`, set by js/more.js) so this grid can span the
+   folio's whole width.
 
-   ⚠️ The period and the title share `--row` as their line-height, and the dot
-   is centred on it — so the dot is on the first line of BOTH, however the
-   sizes clamp. */
+   ⚠️ `--inset` is the gutter's width for DESCENDANTS, written in `cqw` (the
+   `.career` container). A `%` would resolve against whichever element uses
+   the variable, and the timeline uses it from inside the measure column. The
+   grid's own tracks use `%`, which here means the same width. */
+.folio-scroll--wide { padding-inline: 0; }
+
+.career {
+  --measure: 960px;
+  --nav-w: 9.5rem;
+  --nav-gap: clamp(20px, 3vw, 40px);
+  --nav-space: calc(var(--nav-w) + var(--nav-gap));
+  --inset: max(var(--nav-space), calc((100cqw - var(--measure)) / 2));
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns:
+    [gutter-start] max(var(--nav-space), calc((100% - var(--measure)) / 2))
+    [main-start] minmax(0, 1fr)
+    [main-end] max(var(--nav-space), calc((100% - var(--measure)) / 2));
+}
+.career > * { grid-column: main; }
+
+/* ══ The nav ═══════════════════════════════════════════════════════════════
+   Page anchors, standing in the left gutter against the measure and staying
+   there as the page scrolls. The current section gets the ink and a longer
+   tick; the ticks are the role notes' hairline. */
+.career-nav {
+  grid-column: gutter-start;
+  grid-row: 1 / span 4;
+  justify-self: end;
+  align-self: start;
+  position: sticky;
+  top: 6px;
+  width: var(--nav-w);
+  margin-right: var(--nav-gap);
+}
+.career-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.career-nav button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 7px 0 7px 22px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  line-height: 1.4;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+.career-nav button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: var(--rule);
+  transition: width 240ms cubic-bezier(0.2, 0.6, 0.2, 1), background-color 200ms ease;
+}
+.career-nav button:hover,
+.career-nav button:focus-visible,
+.career-nav button.is-current { color: var(--ink); outline: none; }
+.career-nav button.is-current::before { width: 14px; background: var(--ink); }
+.career-nav button:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ══ The sections ══════════════════════════════════════════════════════════ */
+.career-sec + .career-sec {
+  margin-top: clamp(20px, 5vh, 60px);
+  padding-top: clamp(26px, 5vh, 52px);
+  border-top: 1px solid var(--rule);
+}
+
+.career-label {
+  margin: 0 0 clamp(18px, 3vh, 28px);
+  font-weight: 400;
+  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ══ The timeline ══════════════════════════════════════════════════════════
+   Sideways, newest first. Each role is a column: the period, then the rail
+   with the role's dot on it, then the role. The rail is drawn per role
+   (`::before`, from this dot to the next one) so it stays continuous however
+   wide the gap, and the last role's stops at its dot.
+
+   `.tl` reaches out of the measure to the folio's right edge (the `--inset`
+   margin) and fades to nothing across that gutter; js/more.js blurs each role
+   by how far it has crossed the edge (`--out`). The roles' right padding is
+   the same gutter, so the last one can be scrolled all the way into the
+   measure. Under 1000px there is no gutter, and a 48px fade at the edge of the
+   column stands in for it.
+
+   The page's scroll drives it sideways — see "Career: the timeline's lock"
+   in js/more.js. */
+.tl {
+  --fade-r: max(var(--inset), 48px);
+  --fade-l: 0px;
+  margin-right: calc(-1 * var(--inset));
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+}
+.tl.is-scrolled { --fade-l: 32px; }
+
+.tl-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;          /* no swipe-back at the first role */
+  scrollbar-width: none;
+  outline: none;
+}
+.tl-scroll::-webkit-scrollbar { display: none; }
+
+/* Touch only: under a finger the timeline settles on a role. Not with a
+   wheel — the lock steps `scrollLeft` a delta at a time, and a mandatory
+   snap would pull every step back to the role it started from. */
+@media (hover: none) {
+  /* The snap point stands in by the left fade, so a settled role is clear of
+     it and the one before shows its faded tail there. */
+  .tl-scroll { scroll-snap-type: x mandatory; scroll-padding-inline-start: 24px; }
+  .tl.is-scrolled { --fade-l: 24px; }
+  .role { scroll-snap-align: start; }
+}
+
 .roles {
-  --per: clamp(7.5rem, 14vw, 11rem);      /* the period column */
-  --gap: clamp(20px, 3vw, 40px);          /* period to rail, and rail to text */
+  --card-w: clamp(250px, 24vw, 330px);
+  --gap: clamp(28px, 3.4vw, 52px);        /* role to role */
   --row: clamp(1.35rem, 2vw, 1.65rem);
   --dot: 9px;
+  --rail: calc(var(--row) + 14px);        /* the rail's height from the top */
   list-style: none;
-  /* Shrink-wrapped to the widest role (the copy is capped at 64ch), then
-     centred on the folio rather than hugging its left edge. */
-  width: fit-content;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
+  display: flex;
+  width: max-content;
+  margin: 0;
+  padding: 0 var(--fade-r) 0 0;
 }
 
 .role {
+  --out: 0;
   position: relative;
-  display: grid;
-  grid-template-columns: var(--per) minmax(0, 1fr);
-  column-gap: calc(2 * var(--gap));
-  padding-bottom: clamp(30px, 5vh, 54px);
+  flex: none;
+  box-sizing: content-box;
+  width: var(--card-w);
+  padding-right: var(--gap);
 }
 
-.role::before {                            /* the rail */
+.role::before {                            /* the rail, on to the next dot */
   content: '';
   position: absolute;
-  left: calc(var(--per) + var(--gap));
-  top: calc(var(--row) / 2);
-  bottom: calc(-1 * var(--row) / 2);
-  width: 1px;
+  left: calc(var(--dot) / 2);
+  right: calc(-1 * var(--dot) / 2);
+  top: var(--rail);
+  height: 1px;
   background: var(--rule);
 }
 .role:last-child::before { display: none; }
@@ -97,8 +229,8 @@
 .role::after {                             /* the dot */
   content: '';
   position: absolute;
-  left: calc(var(--per) + var(--gap) - var(--dot) / 2 + 0.5px);
-  top: calc(var(--row) / 2 - var(--dot) / 2);
+  left: 0;
+  top: calc(var(--rail) - var(--dot) / 2 + 0.5px);
   width: var(--dot);
   height: var(--dot);
   box-sizing: border-box;
@@ -111,8 +243,16 @@
   background: var(--ink);
 }
 
+/* ⚠️ On the children, not the role: the role carries the `settle` entrance,
+   whose fill holds its opacity at 1. */
+.role > *,
+.role::after {
+  opacity: calc(1 - var(--out) * 0.6);
+  filter: blur(calc(var(--out) * 5px));
+}
+
 .role-period {
-  margin: 0;
+  margin: 0 0 28px;
   line-height: var(--row);
   font-size: clamp(0.56rem, 0.9vw, 0.68rem);
   letter-spacing: 0.18em;
@@ -148,13 +288,12 @@
   line-height: 1.8;
   color: var(--ink);
 }
-.role-summary { margin-top: clamp(12px, 1.8vh, 18px); max-width: 64ch; }
+.role-summary { margin-top: clamp(12px, 1.8vh, 18px); }
 
 .role-notes {
   list-style: none;
   margin: clamp(10px, 1.6vh, 16px) 0 0;
   padding: 0;
-  max-width: 64ch;
   color: var(--ink-soft);
   font-size: clamp(0.84rem, 1vw, 0.94rem);
   line-height: 1.7;
@@ -175,21 +314,6 @@
 }
 
 /* ══ The principles ════════════════════════════════════════════════════════ */
-.principles {
-  margin-top: clamp(20px, 5vh, 60px);
-  padding-top: clamp(26px, 5vh, 52px);
-  border-top: 1px solid var(--rule);
-}
-
-.principles-label {
-  margin: 0 0 clamp(18px, 3vh, 28px);
-  font-weight: 400;
-  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-
 /* A struck "UX" over a display "A -> X": live type, so it themes and stays
    selectable. ⚠️ The arrow is drawn — the face has no arrow glyph — and its
    stroke is in viewBox units, so it thickens and thins with the letters. */
@@ -271,23 +395,96 @@
 }
 .trait-text { color: var(--ink-soft); font-size: clamp(0.84rem, 1vw, 0.94rem); line-height: 1.7; }
 
+/* ══ The case studies ══════════════════════════════════════════════════════
+   White cards (`--frame`, 20px corners, the loose frames' card), a plate and
+   a caption. Corners are concentric: the plate's radius is the card's less its
+   padding. A case with no `image` in content/career.json gets the placeholder
+   plate; one with a `url` is a link. */
+.cases {
+  --case-r: 20px;
+  --case-pad: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 20px);
+}
+@media (max-width: 900px) { .cases { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .cases { grid-template-columns: minmax(0, 1fr); } }
+
+.case {
+  display: block;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--case-pad) var(--case-pad) 14px;
+  border-radius: var(--case-r);
+  background: var(--frame);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 220ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+a.case:hover,
+a.case:focus-visible { transform: translateY(-2px); outline: none; }
+a.case:focus-visible { box-shadow: 0 0 0 2px var(--ink-soft); }
+
+.case-img {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: max(0px, calc(var(--case-r) - var(--case-pad)));
+}
+.case-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.case-img--empty {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--ink-soft);
+}
+.case-img--empty .ico { width: 1.75rem; height: 1.75rem; }
+
+.case-title,
+.case-meta {
+  display: block;
+  padding-inline: 6px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.case-title {
+  margin-top: 14px;
+  font-size: clamp(0.62rem, 1vw, 0.78rem);
+  line-height: 1.5;
+}
+.case-meta {
+  margin-top: 4px;
+  font-size: clamp(0.52rem, 0.8vw, 0.62rem);
+  color: var(--ink-soft);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .folio-body.is-in .role,
-  .folio-body.is-in .trait {
+  .folio-body.is-in .trait,
+  .folio-body.is-in .case-item {
     animation: settle 520ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
     animation-delay: calc(min(var(--i), 18) * 45ms);
   }
 }
 
 /* ══ Narrow screens ════════════════════════════════════════════════════════
-   One column: the rail moves to the left edge and the period drops in above
-   the role, since there is no margin for it to stand in. */
-@media (max-width: 640px) {
-  .roles { --per: 0px; --gap: 9px; }
-  .role {
-    grid-template-columns: minmax(0, 1fr);
-    padding-left: 30px;
+   No room for a gutter: the nav becomes a row under the title, scrolling with
+   the page, and the measure takes the folio's whole width. */
+@media (max-width: 1000px) {
+  .career { --nav-space: 0px; }
+  .career-nav {
+    grid-column: main;
+    grid-row: auto;
+    justify-self: stretch;
+    position: static;
+    width: auto;
+    margin: 0 0 clamp(18px, 3vh, 28px);
   }
-  .role::before { left: 4px; }
-  .role::after  { left: calc(4px - var(--dot) / 2 + 0.5px); }
+  .career-nav ul { display: flex; flex-wrap: wrap; column-gap: 22px; }
+  .career-nav button { width: auto; }
+}
+@media (max-width: 640px) {
+  .roles { --card-w: 72cqw; }
 }

@@ -114,5 +114,34 @@
         "text": "I navigate ambiguity, learn from setbacks, and persist toward meaningful outcomes."
       }
     ]
+  },
+  "cases": {
+    "title": "Case studies",
+    "items": [
+      {
+        "title": "Axon design system",
+        "company": "Instinct Science"
+      },
+      {
+        "title": "Instinct EMR",
+        "company": "Instinct Science"
+      },
+      {
+        "title": "Standards and Plumbs",
+        "company": "Instinct Science"
+      },
+      {
+        "title": "SDLC Canvas",
+        "company": "PwC Digital"
+      },
+      {
+        "title": "Figma migration",
+        "company": "PwC Digital"
+      },
+      {
+        "title": "Rapid Page Template Builder",
+        "company": "Blue Corona"
+      }
+    ]
   }
 }
