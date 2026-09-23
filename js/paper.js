@@ -44,7 +44,6 @@
   const letterhead = document.querySelector('.letterhead');
   const links      = document.querySelector('.links');
   const backLink   = $('back');
-  const masthead   = document.querySelector('.masthead');
   const expandBtn  = $('expand');
   const expandLbl  = $('expandLabel');
   const spread     = $('spread');
@@ -868,16 +867,7 @@
     const sweep = fadeOut([leaving, backLink, mastLinks]);
     const fly = flyName(from, to);
 
-    // The rule under the masthead closes from both edges to the middle: the
-    // home sheet's frame line drawing outward from its seam, run backwards.
-    const rule = masthead && masthead.animate(
-      [{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 50% 0 50%)' }],
-      { duration: Math.round(paper.dur * 0.8), easing: 'cubic-bezier(0.55, 0.05, 0.78, 0.25)',
-        fill: 'forwards', pseudoElement: '::after' }
-    );
-
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
-      if (rule) rule.cancel();
       body.classList.remove('reading');
       // ...and the paper draws back into its frame, under the copy settling
       // on. The lockup is centred in a row whose own centre doesn't move as

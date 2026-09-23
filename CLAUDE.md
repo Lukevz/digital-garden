@@ -520,7 +520,7 @@ same element, shrinks to `--mark-h` (1.15 × `--mast-size`) and stays centred, a
 word "Back" behind a Tabler `chevron-left` (`#back`, `.back`) is the way home. The
 back link shares `.links a`'s rules — same face, tracking, ink, icon weight, underline
 hover. ⚠️ It says only "Back" and names no page: every section carries its own, bolder
-title just under the rule, and a second copy of it in the corner was noise.
+title just under the masthead (there is no rule under it any more), and a second copy of it in the corner was noise.
 It fades in with `body.reading` (`back-in`) and out with the surface on the way home
 (`fadeOut([leaving, backLink])`, so it doesn't blink off at the end of the flight).
 

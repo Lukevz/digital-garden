@@ -1143,20 +1143,10 @@ body.reading .masthead {
   min-height: var(--bar-h);
   justify-content: space-between;
   gap: clamp(16px, 3vw, 40px);
-  /* The rule is a pseudo-element, not a border, so leaveReading() can draw it
-     back in from the edges. The 1px is the border's old height. */
-  padding-bottom: calc(clamp(10px, 1.4vh, 14px) + 1px);
+  /* No rule under the row: the section's own title below it does the
+     separating. */
+  padding-bottom: clamp(10px, 1.4vh, 14px);
   margin-bottom: clamp(10px, 1.6vh, 18px);
-}
-
-body.reading .masthead::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: var(--rule);
 }
 
 /* ⚠️ The lockup is out of the row and out of sight, NOT `display: none`: the
@@ -1954,7 +1944,7 @@ body.is-erasing .erase { opacity: 1; }
   }
 
   body.reading .masthead {
-    padding-bottom: 11px;
+    padding-bottom: 10px;
     margin-bottom: 14px;
   }
 
