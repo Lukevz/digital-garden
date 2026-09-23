@@ -38,6 +38,9 @@
 
   const body = document.body;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // A `soon` set is locked on the live site but open on the dev server, so a
+  // WIP collection can be worked on without shipping it.
+  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
   /* ── Tunables ──────────────────────────────────────────────────────────
      Live-editable from the console, the same way `paper` is:
@@ -104,48 +107,137 @@
     </button>`;
   }
 
-  function setHTML(c) {
-    const feature = c.feature;
-    // `soon` is a set that is still WIP: same card, but not a link, and tagged.
-    const soon = !!c.soon;
+  /* ── One chronology ────────────────────────────────────────────────────
+     The index is filed by YEAR, not split into trips and loose frames. A year
+     is one run: its trips land at their start date as wide plates among that
+     year's loose frames, newest first, the frames in justified rows. The
+     years are a nav down the left (the writing index's own rows); picking one
+     swaps the white card on the right rather than scrolling to it. `year`
+     outlives the paint, so coming back from a trip lands on the same year. */
+  let year = null;
+
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const CHEV = '<svg class="ico pchron-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>';
+  const plural = (n, one) => `${n} ${one}${n === 1 ? '' : 's'}`;
+
+  function chronology() {
+    const items = [
+      ...(index.loose || []).map((f, i) => ({ d: f.date || '', f, i })),
+      ...(index.collections || []).map(c => ({ d: c.start || '', c })),
+    ].sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0));
+    const years = new Map();
+    for (const it of items) {
+      const y = it.d.slice(0, 4) || 'Undated';
+      (years.get(y) || years.set(y, []).get(y)).push(it);
+    }
+    return years;
+  }
+
+  const yearMeta = its => {
+    const trips = its.filter(it => it.c).length;
+    const frames = its.length - trips;
+    return (trips ? plural(trips, 'trip') + ' / ' : '') + plural(frames, 'frame');
+  };
+
+  // A trip, as a plate in the run. A `soon` set is the same plate, not a link.
+  function tripHTML(c) {
+    const soon = !!c.soon && !LOCAL;
     const tag = soon ? 'div' : 'a';
     const attrs = soon ? 'aria-disabled="true"' : `href="#photos/${esc(c.slug)}"`;
-    return `<${tag} class="pset ${feature ? 'pset--feature' : 'pset--card'}${soon ? ' pset--soon' : ''}"
-               ${attrs}>
-      <div class="pset-cover">
+    return `<${tag} class="ptrip${soon ? ' ptrip--soon' : ''}" ${attrs}>
+      <span class="ptrip-cover">
         <img src="${esc(c.cover)}" alt="${t(c.coverAlt || '')}" loading="lazy" decoding="async">${
           soon ? '<span class="pset-badge">Coming soon</span>' : ''}
-      </div>
-      <div class="pset-meta">
-        <h3 class="pset-name"${c.accent ? ` style="--accent:${esc(c.accent)}"` : ''}>${t(c.title)}${
-          soon || c.written ? '' : `<span class="pset-tag">${c.count} frames</span>`}</h3>
-        <span class="pset-dates">${t(c.dates || '')}${
-          c.unit ? ' / ' + c.count + ' ' + t(c.unit) : ''}</span>
-      </div>
+      </span>
+      <span class="ptrip-cap">
+        <span class="ptrip-lbl">Trip${c.unit ? ' / ' + c.count + ' ' + t(c.unit) : ''}</span>
+        <span class="ptrip-name"${c.accent ? ` style="--accent:${esc(c.accent)}"` : ''}>${t(c.title)}</span>
+        <span class="ptrip-lbl">${t(c.dates || '')}${soon ? '' : ' ' + CHEV}</span>
+      </span>
     </${tag}>`;
   }
 
+  function yearHTML(y, its) {
+    let out = '', run = [];
+    const flush = () => {
+      if (run.length) out += `<div class="prow">${run.join('')}</div>`;
+      run = [];
+    };
+    for (const it of its) {
+      if (it.f) { run.push(frameHTML(it.f, it.i)); continue; }
+      flush();
+      out += tripHTML(it.c);
+    }
+    flush();
+    return `
+      <header class="pcard-head">
+        <h2 class="page-title">${t(y)}</h2>
+        <p class="page-meta">${t(yearMeta(its))}</p>
+      </header>
+      <div class="pchron">${out}</div>`;
+  }
+
   function paintIndex() {
-    const cols = index.collections || [];
-    const features = cols.filter(c => c.feature);
-    const cards = cols.filter(c => !c.feature);
-    const loose = index.loose || [];
+    const years = chronology();
+    if (!years.has(year)) year = years.keys().next().value || null;
+
+    const nav = [...years].map(([y, its]) => `
+      <li class="index-item${y === year ? ' is-current' : ''}">
+        <button class="index-link" type="button" data-year="${esc(y)}"${y === year ? ' aria-current="true"' : ''}>
+          <span class="index-title">${t(y)}</span>
+          <span class="index-date">${t(yearMeta(its))}</span>
+        </button>
+      </li>`).join('');
 
     scroll.innerHTML = `
-      <div class="pindex">
-        ${features.map(setHTML).join('')}
-        ${cards.length ? `<div class="pset-row">${cards.map(setHTML).join('')}</div>` : ''}
-        ${loose.length ? `<section class="ploose">
-          <div class="masonry" data-gallery="loose">${loose.map(frameHTML).join('')}</div>
-        </section>` : ''}
+      <div class="pindex pindex--chron">
+        <nav class="pnav" aria-label="Years"><ul class="index-list">${nav}</ul></nav>
+        <section class="pcard" aria-live="polite">
+          <div class="pcard-scroll">${year ? yearHTML(year, years.get(year)) : ''}</div>
+        </section>
       </div>`;
 
-    scroll.querySelector('[data-gallery="loose"]')
-      ?.addEventListener('click', e => {
-        const btn = e.target.closest('.frame');
-        if (btn) openFrame(loose, +btn.dataset.frame);
-      });
+    const card = scroll.querySelector('.pcard-scroll');
+    card.addEventListener('click', e => {
+      const btn = e.target.closest('.frame');
+      if (btn) openFrame(index.loose || [], +btn.dataset.frame);
+    });
+    scroll.querySelector('.pnav').addEventListener('click', e => {
+      const btn = e.target.closest('[data-year]');
+      if (btn) showYear(btn.dataset.year);
+    });
     scroll.scrollTop = 0;
+  }
+
+  // The hot swap: the card's contents fade out, change, and fade back in; the
+  // nav and the card itself stay put.
+  let swapTimer = null;
+  function showYear(y) {
+    if (y === year) return;
+    const years = chronology();
+    if (!years.has(y)) return;
+    year = y;
+    for (const li of scroll.querySelectorAll('.pnav .index-item')) {
+      const on = li.firstElementChild.dataset.year === y;
+      li.classList.toggle('is-current', on);
+      if (on) {
+        li.firstElementChild.setAttribute('aria-current', 'true');
+        // On a phone the years are a sideways row; keep the picked one on it.
+        li.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+      }
+      else li.firstElementChild.removeAttribute('aria-current');
+    }
+    const card = scroll.querySelector('.pcard-scroll');
+    if (!card) return;
+    clearTimeout(swapTimer);
+    const swap = () => {
+      card.innerHTML = yearHTML(y, years.get(y));
+      card.scrollTop = 0;
+      card.classList.remove('is-out');
+    };
+    if (reduced) { swap(); return; }
+    card.classList.add('is-out');
+    swapTimer = setTimeout(swap, 180);
   }
 
   /* An unwritten set is a folder, not a piece: no cover, no lede, no stamps —
@@ -738,7 +830,7 @@
     return loadIndex().then(() => {
       const meta = (index.collections || []).find(c => c.slug === slug);
       // A `soon` set has no page yet: a deep link goes back to the index.
-      if (!meta || meta.soon) { location.hash = '#photos'; return; }
+      if (!meta || (meta.soon && !LOCAL)) { location.hash = '#photos'; return; }
 
       if (!meta.written) {
         openKey = null;

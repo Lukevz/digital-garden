@@ -857,43 +857,45 @@ is just a wrong caption.
 clusters (`24 May - 3 Jun 2026` and the rest) were folders with a provisional date
 title and no copy. They are gone from `index.json`'s `collections`, and every frame
 they held is in `loose` (sorted newest first with the frames that were already there),
-so the index is Italy plus one masonry of loose frames. The plain-set route
+so the index is the trips plus the loose frames, filed by year. The plain-set route
 (`paintPlainSet` in js/photos.js) is now unreachable but left in place; a set only
 comes back if an unwritten one is added to `collections` again. Anything that
 regenerates the manifest has to keep it that way.
 
-⚠️ **The featured set on the index is a 40/60 lockup on a white card** — type left
-with 32px of padding, cover right with none, so the photograph runs flush to the
-card's top, right and bottom edges; the type is vertically centred against it
-(`.pset--feature`, a two-column grid with named areas since the markup is
-cover-then-meta), with 20px corners that also clip the flush photograph. "White" is `--frame`, so it is near-black in dark mode rather than
-a literal #fff outshining the photograph. The card stays inside the page's column,
-carries no drop shadow, and the focus ring goes round the card. The title is coloured
-from the cover: `accent` in the collection's manifest entry (a saturation-weighted mean
-of the cover's non-white, non-black pixels — `#735d43` for Italy), lightened in dark
-mode. Recompute it if the cover changes. Under 640px it
-stacks, cover first, as it always did.
+⚠️ **The index is ONE CHRONOLOGY, filed by year, laid out like the writing spread**
+(`paintIndex()` in js/photos.js, "One chronology" in photos.css; picked from variant 2 of
+the prototype in `proto/`). There is no featured card and no split between trips and
+loose frames: each year is one run, newest first, where a trip lands at its `start`
+date as a wide plate (`.ptrip`, 21:8 cover, a caption line with the name in its `accent`)
+among that year's loose frames, which sit in justified rows (`.prow`, 6px corners).
+The years are a nav on the left built from the writing index's own classes
+(`.index-list` / `.index-link`, filled chip for the current one); picking one swaps the
+white card on the right (`.pcard`, `--frame`, 20px corners, its own scroller) with a
+short fade — `showYear()`, no route change. `year` lives in module scope, so coming
+back from a trip lands on the year you left. ⚠️ The nav width is its own `--pnav-w`,
+not `--index-w`, because `body.solo` zeroes that one site-wide. Under 640px the years
+are a row of chips over the card. `accent` is a saturation-weighted mean of the cover's
+non-white, non-black pixels (`#735d43` for Italy), lightened in dark mode; recompute it
+if a cover changes.
 
-⚠️ **The loose frames sit on a white card of their own** (`.ploose`: `--frame`, 20px
-corners, 32px padding — the featured set's card again) with 6px-rounded photographs,
-and the "Loose frames" title is gone. The rounding is scoped to `.ploose`; frames in
-a collection's own gallery are still square.
+⚠️ **Day cards in a collection are still `.ploose`** (`--frame`, 20px corners, 32px
+padding) with 6px-rounded photographs; frames in a collection's own gallery are square.
 
 ⚠️ **Photographs carry no shadow, and the loose frames no hairline either.** `--plate-shadow` is a transparent no-op (kept as a
 variable so the hairline rules that share it needn't change), and the scan stage's
 `--stamp-shadow-lift` is gone. The **stamps** keep theirs — they are the perforated
 objects, not photographs. Don't add a shadow back to a plate to make it read.
 
-⚠️ **Italy 2026 is `"soon": true` in `index.json` while it is WIP.** `setHTML()` renders a `soon`
-set as a `<div aria-disabled>` (no `href`) with a "Coming soon" badge over the photograph (`.pset-badge`) and a slightly muted cover
-(`.pset--soon`), and `paint()` sends a deep link to `#photos/<slug>` back to the index. Delete the
-one line to open it again; nothing else about the collection was touched.
+⚠️ **Italy 2026 is `"soon": true` in `index.json` while it is WIP.** `tripHTML()` renders a `soon`
+trip as a `<div aria-disabled>` (no `href`) with a "Coming soon" badge over the photograph (`.pset-badge`) and a slightly muted cover
+(`.ptrip--soon`), and `paint()` sends a deep link to `#photos/<slug>` back to the index. On
+`localhost` / `127.0.0.1` (`LOCAL`) a `soon` set is open, so it can be worked on. Delete the
+one line to open it on the live site; nothing else about the collection was touched.
 
 ### The trips without stamps (Montana 2024, Disney 2024, British Columbia 2025)
 
-Three more written collections sit beside Italy on the index, as cards under the
-featured one, **newest trip first** (`start` in each `index.json` entry is the sort
-key; Italy is `feature`, so it is pulled out above the row regardless). None has
+Three more written collections sit on the index as plates in their year's run
+(`start` in each `index.json` entry is where they land; `feature` is no longer read). None has
 engravings, so `paintCollection()` hands them to `paintDays()` (js/photos.js): the
 cover, then one white `.ploose` card per day — a header line, then that day's frames in
 the masonry — with no stamps, riffle, scan, day view or play button. The route

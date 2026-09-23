@@ -137,47 +137,7 @@
   color: var(--ink-soft);
 }
 
-/* A set. The cover is the thing; the type sits under it like a plate caption
-   rather than over it, so the photograph is never asked to carry text. */
-.pset {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.pset-cover {
-  position: relative;
-  overflow: hidden;
-  background: var(--paper-lo);
-}
-
-.pset-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 900ms cubic-bezier(0.2, 0.6, 0.2, 1);
-}
-.pset:hover .pset-cover img,
-.pset:focus-visible .pset-cover img { transform: scale(1.028); }
-.pset:focus-visible { outline: none; }
-
-.pset-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-top: 14px;
-}
-
-.pset-kicker,
-.pset-dates {
-  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--ink-soft);
-}
-
+/* A plain set's title (`paintPlainSet`). */
 .pset-name {
   font-family: var(--font-display);
   margin: 0;
@@ -188,89 +148,6 @@
   letter-spacing: 0.08em;
 }
 
-/* A featured set is a 40/60 lockup on a white card: the type on the left with
-   32px of padding all round, centred on the photograph's height rather than
-   hung off its top, and the cover on the right with NO padding, so it runs
-   flush to the card's top, right and bottom edges. The card sits inside the
-   same column as everything else on the page and is flat — no drop shadow — with
-   20px corners.
-
-   ⚠️ "White" is the FRAME's colour (`--frame`), which is white in light mode
-   and near-black in dark. A literal #fff card on a dark sheet would be the
-   brightest thing on the page and outshine the photograph it is presenting.
-
-   ⚠️ The markup is cover-then-meta and the grid reorders it with areas, so the
-   phone layout below can simply put them back in source order. */
-.pset--feature {
-  margin-bottom: clamp(36px, 7vh, 76px);
-  display: grid;
-  grid-template-columns: 2fr 3fr;
-  grid-template-areas: "meta cover";
-  align-items: center;
-  background: var(--frame);
-  /* Clips the photograph's corners too — it is flush, so it takes the card's. */
-  border-radius: 20px;
-  overflow: hidden;
-}
-.pset--feature .pset-cover {
-  grid-area: cover;
-  height: clamp(220px, 46vh, 520px);
-}
-/* The ring goes round the card, not the photograph inside it. */
-.pset--feature:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
-.pset--feature .pset-meta {
-  grid-area: meta;
-  padding: 32px;
-  gap: 10px;
-}
-.pset--feature .pset-name {
-  font-size: clamp(1.6rem, 3.2vw, 2.9rem);
-  /* Set in a colour taken from the cover (`accent` in the manifest). It is
-     the photograph's own dominant hue, so it is tuned per theme rather than
-     used raw: a mid brown reads on white and disappears on the dark card. */
-  color: var(--accent, inherit);
-}
-.pset--feature .pset-dates { font-size: clamp(0.72rem, 1.15vw, 0.9rem); }
-@media (prefers-color-scheme: dark) {
-  .pset--feature .pset-name {
-    color: color-mix(in oklab, var(--accent, currentColor) 55%, #fff);
-  }
-}
-
-/* The rest: three equal columns of vertical white cards, the featured card's
-   surface again (`--frame`, 20px corners, flat) — the cover runs flush across
-   the top and clips to the corners, the type sits under it with its own
-   padding.
-
-   ⚠️ `minmax(0, 1fr)`, not `1fr`: a bare 1fr floors at min-content, so one long
-   title would widen its column and the three would stop being equal. */
-.pset-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(14px, 2vw, 24px);
-  margin-bottom: clamp(36px, 7vh, 76px);
-}
-.pset--card {
-  display: flex;
-  flex-direction: column;
-  background: var(--frame);
-  border-radius: 20px;
-  overflow: hidden;
-}
-.pset--card .pset-cover { aspect-ratio: 4 / 5; }
-.pset--card .pset-meta {
-  padding: clamp(16px, 1.8vw, 24px);
-  gap: 8px;
-}
-.pset--card .pset-name { font-size: clamp(0.9rem, 1.5vw, 1.25rem); }
-/* The ring goes round the card, as it does on the featured one. */
-.pset--card:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
-
-/* A set marked `soon` in the manifest is WIP: not a link, so no pointer, no
-   hover zoom, no focus ring. It reads as a card that has not opened yet. */
-.pset--soon { cursor: default; }
-.pset--soon:hover .pset-cover img { transform: none; }
-.pset--soon .pset-cover img { filter: grayscale(0.35); opacity: 0.85; }
 /* The badge sits ON the photograph, top-left, as a small card in the frame's
    own colour so it reads in both themes. */
 .pset-badge {
@@ -298,6 +175,167 @@
   border-radius: 2px;
   font-size: 0.82em;
   letter-spacing: 0.14em;
+}
+
+/* ── One chronology ────────────────────────────────────────────────────────
+   The index is the writing spread's layout: the years down a nav on the left
+   (the writing index's own rows and chip, `.index-list` / `.index-link`), and
+   one year at a time on a white card on the right, which scrolls inside
+   itself. js/photos.js swaps the card's contents when a year is picked.
+
+   ⚠️ Its own `--pnav-w`, not `--index-w`: `body.solo` (collapse the writing
+   index) zeroes that one site-wide, and photos has no control to bring it
+   back. */
+.pindex--chron {
+  --pnav-w: clamp(170px, 20vw, 260px);
+  height: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0;
+  display: grid;
+  grid-template-columns: var(--pnav-w) minmax(0, 1fr);
+  column-gap: var(--index-gutter);
+  min-height: 0;
+}
+
+.pnav {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.pnav::-webkit-scrollbar { display: none; }
+/* The year is the title here, so it leads and the count sits under it. */
+.pnav .index-title {
+  font-family: var(--font-display);
+  font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+  letter-spacing: 0.1em;
+}
+.pnav .index-date { margin: 2px 0 0; }
+
+.pcard {
+  position: relative;
+  min-height: 0;
+  background: var(--frame);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.pcard-scroll {
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 32px;
+  scrollbar-width: none;
+  transition: opacity 180ms ease;
+}
+.pcard-scroll::-webkit-scrollbar { display: none; }
+.pcard-scroll.is-out { opacity: 0; }
+.pcard-head { margin-bottom: clamp(20px, 3vh, 28px); }
+
+.pchron {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1vw, 12px);
+}
+
+/* Justified rows: every frame in a row shares one height. Grow and basis are
+   both the frame's aspect, so spare width scales the whole row evenly; the
+   `::after` soaks up the last row so it isn't stretched to the edge. */
+.prow {
+  --rh: clamp(110px, 13vw, 200px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1vw, 12px);
+}
+.prow::after { content: ''; flex: 999 1 0; }
+.prow > .frame {
+  flex: calc(var(--ar)) 1 calc(var(--ar) * var(--rh));
+  width: auto;
+  aspect-ratio: var(--ar);
+  border-radius: 6px;
+}
+
+/* A trip lands in the run at its start date: a wide plate with a caption
+   line under it, the name in the colour taken from its cover (`accent`). */
+.ptrip {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+/* More air where a plate meets a row of frames than between two plates. */
+.prow + .ptrip,
+.ptrip + .prow { margin-top: clamp(14px, 2.6vh, 28px); }
+.ptrip + .ptrip { margin-top: clamp(10px, 1.6vh, 18px); }
+.ptrip-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 21 / 8;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--paper-lo);
+}
+.ptrip-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 900ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+a.ptrip:hover .ptrip-cover img,
+a.ptrip:focus-visible .ptrip-cover img { transform: scale(1.02); }
+a.ptrip:focus-visible { outline: none; }
+a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
+
+.ptrip-cap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 20px;
+  padding-top: 12px;
+}
+.ptrip-lbl {
+  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.ptrip-name {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.6rem);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent, inherit);
+}
+@media (prefers-color-scheme: dark) {
+  .ptrip-name { color: color-mix(in oklab, var(--accent, currentColor) 55%, #fff); }
+}
+.pchron-chev {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+}
+
+/* A trip marked `soon` in the manifest is WIP: the same plate, not a link. */
+.ptrip--soon .ptrip-cover img { filter: grayscale(0.35); opacity: 0.85; }
+
+/* A phone: the years become a row of chips over the card. */
+@media (max-width: 640px) {
+  .pindex--chron {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    row-gap: 10px;
+  }
+  .pnav { overflow: auto hidden; }
+  .pnav .index-list { display: flex; gap: 4px; }
+  .pnav .index-item + .index-item .index-link { border-top-color: transparent; }
+  .pnav .index-link { padding-block: 8px; white-space: nowrap; }
+  /* Just the year: the counts are in the card's own header. */
+  .pnav .index-date { display: none; }
+  .pcard-scroll { padding: 18px; }
+  .prow { --rh: 84px; gap: 6px; }
+  .ptrip-cover { aspect-ratio: 16 / 9; }
+  .ptrip-cap { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }
 
 /* ── Loose frames ──────────────────────────────────────────────────────────
@@ -1175,15 +1213,6 @@ body.gallery .stamps { display: none; }
 }
 
 @media (max-width: 640px) {
-  /* Three across is too narrow a measure for a caption at phone width. */
-  .pset-row { grid-template-columns: minmax(0, 1fr); }
-  .pset--card .pset-cover { aspect-ratio: 4 / 3; }
-  .pset--feature {
-    grid-template-columns: 1fr;
-    grid-template-areas: "cover" "meta";
-  }
-  .pset--feature .pset-cover { height: clamp(200px, 38vh, 340px); }
-  .pset--feature .pset-meta { padding: 32px; gap: 6px; }
   .pcol-cover { height: 78%; }
   /* The lede is justified at 1216px in the comp. At phone width justification
      opens rivers through a short measure, so it comes off. */
@@ -1201,7 +1230,7 @@ body.gallery .stamps { display: none; }
   .stamp,
   .stamp-cycle img,
   .frame img,
-  .pset-cover img { transition: none; }
+  .ptrip-cover img { transition: none; }
 
   .scan.is-painting .scan-art,
   .scan.is-painting .scan-line,
