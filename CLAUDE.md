@@ -869,7 +869,9 @@ loose frames: each year is one run, newest first, where a trip lands at its `sta
 date as a wide plate (`.ptrip`, 21:8 cover, a caption line with the name in its `accent`)
 among that year's loose frames, which sit in justified rows (`.prow`, 6px corners).
 The years are a nav on the left built from the writing index's own classes
-(`.index-list` / `.index-link`, filled chip for the current one); picking one swaps the
+(`.index-list` / `.index-link`, filled chip for the current one), each year's counts on
+rows of their own behind a Tabler `ticket` (trips) or `camera` (frames) (`yearCounts()`,
+`.pcounts`, also in the card's header); picking one swaps the
 white card on the right (`.pcard`, `--frame`, 20px corners, its own scroller) with a
 short fade — `showYear()`, no route change. `year` lives in module scope, so coming
 back from a trip lands on the year you left. ⚠️ The nav width is its own `--pnav-w`,

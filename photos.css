@@ -211,6 +211,21 @@
 }
 .pnav .index-date { margin: 2px 0 0; }
 
+/* A year's counts: trips and frames on rows of their own, each behind its
+   mark. The marks take the label's colour and size, and `.ico`'s hairline. */
+.pcounts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pnav .pcounts { margin-top: 6px; }
+.pcount {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+}
+.pcount .ico { width: 1.5em; height: 1.5em; }
+
 .pcard {
   position: relative;
   min-height: 0;

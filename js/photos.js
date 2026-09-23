@@ -133,10 +133,16 @@
     return years;
   }
 
-  const yearMeta = its => {
+  // A year's counts, one per row, each behind its mark: a ticket stub for the
+  // trips, a camera for the loose frames (Tabler `ticket` and `camera`).
+  const ICO_TRIP = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l0 2"/><path d="M15 11l0 2"/><path d="M15 17l0 2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2"/></svg>';
+  const ICO_FRAME = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>';
+  const yearCounts = its => {
     const trips = its.filter(it => it.c).length;
     const frames = its.length - trips;
-    return (trips ? plural(trips, 'trip') + ' / ' : '') + plural(frames, 'frame');
+    const row = (ico, text) => `<span class="pcount">${ico}<span>${t(text)}</span></span>`;
+    return (trips ? row(ICO_TRIP, plural(trips, 'trip')) : '') +
+      (frames ? row(ICO_FRAME, plural(frames, 'frame')) : '');
   };
 
   // A trip, as a plate in the run. A `soon` set is the same plate, not a link.
@@ -172,7 +178,7 @@
     return `
       <header class="pcard-head">
         <h2 class="page-title">${t(y)}</h2>
-        <p class="page-meta">${t(yearMeta(its))}</p>
+        <p class="page-meta pcounts">${yearCounts(its)}</p>
       </header>
       <div class="pchron">${out}</div>`;
   }
@@ -185,7 +191,7 @@
       <li class="index-item${y === year ? ' is-current' : ''}">
         <button class="index-link" type="button" data-year="${esc(y)}"${y === year ? ' aria-current="true"' : ''}>
           <span class="index-title">${t(y)}</span>
-          <span class="index-date">${t(yearMeta(its))}</span>
+          <span class="index-date pcounts">${yearCounts(its)}</span>
         </button>
       </li>`).join('');
 
