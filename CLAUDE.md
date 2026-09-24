@@ -161,6 +161,15 @@ container anywhere inside, so there is nothing for a stray overflow to start scr
 ⚠️ Don't put a `max-width` on `.lockup` — it was there once and broke the name across
 three lines and overrode the bio's hand-set `<br>`s. The measure belongs on `.bio`.
 
+⚠️ **`--card` is not `--frame`.** Cards content sits on (`.page`, `.pcard`, `.ploose`,
+`.case`, the "Coming soon" badge, the map's controls and popups) use `--card`; the grounds
+(the landing page's border, the hole under the dog-ear, the day view and lightbox
+backdrops) use `--frame`. Both are white in light mode. In dark mode the order is dark ground →
+dark paper → lighter card on top: frame `#0a0b0c`, paper `#16191a` (ramp `#1b1e20` /
+`#111314`), card `#25292b`. The page is what went darker, not the card lighter (a `#35393c`
+card on the old `#262a2c` paper was tried and read too pale). Written with `--frame` the
+cards sank below the paper.
+
 **Theme is automatic** (`prefers-color-scheme`), with no toggle. This is not the v2
 dark-lock coming back: that whole mechanism — `THEME_LOCK_DARK`, the pinned
 `data-theme="dark"` attribute, the hidden `#themeToggle` — went with `js/main.js`.
@@ -524,6 +533,17 @@ title just under the masthead (there is no rule under it any more), and a second
 It fades in with `body.reading` (`back-in`) and out with the surface on the way home
 (`fadeOut([leaving, backLink])`, so it doesn't blink off at the end of the flight).
 
+⚠️ **Back is the browser's back, not "home".** Out of a trip it goes to Photos, out of a
+post to wherever you opened it from. `stampDepth()` (js/paper.js, "Back") stamps each
+history entry with `{ depth, prev }` the first time `route()` sees it; `depth > 0` means
+the previous entry is ours and Back is `history.back()`. On the entry the visitor LANDED
+on (depth 0) it goes up a level instead (`parentRoute()`: day → trip → Photos → home, a
+narrow piece → the list), by REPLACING the entry — pushed, the next Back would step
+straight back into the page it left. Escape does the same. Photos' layers follow suit
+through `paper.closeTo()` (closing a day or play steps back if the trip is `prev`) and
+`paper.replaceRoute()` (day to day, and the redirects to `#photos`). Anything that
+rewrites the URL must pass `history.state` through, or the stamp is lost.
+
 ⚠️ **The name is vestigial in a section.** `.lockup` is `position: absolute;
 visibility: hidden` there, and `flyName()` still flies the invisible word: it is now only
 the timing device `enterReading()`/`leaveReading()` wait on alongside the monogram. It
@@ -588,7 +608,7 @@ full-bleed cover follow it, and it lands in the same task the flights measure in
 no vertical rule between the index and the card any more — the gutter alone separates
 them.
 
-**The piece sits on a white card** (`.page`: `--frame`, 20px corners) that fills the whole
+**The piece sits on a white card** (`.page`: `--card`, 20px corners) that fills the whole
 right-hand column, and `.page-scroll` is now the card's full width so the wheel works
 anywhere on it. ⚠️ The measure therefore comes from PADDING —
 `padding-inline: max(gutter, (100% - --measure) / 2)` — not a `max-width` on the scroller;
@@ -599,7 +619,7 @@ either side of it are dropped so no hairline runs through the fill.
 **The fades** (styles.css "The fades under overflowing content", toggled by `updateFade()`
 in `js/paper.js`): a soft wash plus a feathered `backdrop-filter` blur over the bottom of
 a scroller while it has more below, gone at the end. There is one PER SCROLLER, each fading
-to what is behind it: the piece (`.page.is-fade`, `::after`) fades to **white** (`--frame`),
+to what is behind it: the piece (`.page.is-fade`, `::after`) fades to **the card** (`--card`),
 the index (`.spread.is-fade-index`, `::before`, `--index-w` wide) to the **paper**
 (`--sheet-mid`, at a lighter 40% because the sheet is a lit gradient and a flat tone shows
 as a band; ⚠️ the index's is blur only, and its titles are MASKED to transparent instead, which
@@ -612,7 +632,8 @@ blurred and over-saturated so it ghosts through, refracted by the `#glass` SVG f
 `@supports` and other browsers keep blur + sheen), with three bands of light that
 `paper.js` slides along with the scroll (`--glass-pos` on `.page`), and a bright hairline +
 inner glow on the bottom edge. Each white band is paired with a cool grey one
-(`--glass-lo`) because white on the white card is invisible; dark mode swaps both.
+(`--glass-lo`) because white on the white card is invisible. ⚠️ In dark mode both are kept
+faint (5% / 14%): at 16% white the bands read as a pale haze over the bottom of the piece.
 ⚠️ The index's is masked on BOTH axes (vertical fades at both ends, plus a horizontal
 feather) — a blurred rectangle on a grained sheet shows its edges otherwise. ⚠️ On a narrow sheet only
 the pane that is showing counts. ⚠️ Throttled with `setTimeout`, not rAF: a hidden tab never
@@ -780,8 +801,9 @@ into blur + fade (on the role's CHILDREN — the role's own `settle` fill holds 
 The roles' right padding is the gutter, so the last one scrolls fully into the measure.
 
 ⚠️ **The page's scroll drives the timeline sideways** ("Career: the timeline's lock" in
-`js/more.js`). Scrolling down stops at the PIN (section bottom on the view's bottom if
-it fits, else its top on the top) and spends the wheel sideways until the last role is
+`js/more.js`). Scrolling down stops at the PIN (the top of the page whenever the timeline
+starts in the upper half of the view there, so the first scroll on landing already drives
+it; else section bottom on the view's bottom if it fits, else its top on the top) and spends the wheel sideways until the last role is
 in; scrolling up rewinds it. Two paths, both needed: a cancelled `wheel` (smooth), and a
 `scroll` fallback that puts the page back on the pin, because Chrome only lets the first
 wheel event of a gesture be cancelled and keys never fire `wheel`. Nav jumps set
@@ -789,9 +811,14 @@ wheel event of a gesture be cancelled and keys never fire `wheel`. Nav jumps set
 snaps role by role instead — and snap is touch-only because a mandatory snap would undo
 the lock's small `scrollLeft` steps.
 
-**Case studies are placeholders**: `cases.items` in `content/career.json`, titled from the
-roles' own highlights. A card with no `image` shows the placeholder plate; add `image`
-(and `url` to make it a link) as they're written.
+**Case studies are not listed yet**: `cases.items` in `content/career.json` is empty (the
+placeholder titles taken from the roles' highlights were inaccurate and are gone), and an
+empty list renders one "Coming soon" card (`.cases-soon`) instead of the grid. A card with no `image` shows the placeholder plate; add `image`
+(and `url` to make it a link) as they're written. A card with no `url` carries a "Coming
+soon" badge over its plate (`.case-badge`, the photos index's `.pset-badge` restated);
+giving it a `url` is what takes the badge off. The page has no meta line under the title
+(the "2015 to today" span is gone); `.page-meta:empty` hides the empty one. The section
+labels (`.career-label`) are set in `--ink` at ~1rem with the headings' text-stroke.
 
 **Career is live in the nav** (`<a href="#career">` between Photos and More). It was a
 "Soon" span for a while; the `.links .soon` rules are gone from `career.css` and `styles.css`.
@@ -847,11 +874,14 @@ in `build/dev.js`). The numbers beside a photograph are that photograph's own.
 `content/photos/` on image extensions and does not recurse, so `collections/` and
 everything under it is skipped — the grid never picks up a stamp or a cover.
 
-⚠️ **Most day frames are STAND-INS** — real photographs out of `content/photos/`, dealt
-out per day, each flagged `"standin": true` and rendered with a faint hatch
-(`.frame--standin`). Only `frames[0]` of each day is the real Italy frame. Drop the
-real files in, rebuild the manifest and the flag goes with them. An unmarked stand-in
-is just a wrong caption.
+**The day frames are the real selects** (`Italy Selects (V1)`, 463 frames), filed into
+days by each frame's own EXIF date by `build/fill-collection.mjs` (see **Rebuilding the
+assets**). The stand-ins are gone. `frames[0]` is still the photograph the stamp was
+drawn from; where that frame is among the selects, the select (a later, brighter edit)
+took its place. Two stamps were drawn from a photograph taken on ANOTHER day — the
+Duomo (day 8) from Sep 5 and Bonus from Sep 9 — so those two photographs also appear in
+their own day's grid. **Bonus has only its lead frame**: no select was shot on Sep 11.
+The `.frame--standin` hatch is still in photos.css, unused.
 
 ⚠️ **There are no unwritten sets any more — those frames are all loose.** The date
 clusters (`24 May - 3 Jun 2026` and the rest) were folders with a provisional date
@@ -875,13 +905,43 @@ rows of their own behind a Tabler `ticket` (trips) or `camera` (frames) (`yearCo
 white card on the right (`.pcard`, `--frame`, 20px corners, its own scroller) with a
 short fade — `showYear()`, no route change. `year` lives in module scope, so coming
 back from a trip lands on the year you left. ⚠️ The nav width is its own `--pnav-w`,
-not `--index-w`, because `body.solo` zeroes that one site-wide. Under 640px the years
+not `--index-w`, because `body.solo` zeroes that one site-wide. **On a wide sheet the nav
+rests as a rail of two-digit years** ("26", `--pnav-rail`; `yearLabel()` wraps the century
+in `.pyear-long`, which folds to nothing, so the text is still "2026") and opens on hover or
+focus to the full years and counts, on the bare paper, PUSHING the card over (the column is
+`auto` and follows the nav's width). It was an opaque panel laid over the card first; taken
+out on request. The justified rows re-lay each frame of the push, so a frame can hop rows
+mid-way. Resting, each year is a SQUARE the rail's width (the title carries the padding,
+in its own em, so the two digits centre). The open is one ease-in-out curve
+(`--rail-ease`, sine in-out, `--rail-dur` 175ms). ⚠️ The nav is also a scroll-reveal
+block (`.sr`), and `.plates-scroll .sr`'s `transition` outranked `.pnav`'s and dropped the
+width from it, so the push snapped in one frame whatever the curve; the rule is
+`.plates-scroll .pnav.sr` and carries the reveal's opacity/transform entries too for width, padding, century and counts, after a 120ms
+hover-intent `--wait` that closing skips. Picking a year folds it shut `photos.railRest`
+(2500ms) later even with the pointer still on it (`.is-resting`, excluded by every open
+rule), until the pointer leaves or keyboard focus moves on; ⚠️ the years' mousedown is
+cancelled so a click doesn't focus them, or `:focus-within` would hold it open. Non-current
+years sit at 45% opacity, the current one at full. Under 640px the years
 are a row of chips over the card. `accent` is a saturation-weighted mean of the cover's
 non-white, non-black pixels (`#735d43` for Italy), lightened in dark mode; recompute it
 if a cover changes.
 
 ⚠️ **Day cards in a collection are still `.ploose`** (`--frame`, 20px corners, 32px
-padding) with 6px-rounded photographs; frames in a collection's own gallery are square.
+padding) with 6px-rounded photographs. The day view's frames (`.daygrid`) are a masonry at
+each photo's own ratio, NOT square crops, outside the reading measure (capped at the 960px content
+width, three columns, two on a phone). ⚠️ The columns are real `.daycol` elements filled in
+ROW order (shortest column first, off the manifest's ratios) by `dayColumnsHTML()`, not CSS
+`columns`, which reads down-then-across. **Keepsakes are cards in that grid**
+(`dayItemsOf()`), among the frames of their moment: a keepsake is `[kind, note]` or an object
+that can add `at` ("HH:MM", before the first frame at/after that EXIF time), `after` (a frame
+index) or `image` + `w`/`h` (a scan). With no `at`/`after` they are spread through the day in
+listed order. Tickets are drawn wide, receipts as tall slips, maps square., with the 1800px file in a `srcset`.
+
+⚠️ **The lightbox (`openFrame()`) is appended to `<body>`, `position: fixed`, `z-index: 100`**
+— the whole viewport on a white `--frame` ground, over the masthead, with no hairline on the
+photograph, which is capped at the 960px content width. Because it lives outside the plates,
+`paint()` closes it on every route. **The day view is on `<body>` too** (`fixed`, `z-index: 90`,
+under the lightbox), on an opaque `--frame` ground, so the nav never shows through it.
 
 ⚠️ **Photographs carry no shadow, and the loose frames no hairline either.** `--plate-shadow` is a transparent no-op (kept as a
 variable so the hairline rules that share it needn't change), and the scan stage's
@@ -946,8 +1006,14 @@ re-rolls on every paint, so a stamp moves when you come back to the page.
 not arrived is a blank cream card with a caption under it, which reads as a missing
 image rather than as one on its way.
 
-**The route.** ONE line through all twelve, not a strand per row: along a row, out
-right, back across underneath, up into the start of the next — a Z. ⚠️ It is
+**The route.** ONE dotted line through all twelve in trip order, as a SERPENTINE:
+every other row is reversed on screen (`.stamp-row--rev`, `direction: rtl`; DOM order
+stays chronological), so the line runs along a row, U-turns in the margin past its last
+stamp and comes back along the next. It never crosses a caption (the old Z-diagonal did,
+and was taken out on request). Each stamp carries a numbered badge (`.stamp-num`, the
+bonus day is `+`) because a right-to-left row needs one. ⚠️ Rows are built per VISUAL
+line by `stampRowsHTML()` (4, or 2 under 900px via `STAMP_COLS`) and rebuilt when that
+flips; a row of four wrapping two-by-two in one grid can't alternate. ⚠️ It is
 **measured off the laid-out stamps** by `drawRoute()` and redrawn on resize, rather
 than drawn into a stretched viewBox: the grid is fluid and the row turns are the only
 real curves in it, so `preserveAspectRatio="none"` would flatten precisely the parts
@@ -957,16 +1023,89 @@ actually changed size.
 
 **The riffle.** Hovering a stamp flicks through the frames it stands for, each wiped
 on from the left over the engraving rather than cross-faded. The images are built on
-first hover — twelve stamps times five frames is sixty photographs nobody has asked
-for yet. The first one shown is `frames[0]`, the photograph the engraving was drawn
+first hover, and only the first five of a day (`slice(0, 5)`: the busiest day has 114) —
+twelve stamps times five frames is sixty photographs nobody has asked for yet. The first one shown is `frames[0]`, the photograph the engraving was drawn
 from.
+
+### Changing page and fading on (`swapIn()`, `markReveal()`, `watchReveal()`)
+
+Moving between the photos index and a trip no longer cuts: the old page fades off
+(`.plates-scroll.is-leaving`, 240ms), the new one is painted, and its blocks fade ON as
+they come into view: `.sr` (fade + 16px rise), `.sr--fade` (opacity only, for the stamp
+rows and route, which `drawRoute()` measures). One IntersectionObserver on the scroller;
+blocks arriving together are staggered top to bottom (70ms apart). ⚠️ `markReveal()`
+applies the start state with transitions OFF and forces a style flush, because the
+paint functions read layout (`scrollTop = 0`) first: a plain class add then faded the
+page DOWN and back up. Reduced motion shows everything at once.
+
+### The trip lift (`liftTrip()` in js/photos.js, `.tripscan` in photos.css)
+
+**Two styles, `photos.liftStyle`.** `'flip'` (the default): after the flight the photo
+TURNS OVER (`turnOver()`, `.tripscan--flip`), lifting toward you, and its back
+(`.tripscan-back`) is a blank sheet of cold-press paper in the illustration's own paper
+colour (`#f1ede6`, sampled from `cover-art.jpg`; recompute if the art changes) with a
+faint lit-noise tooth; the brush then paints the illustration onto that sheet.
+`'crumple'`: the older version below, where the photo crumples, the illustration is
+brushed over the photograph itself, and it flattens. Both share the flight, `prep()`,
+`paintBrush()` (on `state.surface`: the back, or the photo) and the reveal.
+⚠️ The turn and the lift are two animations on the individual `rotate` / `scale`
+properties, not one keyframed `transform`: easing applies per keyframe segment, so a
+0 → 90 → 180 transform with a lift at the midpoint slowed into edge-on and sped out of
+it. The shadow narrows (`shade-turn`) as the card goes edge-on. The brush core tapers
+in and out (`drawStroke()`): with a constant width and round caps, every stroke's first
+frames were a circle, which on blank paper read as a blob.
+
+A trip whose `index.json` entry has `coverArt` doesn't just navigate when its card is
+clicked. The index card shows the PHOTOGRAPH (`cover`, Italy's is the Pantheon); the trip
+page's banner shows the ILLUSTRATION (`coverArt` = the collection's own `cover`,
+`cover-art.jpg`). The click flies the photograph from the card to the banner's exact rect
+while `.plates-scroll` fades out (`.is-lifting`), then: it **crumples** (CSS transform
+keyframes plus faceted crease shading drawn once on a canvas, `drawCreases()`, laid on
+with `soft-light`), the illustration is **brushed over** it (`paintBrush()`: ~16 diagonal
+bristle strokes into a mask canvas, the illustration composited through it `source-in`
+every frame), and it **flattens** back out as the illustration. Once both are done the
+scroller fades up (the lede and whatever else is in view fading on top-down under the
+banner, the rest as it is scrolled to) and the overlay fades off, which only reads as the
+banner's title arriving. Click or Escape skips to the end state. Tunables:
+`photos.liftDur`, `crumpleDur`, `paintDur`, `flattenDur`.
+
+⚠️ **The beats overlap the landing, and the heavy work sits in the settle.** The flight
+(800ms) lands on a long soft ease (`LAND`, ~97% of the distance in its first half). At
+55% of it, once the index has faded and the photo is moving a pixel or two a frame,
+`prep()` moves the route (painting the whole trip page, a ~50ms frame), draws the crease
+canvas and swaps in the full-size photo; the crumple starts at 80% and the brush ~200ms
+after that, ~0.85s after the click. Doing the heavy work in the fast part of the flight
+or mid-crumple was a visible hitch (the "jerky motion after the click"); waiting for the
+flight to settle fully before crumpling read as a long pause after the click. Two
+intermittent stalls were also fixed: the illustration is decoded into an `ImageBitmap`
+in `prep()` (a plain `<img>` handed to `drawImage()` could decode synchronously on the
+brush's first frame, ~120ms), and `.tripscan-paper` / `.tripscan-shade` carry
+`will-change` so the crumple doesn't create its layer on its first frame. The crumple and flatten are ONE smooth ease each,
+no double grab or overshoot, and the lifted shadow is its own element
+(`.tripscan-shade`), not an animated `filter`. Measured: no frame over 34ms end to end.
+The flight uses the card's WINDOW rect (`.ptrip-cover`), not the image's, and animates
+the photo's hover zoom back to 1, or it pops by the zoom at takeoff.
+
+⚠️ **The landing rect is measured, not guessed.** `bannerRect()` lays out a hidden probe
+(`.tripscan-probe > .pcol > .pcol-cover`) in the plates, the same box as the scroller, so
+the flight lands where the banner will be; `pagePainted()` measures the real banner once
+the route has painted and wins if they differ. Change the trip page's top (anything above
+`.pcol-cover`) and the probe has to learn it too.
+⚠️ The brush is a canvas, not a CSS mask: bristles with their own weight and dry breaks
+are what make it read as paint. Full-width horizontal passes were tried and read as a
+scanner. The crease shading at full contrast read as low-poly art; it is kept faint.
+The first version painted the REAL photo in over the illustration (a portrait snapshot the
+painting was made from); it was taken out as boring. Don't bring back `coverReal`.
 
 ### The scan
 
 Clicking a stamp gathers the other eleven toward the middle, flies the one you picked
 into the centre of the sheet, and repaints the engraving into the photograph it came
 from — brushed on, with a lamp riding the edge, sparkle along it, and that frame's
-real EXIF printing in beside it.
+real EXIF printing in under it. The photograph and the day's title, date line and copy (to
+its right, text centred) are centred in the view as one group (`.scan` is two tracks with
+`justify-content: center`); the copy drops under the photograph below 900px. The EXIF is the lightbox's line of values
+(`exifBits()`, shared by both), not a labelled table.
 
 ⚠️ **The ENGRAVING is masked away; the photograph is not masked in.** Built the other
 way round first and it did not paint: with the photograph masked on top of an opaque
@@ -1006,6 +1145,15 @@ middle of the sheet doing nothing.
 banner and lays the whole trip out in one continuous field — no steps, nothing to page
 through. The cover stays, because it is what says which trip this is.
 
+**It is broken up by DAY MARKERS** (`playDaysHTML()`, `.pgday` in photos.css): each day is a
+section with a big two-digit number in a square chip down the left (the index's year rail
+restated; the bonus day is `+`), sticky so it holds at the top while its day scrolls past,
+beside the day's title line and the day view's own grid (`dayItemsOf()` / `dayColumnsHTML()`),
+so the keepsake placeholders land among the frames here too. A frame opens in the lightbox
+within its own day. Under 640px the marker leads the title line instead of hanging beside it.
+`body.gallery .pcol-actions` carries a top margin, since the lede that spaced the button off
+the banner is hidden in this view.
+
 ### Tuning it live
 
 `photos.scanDur = 9000` to watch the brush work, `photos.riffle`, `photos.flyDur`,
@@ -1016,12 +1164,20 @@ cover can negate it exactly. And the negative margin is on the SURFACE, not on t
 cover: `overflow` clips to the padding box, so a bleeding child of a scroller whose
 padding box stops at the text column is simply cut off there.
 
+⚠️ **The collection cover is no longer full bleed.** `.pcol-cover` is a 16:9 banner at the
+960px content width (`max-height: 90%`, 20px corners, title sized in `cqw` off the banner),
+and the lede, `.pdays` and `.pgallery` share that width. The lede is set like the writing
+page's `.prose` (Geist, `clamp(0.95rem, 1.2vw, 1.1rem)`, 1.9 leading, `--ink`, ragged right),
+no longer justified Wingman. The `.bleed` rule is still in
+photos.css but nothing uses it; under 640px the banner goes back to `height: 78%`.
+
 ⚠️ **`.pcol` carries `height: 100%`** and it is load-bearing. A percentage height
 against an auto-height parent computes to `auto`, so without it the 90%-tall cover
 quietly falls back to its image's intrinsic ratio — on a wide sheet, a photograph
 taller than the window with its byline below the fold. For the same reason the
 dog-ear clearance sits on `.pcol` / `.pindex` rather than on `.plates-scroll`: a padded
-scroller shortens its own content box, and the cover measures against that.
+scroller shortens its own content box, and the cover measures against that. The headroom above
+the banner (`padding-top` on `.pcol`) is the day view's top padding, for the same reason.
 
 ### Rebuilding the assets
 
@@ -1033,8 +1189,19 @@ Not a committed build step — `sharp` is deliberately absent from `package.json
 - **Photographs** → `photos/` at 1800px and `thumbs/` at 760px; `keepExif()` on the
   full size, because the scan panel is the whole reason that data is there.
 - **Cover** → `cover.jpg` at 2000px, `cover-sm.jpg` at 1000px.
+- **Day frames** → `node build/fill-collection.mjs italy-2026 "<folder of selects>"`.
+  Unlike make-collection.mjs it edits the hand-written manifest in place, touching only
+  `frames`: each day keeps its lead, the rest is rebuilt from the folder by EXIF date,
+  and files the manifest stops naming are deleted. Already-encoded frames are reused
+  (`--force` re-encodes). ⚠️ It strips the GPS block that `keepExif()` would otherwise
+  publish. ⚠️ It finds the stamp's own photograph among the selects by CORRELATION at
+  32px, not by difference: the selects are a re-grade of the same frames. ⚠️ The Italy
+  cameras were on Atlanta time (−6h); no select crosses midnight in Italy, but check
+  that for a new folder.
 
-⚠️ **Write them BASELINE, not progressive.** sharp's `mozjpeg: true` preset writes
+⚠️ **Write them BASELINE, not progressive.** fill-collection.mjs gets mozjpeg's savings
+(trellis, quant table 3, ~25% smaller, no visible change at 1:1) by passing those options
+WITHOUT `mozjpeg: true`, which would switch progressive back on. sharp's `mozjpeg: true` preset writes
 progressive scans, and the 2400px progressive cover would not rasterise in Chrome at
 all: the element laid out, the bitmap drew fine into a canvas, and the page painted the
 placeholder behind it — while `img.decode()` on it hung the renderer outright. The

@@ -212,7 +212,9 @@
   const ico = key => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${TRAIT_ICONS[key] || ''}</svg>`;
 
   // A case study with no `image` gets the placeholder plate; one with a `url`
-  // is a link. None has either yet, so every card is a placeholder.
+  // is a link. One with no `url` isn't written yet and carries a "Coming soon"
+  // badge over its plate, the way an unopened trip does on the photos index.
+  // With no items at all the section is one "Coming soon" card.
   const PHOTO_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/></svg>';
   const caseCard = (c, i) => {
     const tag = c.url ? 'a' : 'div';
@@ -220,7 +222,7 @@
     const img = c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy">` : PHOTO_ICO;
     return `
       <li class="case-item" style="--i:${i}"><${tag} class="case"${href}>
-        <span class="case-img${c.image ? '' : ' case-img--empty'}">${img}</span>
+        <span class="case-img${c.image ? '' : ' case-img--empty'}">${img}${c.url ? '' : '<span class="case-badge">Coming soon</span>'}</span>
         <span class="case-title">${txt(c.title)}</span>
         ${c.company ? `<span class="case-meta">${txt(c.company)}</span>` : ''}
       </${tag}></li>`;
@@ -296,7 +298,9 @@
       ${c ? `
       <section class="career-sec" id="careerCases" aria-labelledby="casesTitle">
         <h3 class="career-label" id="casesTitle">${txt(c.title)}</h3>
-        <ul class="cases">${c.items.map(caseCard).join('')}</ul>
+        ${c.items.length
+          ? `<ul class="cases">${c.items.map(caseCard).join('')}</ul>`
+          : `<div class="cases-soon">${PHOTO_ICO}<span>Coming soon</span></div>`}
       </section>` : ''}
     </div>`;
   }
@@ -308,10 +312,13 @@
      a sideways swipe, shift-wheel, a touch drag or the arrow keys (it takes
      focus) all move it directly.
 
-     The PIN is the scroll position the page holds while the timeline moves:
-     the section's bottom on the bottom of the view if it fits (at the top of
-     the page that is usually 0, so the first scroll already drives it),
-     otherwise its top on the top.
+     The PIN is the scroll position the page holds while the timeline moves.
+     It is the top of the page whenever the timeline starts in the upper half
+     of the view there (it is the first section, so in practice always): the
+     first scroll on landing drives it sideways, with no step down first, even
+     if a short window cuts off the foot of the roles. Otherwise it is the
+     section's bottom on the bottom of the view if it fits, else its top on
+     the top.
 
      ⚠️ Two paths, and both are needed. `wheel` is the smooth one: the event is
      cancelled and its delta is spent sideways, so the page never moves. But
@@ -339,6 +346,7 @@
   function pinTop() {
     const sec = $('careerTimeline');
     const top = sec.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+    if (top < scroll.clientHeight / 2) return 0;
     const pad = 16;
     const fitBottom = top + sec.offsetHeight + pad - scroll.clientHeight;
     const pin = Math.min(fitBottom, top - pad);

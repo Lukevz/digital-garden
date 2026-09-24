@@ -26,6 +26,8 @@
   column-gap: 16px;
 }
 .folio-head--action .page-meta { grid-column: 1 / -1; }
+/* Career has no meta line any more; an empty one would still hold its margin. */
+.folio-head .page-meta:empty { display: none; }
 
 .resume-btn {
   display: inline-flex;
@@ -143,10 +145,12 @@
 .career-label {
   margin: 0 0 clamp(18px, 3vh, 28px);
   font-weight: 400;
-  font-size: clamp(0.56rem, 0.9vw, 0.68rem);
-  letter-spacing: 0.2em;
+  font-size: clamp(0.82rem, 1.35vw, 1.05rem);
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--ink);
+  /* One weight in the face: heavier is a stroke, as on the headings. */
+  -webkit-text-stroke: 0.035em currentColor;
 }
 
 /* ══ The timeline ══════════════════════════════════════════════════════════
@@ -419,7 +423,7 @@
   box-sizing: border-box;
   padding: var(--case-pad) var(--case-pad) 14px;
   border-radius: var(--case-r);
-  background: var(--frame);
+  background: var(--card);
   color: var(--ink);
   text-decoration: none;
   transition: transform 220ms cubic-bezier(0.2, 0.6, 0.2, 1);
@@ -429,6 +433,7 @@ a.case:focus-visible { transform: translateY(-2px); outline: none; }
 a.case:focus-visible { box-shadow: 0 0 0 2px var(--ink-soft); }
 
 .case-img {
+  position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
@@ -441,6 +446,38 @@ a.case:focus-visible { box-shadow: 0 0 0 2px var(--ink-soft); }
   color: var(--ink-soft);
 }
 .case-img--empty .ico { width: 1.75rem; height: 1.75rem; }
+/* No case studies listed yet: one card across the measure, the empty plate's
+   icon over a "Coming soon" caption. */
+.cases-soon {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  min-height: clamp(160px, 22vw, 240px);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: clamp(0.62rem, 1vw, 0.78rem);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.cases-soon .ico { width: 1.75rem; height: 1.75rem; }
+.cases-soon > span { margin-right: -0.15em; }
+
+/* The photos index's "Coming soon" badge (`.pset-badge`), inset to match. */
+.case-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
 
 .case-title,
 .case-meta {

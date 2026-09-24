@@ -11,7 +11,7 @@
    What is in here:
 
      • the index of collections, and the loose frames under it
-     • a written collection: a full-bleed cover, a justified lede, and the
+     • a written collection: a cover banner, a lede set like the prose, and the
        stamps
      • the STAMPS — one per day, perforated in CSS, cycling their own
        photographs on hover
@@ -115,6 +115,11 @@
   padding-bottom: clamp(48px, 9vh, 110px);
 }
 
+/* Headroom under the masthead before the trip's banner: the same dial as the
+   day view's top (`.dayview-scroll`). On the view, not the scroller, for the
+   reason above; the lift's probe (`.tripscan-probe > .pcol`) picks it up. */
+.pcol { padding-top: clamp(56px, 11vh, 120px); }
+
 /* Full bleed: back out the gutter the scroller just added. ⚠️ Derived from
    --sheet-pad rather than restating the clamp, so the two cannot drift. */
 .bleed {
@@ -156,7 +161,7 @@
   left: 14px;
   padding: 5px 10px;
   border-radius: 999px;
-  background: var(--frame);
+  background: var(--card);
   color: var(--ink);
   font-size: clamp(0.54rem, 0.86vw, 0.66rem);
   letter-spacing: 0.2em;
@@ -226,10 +231,135 @@
 }
 .pcount .ico { width: 1.5em; height: 1.5em; }
 
+/* The picked year is the only one at full strength; the rest recede. */
+.pnav .index-link { transition: color 200ms ease, opacity 200ms ease; }
+.pnav .index-item:not(.is-current) .index-link { opacity: 0.45; }
+.pnav .index-item:not(.is-current) .index-link:hover,
+.pnav .index-item:not(.is-current) .index-link:focus-visible { opacity: 1; }
+.pyear-short { display: none; }
+
+/* ── The year rail ─────────────────────────────────────────────────────────
+   On a wide sheet the nav rests as a rail of two-digit years ("26") and opens
+   on hover, or when a year takes keyboard focus, to the full year and its
+   counts.
+   It opens BESIDE the card and pushes it over, on the bare paper: the column
+   is `auto`, so it follows the nav's own width as that transitions. (It was
+   an opaque panel laid over the card first; taken out on request.) The
+   justified rows are pure flexbox, so the push re-lays them each frame and a
+   frame can hop to the next row mid-way — that is the cost of pushing.
+   ⚠️ The small delay before opening is what stops it springing open every
+   time the pointer crosses the rail on its way to the card.
+
+   ⚠️ Picking a year closes it again a moment later, with the pointer still on
+   it: js/photos.js sets `.is-resting`, which every open rule here excludes,
+   until the pointer leaves the rail or keyboard focus moves on. Mouse clicks
+   don't focus the years (the mousedown is cancelled), or `:focus-within`
+   would hold the panel open after the pointer had gone.
+
+   Every part of the open moves on ONE ease-in-out curve and one duration —
+   the nav's width (and so the card's), the chip's padding, the century and the counts — so it
+   reads as a single movement rather than several things settling at
+   different rates. Closing runs the same curve back with no delay.
+
+   ⚠️ Resting, each year is a SQUARE the width of the rail. The chip's padding
+   goes to 0 and the TITLE carries it instead, in its own em: 1.7em is its
+   line box, 1.36em is the ink of two digits (measured; 1.46em with the
+   trailing tracking, which is left out so the pair centres optically). The
+   max-width / max-height the century and the counts open to are their real
+   sizes (1.58em, 3.84em), not generous caps — an eased max-width that
+   overshoots finishes its visible part early and the curve is lost. */
+@media (min-width: 641px) {
+  .pindex--chron {
+    --pnav-rail: clamp(62px, 5.6vw, 76px);
+    /* Sine in-out, not cubic: cubic's middle runs at 3x the average speed
+       and the push lurched once it got going. Sine peaks near 1.6x. */
+    --rail-ease: cubic-bezier(0.37, 0, 0.63, 1);
+    --rail-dur: 175ms;
+    --rail-wait: 120ms;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .pnav { width: var(--pnav-rail); }
+  .pnav:not(.is-resting):is(:hover, :focus-within) { width: var(--pnav-w); }
+
+  .pnav .index-link {
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .pnav .index-title {
+    padding-block: calc((var(--pnav-rail) - 1.7em - 1px) / 2);
+    margin-left: calc((var(--pnav-rail) - 1.36em) / 2);
+  }
+  .pnav:not(.is-resting):is(:hover, :focus-within) .index-link { padding: 11px 12px; }
+  .pnav:not(.is-resting):is(:hover, :focus-within) .index-title { padding-block: 0; margin-left: 0; }
+
+  /* The century folds away. */
+  .pyear-long {
+    display: inline-block;
+    vertical-align: bottom;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+  .pyear-short { display: inline; }
+  .pnav:not(.is-resting):is(:hover, :focus-within) .pyear-long { max-width: 1.58em; opacity: 1; }
+  .pnav:not(.is-resting):is(:hover, :focus-within) .pyear-short { display: none; }
+
+  .pnav .index-date {
+    max-height: 0;
+    margin: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+  .pnav:not(.is-resting):is(:hover, :focus-within) .index-date {
+    max-height: 3.84em;
+    margin-top: 6px;
+    opacity: 1;
+  }
+
+  /* One curve for all of it. `--wait` is the hover-intent delay, set on the
+     open nav and inherited, so closing (where it is unset) starts at once.
+     The dim on a single year stays its own quicker, undelayed fade. */
+  .pnav:not(.is-resting):is(:hover, :focus-within) { --wait: var(--rail-wait); }
+  /* ⚠️ The nav is also a scroll-reveal block (`.sr`), and
+     `.plates-scroll .sr`'s transition list outranks a bare `.pnav` — which
+     silently dropped the width from it, so the push SNAPPED in one frame
+     whatever the curve said. Hence the specificity, and the reveal's own two
+     entries carried along in the same list. */
+  .plates-scroll .pnav.sr {
+    transition:
+      width var(--rail-dur) var(--rail-ease) var(--wait, 0ms),
+      opacity 700ms cubic-bezier(0.33, 0, 0.2, 1),
+      transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pnav .index-link {
+    transition:
+      padding var(--rail-dur) var(--rail-ease) var(--wait, 0ms),
+      opacity 200ms ease,
+      color 200ms ease;
+  }
+  .pnav .index-title {
+    transition:
+      padding var(--rail-dur) var(--rail-ease) var(--wait, 0ms),
+      margin var(--rail-dur) var(--rail-ease) var(--wait, 0ms);
+  }
+  .pyear-long {
+    transition:
+      max-width var(--rail-dur) var(--rail-ease) var(--wait, 0ms),
+      opacity var(--rail-dur) var(--rail-ease) var(--wait, 0ms);
+  }
+  .pnav .index-date {
+    transition:
+      max-height var(--rail-dur) var(--rail-ease) var(--wait, 0ms),
+      margin var(--rail-dur) var(--rail-ease) var(--wait, 0ms),
+      opacity var(--rail-dur) var(--rail-ease) var(--wait, 0ms);
+  }
+}
+
 .pcard {
   position: relative;
   min-height: 0;
-  background: var(--frame);
+  background: var(--card);
   border-radius: 20px;
   overflow: hidden;
 }
@@ -381,7 +511,7 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
    column, which would leave the card's bottom padding 16px deeper than its
    sides — the negative margin takes that back. */
 .ploose {
-  background: var(--frame);
+  background: var(--card);
   border-radius: 20px;
   padding: 32px;
 }
@@ -436,16 +566,24 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
    what the rest of the piece scrolls inside. */
 .pcol { height: 100%; }
 
-/* ⚠️ `height`, not `aspect-ratio`. The brief is ninety percent of the SCREEN,
-   and `.plates-scroll` has a definite height to resolve that against — an
-   aspect ratio would tie the cover to the sheet's width instead, which on a
-   wide monitor is a cover taller than the window. */
+/* The banner sits in the site's content width (960px, `--folio-measure`),
+   centred, like the lede and the frames under it — not full bleed. At that
+   width an aspect ratio is safe (it can't outgrow the window the way a
+   full-width 16:9 did on a wide monitor); `max-height` still stops it at
+   ninety percent of the screen on a short one, which is what `.pcol`'s
+   `height: 100%` resolves. The title sizes off the banner (`cqw`), not the
+   viewport, so it can't run off the edge of a capped banner. */
 .pcol-cover {
   position: relative;
-  height: 90%;
+  width: min(960px, 100%);
+  margin-inline: auto;
+  aspect-ratio: 16 / 9;
+  max-height: 90%;
   min-height: 260px;
   overflow: hidden;
+  border-radius: 20px;
   background: var(--paper-lo);
+  container-type: inline-size;
 }
 
 .pcol-cover img {
@@ -470,8 +608,8 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
 
 .pcol-cover-type {
   position: absolute;
-  left: var(--sheet-pad);
-  right: var(--sheet-pad);
+  left: clamp(18px, 4cqw, 40px);
+  right: clamp(18px, 4cqw, 40px);
   bottom: clamp(26px, 6vh, 64px);
   z-index: 1;
   color: #fff;
@@ -485,7 +623,7 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
   font-family: var(--font-display);
   margin: 0;
   font-weight: 400;
-  font-size: clamp(2.6rem, 9vw, 7rem);
+  font-size: clamp(2.2rem, 9cqw, 5.5rem);
   line-height: 0.92;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -505,19 +643,17 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
 }
 .pcol-byline .slash { opacity: 0.66; }
 
-/* The lede. Justified, per the comp — and the one paragraph on the site set
-   that way, which is what makes it read as a frontispiece rather than as body
-   copy that happens to be wide. */
+/* The lede. Set exactly like the writing page's prose (`.prose` in
+   styles.css): the body face, same size, same leading, full ink, ragged
+   right — it is the trip's opening paragraph, so it reads as one. */
 .pcol-lede {
-  max-width: min(1216px, 100%);
+  max-width: min(960px, 100%);
   margin: clamp(30px, 6vh, 72px) auto clamp(28px, 5vh, 56px);
-  font-family: var(--font-display);
-  font-size: clamp(0.72rem, 1.15vw, 1.05rem);
-  line-height: 1.65;
-  text-align: justify;
+  font-family: var(--font-body);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  line-height: 1.9;
   text-wrap: pretty;
-  hyphens: auto;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 
 .pcol-actions {
@@ -570,10 +706,16 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
   margin-bottom: clamp(26px, 5vh, 56px);
 }
 
-/* The route: ONE line through all twelve, drawn by js/photos.js off the
-   stamps' measured positions. It runs along a row, sweeps out right and back
-   across under it, and comes up into the start of the next — a Z rather than
-   three loose horizontal strands.
+/* Every other row runs right to left, so the route is a serpentine (see
+   drawRoute() in js/photos.js). DOM order stays chronological — only the
+   picture is reversed, so tab order and screen readers still go day by day. */
+.stamp-row--rev { direction: rtl; }
+.stamp-row--rev > .stamp { direction: ltr; }
+
+/* The route: ONE dotted line through the trip in order, drawn by
+   js/photos.js off the stamps' measured positions — along a row, a U-turn in
+   the margin past its last stamp, back along the next. It never crosses a
+   caption. A dot at each end.
 
    ⚠️ It spans `.stamps`, not a row, which is the whole point: the turns are
    the bits that make it one journey. Pinned behind everything and
@@ -584,12 +726,35 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
   width: 100%;
   height: 100%;
   z-index: 0;
-  color: var(--ink);
-  opacity: 0.085;
+  /* The dots' weight is in the colour, not in `opacity`: the route fades on
+     with the stamps (`.sr`), which animates opacity. */
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
   overflow: visible;
   pointer-events: none;
 }
-.stamp-route path { stroke-width: var(--route-w, 20); }
+.stamp-route path {
+  stroke-width: 2.4;
+  stroke-dasharray: 0.1 8;
+}
+
+/* The stamp's place in the route. A row that reads right to left needs it. */
+.stamp-num {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--frame);
+  font-family: var(--font-display);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0;
+}
 
 .stamps { position: relative; }
 
@@ -765,11 +930,16 @@ a.ptrip:focus-visible .ptrip-cover { box-shadow: 0 0 0 2px var(--ink); }
    stays because it is what says which trip this is, and the rest is frames. */
 body.gallery .pcol-lede,
 body.gallery .stamps { display: none; }
+/* With the lede gone the button would sit flush on the banner's foot. */
+body.gallery .pcol-actions { margin-top: clamp(28px, 5vh, 56px); }
 
 /* ── A collection with no stamps ──────────────────────────────────────────
    Its days, one white card each (`.ploose`, the loose frames' card) under the
-   cover: a header line, then that day's frames in the same masonry. */
+   cover: a header line, then that day's frames in the same masonry. Same
+   960px content width as the banner above them. */
 .pdays {
+  max-width: min(960px, 100%);
+  margin-inline: auto;
   display: grid;
   gap: clamp(18px, 3vw, 34px);
   margin-top: clamp(30px, 6vh, 72px);
@@ -798,17 +968,59 @@ body.gallery .stamps { display: none; }
 
 .pgallery[hidden] { display: none; }
 .pgallery {
-  margin-top: clamp(8px, 1.6vh, 18px);
+  max-width: min(960px, 100%);
+  margin: clamp(8px, 1.6vh, 18px) auto 0;
+  display: grid;
+  gap: clamp(48px, 9vh, 96px);
 }
+
+/* ── The day markers ───────────────────────────────────────────────────────
+   Each day of the played-through trip is a section: a big numbered marker
+   down the left (the index's year rail restated, a square chip with the
+   number set large in it) beside that day's title line and its grid. The
+   marker is sticky, so it stays at the top of the view for as long as its
+   day is scrolling past and hands over to the next one at the break. */
+.pgday {
+  --pgday-mark: clamp(64px, 7vw, 92px);
+  display: grid;
+  grid-template-columns: var(--pgday-mark) minmax(0, 1fr);
+  column-gap: clamp(16px, 2.4vw, 32px);
+  align-items: start;
+}
+.pgday-mark {
+  position: sticky;
+  top: clamp(12px, 2vh, 24px);
+  display: grid;
+  place-items: center;
+  width: var(--pgday-mark);
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
+}
+.pgday-num {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  /* The trailing tracking would push the pair off centre. */
+  margin-right: -0.08em;
+}
+/* The title line sits level with the top of the marker. */
+.pgday-head { margin-top: 0; }
+.pgday-grid { margin-top: 0; }
 
 /* ══ The day view ══════════════════════════════════════════════════════════
    The stamp lands in the middle of the sheet and is repainted into the
-   photograph it was drawn from, with that frame's real EXIF printed beside it.
+   photograph it was drawn from, with that frame's real EXIF printed under it
+   and the day's title and copy to its right.
    Everything below the fold is the day itself. */
+/* ⚠️ Appended to <body> and `fixed`, like the lightbox: the whole viewport,
+   over the masthead. Under it, not over it — the lightbox opens from here. */
 .dayview {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 6;
+  z-index: 90;
   display: flex;
   flex-direction: column;
   opacity: 0;
@@ -817,14 +1029,12 @@ body.gallery .stamps { display: none; }
 .dayview[hidden] { display: none; }
 .dayview.is-in { opacity: 1; }
 
-/* A wash over the sheet rather than an opaque panel: the paper is still
-   underneath, the way a print laid on a desk does not hide the desk. */
+/* Opaque, on the same ground as the lightbox: the nav must not show through. */
 .dayview::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--paper-mid);
-  opacity: 0.94;
+  background: var(--frame);
 }
 
 .dayview-scroll {
@@ -832,28 +1042,44 @@ body.gallery .stamps { display: none; }
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: clamp(14px, 3vh, 34px) 0 clamp(48px, 9vh, 110px);
+  /* The top clears the close button with room to spare; the stamp shouldn't
+     land tucked up under the edge of the view. */
+  padding: clamp(56px, 11vh, 120px) clamp(16px, 4vw, 64px) clamp(48px, 9vh, 110px);
   scrollbar-width: none;
 }
 .dayview-scroll::-webkit-scrollbar { display: none; }
 
 /* ── The stage ─────────────────────────────────────────────────────────────
    The engraving and the photograph are the same box, stacked. The photograph
-   is masked in; the engraving simply stays where it is underneath. */
+   is masked in; the engraving simply stays where it is underneath.
+
+   The photograph and the copy beside it are centred in the view as ONE
+   group: two tracks, the photograph's sized by the stage and the copy's a
+   fixed measure, with the pair centred between them. */
 .scan {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(170px, 20vw, 260px);
+  grid-template-columns: auto minmax(0, clamp(220px, 26vw, 360px));
+  justify-content: center;
   align-items: center;
   gap: clamp(18px, 3vw, 48px);
-  max-width: min(1000px, 100%);
+  max-width: min(1120px, 100%);
   margin: 0 auto clamp(24px, 5vh, 52px);
   min-height: clamp(280px, 56vh, 620px);
 }
 
+.scan-figure {
+  grid-column: 1;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.6vh, 16px);
+}
+
 .scan-stage {
   position: relative;
-  justify-self: center;
-  width: min(100%, clamp(240px, 42vh, 460px));
+  /* Not a percentage: the column is `auto`, sized by this. */
+  width: clamp(240px, 42vh, 460px);
   aspect-ratio: 5 / 6;
   background: var(--stamp-paper);
   padding: clamp(6px, 0.8vw, 11px);
@@ -1001,29 +1227,20 @@ body.gallery .stamps { display: none; }
    looking at. */
 .scan-meta {
   display: flex;
-  flex-direction: column;
-  gap: 9px;
-  align-self: center;
-  font-size: clamp(0.5rem, 0.78vw, 0.62rem);
+  flex-wrap: wrap;
+  justify-content: center;
+  /* No wider than the photograph it sits under. */
+  max-width: clamp(240px, 42vh, 460px);
+  gap: 6px clamp(12px, 2vw, 24px);
+  font-size: clamp(0.48rem, 0.76vw, 0.6rem);
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: var(--ink-soft);
 }
+.scan-meta-item { opacity: 0; }
 
-.scan-meta-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding-bottom: 7px;
-  border-bottom: 1px solid var(--rule);
-  opacity: 0;
-}
-.scan-meta-row:last-child { border-bottom: 0; }
-.scan-meta-key { opacity: 0.6; }
-.scan-meta-val { color: var(--ink); text-align: right; }
-
-.scan.is-painting .scan-meta-row,
-.scan.is-painted .scan-meta-row {
+.scan.is-painting .scan-meta-item,
+.scan.is-painted .scan-meta-item {
   animation: meta-in 420ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
   animation-delay: calc(240ms + var(--i) * 110ms);
 }
@@ -1034,8 +1251,9 @@ body.gallery .stamps { display: none; }
 
 /* ── The day itself ────────────────────────────────────────────────────── */
 .dayview-body {
+  grid-column: 2;
+  text-align: center;
   max-width: min(var(--measure), 100%);
-  margin-inline: auto;
 }
 
 .dayview-head { margin-bottom: clamp(16px, 3vh, 30px); }
@@ -1063,23 +1281,21 @@ body.gallery .stamps { display: none; }
   line-height: 1.95;
 }
 .dayview-blurb p { margin: 0 0 1.35em; }
+/* Or the copy sits a paragraph-gap high beside the photograph. */
+.dayview-blurb p:last-child { margin-bottom: 0; }
 
 /* ── Keepsakes ─────────────────────────────────────────────────────────────
-   The ticket stubs, receipts and boarding passes, before they have been
-   scanned. Drawn as empty slots rather than stand-in JPEGs: a slot says
-   plainly that something goes here, where a grey rectangle just looks like an
-   image that failed to load. */
-.keepsakes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(9px, 1.4vw, 15px);
-  margin: clamp(20px, 3.4vh, 34px) 0 clamp(26px, 4.4vh, 44px);
-}
-
+   The ticket stubs, receipts and boarding passes. They are cards IN the day's
+   masonry, among the frames of the moment they belong to (`dayGridHTML()` in
+   js/photos.js places them), not a separate row. Until one is scanned it is
+   drawn as an empty slot rather than a stand-in JPEG: a slot says plainly
+   that something goes here, where a grey rectangle just looks like an image
+   that failed to load. The slot's shape follows the thing: a ticket is wide,
+   a receipt is a tall slip, a map is square. */
 .keepsake {
   position: relative;
-  flex: 1 1 clamp(120px, 20vw, 180px);
-  min-width: 118px;
+  break-inside: avoid;
+  margin-bottom: clamp(10px, 1.4vw, 18px);
   aspect-ratio: 8 / 5;
   display: flex;
   flex-direction: column;
@@ -1088,14 +1304,32 @@ body.gallery .stamps { display: none; }
   padding: 10px 11px;
   box-sizing: border-box;
   border: 1px dashed var(--rule);
-  border-radius: 2px;
+  border-radius: 6px;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), transparent 60%);
-  font-size: clamp(0.46rem, 0.72vw, 0.58rem);
+  font-size: clamp(0.54rem, 0.8vw, 0.66rem);
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: var(--ink-soft);
 }
+.keepsake--receipt { aspect-ratio: 5 / 8; }
+.keepsake--map { aspect-ratio: 1; }
 .keepsake-kind { opacity: 0.6; }
+
+/* Scanned: the scan itself, at its own ratio, with the label under it. */
+.keepsake--scan {
+  aspect-ratio: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.keepsake--scan::before { display: none; }
+.keepsake--scan img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 6px;
+  border-radius: 6px;
+}
 .keepsake-note { color: var(--ink); letter-spacing: 0.1em; }
 
 /* A stub is torn off down one side. Notches in the border colour, pinned to
@@ -1109,12 +1343,29 @@ body.gallery .stamps { display: none; }
   border-left: 1px dashed var(--rule);
 }
 
+/* The day's frames and keepsakes: a three-column masonry at each item's own
+   ratio, wider than the copy above it and capped at the site's content width
+   (960px, `--folio-measure`). Two columns on a phone. The columns are real
+   elements filled in row order by js/photos.js (`dayColumnsHTML()`), not CSS
+   `columns`, so the day reads left to right in the order it happened. */
 .daygrid {
+  --day-gap: clamp(10px, 1.4vw, 18px);
+  max-width: min(960px, 100%);
+  margin: clamp(20px, 4vh, 40px) auto 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(152px, 100%), 1fr));
-  gap: clamp(8px, 1.3vw, 14px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--day-gap);
+  align-items: start;
 }
-.daygrid .frame { aspect-ratio: 1; }
+.daycol {
+  display: grid;
+  gap: var(--day-gap);
+}
+.daygrid .frame {
+  aspect-ratio: var(--ar, 3 / 4);
+  border-radius: 6px;
+}
+.daygrid .keepsake { margin-bottom: 0; }
 
 /* A frame that is standing in for one not yet in the repo. Marked, because an
    unmarked stand-in is just a wrong caption. */
@@ -1139,12 +1390,19 @@ body.gallery .stamps { display: none; }
   width: 34px;
   height: 34px;
   padding: 0;
-  background: color-mix(in srgb, var(--paper-hi) 78%, transparent);
-  border: 1px solid var(--rule);
-  border-radius: 2px;
   color: var(--ink-soft);
   cursor: pointer;
   transition: color 200ms ease, border-color 200ms ease;
+}
+/* The day arrows are round; the close is the bare mark, no box. */
+.dayview-step {
+  background: color-mix(in srgb, var(--paper-hi) 78%, transparent);
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+}
+.dayview-close {
+  background: none;
+  border: 0;
 }
 .dayview-close:hover,
 .dayview-step:hover,
@@ -1154,25 +1412,239 @@ body.gallery .stamps { display: none; }
   border-color: var(--ink-soft);
   outline: none;
 }
-.dayview-close { top: 0; right: 0; }
+.dayview-close { top: clamp(12px, 2vh, 24px); right: clamp(12px, 2vw, 24px); }
+.dayview-close svg { width: 18px; height: 18px; }
 .dayview-step svg { width: 13px; height: 13px; }
-.dayview-step--prev { left: 0; top: 50%; transform: translateY(-50%); }
-.dayview-step--next { right: 0; top: 50%; transform: translateY(-50%); }
+.dayview-step--prev { left: clamp(12px, 2vw, 24px); top: 50%; transform: translateY(-50%); }
+.dayview-step--next { right: clamp(12px, 2vw, 24px); top: 50%; transform: translateY(-50%); }
 .dayview-step[disabled] { opacity: 0.3; pointer-events: none; }
+
+/* ══ A trip, lifted off the index ══════════════════════════════════════════
+   js/photos.js `liftTrip()`. The cover photograph flies from its card to the
+   trip page's banner rect (measured, see `bannerRect()`) while the index fades
+   off the sheet; there it crumples, the illustration is brushed over it on a
+   canvas, and it flattens back out as the illustration, exactly where the
+   banner is. The page then fades up under it and the overlay fades off.
+
+   No background: the sheet itself is what is left when the index goes. */
+.plates-scroll { transition: opacity 420ms ease; }
+.plates-scroll.is-lifting { opacity: 0; pointer-events: none; }
+/* Changing page between the index and a trip: the old one fades off before
+   the new one is painted (`swapIn()` in js/photos.js). */
+.plates-scroll.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 240ms;
+}
+
+/* Fading on as you come to it (`watchReveal()`): transparent and a little
+   low until the block first scrolls into view. The delay is set per block
+   by js, so a screenful arrives top to bottom. `.sr--fade` is opacity only,
+   for the stamp rows, which the route is measured off. */
+.plates-scroll .sr {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 700ms cubic-bezier(0.33, 0, 0.2, 1),
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.plates-scroll .sr--fade { transform: none; }
+.plates-scroll .sr.is-shown { opacity: 1; transform: none; }
+.ptrip.is-lifted .ptrip-cover img { visibility: hidden; }
+
+/* The trip page's banner, laid out by its own rules to be measured. It has
+   to sit exactly where `.plates-scroll`'s content does. */
+.tripscan-probe {
+  position: absolute;
+  inset: 0;
+  padding-inline: var(--sheet-pad);
+  box-sizing: border-box;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tripscan {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  cursor: pointer;
+  transition: opacity 600ms ease;
+}
+.tripscan.is-out { opacity: 0; pointer-events: none; }
+
+/* Placed on the banner's rect by js; the flight is a FLIP on it. */
+.tripscan-stage {
+  position: fixed;
+  transform-origin: 50% 50%;
+}
+
+/* The shadow of the sheet lifted off the page while it is crumpled. Its own
+   element riding the same keyframes as the paper, rather than a `filter` on
+   the stage: an animated drop-shadow repaints the whole layer every frame,
+   and this is a transform and an opacity. */
+.tripscan-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34), 0 4px 12px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  transition: opacity 600ms ease;
+}
+.tripscan.is-crumpled .tripscan-shade { opacity: 1; }
+.tripscan.is-flat .tripscan-shade { opacity: 0; transition-duration: var(--flatten-dur, 700ms); }
+
+/* The sheet. Rests with the banner's own 20px corners. */
+.tripscan-paper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(0 round 20px);
+  background: var(--paper-lo);
+  transform-origin: 50% 50%;
+  /* Its own layer from the start, so the crumple doesn't have to create and
+     rasterise one on its first frame (that was an intermittent hitch). */
+  will-change: transform;
+}
+.tripscan-photo,
+.tripscan-brush,
+.tripscan-art,
+.tripscan-creases {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.tripscan-photo,
+.tripscan-art { object-fit: cover; }
+/* The whole illustration, faded up once the last stroke is down to close
+   whatever the bristles left bare. */
+.tripscan-art { opacity: 0; transition: opacity 360ms ease; }
+.tripscan.is-painted .tripscan-art { opacity: 1; }
+.tripscan.is-skipped * { transition: none !important; animation: none !important; }
+
+/* Creases: faceted shading drawn once on a canvas (`drawCreases()`), so
+   only its opacity moves while the sheet is crumpled. */
+.tripscan-creases {
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+.tripscan.is-crumpled .tripscan-creases { opacity: 0.9; }
+.tripscan.is-flat .tripscan-creases {
+  opacity: 0;
+  transition-duration: calc(var(--flatten-dur, 620ms) * 0.8);
+}
+
+/* The card: both faces of the sheet. In `crumple` mode it is just a box. */
+.tripscan-card {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Turned over (`photos.liftStyle = 'flip'`, the default) ────────────────
+   The photograph turns on its vertical axis, lifting toward you as it goes,
+   and its back is a blank sheet of cold-press paper the colour of the
+   illustration's own (#f1ede6, sampled from cover-art.jpg), which the brush
+   then paints the illustration onto. Recompute the colour if the art changes.
+
+   ⚠️ The turn and the lift are two animations on two INDIVIDUAL transform
+   properties (`rotate`, `scale`), not one keyframed `transform`. An easing
+   applies per keyframe segment, so a 0 → 90 → 180 transform with a midpoint
+   for the lift decelerates into edge-on and speeds up out of it — a visible
+   hitch at exactly the moment the sheet is thinnest. */
+.tripscan--flip .tripscan-stage { perspective: 2000px; }
+.tripscan--flip .tripscan-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.tripscan--flip .tripscan-paper,
+.tripscan-back {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.tripscan-back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  transform: rotateY(180deg);
+  background: #f1ede6;
+}
+/* The paper's tooth: lit relief noise, multiplied in faintly. Only where no
+   paint has landed yet shows it; the illustration carries its own. */
+.tripscan-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='t' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.09' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeDiffuseLighting surfaceScale='2.4' diffuseConstant='1.05' lighting-color='%23fff'%3E%3CfeDistantLight azimuth='235' elevation='52'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='360' height='360' filter='url(%23t)'/%3E%3C/svg%3E") 0 0 / 360px 360px;
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+}
+.tripscan.is-turning .tripscan-card {
+  animation:
+    card-turn var(--flip-dur, 900ms) cubic-bezier(0.55, 0, 0.25, 1) forwards,
+    card-lift var(--flip-dur, 900ms) ease-in-out forwards;
+}
+.tripscan.is-turned .tripscan-card { rotate: y 180deg; }
+@keyframes card-turn {
+  from { rotate: y 0deg; }
+  to   { rotate: y 180deg; }
+}
+@keyframes card-lift {
+  0%, 100% { scale: 1; }
+  50%      { scale: 1.06; }
+}
+/* The shadow narrows as the sheet goes edge-on and darkens as it lifts. */
+.tripscan.is-turning .tripscan-shade {
+  animation: shade-turn var(--flip-dur, 900ms) ease-in-out forwards;
+}
+@keyframes shade-turn {
+  0%   { opacity: 0; scale: 1 1; }
+  50%  { opacity: 1; scale: 0.12 0.97; }
+  100% { opacity: 0; scale: 1 1; }
+}
+
+/* The motion: one smooth ease into a slightly scrunched pose — a little off
+   square and tipped in depth — held while the brush works, then one smooth
+   ease back out, flat, with no overshoot. (Two quick grabs and a bounce were
+   tried and read as jerky.) ⚠️ Every keyframe carries the same function
+   list, so it interpolates per function rather than through a decomposed
+   matrix. */
+.tripscan.is-crumpled .tripscan-paper,
+.tripscan.is-crumpled .tripscan-shade {
+  animation: paper-crumple var(--crumple-dur, 640ms) cubic-bezier(0.45, 0, 0.2, 1) forwards;
+}
+.tripscan.is-flat .tripscan-paper,
+.tripscan.is-flat .tripscan-shade {
+  animation: paper-flatten var(--flatten-dur, 700ms) cubic-bezier(0.33, 0, 0.15, 1) forwards;
+}
+@keyframes paper-crumple {
+  from { transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotate(0deg) scale(1, 1); }
+  to   { transform: perspective(1400px) rotateX(3deg) rotateY(-4deg) rotate(-0.8deg) scale(0.95, 0.93); }
+}
+@keyframes paper-flatten {
+  from { transform: perspective(1400px) rotateX(3deg) rotateY(-4deg) rotate(-0.8deg) scale(0.95, 0.93); }
+  to   { transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotate(0deg) scale(1, 1); }
+}
 
 /* ══ A single frame, opened ════════════════════════════════════════════════
    The plainest thing on the page on purpose: the photograph, its EXIF, and a
-   way out. */
+   way out. ⚠️ Appended to <body>, not the plates, and `fixed`: it is the whole
+   viewport, over the masthead, not a layer inside the sheet. */
 .lightbox {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: 100;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 14px;
-  padding: clamp(10px, 2.4vh, 26px);
+  gap: 10px;
+  padding: clamp(8px, 1.6vh, 18px);
+  cursor: zoom-out;
   box-sizing: border-box;
-  background: color-mix(in srgb, var(--paper-mid) 96%, transparent);
+  background: var(--frame);
   opacity: 0;
   transition: opacity 220ms ease;
 }
@@ -1181,10 +1653,10 @@ body.gallery .stamps { display: none; }
 .lightbox img {
   justify-self: center;
   align-self: center;
-  max-width: 100%;
+  /* No wider than the site's content width (960px, `--folio-measure`). */
+  max-width: min(960px, 100%);
   max-height: 100%;
   object-fit: contain;
-  box-shadow: 0 0 0 1px var(--plate-edge), var(--plate-shadow);
 }
 .lightbox-meta {
   display: flex;
@@ -1198,40 +1670,29 @@ body.gallery .stamps { display: none; }
 }
 
 /* ══ Narrow screens ════════════════════════════════════════════════════════
-   Four stamps to a row needs four stamps' worth of width. Below that a row of
-   four becomes two by two, and the route between them goes — it is drawn for
-   a line of four and joins nothing once they wrap. */
+   Four stamps to a row needs four stamps' worth of width. Below that the
+   stamps go two to a row. */
 @media (max-width: 900px) {
   .stamp-row { grid-template-columns: repeat(2, minmax(0, var(--stamp-w))); }
-  /* The route is redrawn from the new positions rather than hidden — two to a
-     row is still a journey, it just folds six times instead of twice. */
-  :root { --route-w: 14; }
+  /* The rows are rebuilt two to a line (STAMP_COLS in js/photos.js), so the
+     serpentine still alternates — it just folds five times instead of twice. */
+  /* No room beside the photograph: the copy goes under it, still centred. */
   .scan {
     grid-template-columns: minmax(0, 1fr);
     gap: clamp(14px, 3vh, 26px);
   }
-  .scan-meta {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px clamp(10px, 3vw, 22px);
-  }
-  .scan-meta-row {
-    border-bottom: 0;
-    padding-bottom: 0;
-    gap: 6px;
-  }
-  .scan-meta-row:not(:last-child)::after {
-    content: '/';
-    opacity: 0.4;
-  }
+  .scan-figure,
+  .dayview-body { grid-column: 1; justify-self: center; }
+  .scan-stage { width: min(100%, clamp(240px, 42vh, 460px)); }
 }
 
 @media (max-width: 640px) {
-  .pcol-cover { height: 78%; }
-  /* The lede is justified at 1216px in the comp. At phone width justification
-     opens rivers through a short measure, so it comes off. */
-  .pcol-lede { text-align: left; hyphens: none; }
+  .pcol-cover { aspect-ratio: auto; height: 78%; }
+  /* No gutter to hang the marker in: it leads the day's title line instead. */
+  .pgday { grid-template-columns: minmax(0, 1fr); row-gap: 12px; }
+  .pgday { --pgday-mark: 52px; }
+  .pgday-mark { position: static; }
+  .daygrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dayview-step { display: none; }
 }
 
@@ -1242,6 +1703,7 @@ body.gallery .stamps { display: none; }
    picture. So it keeps a plain crossfade and loses the brush, the lamp and the
    sparkle. Everything else settles instantly. */
 @media (prefers-reduced-motion: reduce) {
+  .plates-scroll .sr { opacity: 1; transform: none; transition: none; }
   .stamp,
   .stamp-cycle img,
   .frame img,
@@ -1250,8 +1712,8 @@ body.gallery .stamps { display: none; }
   .scan.is-painting .scan-art,
   .scan.is-painting .scan-line,
   .scan.is-painting .scan-spark,
-  .scan.is-painting .scan-meta-row,
-  .scan.is-painted .scan-meta-row { animation: none; }
+  .scan.is-painting .scan-meta-item,
+  .scan.is-painted .scan-meta-item { animation: none; }
 
   .scan-line, .scan-sparks { display: none; }
   .scan-art {
@@ -1261,5 +1723,5 @@ body.gallery .stamps { display: none; }
   }
   .scan.is-painting .scan-art,
   .scan.is-painted .scan-art { opacity: 0; }
-  .scan-meta-row { opacity: 1; }
+  .scan-meta-item { opacity: 1; }
 }

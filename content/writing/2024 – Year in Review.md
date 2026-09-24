@@ -1,3 +1,7 @@
+---
+date: 2025-02-17
+---
+
 # 2024 – Year in Review
 > # Consistency and Intentionality
 

@@ -1,3 +1,7 @@
+---
+date: 2026-01-24
+---
+
 # 2025 Year in Review
 #cosm/reflections
 

@@ -55,6 +55,7 @@
   <link rel="stylesheet" href="/more.css">
   <!-- The career page: timeline and principles, on the folio surface. -->
   <link rel="stylesheet" href="/career.css">
+  <link rel="stylesheet" href="/proto/photos-proto.css">
 </head>
 <body>
   <!-- Refraction for the glass fade under a post (styles.css, `.page::after`).
@@ -220,11 +221,10 @@
         </p>
       </main>
 
-      <!-- The way back, in a section: "Back" behind a chevron, in the
-           navigation's own voice. It steps back to wherever you came from
-           (js/paper.js, "Back"), so it names no page — every section carries
-           its own, larger, title just below the masthead. Hidden at home. -->
-      <a class="back" id="back" href="#">
+      <!-- The way home, in a section: "Back" behind a chevron, in the
+           navigation's own voice. It names no page — every section carries its
+           own, larger, title just below the rule. Hidden at home. -->
+      <a class="back" id="back" href="#" aria-label="Back to the sheet">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6l6 6"/></svg>
         <span>Back</span>
       </a>
@@ -388,6 +388,7 @@
        paper.js reads `window.photoSection` on its very first route() — which
        runs at the end of its own script. Load photographs first or landing
        straight on a `#photos` URL falls back to the sheet. -->
+  <script src="/proto/photos-proto.js" defer></script>
   <script src="/js/photos.js" defer></script>
   <script src="/js/more.js" defer></script>
   <script src="/js/paper.js" defer></script>
