@@ -372,7 +372,7 @@ a.entry-in:focus-visible { outline: none; }
 
 /* Mapbox's own chrome, brought into the sheet's voice. */
 .map .mapboxgl-ctrl-group {
-  background: var(--frame);
+  background: var(--card);
   border-radius: 4px;
   box-shadow: 0 0 0 1px var(--rule);
 }
@@ -387,7 +387,7 @@ a.entry-in:focus-visible { outline: none; }
 .map .mapboxgl-popup-content {
   padding: 14px 16px 16px;
   border-radius: 4px;
-  background: var(--frame);
+  background: var(--card);
   color: var(--ink);
   box-shadow: 0 0 0 1px var(--rule), 0 8px 24px rgba(0, 0, 0, 0.14);
   font-family: inherit;
@@ -395,12 +395,12 @@ a.entry-in:focus-visible { outline: none; }
 .map .mapboxgl-popup-close-button { color: var(--ink-soft); font-size: 18px; }
 .map .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
 .map .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
-.map .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip { border-bottom-color: var(--frame); }
+.map .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip { border-bottom-color: var(--card); }
 .map .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
 .map .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
-.map .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip { border-top-color: var(--frame); }
-.map .mapboxgl-popup-anchor-left .mapboxgl-popup-tip { border-right-color: var(--frame); }
-.map .mapboxgl-popup-anchor-right .mapboxgl-popup-tip { border-left-color: var(--frame); }
+.map .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip { border-top-color: var(--card); }
+.map .mapboxgl-popup-anchor-left .mapboxgl-popup-tip { border-right-color: var(--card); }
+.map .mapboxgl-popup-anchor-right .mapboxgl-popup-tip { border-left-color: var(--card); }
 
 .pop-name {
   margin: 0;

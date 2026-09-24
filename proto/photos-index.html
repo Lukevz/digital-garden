@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Luke van Zyl</title>
+  <meta name="description" content="Luke van Zyl — product designer, digital tinkerer, and systems thinker. Currently head of design at Instinct.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Luke van Zyl">
+  <meta property="og:description" content="Product designer, digital tinkerer, and systems thinker. Currently head of design at Instinct.">
+  <meta property="og:url" content="https://lukevz.com/">
+  <meta property="og:image" content="https://lukevz.com/images/og_light.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Luke van Zyl">
+  <meta name="twitter:image" content="https://lukevz.com/images/og_light.png">
+
+  <link rel="icon" href="/v1/images/favicon.svg" type="image/svg+xml">
+
+  <!-- The sheet's colour for this session: one of the seven off the branding
+       file (Figma, Personal branding, node 31:217), picked at random and held
+       in sessionStorage so a reload keeps it and a new tab gets a new one.
+       Inline, not in paper.js, because a deferred script runs after the first
+       paint and the sheet would arrive grey and then change. Storage can throw
+       (private windows), so the pick is made first and the write is the thing
+       that is allowed to fail. Without script the sheet is simply the grey. -->
+  <script>
+    (function () {
+      var palette = ['#91c3d8', '#d3aad0', '#eb7d95', '#f8c4ae', '#94cecb', '#e0d6ab', '#aed8a6'];
+      var tint;
+      try { tint = sessionStorage.getItem('sheetTint'); } catch (e) {}
+      if (palette.indexOf(tint) < 0) {
+        tint = palette[Math.floor(Math.random() * palette.length)];
+        try { sessionStorage.setItem('sheetTint', tint); } catch (e) {}
+      }
+      var root = document.documentElement;
+      root.style.setProperty('--sheet-tint', tint);
+      root.classList.add('tinted');
+    })();
+  </script>
+
+  <!-- Both faces are preloaded: Geist sets everything that is read and Wingman
+       the wordmark and headings, so a swap flash in either is the layout
+       reflowing rather than one line of type. -->
+  <link rel="preload" href="/fonts/geist/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/taywingman/TAYWingman.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <!-- The loading sequence. Kept out of styles.css so it can be worked on
+       independently; it only ever adds animations to what is already there. -->
+  <link rel="stylesheet" href="/intro.css">
+  <!-- The photographs surface. Kept out of styles.css for the same reason the
+       intro is: it only ever adds a section, and never touches the sheet. -->
+  <link rel="stylesheet" href="/photos.css">
+  <link rel="stylesheet" href="/more.css">
+  <!-- The career page: timeline and principles, on the folio surface. -->
+  <link rel="stylesheet" href="/career.css">
+  <link rel="stylesheet" href="/proto/photos-proto.css">
+</head>
+<body>
+  <!-- Refraction for the glass fade under a post (styles.css, `.page::after`).
+       A slow turbulence pushes the blurred text behind the pane sideways a
+       few pixels, so it reads as seen through liquid rather than through a
+       frosted plain. Chromium only; elsewhere the pane keeps its blur and
+       sheen. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="glass" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.028" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <!-- The sheet: inset by --frame on every side so the page's own background
+       shows through as a solid, untextured border. Everything readable lives
+       inside it; the paper grain is painted by its two pseudo-elements. -->
+  <div class="sheet">
+
+    <!-- Draughtsman's layer: rulers, registration marks and dimension
+         annotations, drawn faintly over the paper like notations in a codex.
+         Decorative only, hence aria-hidden and pointer-events: none. -->
+    <div class="spec" aria-hidden="true">
+      <span class="spec-ruler spec-ruler--t"></span>
+      <span class="spec-ruler spec-ruler--r"></span>
+      <span class="spec-ruler spec-ruler--b"></span>
+      <span class="spec-ruler spec-ruler--l"></span>
+
+      <span class="spec-frame"></span>
+
+      <span class="spec-mark spec-mark--tl"></span>
+      <span class="spec-mark spec-mark--tr"></span>
+      <span class="spec-mark spec-mark--bl"></span>
+      <span class="spec-mark spec-mark--br"></span>
+
+      <span class="spec-dim spec-dim--w"></span>
+      <span class="spec-label spec-label--w">20</span>
+      <span class="spec-dim spec-dim--h"></span>
+      <span class="spec-label spec-label--h">24</span>
+    </div>
+
+    <!-- Letterhead. Printed on the stationery, so it is there before anything
+         is written on the sheet and it outlives the draughtsman's marks. -->
+    <svg class="letterhead" viewBox="0 0 1641 621" width="1641" height="621" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <linearGradient id="etch-l-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff"/><stop offset="0.75" stop-color="#fff"/><stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <mask id="etch-l" maskUnits="userSpaceOnUse" x="-20" y="-20" width="520" height="680">
+      <rect class="etch-l-sweep" x="-20" y="-20" width="520" height="1360" fill="url(#etch-l-grad)"/>
+    </mask>
+    <mask id="mask0_29_16" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="3" width="482" height="615">
+<path d="M77.6719 3C120.569 3 155.344 37.7749 155.344 80.6719V426.394C155.344 446.276 171.462 462.394 191.344 462.395H404.293C447.19 462.395 481.966 497.169 481.966 540.066C481.966 582.963 447.19 617.738 404.293 617.738H100.396C44.9491 617.738 0.000244782 572.789 0 517.342V80.6719C0.000131236 37.7749 34.7749 3.00013 77.6719 3Z" fill="#D9D9D9"/>
+</mask>
+    <g class="mono-l" mask="url(#etch-l)">
+
+    <g mask="url(#mask0_29_16)">
+    <g opacity="0.9" filter="url(#filter0_f_29_16)">
+    <circle cx="69.7054" cy="80.6722" r="170.613" fill="#939393"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter1_f_29_16)">
+    <circle cx="-13.2774" cy="301.739" r="196.504" fill="#999999"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter2_f_29_16)">
+    <circle cx="26.5541" cy="434.512" r="196.504" fill="#777777"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter3_f_29_16)">
+    <circle cx="171.277" cy="637.654" r="116.84" fill="#999999"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter4_f_29_16)">
+    <circle cx="362.47" cy="495.587" r="196.504" fill="#a9a9a9"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter5_f_29_16)">
+    <circle cx="527.754" cy="502.226" r="196.504" fill="#a2a2a2"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter6_f_29_16)">
+    <ellipse cx="285.311" cy="285.087" rx="196.655" ry="167.64" fill="#a9a9a9"/>
+    </g>
+    <g opacity="0.9" filter="url(#filter7_f_29_16)">
+    <circle cx="-0.57048" cy="204.43" r="170.613" fill="#959595"/>
+    </g>
+    <circle cx="402.301" cy="397.335" r="246.957" fill="black" fill-opacity="0.1"/>
+    </g>
+    </g>
+  <path class="mono-stroke mono-line mono-z" style="--i:0" pathLength="1" d="M1175.9 3L1626.48 3.50181" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:1" pathLength="1" d="M1175.9 3L1175.9 116.125" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:2" pathLength="1" d="M1626.48 3.50195L1626.48 91.7014" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:11" pathLength="1" d="M1175.9 519.277L1175.9 617.063" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:10" pathLength="1" d="M1637.99 500.103L1637.99 617.063" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:3" pathLength="1" d="M1175.9 116.125L1473.09 116.627" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:9" pathLength="1" d="M1333.12 500.103L1637.99 500.103" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:4" pathLength="1" d="M1220 60.5215H1580.47" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:8" pathLength="1" d="M1220 560.044H1593.89" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:12" pathLength="1" d="M1175.9 617.063L1637.99 617.565" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:5" pathLength="1" d="M1220 559.542L1582.38 59.1059" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:7" pathLength="1" d="M1333.12 500.573L1626.48 91.7012" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-z" style="--i:6" pathLength="1" d="M1175.9 519.277L1473.99 116.501" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:3" pathLength="1" d="M586.639 70.561L785.661 617.37" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:2" pathLength="1" d="M628.687 3L852.309 617.396" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:6" pathLength="1" d="M1076.64 3L853.02 617.396" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:1" pathLength="1" d="M486.801 3L710.423 617.396" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:5" pathLength="1" d="M934.756 3L711.134 617.396" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:0" pathLength="1" d="M486.801 3H628.687" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:4" pathLength="1" d="M935.467 3H1077.35" stroke-width="6"/>
+  <path class="mono-stroke mono-line mono-v" style="--i:7" pathLength="1" d="M984.934 70.1084L785.911 616.917" stroke-width="6"/>
+    <defs>
+    <filter id="filter0_f_29_16" x="-160.908" y="-149.941" width="461.226" height="461.226" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter1_f_29_16" x="-269.781" y="45.2349" width="513.008" height="513.008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter2_f_29_16" x="-229.95" y="178.008" width="513.008" height="513.008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter3_f_29_16" x="-5.56348" y="460.814" width="353.68" height="353.68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter4_f_29_16" x="105.966" y="239.083" width="513.008" height="513.008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter5_f_29_16" x="271.25" y="245.722" width="513.008" height="513.007" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter6_f_29_16" x="28.6558" y="57.4468" width="513.31" height="455.28" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    <filter id="filter7_f_29_16" x="-231.184" y="-26.1826" width="461.226" height="461.226" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+    <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_29_16"/>
+    </filter>
+    </defs>
+  </svg>
+
+    <!-- The masthead row. At home this is nothing but the centred lockup, laid
+         out exactly as it always was; in a section it stretches to the sheet's
+         width, the name shrinks into the top-left corner, and the reader's
+         expand control joins it on the right. Wrapping the lockup rather than
+         restyling it is what keeps the home layout untouched. -->
+    <div class="masthead">
+      <main class="lockup">
+        <!-- The name is the one thing the erase never takes. In a section the
+             small version of it is the way back, which is why it's a link. -->
+        <h1 class="name"><a class="name-home" href="#">Luke van Zyl</a></h1>
+        <p class="bio">
+          <span class="bio-line" style="--i:0">Product designer, digital tinkerer,</span><br>
+          <span class="bio-line" style="--i:1">and systems thinker. Currently</span><br>
+          <span class="bio-line" style="--i:2">head of design at Instinct.</span>
+        </p>
+      </main>
+
+      <!-- The way home, in a section: "Back" behind a chevron, in the
+           navigation's own voice. It names no page — every section carries its
+           own, larger, title just below the rule. Hidden at home. -->
+      <a class="back" id="back" href="#" aria-label="Back to the sheet">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6l6 6"/></svg>
+        <span>Back</span>
+      </a>
+
+      <!-- The accounts, right of the masthead, in a section. Empty in the
+           markup: js/paper.js copies the marks in from `.curl-links` so the
+           list lives in one place. Hidden at home, where the dog-ear has them. -->
+      <div class="mast-links" id="mastLinks"></div>
+    </div>
+
+    <!-- The reading spread: the index of titles on the left, the open piece on
+         the right, each scrolling its own column. Empty and hidden until a
+         section is routed to, so with JS off it never exists. -->
+    <section class="spread" id="spread" hidden aria-label="Writing">
+      <nav class="index" id="index">
+        <ol class="index-list" id="indexList"></ol>
+      </nav>
+      <article class="page">
+        <!-- Hides / shows the index. Top-left of the card, and a sidebar mark
+             rather than a corner-arrows one: it is the sidebar it closes.
+             Hidden until a section opens; js/paper.js owns its state. -->
+        <button class="expand" id="expand" type="button" aria-pressed="false" hidden>
+          <svg class="expand-icon expand-icon--out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M9 4v16"/><path d="M15 10l-2 2l2 2"/>
+          </svg>
+          <svg class="expand-icon expand-icon--in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M9 4v16"/><path d="M14 10l2 2l-2 2"/>
+          </svg>
+          <span class="sr-only" id="expandLabel">Hide the index</span>
+        </button>
+        <div class="page-scroll" id="pageScroll">
+          <header class="page-head">
+            <h2 class="page-title" id="pageTitle"></h2>
+            <p class="page-meta" id="pageMeta"></p>
+          </header>
+          <div class="prose" id="prose"></div>
+          <!-- Two more posts, under a rule. Filled by showPost() once the piece
+               has loaded; hidden until then. -->
+          <aside class="read-next" id="readNext" aria-label="Read next" hidden></aside>
+        </div>
+      </article>
+    </section>
+
+    <!-- The photographs. `.spread`'s sibling and the other thing a section can
+         open onto: one full-width scroller, because a photo essay is a column
+         you fall down rather than a text read beside an index. Empty until
+         js/photos.js paints into it, and hidden until a route asks for it. -->
+    <section class="plates" id="plates" hidden aria-label="Photographs">
+      <div class="plates-scroll" id="platesScroll"></div>
+    </section>
+
+    <!-- The pages behind More: bookshelf, gear, app stack, places. One simple
+         scroller that js/more.js fills; the fourth surface a section can open
+         onto, and the plainest — a title and a list. Empty and hidden until a
+         route asks for it. -->
+    <section class="folio" id="folio" hidden aria-label="More">
+      <div class="folio-scroll" id="folioScroll"></div>
+    </section>
+
+    <!-- The main navigation, standing where the social row used to. The
+         sections are what there is to reach for from the landing page; the
+         accounts are not, and they have moved under the corner.
+
+         ⚠️ Still `.links`, and still the grid's second row. js/paper.js rubs
+         this element out by name and intro.css settles it on arrival — it is
+         a POSITION on the sheet, not a description of what is in it, and
+         renaming it would quietly drop the row out of both. -->
+    <nav class="links" aria-label="Sections">
+      <a href="#writing">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/></svg>
+        <span>Writing</span>
+      </a>
+      <a href="#photos">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/></svg>
+        <span>Photos</span>
+      </a>
+      <a href="#career">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9"/><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/><path d="M12 12l0 .01"/><path d="M3 13a20 20 0 0 0 18 0"/></svg>
+        <span>Career</span>
+      </a>
+      <!-- ⚠️ A button, not a link: More opens a row, it doesn't go anywhere.
+           js/more.js owns it (delegated off `.links`, because the erase swaps
+           this element's innerHTML and a listener on the button itself would
+           not survive it). Without script it simply does nothing, which is
+           what it did as a dead `#more` link. -->
+      <button class="more-toggle" type="button" aria-expanded="false" aria-controls="moreRow">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M18 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg>
+        <span>More</span>
+      </button>
+
+      <!-- The Bartender row. Everything that isn't a section of its own lives
+           behind More, and opening it puts a second row UNDER the first rather
+           than replacing it — the way the macOS menu bar's hidden icons drop
+           into a bar of their own. Absolutely positioned inside `.links`, so
+           opening it moves nothing else on the sheet.
+
+           ⚠️ `inert` while closed: the labels are clipped out of sight but
+           would otherwise stay in the tab order and the accessibility tree. -->
+      <div class="links-more" id="moreRow" role="group" aria-label="More" inert>
+        <a href="#bookshelf" style="--i:0">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -14"/><path d="M9 5a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -14"/><path d="M5 8h4"/><path d="M9 16h4"/><path d="M13.803 4.56l2.184 -.53c.562 -.135 1.133 .19 1.282 .732l3.695 13.418a1.02 1.02 0 0 1 -.634 1.219l-.133 .041l-2.184 .53c-.562 .135 -1.133 -.19 -1.282 -.732l-3.695 -13.418a1.02 1.02 0 0 1 .634 -1.219l.133 -.041"/><path d="M14 9l4 -1"/><path d="M16 16l3.923 -.98"/></svg>
+          <span>Bookshelf</span>
+        </a>
+        <a href="#gear" style="--i:1">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l18 0"/><path d="M5 7a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1l0 -8"/></svg>
+          <span>Gear</span>
+        </a>
+        <a href="#appstack" style="--i:2">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"/><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"/><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"/><path d="M14 7l6 0"/><path d="M17 4l0 6"/></svg>
+          <span>App stack</span>
+        </a>
+        <a href="#places" style="--i:3">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0"/></svg>
+          <span>Places</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- The rubber tip. Rides along each line of type as the copy is erased;
+         its position is driven from js/paper.js. Sits above everything, so it
+         passes over the words rather than under them. -->
+    <div class="erase" aria-hidden="true"><span class="rubber" id="rubber"></span></div>
+
+    <!-- Hover the right edge and the bottom-right corner lifts, the way you
+         lift a page to see what's under it. The dog-ear is two triangles:
+         .curl-hole is the gap the paper left (and holds the nav), .curl-flap
+         is the folded-over corner lying on top of the page. A small ear is
+         always showing, so there is something to notice before you hover. -->
+    <div class="curl-zone" aria-hidden="true"></div>
+    <div class="curl">
+      <div class="curl-hole">
+        <!-- The accounts, marks only. They had the centred row at the foot of
+             the sheet; the navigation has it now, and these are the kind of
+             thing you go looking for rather than the kind you are offered.
+
+             ⚠️ Each one needs a name it doesn't show. aria-label carries it
+             to a screen reader and title gives the pointer a tooltip, since a
+             stroke glyph on its own is a guess. -->
+        <footer class="curl-links">
+          <a href="https://www.linkedin.com/in/lukevz/" rel="me noopener" title="LinkedIn" aria-label="LinkedIn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11v5"/><path d="M8 8v.01"/><path d="M12 16v-5"/><path d="M16 16v-3a2 2 0 1 0 -4 0"/><path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10"/></svg></a>
+          <a href="https://x.com/lukevz" rel="me noopener" title="X" aria-label="X"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l11.733 16h4.267l-11.733 -16l-4.267 0"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg></a>
+          <a href="https://www.youtube.com/@lukevanzylofficial" rel="me noopener" title="YouTube" aria-label="YouTube"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8a4 4 0 0 1 4 -4h12a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-12a4 4 0 0 1 -4 -4v-8"/><path d="M10 9l5 3l-5 3l0 -6"/></svg></a>
+          <a href="https://www.instagram.com/lukevanzyl/" rel="me noopener" title="Instagram" aria-label="Instagram"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4l0 -8"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M16.5 7.5v.01"/></svg></a>
+          <a href="https://github.com/Lukevz" rel="me noopener" title="GitHub" aria-label="GitHub"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"/></svg></a>
+        </footer>
+        <!-- Touch and narrow screens only (display: none otherwise). The ear
+             rests as a small stub carrying this mark; tapping it curls the
+             page the rest of the way and the accounts above it appear. The
+             tap is handled on `.curl` in js/paper.js. -->
+        <button class="curl-toggle" id="curlToggle" type="button" aria-expanded="false" aria-label="Social links">@</button>
+      </div>
+      <span class="curl-flap" aria-hidden="true"></span>
+    </div>
+
+  </div>
+
+  <!-- Sections only. The landing page itself needs none of this — with the
+       script blocked, `/` is the page it has always been.
+
+       ⚠️ Order matters. Both are deferred, so they run in document order, and
+       paper.js reads `window.photoSection` on its very first route() — which
+       runs at the end of its own script. Load photographs first or landing
+       straight on a `#photos` URL falls back to the sheet. -->
+  <script src="/proto/photos-proto.js" defer></script>
+  <script src="/js/photos.js" defer></script>
+  <script src="/js/more.js" defer></script>
+  <script src="/js/paper.js" defer></script>
+
+</body>
+</html>

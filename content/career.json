@@ -1,5 +1,4 @@
 {
-  "span": "2015 to today",
   "resume": {
     "label": "Resume",
     "url": "https://drive.google.com/uc?export=download&id=12z8vaL3zClS4kFtPt13BdA91uxpIo91H"
@@ -114,5 +113,9 @@
         "text": "I navigate ambiguity, learn from setbacks, and persist toward meaningful outcomes."
       }
     ]
+  },
+  "cases": {
+    "title": "Case studies",
+    "items": []
   }
 }

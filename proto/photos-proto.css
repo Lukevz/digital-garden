@@ -1,0 +1,307 @@
+/* Prototype variants for the #photos index. Throwaway. Everything is scoped
+   under .pv so nothing reaches the rest of the page. */
+
+.pv .pv-lbl {
+  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+.pv .pv-chev {
+  width: 1.1em; height: 1.1em;
+  vertical-align: -0.2em;
+  fill: none; stroke: currentColor; stroke-width: 1.4;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.pv h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}
+.pv a { color: inherit; text-decoration: none; }
+.pv a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 6px; }
+
+/* Justified rows: every frame in a row shares one height. Grow and basis are
+   both proportional to the aspect, so free space scales the row uniformly;
+   the ::after soaks up the last row so it doesn't stretch. */
+.pv .pv-jr {
+  --rh: clamp(110px, 14vw, 210px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1vw, 12px);
+}
+.pv .pv-jr::after { content: ''; flex: 999 1 0; }
+.pv .pv-jr > .frame {
+  flex: calc(var(--ar)) 1 calc(var(--ar) * var(--rh));
+  width: auto;
+  aspect-ratio: var(--ar);
+  border-radius: 4px;
+}
+
+/* ── 1. Filed by year ── */
+.pv1 .pv-years {
+  background: var(--frame);
+  border-radius: 20px;
+  padding: 32px;
+}
+.pv1 .pv-year + .pv-year { margin-top: clamp(32px, 5vh, 56px); }
+.pv1 .pv-yearhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.pv1 .pv-yearhead h3 { font-size: clamp(1rem, 2vw, 1.6rem); }
+.pv1 .pv-yearhead span {
+  font-size: clamp(0.54rem, 0.86vw, 0.66rem);
+  text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-soft);
+}
+
+/* ── 2. One chronology ── */
+.pv2 .pv-cy {
+  display: grid;
+  grid-template-columns: clamp(96px, 13vw, 200px) minmax(0, 1fr);
+  column-gap: clamp(20px, 3vw, 48px);
+  border-top: 1px solid var(--rule);
+  padding-top: clamp(16px, 2.5vh, 24px);
+}
+.pv2 .pv-cy + .pv-cy { margin-top: clamp(40px, 7vh, 72px); }
+/* The masthead's rule is already right above the first year. */
+.pv2 .pv-cy:first-child { border-top: 0; padding-top: 0; }
+.pv2 .pv-cy-head {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pv2 .pv-cy-head h3 { font-size: clamp(1.8rem, 4.2vw, 3.8rem); letter-spacing: 0.04em; }
+.pv2 .pv-cy-body { display: flex; flex-direction: column; gap: clamp(8px, 1vw, 12px); }
+.pv2 .pv-trip { display: block; margin: clamp(16px, 3vh, 32px) 0; }
+.pv2 .pv-cy-body > .pv-trip:first-child { margin-top: 0; }
+.pv2 .pv-trip-cover {
+  display: block;
+  aspect-ratio: 21 / 8;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--paper-lo);
+}
+.pv2 .pv-trip-cover img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  transition: transform 900ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.pv2 .pv-trip:hover img { transform: scale(1.02); }
+.pv2 .pv-trip-cap {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 20px;
+  padding-top: 12px;
+}
+.pv2 .pv-trip-name {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.2vw, 1.9rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent, inherit);
+}
+
+/* ── 3. Register ── */
+.pv3 .pv-reghead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink);
+}
+.pv3 .pv-reghead h3 { font-size: clamp(1rem, 2vw, 1.6rem); }
+.pv3 .pv-reghead + * { margin-bottom: clamp(48px, 8vh, 88px); }
+.pv3 .pv-reg {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.3fr) minmax(0, 0.8fr) minmax(0, 0.8fr) clamp(220px, 24vw, 340px) 20px;
+  align-items: center;
+  gap: clamp(12px, 2vw, 28px);
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--rule);
+  transition: background 200ms ease;
+}
+.pv3 .pv-reg:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+.pv3 .pv-reg-name {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.7vw, 1.4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent, inherit);
+}
+.pv3 .pv-reg-strip { display: flex; justify-content: flex-end; overflow: hidden; gap: 6px; height: clamp(40px, 4.6vw, 64px); }
+.pv3 .pv-reg-strip img {
+  height: 100%; width: auto; aspect-ratio: var(--ar);
+  object-fit: cover; display: block; border-radius: 2px;
+}
+.pv3 .pv-plates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(104px, 10.5vw, 150px), 1fr));
+  gap: clamp(20px, 3vh, 32px) clamp(12px, 1.4vw, 18px);
+  padding-top: clamp(20px, 3vh, 32px);
+}
+.pv3 .pv-plate { margin: 0; }
+.pv3 .pv-plate .frame { aspect-ratio: 1; }
+.pv3 .pv-plate figcaption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule);
+  font-size: clamp(0.48rem, 0.7vw, 0.56rem);
+  letter-spacing: 0.16em;
+}
+
+/* ── 4. Contact sheets ── */
+.pv4 .pv-roll {
+  display: block;
+  background: var(--frame);
+  border-radius: 20px;
+  padding: clamp(20px, 2.2vw, 32px);
+}
+.pv4 .pv-roll + .pv-roll { margin-top: clamp(14px, 2vw, 24px); }
+.pv4 .pv-roll--loose { margin-top: clamp(36px, 7vh, 76px) !important; }
+.pv4 a.pv-roll:focus-visible { border-radius: 20px; }
+.pv4 .pv-roll-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 20px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.pv4 .pv-roll-name {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.7vw, 1.4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent, inherit);
+}
+.pv4 .pv-strip {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 6px;
+}
+.pv4 .pv-sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 9vw, 128px), 1fr));
+  gap: 14px 6px;
+}
+.pv4 .pv-cell { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.pv4 .pv-cell-img,
+.pv4 .pv-sheet .frame {
+  display: block;
+  aspect-ratio: 3 / 2;
+  background: var(--paper-hi);
+  overflow: hidden;
+}
+.pv4 .pv-cell-img img,
+.pv4 .pv-sheet .frame img {
+  display: block; width: 100%; height: 100%;
+  object-fit: contain;
+}
+.pv4 .pv-sheet .frame:hover img { transform: none; }
+.pv4 .pv-sheet .frame:hover,
+.pv4 .pv-roll:hover .pv-cell-img { background: color-mix(in oklab, var(--ink) 12%, var(--paper-hi)); }
+.pv4 .pv-num {
+  font-size: 0.5rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+
+/* ── 5. Spread ── */
+.pv5 {
+  display: grid;
+  grid-template-columns: clamp(220px, 22vw, 300px) minmax(0, 1fr);
+  column-gap: clamp(24px, 4vw, 64px);
+  align-items: start;
+}
+.pv5 .pv-idx {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pv5 .pv-idx-h {
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ink);
+}
+.pv5 .pv-idx-h:not(:first-child) { margin-top: 32px; }
+.pv5 .pv-idx-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+}
+.pv5 .pv-idx-item:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+.pv5 .pv-idx-item img { width: 56px; height: 40px; object-fit: cover; display: block; border-radius: 3px; }
+.pv5 .pv-idx-item > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pv5 .pv-idx-name {
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 1vw, 0.86rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pv5 .pv-idx-years a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 1vw, 0.86rem);
+  letter-spacing: 0.08em;
+}
+.pv5 .pv-idx-years a:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+.pv5 .pv-bigyear {
+  font-size: clamp(1rem, 2vw, 1.6rem);
+  padding-bottom: 12px;
+  margin-bottom: clamp(24px, 4vh, 40px) !important;
+  border-bottom: 1px solid var(--rule);
+}
+.pv5 .pv-bigyear:not(:first-child) { margin-top: clamp(32px, 6vh, 64px) !important; }
+.pv5 .pv-big {
+  width: min(100%, calc(74vh * var(--ar)));
+  margin: 0 auto clamp(40px, 7vh, 72px);
+}
+.pv5 .pv-big .frame { aspect-ratio: var(--ar); }
+.pv5 .pv-big figcaption { margin-top: 10px; }
+
+/* ── Narrow ── */
+@media (max-width: 640px) {
+  .pv .pv-jr { --rh: 84px; gap: 6px; }
+  .pv1 .pv-years { padding: 20px; }
+  .pv2 .pv-cy { grid-template-columns: minmax(0, 1fr); row-gap: 14px; }
+  .pv2 .pv-cy-head { position: static; flex-direction: row; justify-content: space-between; align-items: baseline; }
+  .pv2 .pv-cy-head h3 { font-size: 1.6rem; }
+  .pv2 .pv-trip-cover { aspect-ratio: 16 / 9; }
+  .pv2 .pv-trip-cap { grid-template-columns: 1fr; gap: 4px; }
+  .pv3 .pv-reg { grid-template-columns: 28px minmax(0, 1fr) 16px; row-gap: 4px; }
+  .pv3 .pv-reg-dates { grid-column: 2; grid-row: 2; }
+  .pv3 .pv-reg-count, .pv3 .pv-reg-strip { display: none; }
+  .pv3 .pv-reg .pv-chev { grid-column: 3; grid-row: 1 / span 2; }
+  .pv3 .pv-plates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pv4 .pv-roll-head { grid-template-columns: 1fr; gap: 4px; }
+  .pv4 .pv-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .pv4 .pv-strip .pv-cell:nth-child(n + 6) { display: none; }
+  .pv4 .pv-sheet { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pv5 { grid-template-columns: minmax(0, 1fr); row-gap: 32px; }
+  .pv5 .pv-idx { position: static; }
+  .pv5 .pv-big { width: 100%; }
+}

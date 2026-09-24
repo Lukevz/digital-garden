@@ -10,6 +10,10 @@
       "maxDuration": 30,
       "includeFiles": "{content/about/**,src/data/now.json,src/data/brain-index.json}"
     },
+    "api/content/list.js": {
+      "maxDuration": 10,
+      "excludeFiles": "content/photos/collections/**"
+    },
     "api/**/*.js": {
       "maxDuration": 10
     }

@@ -186,12 +186,15 @@
       <p class="map-note" id="mapNote" hidden></p>`;
   }
 
-  /* Career: the timeline, then the principles. Both are content/career.json.
+  /* Career: a nav of anchors in the left gutter, then three sections — the
+     timeline, the principles, the case studies. All of it is
+     content/career.json.
 
-     The timeline is a vertical rail with the period in the margin and a dot on
-     the rail for each role, newest first — the old site's horizontal
-     scroll-jacked rail, put on the paper as a column you fall down, which is
-     what this surface already is. The current role's dot is filled.
+     The timeline runs SIDEWAYS, newest first: a horizontal rail with a dot per
+     role, the period above it and the role hanging below. It is the one thing
+     on the page wider than the measure — it spills into the right gutter,
+     where the roles blur and fade — and the page's own scroll drives it: see
+     "Career: the timeline's lock", below. The current role's dot is filled.
 
      The principles are the A -> X lockup rebuilt from the old site: a struck
      "UX" over a display "A -> X", the headline, and six traits. The lockup is
@@ -208,12 +211,36 @@
   };
   const ico = key => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${TRAIT_ICONS[key] || ''}</svg>`;
 
+  // A case study with no `image` gets the placeholder plate; one with a `url`
+  // is a link. One with no `url` isn't written yet and carries a "Coming soon"
+  // badge over its plate, the way an unopened trip does on the photos index.
+  // With no items at all the section is one "Coming soon" card.
+  const PHOTO_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/></svg>';
+  const caseCard = (c, i) => {
+    const tag = c.url ? 'a' : 'div';
+    const href = c.url ? ` href="${esc(c.url)}" target="_blank" rel="noopener"` : '';
+    const img = c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy">` : PHOTO_ICO;
+    return `
+      <li class="case-item" style="--i:${i}"><${tag} class="case"${href}>
+        <span class="case-img${c.image ? '' : ' case-img--empty'}">${img}${c.url ? '' : '<span class="case-badge">Coming soon</span>'}</span>
+        <span class="case-title">${txt(c.title)}</span>
+        ${c.company ? `<span class="case-meta">${txt(c.company)}</span>` : ''}
+      </${tag}></li>`;
+  };
+
+  // The nav's anchors. Buttons, not `#` links: the hash is the router's.
+  const CAREER_SECTIONS = [
+    ['careerTimeline', 'Timeline'],
+    ['careerPrinciples', 'Principles'],
+    ['careerCases', 'Case studies'],
+  ];
+
   function renderCareer(d) {
     const roles = d.timeline.map((r, i) => `
       <li class="role${r.now ? ' role--now' : ''}" style="--i:${i}">
         <p class="role-period">${txt(r.period)}</p>
         <div class="role-body">
-          <h3 class="role-title">${txt(r.role)}</h3>
+          <h4 class="role-title">${txt(r.role)}</h4>
           <p class="role-company">${txt(r.company)}</p>
           <p class="role-summary">${txt(r.summary)}</p>
           <ul class="role-notes">${r.highlights.map(h => `<li>${txt(h)}</li>`).join('')}</ul>
@@ -234,11 +261,27 @@
         <span>${txt(d.resume.label)}</span>
       </a>` : '';
 
-    return head('Career', d.span, resume) + `
-      <ol class="roles">${roles}</ol>
+    const c = d.cases;
+    const sections = CAREER_SECTIONS.filter(([id]) => id !== 'careerCases' || c);
+    const nav = `
+      <nav class="career-nav" aria-label="On this page">
+        <ul>${sections.map(([id, label], i) => `
+          <li><button type="button" data-jump="${id}"${i ? '' : ' class="is-current" aria-current="true"'}>${txt(label)}</button></li>`).join('')}
+        </ul>
+      </nav>`;
 
-      <section class="principles" aria-labelledby="principlesTitle">
-        <h3 class="principles-label" id="principlesTitle">${txt(p.title)}</h3>
+    return `<div class="career">` + head('Career', d.span, resume) + nav + `
+      <section class="career-sec" id="careerTimeline" aria-labelledby="timelineTitle">
+        <h3 class="career-label" id="timelineTitle">Timeline</h3>
+        <div class="tl">
+          <div class="tl-scroll" tabindex="0" role="group" aria-label="Timeline, scrolls sideways">
+            <ol class="roles">${roles}</ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="career-sec principles" id="careerPrinciples" aria-labelledby="principlesTitle">
+        <h3 class="career-label" id="principlesTitle">${txt(p.title)}</h3>
         <div class="ax" role="img" aria-label="From UX to A, Ask, to X, Experience">
           <span class="ax-ux" aria-hidden="true">UX</span>
           <span class="ax-mark" aria-hidden="true">
@@ -251,15 +294,181 @@
         <p class="principles-intro">${txt(p.intro)}</p>
         <p class="principles-lead">${txt(p.lead)}</p>
         <ul class="traits">${traits}</ul>
-      </section>`;
+      </section>
+      ${c ? `
+      <section class="career-sec" id="careerCases" aria-labelledby="casesTitle">
+        <h3 class="career-label" id="casesTitle">${txt(c.title)}</h3>
+        ${c.items.length
+          ? `<ul class="cases">${c.items.map(caseCard).join('')}</ul>`
+          : `<div class="cases-soon">${PHOTO_ICO}<span>Coming soon</span></div>`}
+      </section>` : ''}
+    </div>`;
   }
+
+  /* ══ Career: the timeline's lock ═══════════════════════════════════════════
+     Scrolling DOWN the page stops at the timeline and moves it sideways until
+     its last role is in, then the page carries on; scrolling back UP rewinds
+     it the same way. The timeline is still an ordinary horizontal scroller, so
+     a sideways swipe, shift-wheel, a touch drag or the arrow keys (it takes
+     focus) all move it directly.
+
+     The PIN is the scroll position the page holds while the timeline moves.
+     It is the top of the page whenever the timeline starts in the upper half
+     of the view there (it is the first section, so in practice always): the
+     first scroll on landing drives it sideways, with no step down first, even
+     if a short window cuts off the foot of the roles. Otherwise it is the
+     section's bottom on the bottom of the view if it fits, else its top on
+     the top.
+
+     ⚠️ Two paths, and both are needed. `wheel` is the smooth one: the event is
+     cancelled and its delta is spent sideways, so the page never moves. But
+     Chrome only lets the FIRST wheel event of a gesture be cancelled — a flick
+     that starts above the pin arrives there non-cancelable — and keys, the
+     scrollbar and touch never fire `wheel` at all. So `scroll` checks whether
+     the page crossed the pin while the timeline still had room, puts it back
+     on the pin and spends the overshoot sideways.
+
+     On a touch screen there is no lock (`touch`): the timeline snaps role by
+     role under the finger instead (career.css).
+
+     ⚠️ A nav jump sets `jumping` so the smooth scroll it starts can pass the
+     timeline; otherwise the second path would catch it half-way. */
+
+  let tl = null;          // the timeline's scroller, while #career is painted
+  let lastTop = 0;
+  let jumping = 0;
+  // A touch screen gets no lock: a sideways swipe is already the gesture, and
+  // a vertical one can't be cancelled, only fought frame by frame.
+  const touch = matchMedia('(hover: none)');
+
+  const tlMax = () => tl.scrollWidth - tl.clientWidth;
+
+  function pinTop() {
+    const sec = $('careerTimeline');
+    const top = sec.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+    if (top < scroll.clientHeight / 2) return 0;
+    const pad = 16;
+    const fitBottom = top + sec.offsetHeight + pad - scroll.clientHeight;
+    const pin = Math.min(fitBottom, top - pad);
+    return Math.max(0, Math.min(pin, scroll.scrollHeight - scroll.clientHeight));
+  }
+
+  function onCareerWheel(e) {
+    if (!tl || touch.matches || e.ctrlKey || jumping || !e.cancelable) return;
+    let dy = e.deltaY;
+    if (e.deltaMode === 1) dy *= 16;
+    else if (e.deltaMode === 2) dy *= scroll.clientHeight;
+    if (!dy || Math.abs(e.deltaX) > Math.abs(dy)) return;     // a sideways swipe is the timeline's own
+    const max = tlMax();
+    const down = dy > 0;
+    if (max <= 1 || (down ? tl.scrollLeft >= max - 1 : tl.scrollLeft <= 1)) return;
+    const pin = pinTop();
+    // How far the page still has to travel, in this direction, to reach the pin.
+    const reach = down ? pin - scroll.scrollTop : scroll.scrollTop - pin;
+    if (reach > Math.abs(dy) || reach < -2) return;           // not there yet, or already past it
+    e.preventDefault();
+    const spent = Math.max(reach, 0);
+    scroll.scrollTop = pin;
+    lastTop = scroll.scrollTop;
+    tl.scrollLeft += down ? dy - spent : dy + spent;
+  }
+
+  function onCareerScroll() {
+    if (!tl) return;
+    const now = scroll.scrollTop;
+    const prev = lastTop;
+    if (!jumping && !touch.matches && now !== prev) {
+      const pin = pinTop();
+      const max = tlMax();
+      if (now > prev && prev <= pin + 1 && now > pin + 1 && tl.scrollLeft < max - 1) {
+        const take = Math.min(now - pin, max - tl.scrollLeft);
+        tl.scrollLeft += take;
+        scroll.scrollTop = now - take;
+      } else if (now < prev && prev >= pin - 1 && now < pin - 1 && tl.scrollLeft > 1) {
+        const take = Math.min(pin - now, tl.scrollLeft);
+        tl.scrollLeft -= take;
+        scroll.scrollTop = now + take;
+      }
+    }
+    lastTop = scroll.scrollTop;
+    spyCareer();
+  }
+
+  /* Past the measure the roles go soft: each one's `--out` is how far it has
+     crossed the edge of the column (0 inside, 1 well out), and career.css
+     turns that into blur and fade. The gutter's own mask does the rest. */
+  function paintTimeline() {
+    if (!tl) return;
+    const box = tl.getBoundingClientRect();
+    const col = $('careerTimeline').getBoundingClientRect();
+    const right = box.right - Math.max(box.right - col.right, 48);
+    const left = box.left;
+    for (const li of tl.querySelectorAll('.role')) {
+      const r = li.getBoundingClientRect();
+      const over = Math.max(r.right - right, left - r.left, 0) / r.width;
+      const t = Math.min(1, Math.max(0, (over - 0.15) / 0.7));
+      li.style.setProperty('--out', t.toFixed(3));
+    }
+    tl.parentElement.classList.toggle('is-scrolled', tl.scrollLeft > 1);
+  }
+
+  // The nav marks the last section whose top has passed a third of the way
+  // down the view — or the last one outright once the page is at its end.
+  function spyCareer() {
+    const nav = scroll.querySelector('.career-nav');
+    if (!nav) return;
+    const btns = [...nav.querySelectorAll('[data-jump]')];
+    const line = scroll.getBoundingClientRect().top + scroll.clientHeight / 3;
+    let on = btns[0];
+    for (const b of btns) {
+      const sec = $(b.dataset.jump);
+      if (sec && sec.getBoundingClientRect().top <= line) on = b;
+    }
+    if (scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2) on = btns[btns.length - 1];
+    for (const b of btns) {
+      b.classList.toggle('is-current', b === on);
+      if (b === on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    }
+  }
+
+  function jumpTo(id) {
+    const sec = $(id);
+    if (!sec) return;
+    const top = sec.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 16;
+    clearTimeout(jumping);
+    jumping = setTimeout(() => { jumping = 0; lastTop = scroll.scrollTop; }, reduced ? 50 : 1200);
+    scroll.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
+  }
+
+  function mountCareer() {
+    tl = scroll.querySelector('.tl-scroll');
+    if (!tl) return;
+    lastTop = scroll.scrollTop;
+    tl.addEventListener('scroll', paintTimeline, { passive: true });
+    paintTimeline();
+    spyCareer();
+  }
+
+  scroll.addEventListener('wheel', onCareerWheel, { passive: false });
+  scroll.addEventListener('scroll', onCareerScroll, { passive: true });
+  scroll.addEventListener('scrollend', () => {
+    if (!jumping) return;
+    clearTimeout(jumping);
+    jumping = 0;
+    lastTop = scroll.scrollTop;
+  });
+  scroll.addEventListener('click', e => {
+    const b = e.target.closest('[data-jump]');
+    if (b) jumpTo(b.dataset.jump);
+  });
+  window.addEventListener('resize', paintTimeline);
 
   const PAGES = {
     bookshelf: { title: 'Bookshelf', data: '/content/more/bookshelf.json', render: renderBooks },
     gear:      { title: 'Gear',      data: '/content/more/gear.json',      render: renderGear },
     appstack:  { title: 'App stack', data: '/content/more/appstack.json',  render: renderApps },
     places:    { title: 'Places',    map: true,                             render: renderPlaces },
-    career:    { title: 'Career',    data: '/content/career.json',         render: renderCareer },
+    career:    { title: 'Career',    data: '/content/career.json',         render: renderCareer, wide: true, mount: mountCareer },
   };
 
   let current = null;   // the page on screen
@@ -538,8 +747,10 @@
     return Promise.all([out, data.catch(() => undefined)]).then(([, rows]) => {
       if (my !== token) return;
       destroyMap();
+      tl = null;
       current = key;
-      scroll.className = 'folio-scroll' + (page.map ? ' folio-scroll--map' : '');
+      scroll.className = 'folio-scroll' + (page.map ? ' folio-scroll--map' : '')
+        + (page.wide && rows !== undefined ? ' folio-scroll--wide' : '');
       scroll.scrollTop = 0;
 
       if (rows === undefined) {
@@ -553,6 +764,7 @@
         if (b) b.classList.add('is-in');
       });
       if (page.map && rows !== undefined) paintMap(my);
+      if (page.mount && rows !== undefined) page.mount();
     });
   }
 
@@ -560,6 +772,7 @@
   function leave() {
     token++;
     current = null;
+    tl = null;
     destroyMap();
     scroll.innerHTML = '';
   }

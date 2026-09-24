@@ -44,7 +44,6 @@
   const letterhead = document.querySelector('.letterhead');
   const links      = document.querySelector('.links');
   const backLink   = $('back');
-  const masthead   = document.querySelector('.masthead');
   const expandBtn  = $('expand');
   const expandLbl  = $('expandLabel');
   const spread     = $('spread');
@@ -614,13 +613,61 @@
 
   function setPostOpen(on) {
     spread.classList.toggle('is-post', on);
-    backLink.setAttribute('aria-label', on && narrow.matches ? 'Back to all posts' : 'Back to the sheet');
   }
 
-  // Back steps out one level: a piece goes to the list, the list goes home.
-  const backGoesToList = () =>
-    narrow.matches && surfaceKey === 'writing' && !spread.hidden &&
-    body.classList.contains('reading') && spread.classList.contains('is-post');
+  /* ══ Back ══════════════════════════════════════════════════════════════
+     Back is the browser's back, for as long as the previous entry is one of
+     ours: out of a gallery to Photos, out of a piece to wherever you came to
+     it from. Each entry is stamped with its depth in `history.state` the
+     first time the router sees it, so depth 0 is the page the visitor landed
+     on — and there, Back goes UP a level instead of off the site: a day to
+     its trip, a trip to Photos, a narrow piece to the list, the rest home.
+
+     ⚠️ The step up REPLACES the entry rather than pushing one. Pushed, the
+     parent would be depth 1, and the next Back would history.back() straight
+     into the page it just left. Anything else that rewrites the URL has to
+     carry `history.state` along, or the stamp is lost. The stamp also keeps
+     the hash the entry was reached FROM (`prev`), which is how closing a
+     layer knows whether stepping back lands on its parent. */
+  let depth = null;
+  let lastHash = null;
+  function stampDepth() {
+    const st = history.state;
+    if (st && typeof st.depth === 'number') depth = st.depth;
+    else {
+      depth = depth == null ? 0 : depth + 1;
+      history.replaceState(Object.assign({}, st, { depth, prev: lastHash }), '');
+    }
+    lastHash = location.hash;
+  }
+
+  // Move to a route in place of the current entry, not on top of it.
+  function replaceRoute(hash) {
+    history.replaceState(history.state, '', hash || location.pathname + location.search);
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  }
+
+  /* A layer closing (a day, play) goes to its parent by stepping BACK when
+     that is where the visitor came from. Pushed instead, the parent would sit
+     on top of the layer, and the next Back would open it again. */
+  function closeTo(hash) {
+    const st = history.state;
+    if (depth > 0 && st && st.prev === hash) history.back();
+    else replaceRoute(hash);
+  }
+
+  function parentRoute() {
+    const p = parseHash();
+    if (!p || !p.rest.length) return '';
+    if (p.section === 'writing') return narrow.matches ? '#writing' : '';
+    return '#' + [p.section].concat(p.rest.slice(0, -1)).join('/');
+  }
+
+  function goBack() {
+    if (depth > 0) history.back();
+    else replaceRoute(parentRoute());
+  }
+  Object.assign(paper, { back: goBack, closeTo, replaceRoute });
 
   /* Two more pieces under the rule: the ones that follow this one in the index
      (older), wrapping round to the newest so the last post still has somewhere
@@ -868,16 +915,7 @@
     const sweep = fadeOut([leaving, backLink, mastLinks]);
     const fly = flyName(from, to);
 
-    // The rule under the masthead closes from both edges to the middle: the
-    // home sheet's frame line drawing outward from its seam, run backwards.
-    const rule = masthead && masthead.animate(
-      [{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 50% 0 50%)' }],
-      { duration: Math.round(paper.dur * 0.8), easing: 'cubic-bezier(0.55, 0.05, 0.78, 0.25)',
-        fill: 'forwards', pseudoElement: '::after' }
-    );
-
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
-      if (rule) rule.cancel();
       body.classList.remove('reading');
       // ...and the paper draws back into its frame, under the copy settling
       // on. The lockup is centred in a row whose own centre doesn't move as
@@ -928,6 +966,7 @@
   }
 
   function route() {
+    stampDepth();
     if (busy) { queued = true; return; }
     const parsed = parseHash();
     const instant = cold;
@@ -980,7 +1019,7 @@
             // the index before the erase finishes, and this would drag you
             // back to the newest piece.
             if (!parsed.item && location.hash === routedAt) {
-              history.replaceState(null, '', '#writing/' + target.slug);
+              history.replaceState(history.state, '', '#writing/' + target.slug);
             }
           });
         });
@@ -1012,17 +1051,17 @@
       const target = items.find(i => i.slug === current) || items[0];
       setPostOpen(true);
       showPost(target);
-      history.replaceState(null, '', '#writing/' + target.slug);
+      history.replaceState(history.state, '', '#writing/' + target.slug);
     } else {
       setPostOpen(spread.classList.contains('is-post'));
     }
   });
 
   backLink.addEventListener('click', e => {
-    if (backGoesToList()) { e.preventDefault(); location.hash = '#writing'; return; }
-    // href="#" clears the hash and route() does the rest; with no hash there
-    // is nothing for it to change, so leave directly.
-    if (!location.hash) { e.preventDefault(); leaveReading(); }
+    // Modified clicks keep the href (home) for a new tab.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+    e.preventDefault();
+    goBack();
   });
 
   document.addEventListener('keydown', e => {
@@ -1031,9 +1070,7 @@
     // also unwinds the section, so shutting a lightbox drops the visitor all
     // the way back to the home sheet.
     if (e.defaultPrevented) return;
-    if (e.key === 'Escape' && body.classList.contains('reading')) {
-      location.hash = backGoesToList() ? '#writing' : '';
-    }
+    if (e.key === 'Escape' && body.classList.contains('reading')) goBack();
   });
 
   /* ══ The fades under overflowing content ══════════════════════════════
