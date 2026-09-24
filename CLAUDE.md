@@ -873,6 +873,12 @@ in `build/dev.js`). The numbers beside a photograph are that photograph's own.
 ⚠️ **The manifests are invisible to the photos listing API on purpose.** It filters
 `content/photos/` on image extensions and does not recurse, so `collections/` and
 everything under it is skipped — the grid never picks up a stamp or a cover.
+⚠️ **And they are kept OUT of that function's bundle** (`excludeFiles` on
+`api/content/list.js` in `vercel.json`). It reads `content/<category>` off the query
+string, so Vercel's file tracer packs the whole of `content/` into it; with the Italy
+selects that came to 392MB against a 250MB limit and the deploy failed. Nothing in it
+reads `collections/`. Any other large folder that no category needs should go on the
+same exclude.
 
 **The day frames are the real selects** (`Italy Selects (V1)`, 463 frames), filed into
 days by each frame's own EXIF date by `build/fill-collection.mjs` (see **Rebuilding the
