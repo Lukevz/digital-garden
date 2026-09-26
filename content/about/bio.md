@@ -21,6 +21,10 @@ Atlanta, GA.
 
 I design software for veterinarians at Instinct (https://instinct.vet/).
 
+## Education
+
+Kennesaw State University, Bachelor of Business Administration.
+
 ## How I'd describe myself in 3 sentences
 
 I'm a software designer who specializes in design systems — the shared resources, components, and patterns that let designers and engineers do their best work without reinventing the wheel every time. My brain is wired for pattern recognition: I'm always looking for the connections, the abstractions, and what will actually scale. I've always loved technology but I think of it as tools — the real goal is helping people do more of the work they love and less of the boring stuff.
