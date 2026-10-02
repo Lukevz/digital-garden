@@ -38,10 +38,10 @@ npm run gaps     # re-check the KB gap list against the committed index
 sections add `photos.css`, `js/paper.js` and `js/photos.js` — none of which the
 landing page itself uses. No build step, no framework.
 
-⚠️ **The landing page has one inline script, and it only picks a colour.** The two
-`.js` files are deferred and do nothing until a section route is on the hash. The
-inline `<head>` script in `index.html` picks the session's sheet colour (**The session
-tint**, below). With scripting blocked, `/` renders as the plain grey it always did.
+**The landing page has no inline script.** The `.js` files are deferred; on the landing
+page `js/paper.js` only wires the dog-ear's tap toggle and the monogram's reveal of the
+accounts (**The monogram and the accounts**, below), and everything else waits for a
+section route on the hash. With scripting blocked, `/` renders as the plain grey sheet.
 See **Sections** and **Photographs** below.
 
 **Two surfaces, and the distinction is the whole design.** `<body>` is a flat,
@@ -51,27 +51,13 @@ untextured **frame** in a single solid colour (white in light mode, near-black i
 the page is what makes the grey field read as a sheet laid down on something rather
 than as a page background.
 
-**The session tint.** The landing page's sheet takes one of the seven colours off the
-branding file (Figma, Personal branding, node 31:217: `#91c3d8 #d3aad0 #eb7d95 #f8c4ae
-#94cecb #e0d6ab #aed8a6`, sampled from the blobs), picked at random per session. An
-inline script in `<head>` picks it and holds it in `sessionStorage` (reload keeps it, a
-new tab rolls again), writes `--sheet-tint` on `<html>` and adds `html.tinted`.
-
-- ⚠️ **Inline, not in `paper.js`.** A deferred script runs after first paint, and the
-  sheet would arrive grey and then change.
-- `--tint-amt` (registered `@property <percentage>`, on `body`) is how much colour is in
-  the paper: `--tint-max` (78% light, 24% dark) on the landing page, `0%` under
-  `body.full`. **It must stay registered** or it flips instead of fading.
-- ⚠️ **It rides `body.full`, not `body.reading`.** The paper drains to grey with the
-  zoom, on `--zoom-dur`, rather than while the copy is still being rubbed out on it.
-  `body.no-zoom` parks the transition, so a cold load on a section never shows colour.
-- `.sheet` derives `--sheet-hi/mid/lo` from the `--paper-*` ramp and the tint; other
-  surfaces keep using `--paper-*`, which is why every section is exactly the grey.
-- The flap's `--curl-fold` / `--curl-tip` are mixes off `--sheet-mid` (white by
-  `--curl-lift`, black by `--curl-sink`), so the folded corner is the sheet's colour.
-- ⚠️ **This was built once and taken out** (it read as a tinted page background), and
-  put back on request for the landing page only. Don't let it follow the reader into a
-  section.
+**No session tint: the sheet is the grey everywhere.** A random branding colour mixed
+into the landing page's sheet per session (an inline `<head>` script, `html.tinted`, a
+registered `--tint-amt` riding `body.full`) has been built and taken out TWICE — it read
+as a tinted page background. The last version is `git show 0a50a27:styles.css` ("The
+session tint") plus that commit's inline script in `index.html`. `--sheet-hi/mid/lo` are
+now plain aliases of `--paper-*`, kept because the flap and the fades read them. The
+branding colours live in the monogram's L instead (**The monogram and the accounts**).
 - Small type (`--ink-soft`) is ~3.3–3.9 : 1 on the tinted sheet (rose is worst), down
   from ~4.4 : 1 on the grey.
 
@@ -174,6 +160,38 @@ cards sank below the paper.
 dark-lock coming back: that whole mechanism — `THEME_LOCK_DARK`, the pinned
 `data-theme="dark"` attribute, the hidden `#themeToggle` — went with `js/main.js`.
 Every colour here is a `:root` custom property redefined in one media query.
+
+## The monogram and the accounts
+
+**Click the letterhead at home and it hands over to the social accounts.** The monogram
+un-etches — the load animation backwards: the Z's strokes come off last-drawn first, then
+the V's, then the L's mask sweep lifts, the whole mark fading under the end of it — and
+`#socials`, a horizontal row of the five brand marks, settles on in exactly its place. A
+click anywhere else, Escape, or the letterhead's box again reverses it: the row fades and
+the monogram etches back in forwards. `js/paper.js`, "The monogram hides the accounts".
+
+- ⚠️ **Web Animations, not classes.** intro.css holds the letters' end state with
+  `fill: both` behind `body:not(.no-intro):not(.intro-spent)`, which a class would have to
+  out-specify. Script animations composite above CSS ones, so they win while they run,
+  and cancelling them hands the letters back to the stylesheet, fully drawn either way.
+  `markGen` stops a late hand-back from cancelling a newer run.
+- ⚠️ **`hideSocials(true)` runs at the top of `enterReading()` even when nothing is
+  showing.** The nav click reaches the document's outside-click handler first, which
+  starts the slow re-etch; without the unconditional instant path the letters drew
+  themselves in mid-flight. The letterhead must be standing before the flight measures it.
+- At home the SVG is `role="button"` (`tabindex 0`, `aria-expanded`, Enter/Space); in a
+  section `setMarkActive(false)` drops it out of the tab order and hides it from AT.
+  `#socials` is `inert` until shown. Keyboard opening focuses the first mark.
+- `#socials` is also the one list of accounts: paper.js clones its links into the section
+  masthead's `.mast-links`.
+
+**The L is a field of moving colour.** Eight blurred discs in the branding colours (Figma,
+Personal branding, node 31:217: `#91c3d8 #d3aad0 #eb7d95 #f8c4ae #94cecb #e0d6ab #aed8a6`)
+drift on their own loops (`mono-drift` in styles.css; each disc's waypoints, period and
+phase are in its `style`), masked to the L, over a gradient wash of the same colours so a
+gap between discs never empties the letter. ⚠️ ONE blur filter (`#mono-blur`) over the
+group: Figma exported one filter per disc with a region sized to where that disc sat, and a
+disc drifting out of its own region is cut off square. Reduced motion stops the drift.
 
 ## The draughtsman's layer
 
@@ -369,10 +387,10 @@ rest but stay in the tab order, so tabbing to one has to be what opens the fold.
 `@media (hover: none)` parks the corner open, since a touch device never fires
 the hover.
 
-**Under the fold are the SOCIAL ACCOUNTS, not the nav.** The two rows swapped: the
-sections are what there is to reach for from the landing page, so they took the
-centred row at the foot of the sheet, and the accounts — the kind of thing you go
-looking for — moved into the corner as marks with no labels.
+**Under the fold are the smaller PAGES: Bookshelf, Gear, App stack, Places**, as marks
+with no labels (`title` + `aria-label` carry the names). They were a second row behind a
+"More" toggle in the nav; the social accounts that lived here before that are behind the
+monogram now. The links are plain hash routes, so `hashchange` closes the fold.
 
 ⚠️ **`.curl-links` is a COLUMN down the right edge, one mark per row.** It was a row
 along the bottom while the fold was a square; now the fold is tall, the right edge has
@@ -383,30 +401,30 @@ the TOPMOST mark is the one that can fall outside the paper:
 --curl-open-w · (--curl-open − bottom − column height) / --curl-open  ≥  right + mark width
 ```
 
-At the floor (160 × 320 fold, 24px marks, 16px gap): 59 against 42. Check the top mark
-when retuning. ⚠️ The gap is a flat 16px, not a `vw` clamp: the triangle sizes off
+At the floor (160 × 320 fold, 24px marks, 16px gap, four marks): 79 against 42. Check
+the top mark when retuning. ⚠️ The gap is a flat 16px, not a `vw` clamp: the triangle sizes off
 `--curl-open`, and a viewport-sized gap stops agreeing with it at either end of its
 clamp. Under 640px it is 120 × 240 with 20px marks and a 12px gap (40 against 34).
 ⚠️ The 120 × 240 phone size described here is superseded by the tap-to-open ear below.
 
-**`#writing`, `#photos` and the four pages behind More are all live** (see
-**Sections**, **Photographs** and **More**); the router sends anything it doesn't
-recognise — `#more` included — back to the sheet. `More` is a toggle, not a link.
+**`#writing`, `#photos`, `#career`, `#resources` and the four pages under the fold are
+all live** (see **Sections**, **Photographs** and **The folio**); the router sends
+anything it doesn't recognise — `#more` included — back to the sheet.
 
-**Touch and narrow screens: the ear rests small and an "@" opens it.** Under 640px or
-`hover: none` the corner used to be parked open (120 × 240), which covered the nav's
-"More". It now rests as a 48 × 96 stub carrying an `@` (`.curl-toggle`, the face has the
-glyph); tapping anywhere on `.curl` toggles `.is-open` (`js/paper.js`), which opens the
-fold to 140 × 280 and shows the five accounts with the `@` as the bottom item of the
-column, so tapping it again closes. Outside tap, Escape and any hash change also close it.
+**Touch and narrow screens: the ear rests small and three dots open it.** Under 640px
+or `hover: none` the corner used to be parked open (120 × 240), which covered the nav.
+It now rests as a 48 × 96 stub carrying Tabler's `dots` (`.curl-toggle`; it was an `@`
+while the fold held the accounts); tapping anywhere on `.curl` toggles `.is-open`
+(`js/paper.js`), which opens the fold to 140 × 280 and shows the four pages with the dots
+as the bottom item of the column, so tapping it again closes. Outside tap, Escape and any hash change also close it.
 ⚠️ The base `:hover` / `:focus-within` open rules still fire on touch (a tap leaves
 `:hover` stuck), so that media block puts them back to the resting size and only
 `.is-open` opens the fold. ⚠️ Closed links are `visibility: hidden` so they are out of the
-tab order. The top-mark fit is 46 against 34 (see `.curl-links`).
+tab order. The top-mark fit is 62 against 34 (see `.curl-links`).
 
 **The dog-ear is the landing page's only.** In a section (`body.reading`) `.curl` /
-`.curl-zone` are `visibility: hidden` and the accounts move to the RIGHT OF THE MASTHEAD
-(`.mast-links`), copied in from `.curl-links` by `paper.js` so the list lives once (it
+`.curl-zone` are `visibility: hidden` and the accounts show at the RIGHT OF THE MASTHEAD
+(`.mast-links`), copied in from `#socials` by `paper.js` so the list lives once (it
 was a footer at the end of each scroller for a while; taken out on request). It fades
 with the surface on the way home (`fadeOut([leaving, backLink, mastLinks])`). ⚠️ On a
 phone the row is 16px marks with a 10px gap so it clears the centred monogram
@@ -425,9 +443,11 @@ filled once the piece has loaded and hidden while the next one is fetching.
 
 ## The marks (Tabler Icons)
 
-Eight glyphs from **Tabler Icons** (MIT), inlined in `index.html` rather than loaded:
-three in the navigation (`pencil`, `photo`, `dots`) and five brand marks under the fold
-(`brand-linkedin`, `brand-x`, `brand-youtube`, `brand-instagram`, `brand-github`).
+Glyphs from **Tabler Icons** (MIT), inlined in `index.html` rather than loaded: the nav's
+(`pencil`, `photo`, `briefcase`, `bookmarks`), the four page marks under the fold
+(`books`, `device-laptop`, `apps`, `map-pin`) with `dots` on the touch toggle, and five
+brand marks behind the monogram (`brand-linkedin`, `brand-x`, `brand-youtube`,
+`brand-instagram`, `brand-github`).
 
 ⚠️ **Tabler rather than Lucide, and the reason is specific.** Lucide has REMOVED its
 brand icons — in the current release `github`, `linkedin`, `instagram`, `youtube` and
@@ -624,7 +644,7 @@ the index (`.spread.is-fade-index`, `::before`, `--index-w` wide) to the **paper
 (`--sheet-mid`, at a lighter 40% because the sheet is a lit gradient and a flat tone shows
 as a band; ⚠️ the index's is blur only, and its titles are MASKED to transparent instead, which
 lands on the real background exactly). ⚠️ **Only the writing spread has fades.** Photos and the
-More pages (bookshelf, gear, app stack, places, career) are standalone and have none — they
+folio pages (bookshelf, gear, app stack, places, resources, career) are standalone and have none — they
 were built and removed on request; don't add them back.
 ⚠️ **The piece's fade is a glass pane** (`.page::after`, 110–170px tall): the text behind is
 blurred and over-saturated so it ghosts through, refracted by the `#glass` SVG filter
@@ -676,35 +696,16 @@ to compare against a hard cut. The zoom follows `paper.dur` (×0.67, written to
 `--zoom-dur` at each toggle) rather than carrying a duration of its own, so slowing
 the rubber down slows the paper down with it.
 
-## More (`js/more.js`, `more.css`)
+## The folio (`js/more.js`, `more.css`)
 
-The third nav item is a toggle. Opening it drops a second row of links UNDER the
-first — the way the macOS menu bar's hidden icons drop into a bar of their own
-(Bartender) — holding **Bookshelf, Gear, App stack, Places**. The pages are the v2
-site's More menu, moved onto the sheet and kept plain: a title and a ruled list.
+Bookshelf, Gear, App stack and Places (marks under the dog-ear), Resources (in the nav)
+and Career all open onto one plain surface, `.folio`: a title and a ruled list, the v2
+site's More menu moved onto the sheet. The files are still named `more` after the "More"
+toggle the first four used to sit behind — a nav button that dropped a second row of
+links under the first, Bartender-style. That row, its `moreSection.reset()` and its
+`--more-h` ride-up are gone; `splitChars()` still skips `[inert]`, which is harmless.
 
-⚠️ **The toggle is a `<button>` and is delegated off `.links`.** The erase
-(`rubOut()`) snapshots `.links`' innerHTML and `restore()` puts it back, replacing
-every node in it, so a listener on the button itself would be attached to a node
-that no longer exists. State lives in a class on `.links` (`.is-more`), which
-survives; `aria-expanded` and `inert` live in the innerHTML, which does not — hence
-`moreSection.reset()`, called from `enterReading()` on BOTH its paths (after the
-restore on the animated one, and directly on the instant one).
-
-⚠️ **The row is `position: absolute` inside `.links`**, hanging into the sheet's
-bottom padding, so opening it moves nothing — the name is centred in the grid's
-other row and would otherwise slide up every time the menu was touched. Where the
-padding is too shallow (`--sheet-pad` bottoms out at 28px) more.js writes the row's
-height into `--more-h` and `.links` rides up by the shortfall. That uses `translate`,
-NOT `transform`: `.links` carries the entrance's `settle` animation with fill-mode
-`both`, and an animated `transform` beats a declared one for as long as the fill
-holds.
-
-⚠️ **Closed means `inert`, and `splitChars()` skips `[inert]`.** The closed row is
-laid out (visibility, not display) so it can be measured; without the skip the
-erase would put a line of type under the nav for the rubber to travel along.
-
-**One surface, four routes.** `#bookshelf`, `#gear`, `#appstack`, `#places` all open
+**One surface, six routes.** `#bookshelf`, `#gear`, `#appstack`, `#places`, `#resources` and `#career` all open
 `.folio`; `SURFACES` maps each key to it, and `surfaceKey` is the ROUTE so the router
 knows which page to paint. Moving between two of them never runs `showSurface()`, so
 `paint()` cross-fades the content itself.
@@ -771,13 +772,53 @@ visit to the page (~700KB). The token comes from `/api/mapbox-token`
 pins from `/api/places` (`GOOGLE_MY_MAPS_ID`). No token → a one-line note, not a
 blank plate. The map is `remove()`d in `leave()` to free the WebGL context.
 
+**Resources (`#resources`) is Luke's design / UX link hub**, a top-level nav item between
+Career (Tabler `bookmarks`), the last item in the row. It was behind More for a day; it still opens the folio. The workflow is that **Luke pastes links (often with a screenshot)
+and Claude files them** into `content/more/resources.json`: `{ categories: [{ name, items:
+[{ name, url, by?, note, imageFrom?, image?, w?, h?, tone? }] }] }`. Categories are in file
+order and **one with no items is left off the page**, chips and all — so the agreed set can
+sit in the file empty: *Frameworks & mental models*, *Laws, principles & patterns*,
+*Visuals*, *Interactions*, *Details* (icons, microcopy, the small stuff; Luke called it
+"atoms").
+
+**It is a board, mymind / Pinterest style** ("Resources: the board" in `js/more.js` and
+`more.css`): a masonry of pictures at their own ratios with only the name under each,
+filter chips over it, and the note, credit and way out held back for the detail. The
+folio's measure is widened to 1320px for this page only (`cls: 'folio-scroll--board'` in
+`PAGES`). ⚠️ The columns are real elements dealt in ROW order off the ratios in the JSON
+(the photos day grid's approach, not CSS `columns`), rebuilt by a ResizeObserver when the
+column count changes and by the chips. A link with no picture is a white text card.
+
+**The detail is a centred modal** (`.rdetail`, on the folio beside the scroller,
+`position: fixed` over the masthead): picture left, words right, stacked under 640px. A
+side panel that slid in from the right like the writing page was built alongside it and
+dropped on Luke's pick. Arrows step, Escape closes (and `preventDefault`s so paper.js
+doesn't also leave the section), a click on the wash closes.
+
+**Pictures come from `build/resource-images.mjs`** (`npm install --no-save sharp` first):
+WebP, 1000px wide, in `content/more/resources/`, with `w`/`h`/`tone` written back.
+Sources, in order: `--from "<name>" <file|url>`, the entry's `imageFrom`, the page's
+og:image. LinkedIn serves og:image; **X serves nothing to a script** — read the
+`pbs.twimg.com` address off the post in Chrome (Luke is signed in) into `imageFrom`
+(`?format=jpg&name=large`; a video's poster is the `amplify_video_thumb` one). A site with
+no useful og:image gets a screenshot (Chrome, with animations forced on — a background tab
+never runs them) passed with `--from`. Headless Chrome from the CLI hung here; use the
+extension.
+
+- Name the thing, not the post ("The safe triangle", not "Soren's tweet"); credit the
+  author in `by`. Strip `utm_*` and other tracking params from URLs.
+- The note says why the link is worth the click, in a sentence. Don't pad it with praise.
+- ⚠️ `content/more/resources/` is NOT on `api/content/list.js`'s `excludeFiles` in
+  `vercel.json`. Harmless at a few MB; add it if the folder grows (see **Where the content
+  lives** under Photographs for why that bundle matters).
+
 ⚠️ **The tab must be VISIBLE to test the transitions.** In a background tab
 animations freeze and every `finished` promise hangs, so a route appears to stall
 half-way. `paper.enabled = false` tests the routing logic on its own.
 
 ## Career (`career.css`, `content/career.json`)
 
-`#career` is a fifth route onto the folio (the surface behind More), painted by
+`#career` is a route onto the folio, painted by
 `renderCareer()` in `js/more.js`: three sections — a **horizontal timeline** of roles
 (period above a hairline rail, a dot per role, the current one filled, the role below),
 the **A -> X principles** (a struck "UX" over a display "A -> X", the headline "Design
@@ -820,7 +861,7 @@ giving it a `url` is what takes the badge off. The page has no meta line under t
 (the "2015 to today" span is gone); `.page-meta:empty` hides the empty one. The section
 labels (`.career-label`) are set in `--ink` at ~1rem with the headings' text-stroke.
 
-**Career is live in the nav** (`<a href="#career">` between Photos and More). It was a
+**Career is live in the nav** (`<a href="#career">` between Photos and Resources). It was a
 "Soon" span for a while; the `.links .soon` rules are gone from `career.css` and `styles.css`.
 
 **The resume button** sits inline with the title, far right (`head()` in `js/more.js`

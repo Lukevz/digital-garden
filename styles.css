@@ -68,10 +68,6 @@
   --paper-hi: #e9eced;
   --paper-mid: #e2e6e7;
   --paper-lo: #d7dcde;
-  /* How far the session's colour (--sheet-tint, set inline in index.html) is
-     mixed into the ramp on the landing page. Pastels already sit near the
-     grey's lightness, so light takes most of it. */
-  --tint-max: 78%;
   --ink: #12171a;
   --ink-soft: rgba(18, 23, 26, 0.58);
   --rule: rgba(18, 23, 26, 0.22);
@@ -120,9 +116,6 @@
     --paper-hi: #1b1e20;
     --paper-mid: #16191a;
     --paper-lo: #111314;
-    /* A pastel at anything like the light amount would be a bright sheet; this
-       is a colour cast on dark stock. */
-    --tint-max: 24%;
     --ink: #e5e9ea;
     --ink-soft: rgba(229, 233, 234, 0.72);
     --rule: rgba(229, 233, 234, 0.22);
@@ -157,42 +150,11 @@ body {
   overscroll-behavior: none;
 }
 
-/* ── The session tint ──────────────────────────────────────────────────────
-   The landing page's sheet takes one of the branding colours; every other
-   page is the plain grey, for reading. --tint-amt is how much of the colour
-   is in the paper right now, and it is what moves: 0 → --tint-max on the
-   landing page, back to 0 when a section opens.
-
-   ⚠️ REGISTERED, or it can't be transitioned. An unregistered custom property
-   is an opaque token to the animation engine and flips at the halfway point,
-   which would be a colour change with no fade. Registered as a percentage it
-   interpolates like any length, and everything that mixes it in (the sheet's
-   ramp and the dog-ear's flap) follows frame by frame.
-
-   ⚠️ It rides `body.full`, the same class as the zoom, so the paper loses its
-   colour AS it goes full bleed and gets it back as it returns to the frame,
-   on the zoom's own clock (--zoom-dur / --zoom-ease). Not `body.reading`:
-   that lands at the START of the flight, and the sheet would drain to grey
-   while the copy was still being rubbed out over it.
-
-   ⚠️ Gated on `html.tinted`, which the inline script in index.html adds. No
-   script → no class → --tint-amt stays 0% and every mix below is exactly the
-   grey it was before this existed.
-
-   ⚠️ A colour on the page-sized field was tried once before and taken out
-   (it read as a tinted page background). It is back because it was asked for,
-   on the landing page only; don't let it follow the reader into a section. */
-@property --tint-amt {
-  syntax: '<percentage>';
-  inherits: true;
-  initial-value: 0%;
-}
-
-body {
-  --tint-amt: 0%;
-  transition: --tint-amt var(--zoom-dur) var(--zoom-ease);
-}
-html.tinted body:not(.full) { --tint-amt: var(--tint-max); }
+/* The session tint — one of the branding colours mixed into the landing
+   page's sheet per session — has been built and taken out twice; the paper is
+   the plain grey everywhere. The last version is in git (`git show
+   0a50a27:styles.css`, "The session tint", plus the inline script in
+   index.html). */
 body.no-zoom { transition: none; }
 
 body {
@@ -250,12 +212,11 @@ body {
   padding: var(--sheet-pad);
   box-sizing: border-box;
 
-  /* The ramp with the session's colour in it. Declared HERE, not on :root,
-     because --tint-amt lives on body and a variable can only see what its own
-     element inherits. At 0% each is exactly its --paper-* stop. */
-  --sheet-hi:  color-mix(in srgb, var(--sheet-tint, var(--paper-hi))  var(--tint-amt), var(--paper-hi));
-  --sheet-mid: color-mix(in srgb, var(--sheet-tint, var(--paper-mid)) var(--tint-amt), var(--paper-mid));
-  --sheet-lo:  color-mix(in srgb, var(--sheet-tint, var(--paper-lo))  var(--tint-amt), var(--paper-lo));
+  /* The sheet's own ramp. Plain aliases of the --paper-* stops now; they were
+     the session tint's mixes, and the curl and the fades still read them. */
+  --sheet-hi:  var(--paper-hi);
+  --sheet-mid: var(--paper-mid);
+  --sheet-lo:  var(--paper-lo);
 
   /* The move between the framed sheet and the full-bleed one. Declared here
      rather than on `body.full` so it carries BOTH ways: an override only ever
@@ -354,6 +315,25 @@ body.no-zoom .sheet { transition: none; }
    Kept as an <img> rather than inlined: an <img>-embedded SVG still honours
    its own stylesheet and media queries, which is all the theming this needs,
    and it keeps 6KB of paths out of the markup. */
+/* The L's colour. Each disc drifts on its own loop — its own two waypoints,
+   period and phase, in its style attribute — so they slide in and out of one
+   another and the field never repeats the same way twice in a sitting. The
+   translates are in the SVG's user units (a CSS px on an SVG element is one
+   unit of its viewBox); the L itself is about 480 × 615 of them. */
+.mono-blob {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mono-drift var(--dur, 22s) ease-in-out var(--delay, 0s) infinite;
+}
+@keyframes mono-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(var(--x1), var(--y1)) scale(1.12); }
+  66%      { transform: translate(var(--x2), var(--y2)) scale(0.92); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mono-blob { animation: none; }
+}
+
 .letterhead .mono-stroke { stroke: #23272a; }
 @media (prefers-color-scheme: dark) {
   .letterhead .mono-stroke { stroke: #dfe4e6; }
@@ -373,6 +353,67 @@ body.no-zoom .sheet { transition: none; }
      to be. intro.css animates TO this, and the masthead's corner mark rests
      at the same weight so the flight between them can't pop. */
   opacity: var(--letterhead-opacity);
+}
+
+/* ── The monogram hides the accounts ───────────────────────────────────────
+   At home the letterhead is a button: clicking it un-etches the monogram and
+   puts the row of accounts in its place (js/paper.js drives both, with the Web
+   Animations API so it overrides the intro's held fills without a fight over
+   specificity). In a section it goes back to being only the mark. */
+body:not(.reading) .letterhead {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.letterhead:focus { outline: none; }
+.letterhead:focus-visible {
+  outline: 1px solid var(--rule);
+  outline-offset: 10px;
+  border-radius: 4px;
+}
+
+/* Sits exactly over the monogram: the same top, and the monogram's height
+   (its width × 621 / 1641) as its own, so the marks centre on the line the
+   letters stood on. */
+.socials {
+  position: absolute;
+  top: clamp(36px, 6.4vh, 62px);
+  left: 50%;
+  translate: -50% 0;
+  height: calc(clamp(88px, 10.5vw, 146px) * 0.3784);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 2.2vw, 26px);
+  font-size: clamp(20px, 1.9vw, 24px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 260ms;
+}
+.socials.is-shown {
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+.socials .ico { width: 1em; height: 1em; }
+.socials a {
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(0.22, 0.75, 0.18, 1), color 180ms ease;
+}
+.socials.is-shown a {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 55ms), calc(var(--i, 0) * 55ms), 0s;
+}
+.socials a:hover,
+.socials a:focus-visible { color: var(--ink); outline: none; }
+body.reading .socials { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .socials,
+  .socials a { transition: none; }
 }
 
 /* ── Copy ──────────────────────────────────────────────────────────────── */
@@ -510,7 +551,6 @@ body:not(.reading) .name {
 }
 
 .links a,
-.links .more-toggle,
 .back {
   display: inline-flex;
   align-items: center;
@@ -529,16 +569,12 @@ body:not(.reading) .name {
    after the LAST letter too, so without this every word sits a fifth of an
    em left of centre between its icon and the next item. */
 .links a > span,
-.links .more-toggle > span,
 .back > span {
   margin-right: -0.2em;
 }
 
 .links a:hover,
 .links a:focus-visible,
-.links .more-toggle:hover,
-.links .more-toggle:focus-visible,
-.links .more-toggle[aria-expanded="true"],
 .back:hover,
 .back:focus-visible {
   color: var(--ink);
@@ -546,7 +582,6 @@ body:not(.reading) .name {
 }
 
 .links a:focus-visible,
-.links .more-toggle:focus-visible,
 .back:focus-visible {
   outline: none;
 }
@@ -783,7 +818,7 @@ body:not(.reading) .name {
   /* ⚠️ The fold is TALL: --curl-open is its HEIGHT, and it is twice as wide as
      it is high on the short side (--curl-k). It used to be a square, which
      made the fold a 45-degree diagonal; the paper now peels back further up
-     the edge than it does along the bottom, which also gives a column of five
+     the edge than it does along the bottom, which also gives a column of
      marks somewhere to stand (see .curl-links).
      --curl-rest is the resting ear's WIDTH, and it keeps the same 1 : 2 shape
      so the flap's geometry (below) holds while the width/height transition
@@ -795,9 +830,8 @@ body:not(.reading) .name {
   /* The flap's tones, as how far the sheet's own middle tone is lifted toward
      white (the fold, where it tilts into the light) and sunk toward black (the
      tip, lying back down on the page). They are mixes rather than two greys
-     so the folded corner is the same stock as the sheet whatever the sheet's
-     colour is doing (see the session tint). At no tint they land on the
-     #f4f7f8 / #d0d6d9 the flap used to be. */
+     so the folded corner is the same stock as the sheet. On the light grey
+     they land on #f4f7f8 / #d0d6d9. */
   --curl-lift: 60%;
   --curl-sink: 8%;
   /* Three stops: a tight contact edge for the sheet's own thickness, a mid
@@ -830,7 +864,7 @@ body:not(.reading) .name {
 /* The trigger.
    ⚠️ Small on purpose: the resting ear plus a 16px halo. It was the whole
    height of the right edge and 36px wider than the open fold, which was
-   defensible while the corner held the navigation. It holds five social
+   defensible while the corner held the navigation. It holds four page
    marks now, and a strip that long opened the fold whenever the pointer
    drifted anywhere near the right-hand side of the page. Once open, the fold
    keeps itself open (`.curl:hover`), so the zone only has to be the approach.
@@ -855,7 +889,7 @@ body:not(.reading) .name {
   transition: width 460ms cubic-bezier(0.22, 0.75, 0.18, 1),
               height 460ms cubic-bezier(0.22, 0.75, 0.18, 1);
 
-  /* The flap's two tones, off the sheet's own (tinted) middle. Declared here
+  /* The flap's two tones, off the sheet's own middle. Declared here
      because --sheet-mid is inherited from .sheet and this is inside it. */
   --curl-fold: color-mix(in srgb, white var(--curl-lift), var(--sheet-mid));
   --curl-tip:  color-mix(in srgb, black var(--curl-sink), var(--sheet-mid));
@@ -919,7 +953,11 @@ body:not(.reading) .name {
   opacity: var(--grain-opacity);
 }
 
-/* ── The accounts under the corner ──────────────────────────────────────────
+/* ── The pages under the corner ─────────────────────────────────────────────
+   Bookshelf, gear, app stack and places, marks only (they were behind a
+   "More" toggle in the nav; the social accounts that lived here first are
+   behind the monogram now).
+
    ⚠️ A COLUMN down the right edge, one mark per row. It was a row along the
    bottom edge while the fold was a square, because in a 45-degree triangle
    the bottom edge is the one full-width line and a stack puts its top mark
@@ -932,8 +970,8 @@ body:not(.reading) .name {
        --curl-open-w · (--curl-open − bottom − column height) / --curl-open
            ≥  right + mark width
 
-   where the column is `5 · mark + 4 · gap`. At the floor of --curl-open
-   (320 × 160 fold, 24px marks, 16px gap) that is 160 · 118 / 320 = 59 against
+   where the column is `4 · mark + 3 · gap`. At the floor of --curl-open
+   (320 × 160 fold, 24px marks, 16px gap) that is 160 · 158 / 320 = 79 against
    the 42 it needs. Retune the mark, the gap or the ratio and check the top
    mark, not the column's height on its own.
 
@@ -1001,16 +1039,16 @@ body:not(.reading) .name {
 /* ── No hover to give ──────────────────────────────────────────────────────
    A touch device never fires the hover, and on a phone a fold parked open is
    a third of the page and sits over the navigation (More was hidden under it).
-   So here the corner RESTS as a small stub with an "@" on it, and tapping the
-   stub (js/paper.js toggles `.is-open`) curls the page the rest of the way and
-   reveals the accounts. The base hover rules would still fire — a tap leaves
+   So here the corner RESTS as a small stub with three dots on it, and tapping
+   the stub (js/paper.js toggles `.is-open`) curls the page the rest of the way
+   and reveals the pages under it. The base hover rules would still fire — a tap leaves
    `:hover` stuck on — so they are put back to the resting size, and only
    `.is-open` opens the fold.
 
-   ⚠️ The "@" is the bottom item of the column when open, sitting exactly where
+   ⚠️ The dots are the bottom item of the column when open, sitting exactly where
    it rested, so tapping it again is what closes the fold. Column bottom = the
    button's bottom (8) + its height (28) + 4. Top-mark fit, per the rule under
-   .curl-links: 140 · (280 − 40 − 148) / 280 = 46 against the 34 it needs.
+   .curl-links: 140 · (280 − 40 − 116) / 280 = 62 against the 34 it needs.
    ⚠️ Closed links are `visibility: hidden`, not just transparent, so they are
    out of the tab order until the fold is open. */
 .curl-toggle { display: none; }
@@ -1043,12 +1081,13 @@ body:not(.reading) .name {
     background: none;
     border: 0;
     font: inherit;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1;
     color: var(--ink-soft);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
+  .curl-toggle .ico { width: 1em; height: 1em; }
   .curl-toggle:active,
   .curl-toggle:focus-visible { color: var(--ink); outline: none; }
 
@@ -1169,9 +1208,9 @@ body.reading .bio,
 body.reading .links { display: none; }
 
 /* ── No dog-ear off the home page ──────────────────────────────────────────
-   The corner is the landing page's. In a section it fades away and the
-   accounts run along the foot of the sheet as a plain horizontal row (the
-   marks are copied in from `.curl-links` by js/paper.js). Faded rather than
+   The corner is the landing page's. In a section it fades away, and the
+   accounts sit at the right of the masthead (copied in from `#socials` by
+   js/paper.js). Faded rather than
    removed, so it doesn't pop at the end of the flight in either direction. */
 .curl,
 .curl-zone {

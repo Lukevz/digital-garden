@@ -1,0 +1,88 @@
+{
+  "categories": [
+    {
+      "name": "Frameworks & mental models",
+      "items": [
+        {
+          "name": "Mapping tone in UI",
+          "url": "https://x.com/101babich/status/1973020620624646213",
+          "by": "Zendesk, via Nick Babich",
+          "note": "A 2x2 for voice: how informational or instructional a moment is, against how much is riding on it, and which tone each corner gets.",
+          "imageFrom": "https://pbs.twimg.com/media/G2GTy9WWAAAfI46?format=jpg&name=large",
+          "image": "/content/more/resources/mapping-tone-in-ui.webp",
+          "w": 1000,
+          "h": 1072,
+          "tone": "#f8f8f8"
+        },
+        {
+          "name": "Flowchart shapes",
+          "url": "https://www.linkedin.com/posts/pavle-lucic_every-uiux-designer-should-know-how-to-create-share-7257312314100436992-0lxr/",
+          "by": "Pavle Lucic",
+          "note": "What each shape means when you map a flow: capsule for start and end, rectangle for a step, diamond for a decision, parallelogram for input or output.",
+          "image": "/content/more/resources/flowchart-shapes.webp",
+          "w": 1000,
+          "h": 1250,
+          "tone": "#f8f8e8"
+        }
+      ]
+    },
+    {
+      "name": "Laws, principles & patterns",
+      "items": [
+        {
+          "name": "Baby duck syndrome",
+          "url": "https://uxhints.com/user-behavior/baby-duck-syndrome-in-ux/",
+          "by": "UX Hints",
+          "note": "People imprint on the first system they learn and judge every redesign against it, which is why a better UI can still get hated at launch.",
+          "image": "/content/more/resources/baby-duck-syndrome.webp",
+          "w": 1000,
+          "h": 667,
+          "tone": "#f8e898"
+        },
+        {
+          "name": "Checklist Design",
+          "url": "https://www.checklist.design/",
+          "note": "Checklists of everything a page, component or flow needs, for websites, web apps and mobile.",
+          "image": "/content/more/resources/checklist-design.webp",
+          "w": 1000,
+          "h": 682,
+          "tone": "#f8f8e8"
+        },
+        {
+          "name": "Design Patterns Catalogue",
+          "url": "https://catalogue.projectsbyif.com/",
+          "by": "IF",
+          "note": "Patterns for services that handle people's data, and now AI: consent, transparency, control, trust.",
+          "image": "/content/more/resources/design-patterns-catalogue.webp",
+          "w": 1000,
+          "h": 682,
+          "tone": "#f8d878"
+        }
+      ]
+    },
+    {
+      "name": "Visuals",
+      "items": []
+    },
+    {
+      "name": "Interactions",
+      "items": [
+        {
+          "name": "The safe triangle",
+          "url": "https://x.com/sorenblank/status/2023214633298039149",
+          "by": "@sorenblank",
+          "note": "The prediction cone that keeps a submenu open while the pointer cuts diagonally toward it. macOS, Windows and Amazon all have one; most web dropdowns don't.",
+          "imageFrom": "https://pbs.twimg.com/amplify_video_thumb/2023210565259481088/img/2ASw20x_JEcIxAqQ.jpg?name=large",
+          "image": "/content/more/resources/the-safe-triangle.webp",
+          "w": 1000,
+          "h": 800,
+          "tone": "#e8f8f8"
+        }
+      ]
+    },
+    {
+      "name": "Details",
+      "items": []
+    }
+  ]
+}
