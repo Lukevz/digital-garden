@@ -18,8 +18,8 @@
 
    ⚠️ There are now THREE surfaces a section can open onto — `.spread`, which
    is writing's two-column layout, `.plates`, which is photographs' single
-   scroller (js/photos.js), and `.folio`, the plain page behind More
-   (js/more.js: bookshelf, gear, app stack, places — four routes, one
+   scroller (js/photos.js), and `.folio`, the plain page (js/more.js:
+   bookshelf, gear, app stack, places, resources, career — six routes, one
    surface). Everything above is shared: the erase, the flight and the
    masthead do not care which one is coming up behind them. Only `surface()`
    knows the difference.
@@ -64,7 +64,7 @@
 
   /* ── The dog-ear's toggle ──────────────────────────────────────────────
      Touch and narrow screens only (styles.css, "No hover to give"): the ear
-     rests small with an "@" on it and a tap curls it open. Everywhere else
+     rests small with three dots on it and a tap curls it open. Everywhere else
      `.is-open` has no CSS attached and the hover does the job. */
   const curl = document.querySelector('.curl');
   const curlBtn = $('curlToggle');
@@ -74,11 +74,16 @@
     curlBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
   }
   // The sections' accounts: the same marks, flat, at the right of the masthead
-  // where the expand control used to be. Cloned from the dog-ear's so there is
-  // one list to keep.
+  // where the expand control used to be. Cloned from the row behind the
+  // monogram (#socials) so there is one list to keep.
   const mastLinks = $('mastLinks');
-  if (mastLinks && curl) {
-    curl.querySelectorAll('.curl-links a').forEach(a => mastLinks.appendChild(a.cloneNode(true)));
+  const socialRow = $('socials');
+  if (mastLinks && socialRow) {
+    socialRow.querySelectorAll('a').forEach(a => {
+      const c = a.cloneNode(true);
+      c.removeAttribute('style');
+      mastLinks.appendChild(c);
+    });
   }
 
   if (curl) {
@@ -89,6 +94,155 @@
     document.addEventListener('pointerdown', e => { if (!curl.contains(e.target)) setCurl(false); });
     window.addEventListener('hashchange', () => setCurl(false));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') setCurl(false); });
+  }
+
+  /* ── The monogram hides the accounts ───────────────────────────────────
+     At home the letterhead is a button. Clicking it un-etches the monogram —
+     the load animation run backwards: the Z's strokes come off last-drawn
+     first, then the V's, then the L's sweep lifts back off it — and the row
+     of accounts (`#socials`) settles on where it stood. A click anywhere
+     else, Escape, or the letterhead's own box puts the monogram back, etched
+     in forwards the way it arrived. Opening a section puts it back at once.
+
+     ⚠️ Web Animations, not classes. intro.css holds the letters' end state
+     with `fill: both` behind a long `:not()` selector, which a class would
+     have to out-specify. Script animations composite above CSS ones, so these
+     win while they run, and cancelling them hands the letters back to the
+     stylesheet — fully drawn, whether or not the intro still matches.
+
+     ⚠️ `markGen` guards the hand-back: re-etching ends by cancelling its own
+     animations, and a click that starts the un-etch again mid-way must not
+     have that late cancel wipe out the new run. */
+  const socials = $('socials');
+  const markV = letterhead ? [...letterhead.querySelectorAll('.mono-v')] : [];
+  const markZ = letterhead ? [...letterhead.querySelectorAll('.mono-z')] : [];
+  const markL = letterhead && letterhead.querySelector('.etch-l-sweep');
+  const iOf = el => parseInt(el.style.getPropertyValue('--i'), 10) || 0;
+  const MARK_EASE = 'cubic-bezier(0.3, 0.1, 0.2, 1)';
+  let markAnims = [];
+  let markGen = 0;
+  let markAway = false;
+  let markTimer = 0;
+
+  function clearMark() {
+    markAnims.forEach(a => a.cancel());
+    markAnims = [];
+  }
+
+  // Each stroke is `pathLength="1"`, so a dash of 1 offset by 1 is a stroke
+  // not yet drawn and offset 0 is the whole line.
+  function strokeAnim(el, delay, dur, draw) {
+    const on = { strokeDasharray: '1', strokeDashoffset: '0' };
+    const off = { strokeDasharray: '1', strokeDashoffset: '1' };
+    return el.animate(draw ? [off, on] : [on, off], { duration: dur, delay, easing: MARK_EASE, fill: 'both' });
+  }
+
+  // Durations scale to nothing under reduced motion: the same end states,
+  // reached at once.
+  const markMs = ms => (reduced ? 0 : ms);
+
+  function unEtch() {
+    markGen++;
+    clearMark();
+    const z = markZ.slice().sort((a, b) => iOf(b) - iOf(a));
+    const v = markV.slice().sort((a, b) => iOf(b) - iOf(a));
+    z.forEach((el, k) => markAnims.push(strokeAnim(el, markMs(k * 26), markMs(300), false)));
+    v.forEach((el, k) => markAnims.push(strokeAnim(el, markMs(250 + k * 32), markMs(320), false)));
+    if (markL) {
+      markAnims.push(markL.animate(
+        [{ transform: 'translateY(-300px)' }, { transform: 'translateY(-1360px)' }],
+        { duration: markMs(560), delay: markMs(470), easing: 'cubic-bezier(0.55, 0, 0.75, 0.6)', fill: 'both' }));
+    }
+    markAnims.push(letterhead.animate(
+      [{ opacity: getComputedStyle(letterhead).opacity }, { opacity: 0 }],
+      { duration: markMs(320), delay: markMs(720), easing: 'ease-in', fill: 'both' }));
+  }
+
+  function etch() {
+    const gen = ++markGen;
+    clearMark();
+    if (markL) {
+      markAnims.push(markL.animate(
+        [{ transform: 'translateY(-1360px)' }, { transform: 'translateY(-300px)' }],
+        { duration: markMs(700), easing: 'cubic-bezier(0.45, 0, 0.25, 1)', fill: 'both' }));
+    }
+    markV.forEach(el => markAnims.push(strokeAnim(el, markMs(320 + iOf(el) * 45), markMs(440), true)));
+    markZ.forEach(el => markAnims.push(strokeAnim(el, markMs(700 + iOf(el) * 38), markMs(440), true)));
+    Promise.all(markAnims.map(a => a.finished.catch(() => {})))
+      .then(() => { if (gen === markGen) clearMark(); });
+  }
+
+  function showSocials(fromKey) {
+    if (markAway || !socials || body.classList.contains('reading')) return;
+    markAway = true;
+    letterhead.setAttribute('aria-expanded', 'true');
+    socials.removeAttribute('inert');
+    unEtch();
+    clearTimeout(markTimer);
+    markTimer = setTimeout(() => {
+      socials.classList.add('is-shown');
+      if (fromKey) {
+        const first = socials.querySelector('a');
+        if (first) first.focus({ preventScroll: true });
+      }
+    }, markMs(620));
+  }
+
+  // `instant` is for a section opening: the letters go straight back (the
+  // flight measures the letterhead next) and the row goes without its fade,
+  // or the two would sit on top of each other for the length of it.
+  //
+  // ⚠️ The instant path runs even when the row is already going: the click
+  // that opens a section lands on the document first, which starts the slow
+  // re-etch, and the section's own call would otherwise find nothing to do
+  // and leave the letters drawing themselves in mid-flight.
+  function hideSocials(instant) {
+    if (!markAway && !instant) return;
+    markAway = false;
+    clearTimeout(markTimer);
+    letterhead.setAttribute('aria-expanded', 'false');
+    socials.setAttribute('inert', '');
+    if (instant) {
+      socials.style.transition = 'none';
+      socials.querySelectorAll('a').forEach(a => { a.style.transition = 'none'; });
+      socials.classList.remove('is-shown');
+      void socials.offsetWidth;
+      socials.style.transition = '';
+      socials.querySelectorAll('a').forEach(a => { a.style.transition = ''; });
+      markGen++;
+      clearMark();
+      return;
+    }
+    socials.classList.remove('is-shown');
+    markTimer = setTimeout(etch, markMs(160));
+  }
+
+  // At home it is a control; in a section it is only the mark.
+  function setMarkActive(on) {
+    if (!letterhead) return;
+    letterhead.tabIndex = on ? 0 : -1;
+    letterhead.setAttribute('aria-hidden', on ? 'false' : 'true');
+  }
+
+  if (letterhead && socials) {
+    letterhead.addEventListener('click', () => (markAway ? hideSocials() : showSocials(false)));
+    letterhead.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      if (markAway) hideSocials(); else showSocials(true);
+    });
+    document.addEventListener('click', e => {
+      if (!markAway || socials.contains(e.target) || letterhead.contains(e.target)) return;
+      hideSocials();
+    });
+    // ⚠️ preventDefault marks this Escape as spoken for, the convention
+    // js/photos.js and js/more.js use with the section's own Escape below.
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || !markAway) return;
+      e.preventDefault();
+      hideSocials();
+      letterhead.focus({ preventScroll: true });
+    });
   }
 
   /* ── Tunables ──────────────────────────────────────────────────────────
@@ -537,7 +691,7 @@
   /* Five of the routes are one surface: `#bookshelf`, `#gear`, `#appstack`,
      `#places` and `#career` all open the folio, and js/more.js decides which page to put in
      it. `surfaceKey` is the ROUTE, so the router knows which page to paint. */
-  const FOLIO = ['bookshelf', 'gear', 'appstack', 'places', 'career'];
+  const FOLIO = ['bookshelf', 'gear', 'appstack', 'places', 'resources', 'career'];
   const SURFACES = { writing: spread, photos: plates };
   FOLIO.forEach(k => { SURFACES[k] = folio; });
   let surfaceKey = 'writing';
@@ -843,14 +997,15 @@
   // just to be swept away — and reduced-motion wants the same short path.
   function enterReading(instant) {
     if (body.classList.contains('reading')) return swapSurface();
+    // The monogram has to be standing before the flight measures it.
+    hideSocials(true);
+    setMarkActive(false);
     // The home sheet's intro is over the moment it is left: letting it stand
     // would replay the monogram's etching when the letterhead comes back.
     body.classList.add('intro-spent');
     if (instant || reduced || !paper.enabled) {
       body.classList.add('reading');
       setFull(true, true);
-      // No erase to restore from, but More may still be out.
-      if (moreSection()) moreSection().reset();
       showSurface();
       return Promise.resolve();
     }
@@ -875,9 +1030,6 @@
       nameEl.style.transformOrigin = '';
       landLetterhead(mark);
       restore([bio, links]);
-      // The restore put back the nav as it was when the erase began — with the
-      // More row out, if it was. It is folded away again for the way home.
-      if (moreSection()) moreSection().reset();
       // Everything has landed in the framed geometry it was measured in, so
       // the sheet is free to push out to the edges behind the arriving
       // surface. Same task as the class above: nothing paints in between.
@@ -896,6 +1048,7 @@
     }
     if (instant || reduced || !paper.enabled) {
       body.classList.remove('reading');
+      setMarkActive(true);
       setFull(false, true);
       hideSurface();
       return Promise.resolve();
@@ -917,6 +1070,7 @@
 
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
       body.classList.remove('reading');
+      setMarkActive(true);
       // ...and the paper draws back into its frame, under the copy settling
       // on. The lockup is centred in a row whose own centre doesn't move as
       // the sheet shrinks, so the name — which has just landed there — sits

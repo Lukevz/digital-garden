@@ -1,26 +1,17 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   paperlike — More.
+   paperlike — the folio's pages.
 
-   Two jobs, both behind the third item in the nav:
-
-     • the ROW. More is a toggle, and opening it drops a second row of links
-       underneath the first, the way the macOS menu bar's hidden icons drop
-       into a bar of their own (Bartender). Only the class and `inert` change
-       here; the motion is more.css.
-     • the PAGES it links to — `#bookshelf`, `#gear`, `#appstack`, `#places` —
-       and `#career`, which is not behind More but rides the same surface —
-       painted into `#folio`, the plainest of the sheet's surfaces: a title and
-       a list. Registers itself as `window.moreSection`, and js/paper.js hands
-       it the route once the sheet has opened, exactly as it does photographs.
+   `#bookshelf`, `#gear`, `#appstack`, `#places` (marks under the dog-ear),
+   `#resources` (in the nav) and `#career` all open onto `#folio`, the
+   plainest of the sheet's surfaces, and this paints whichever one the route
+   names. Registers itself as `window.moreSection`, and js/paper.js hands it
+   the route once the sheet has opened, exactly as it does photographs. (The
+   name is from when the first four sat behind a "More" toggle in the nav,
+   which dropped a second row of links under the first. That row is gone.)
 
    ⚠️ Loads BEFORE js/paper.js, for the same reason js/photos.js does: both are
    deferred, paper.js reads `window.moreSection` on its very first route(), and
    swapping the two tags silently sends a `#gear` URL back to the home sheet.
-
-   ⚠️ The toggle is DELEGATED off `.links`. The erase (rubOut in js/paper.js)
-   swaps that element's innerHTML back in when it restores the copy, which
-   replaces every node inside it — a listener on the button itself would be
-   attached to a node that no longer exists.
 
    The data is static JSON in content/more/, extracted from the v2 site's own
    arrays (`git show 8bda88c:js/main.js`), and fetched once per page.
@@ -29,12 +20,10 @@
   'use strict';
 
   const $ = id => document.getElementById(id);
-  const body = document.body;
-  const links = document.querySelector('.links');
   const folio = $('folio');
   const scroll = $('folioScroll');
 
-  if (!links || !folio || !scroll) return;
+  if (!folio || !scroll) return;
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const dark = () => matchMedia('(prefers-color-scheme: dark)').matches;
@@ -45,47 +34,6 @@
   const esc = t => String(t == null ? '' : t)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const txt = t => esc(fold(t));
-
-  /* ══ The row ═══════════════════════════════════════════════════════════ */
-
-  let open = false;
-
-  // The row's height, for the nav to ride up by when the sheet's bottom
-  // padding is too shallow to hold it (see `.links.is-more` in more.css).
-  function measure() {
-    const row = $('moreRow');
-    if (row) links.style.setProperty('--more-h', row.offsetHeight + 'px');
-  }
-
-  function setOpen(on) {
-    open = on;
-    links.classList.toggle('is-more', on);
-    // Looked up each time: the erase swaps these nodes for fresh copies.
-    const row = $('moreRow');
-    const toggle = links.querySelector('.more-toggle');
-    if (row) row.toggleAttribute('inert', !on);
-    if (toggle) toggle.setAttribute('aria-expanded', on ? 'true' : 'false');
-    measure();
-  }
-
-  links.addEventListener('click', e => {
-    if (e.target.closest('.more-toggle')) setOpen(!open);
-  });
-
-  // Put it away by touching anything else, the way a menu bar is.
-  document.addEventListener('click', e => {
-    if (open && !links.contains(e.target)) setOpen(false);
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape' || !open || body.classList.contains('reading')) return;
-    setOpen(false);
-    const toggle = links.querySelector('.more-toggle');
-    if (toggle) toggle.focus();
-  });
-
-  window.addEventListener('resize', measure);
-  measure();
 
   /* ══ The pages ═════════════════════════════════════════════════════════ */
 
@@ -463,11 +411,227 @@
   });
   window.addEventListener('resize', paintTimeline);
 
+  /* ══ Resources: the board ══════════════════════════════════════════════════
+     Design and UX links, laid out the way mymind or Pinterest would: a masonry
+     of pictures at their own ratios, each with only its name under it, and
+     everything else — the note, who made it, the way out — held back until a
+     card is opened. content/more/resources.json is `{ categories: [{ name,
+     items: [{ name, url, by?, note, image?, w?, h?, tone? }] }] }`; the
+     picture fields are written by build/resource-images.mjs. A link with no
+     picture is a text card. A category with no items is left off, chips and
+     all, so the agreed set can wait in the file empty.
+
+     ⚠️ The columns are real elements filled in ROW order (the shortest column
+     takes the next card), off the ratios in the file, the way the photos day
+     grid does it — CSS `columns` reads down-then-across, which puts the second
+     link at the bottom of the first column. They are rebuilt when the column
+     count changes, and when a chip narrows the list.
+
+     Opening a card shows it in `.rdetail`, a modal centred over the page:
+     picture left, words right. It sits on the folio beside the scroller, not
+     in it, so the board's repaints never take it with them. */
+  const CLOSE_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>';
+  const PREV_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6l6 6"/></svg>';
+  const NEXT_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>';
+  const OUT_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6h-6a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-6"/><path d="M11 13l9 -9"/><path d="M15 4h5v5"/></svg>';
+
+  const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  const catKey = name => String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const credit = r => (r.by ? txt(r.by) + ' / ' : '') + esc(host(r.url));
+
+  const board = { all: [], shown: [], cols: 0, open: -1 };
+
+  function renderResources(d) {
+    const cats = ((d && d.categories) || []).filter(c => c.items && c.items.length);
+    board.all = cats.flatMap(c => c.items.map(r => Object.assign({ cat: c.name, key: catKey(c.name) }, r)));
+    board.shown = board.all;
+    board.cols = 0;
+    if (!board.all.length) return head('Resources', '') + '<p class="prose-empty">Coming soon.</p>';
+
+    const chips = cats.length < 2 ? '' : `
+      <div class="rfilter" role="group" aria-label="Show one category">${[['', 'All'], ...cats.map(c => [catKey(c.name), c.name])].map(([key, name]) => `
+        <button type="button" class="rfilter-chip${key ? '' : ' is-on'}" data-filter="${esc(key)}" aria-pressed="${key ? 'false' : 'true'}">${txt(name)}</button>`).join('')}
+      </div>`;
+    const n = board.all.length;
+    return head('Resources', n + (n === 1 ? ' link' : ' links')) + chips + '<div class="rboard" id="rboard"></div>';
+  }
+
+  const GAP = 14;
+  const colsFor = w => Math.max(2, Math.min(5, Math.floor((w + GAP) / (230 + GAP))));
+
+  function cardHTML(r, i) {
+    if (!r.image) return `
+      <button type="button" class="rcard rcard--text" data-i="${i}" style="--i:${i}">
+        <span class="rcard-text">
+          <span class="rcard-title">${txt(r.name)}</span>
+          ${r.note ? `<span class="rcard-note">${txt(r.note)}</span>` : ''}
+        </span>
+        <span class="rcard-name">${esc(host(r.url))}</span>
+      </button>`;
+    return `
+      <button type="button" class="rcard" data-i="${i}" style="--i:${i}">
+        <span class="rcard-img" style="aspect-ratio:${r.w} / ${r.h};${r.tone ? `background:${esc(r.tone)}` : ''}">
+          <img src="${esc(r.image)}" alt="" width="${r.w}" height="${r.h}" loading="lazy" decoding="async" onload="this.classList.add('is-in')">
+        </span>
+        <span class="rcard-name">${txt(r.name)}</span>
+      </button>`;
+  }
+
+  // Deal the shown cards into columns, shortest column first.
+  function layoutBoard(force) {
+    const el = $('rboard');
+    if (!el || !el.clientWidth) return;
+    const cols = colsFor(el.clientWidth);
+    if (cols === board.cols && !force) return;
+    board.cols = cols;
+    const colW = (el.clientWidth - GAP * (cols - 1)) / cols;
+    const heights = new Array(cols).fill(0);
+    const deal = Array.from({ length: cols }, () => []);
+    board.shown.forEach((r, i) => {
+      const c = heights.indexOf(Math.min(...heights));
+      deal[c].push(cardHTML(r, i));
+      heights[c] += (r.image ? colW * r.h / r.w : 150) + 30 + GAP;
+    });
+    el.style.setProperty('--cols', cols);
+    el.innerHTML = deal.map(d => `<div class="rcol">${d.join('')}</div>`).join('');
+    markOpen();
+  }
+
+  function filterBoard(key) {
+    closeDetail();
+    board.shown = key ? board.all.filter(r => r.key === key) : board.all;
+    scroll.querySelectorAll('.rfilter-chip').forEach(c => {
+      const on = c.dataset.filter === key;
+      c.classList.toggle('is-on', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    scroll.scrollTop = 0;
+    layoutBoard(true);
+  }
+
+  // The detail: built once, lives on the folio next to the scroller.
+  const detail = document.createElement('div');
+  detail.className = 'rdetail';
+  detail.hidden = true;
+  detail.setAttribute('role', 'dialog');
+  detail.setAttribute('aria-labelledby', 'rdTitle');
+  detail.innerHTML = `
+    <div class="rdetail-card">
+      <div class="rdetail-bar">
+        <button type="button" class="rdetail-btn" data-step="-1" aria-label="Previous">${PREV_ICO}</button>
+        <button type="button" class="rdetail-btn" data-step="1" aria-label="Next">${NEXT_ICO}</button>
+        <button type="button" class="rdetail-btn rdetail-close" aria-label="Close">${CLOSE_ICO}</button>
+      </div>
+      <div class="rdetail-media"></div>
+      <div class="rdetail-info">
+        <p class="rdetail-cat"></p>
+        <h3 class="rdetail-title" id="rdTitle"></h3>
+        <p class="rdetail-note"></p>
+        <p class="rdetail-by"></p>
+        <a class="rdetail-visit" target="_blank" rel="noopener"></a>
+      </div>
+    </div>`;
+  folio.appendChild(detail);
+
+  let closing = null;
+
+  function markOpen() {
+    scroll.querySelectorAll('.rcard').forEach(c => c.classList.toggle('is-open', +c.dataset.i === board.open));
+  }
+
+  function fillDetail(r) {
+    const q = s => detail.querySelector(s);
+    q('.rdetail-media').innerHTML = r.image
+      ? `<img src="${esc(r.image)}" alt="${esc(fold(r.name))}" width="${r.w}" height="${r.h}" style="${r.tone ? `background:${esc(r.tone)}` : ''}">`
+      : '';
+    q('.rdetail-media').hidden = !r.image;
+    q('.rdetail-cat').textContent = fold(r.cat);
+    q('.rdetail-title').textContent = fold(r.name);
+    q('.rdetail-note').textContent = r.note ? fold(r.note) : '';
+    q('.rdetail-note').hidden = !r.note;
+    q('.rdetail-by').innerHTML = credit(r);
+    const visit = q('.rdetail-visit');
+    visit.href = r.url;
+    visit.innerHTML = `<span>Open ${esc(host(r.url))}</span>${OUT_ICO}`;
+    q('.rdetail-card').scrollTop = 0;
+  }
+
+  function openDetail(i) {
+    const r = board.shown[i];
+    if (!r) return;
+    clearTimeout(closing);
+    const was = board.open;
+    board.open = i;
+    fillDetail(r);
+    markOpen();
+    if (was >= 0 && !detail.hidden) return;
+    detail.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => detail.classList.add('is-open')));
+    detail.querySelector('.rdetail-close').focus({ preventScroll: true });
+  }
+
+  function closeDetail(instant) {
+    if (board.open < 0) return;
+    const card = scroll.querySelector(`.rcard[data-i="${board.open}"]`);
+    board.open = -1;
+    markOpen();
+    detail.classList.remove('is-open');
+    clearTimeout(closing);
+    if (instant || reduced) detail.hidden = true;
+    else closing = setTimeout(() => { detail.hidden = true; }, 320);
+    if (card && !instant && detail.contains(document.activeElement)) card.focus({ preventScroll: true });
+  }
+
+  function stepDetail(d) {
+    if (board.open < 0 || !board.shown.length) return;
+    openDetail((board.open + d + board.shown.length) % board.shown.length);
+  }
+
+  scroll.addEventListener('click', e => {
+    const chip = e.target.closest('[data-filter]');
+    if (chip) { filterBoard(chip.dataset.filter); return; }
+    const card = e.target.closest('.rcard');
+    if (card) {
+      const i = +card.dataset.i;
+      if (i === board.open) closeDetail(); else openDetail(i);
+    }
+  });
+  detail.addEventListener('click', e => {
+    if (e.target.closest('.rdetail-close')) { closeDetail(); return; }
+    const step = e.target.closest('[data-step]');
+    if (step) { stepDetail(+step.dataset.step); return; }
+    // The modal's wash is the detail itself: a click on it is a click outside.
+    if (e.target === detail) closeDetail();
+  });
+  // Touching anything else puts it away, the way the More row is put away.
+  document.addEventListener('click', e => {
+    if (board.open < 0 || detail.contains(e.target) || e.target.closest('.rcard')) return;
+    closeDetail();
+  });
+  // ⚠️ preventDefault is what tells js/paper.js this Escape is spoken for;
+  // without it the same press also unwinds the section, the way it would for
+  // the photos lightbox.
+  document.addEventListener('keydown', e => {
+    if (board.open < 0) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeDetail(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); stepDetail(e.key === 'ArrowRight' ? 1 : -1); }
+  });
+  // One observer for the board: it lays the columns out on first sight (the
+  // board is measured, so it can't be dealt before it has a width) and again
+  // whenever the width changes the column count.
+  const boardSeen = new ResizeObserver(() => layoutBoard());
+  function mountBoard() {
+    boardSeen.disconnect();
+    const el = $('rboard');
+    if (el) boardSeen.observe(el);
+  }
+
   const PAGES = {
     bookshelf: { title: 'Bookshelf', data: '/content/more/bookshelf.json', render: renderBooks },
     gear:      { title: 'Gear',      data: '/content/more/gear.json',      render: renderGear },
     appstack:  { title: 'App stack', data: '/content/more/appstack.json',  render: renderApps },
     places:    { title: 'Places',    map: true,                             render: renderPlaces },
+    resources: { title: 'Resources', data: '/content/more/resources.json', render: renderResources, cls: 'folio-scroll--board', mount: mountBoard },
     career:    { title: 'Career',    data: '/content/career.json',         render: renderCareer, wide: true, mount: mountCareer },
   };
 
@@ -747,9 +911,10 @@
     return Promise.all([out, data.catch(() => undefined)]).then(([, rows]) => {
       if (my !== token) return;
       destroyMap();
+      closeDetail(true);
       tl = null;
       current = key;
-      scroll.className = 'folio-scroll' + (page.map ? ' folio-scroll--map' : '')
+      scroll.className = 'folio-scroll' + (page.cls ? ' ' + page.cls : '') + (page.map ? ' folio-scroll--map' : '')
         + (page.wide && rows !== undefined ? ' folio-scroll--wide' : '');
       scroll.scrollTop = 0;
 
@@ -774,6 +939,7 @@
     current = null;
     tl = null;
     destroyMap();
+    closeDetail(true);
     scroll.innerHTML = '';
   }
 
@@ -781,9 +947,5 @@
     has: key => Object.prototype.hasOwnProperty.call(PAGES, key),
     paint,
     leave,
-    // js/paper.js calls this once the copy has been rubbed out and restored:
-    // the restore brings back the innerHTML it snapshotted, which — if More
-    // was open when the erase began — has the row in its OPEN state.
-    reset: () => setOpen(false),
   };
 })();
