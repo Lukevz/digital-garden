@@ -73,19 +73,6 @@
     curl.classList.toggle('is-open', on);
     curlBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
   }
-  // The sections' accounts: the same marks, flat, at the right of the masthead
-  // where the expand control used to be. Cloned from the row behind the
-  // monogram (#socials) so there is one list to keep.
-  const mastLinks = $('mastLinks');
-  const socialRow = $('socials');
-  if (mastLinks && socialRow) {
-    socialRow.querySelectorAll('a').forEach(a => {
-      const c = a.cloneNode(true);
-      c.removeAttribute('style');
-      mastLinks.appendChild(c);
-    });
-  }
-
   if (curl) {
     curl.addEventListener('click', e => {
       if (e.target.closest('.curl-links a')) return;
@@ -103,6 +90,9 @@
      of accounts (`#socials`) settles on where it stood. A click anywhere
      else, Escape, or the letterhead's own box puts the monogram back, etched
      in forwards the way it arrived. Opening a section puts it back at once.
+     Left alone for `paper.socialsIdle` (5s) the row goes back by itself; the
+     count waits while the pointer is on the row, a mark has keyboard focus,
+     or the tab is in the background, and starts over when the pointer leaves.
 
      ⚠️ Web Animations, not classes. intro.css holds the letters' end state
      with `fill: both` behind a long `:not()` selector, which a class would
@@ -123,6 +113,24 @@
   let markGen = 0;
   let markAway = false;
   let markTimer = 0;
+  let idleTimer = 0;
+  let overRow = false;
+
+  // The idle fade. Mouse only for `overRow`: a tap leaves :hover stuck on
+  // touch, and a stuck hover would hold the row open forever. Keyboard focus
+  // counts only if it is :focus-visible, so a mark that kept focus from a
+  // click (it opens a new tab) doesn't hold it either.
+  function armIdle() {
+    clearTimeout(idleTimer);
+    if (!markAway) return;
+    idleTimer = setTimeout(() => {
+      if (!markAway) return;
+      const a = document.activeElement;
+      const keyFocus = a && socials.contains(a) && a.matches(':focus-visible');
+      if (overRow || keyFocus || document.hidden) armIdle();
+      else hideSocials();
+    }, paper.socialsIdle);
+  }
 
   function clearMark() {
     markAnims.forEach(a => a.cancel());
@@ -185,6 +193,7 @@
         const first = socials.querySelector('a');
         if (first) first.focus({ preventScroll: true });
       }
+      armIdle();
     }, markMs(620));
   }
 
@@ -200,6 +209,7 @@
     if (!markAway && !instant) return;
     markAway = false;
     clearTimeout(markTimer);
+    clearTimeout(idleTimer);
     letterhead.setAttribute('aria-expanded', 'false');
     socials.setAttribute('inert', '');
     if (instant) {
@@ -235,6 +245,19 @@
       if (!markAway || socials.contains(e.target) || letterhead.contains(e.target)) return;
       hideSocials();
     });
+    socials.addEventListener('pointerenter', e => {
+      if (e.pointerType !== 'mouse') return;
+      overRow = true;
+      clearTimeout(idleTimer);
+    });
+    socials.addEventListener('pointerleave', e => {
+      if (e.pointerType !== 'mouse') return;
+      overRow = false;
+      armIdle();
+    });
+    socials.addEventListener('focusout', e => {
+      if (!socials.contains(e.relatedTarget)) armIdle();
+    });
     // ⚠️ preventDefault marks this Escape as spoken for, the convention
     // js/photos.js and js/more.js use with the section's own Escape below.
     document.addEventListener('keydown', e => {
@@ -253,6 +276,7 @@
   const paper = window.paper = {
     dur: 780,        // how long the rubber takes to cross all the copy
     flyDelay: 400,   // ms before the name lifts clear of the rubber
+    socialsIdle: 5000, // ms the accounts stay out, untouched, before the monogram returns
     enabled: true,
     // Published so js/photos.js can set its captions in the display face
     // without keeping a second copy of the font's cmap in step with this one.
@@ -1065,7 +1089,7 @@
     // would otherwise blink off at the end of the flight.
     const leaving = surface();
     leaving.classList.remove('is-in');
-    const sweep = fadeOut([leaving, backLink, mastLinks]);
+    const sweep = fadeOut([leaving, backLink]);
     const fly = flyName(from, to);
 
     return Promise.all([sweep, fly.finished.catch(() => {})]).then(() => {
@@ -1080,7 +1104,7 @@
       fly.cancel();
       nameEl.style.transformOrigin = '';
       landLetterhead(mark);
-      restore([leaving, backLink, mastLinks]);
+      restore([leaving, backLink]);
       hideSurface();
       // Let the bio and the social row settle back on rather than snapping —
       // the same entrance they get on a cold load. Restarting a CSS animation

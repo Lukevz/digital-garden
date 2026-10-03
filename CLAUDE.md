@@ -179,6 +179,13 @@ the V's, then the L's mask sweep lifts, the whole mark fading under the end of i
 click anywhere else, Escape, or the letterhead's box again reverses it: the row fades and
 the monogram etches back in forwards. `js/paper.js`, "The monogram hides the accounts".
 
+- **Left alone for 5 seconds, the row goes back by itself** (`paper.socialsIdle`, 5000;
+  `armIdle()`). The count starts once the row is on, and waits while a MOUSE pointer is
+  over the row, a mark has `:focus-visible` focus, or the tab is hidden; the pointer
+  leaving starts it over. ⚠️ Mouse only, and focus only if visible: a tap leaves `:hover`
+  stuck on touch, and a mark keeps focus after a click that opened a new tab, and either
+  would hold the row out forever.
+
 - ⚠️ **Web Animations, not classes.** intro.css holds the letters' end state with
   `fill: both` behind `body:not(.no-intro):not(.intro-spent)`, which a class would have to
   out-specify. Script animations composite above CSS ones, so they win while they run,
@@ -191,8 +198,8 @@ the monogram etches back in forwards. `js/paper.js`, "The monogram hides the acc
 - At home the SVG is `role="button"` (`tabindex 0`, `aria-expanded`, Enter/Space); in a
   section `setMarkActive(false)` drops it out of the tab order and hides it from AT.
   `#socials` is `inert` until shown. Keyboard opening focuses the first mark.
-- `#socials` is also the one list of accounts: paper.js clones its links into the section
-  masthead's `.mast-links`.
+- `#socials` is the one list of accounts, and the only place they appear: there are none
+  in a section (see **The dog-ear is the landing page's only**).
 
 **The L is a field of moving colour.** Eight blurred discs in the branding colours (Figma,
 Personal branding, node 31:217: `#91c3d8 #d3aad0 #eb7d95 #f8c4ae #94cecb #e0d6ab #aed8a6`)
@@ -432,12 +439,12 @@ as the bottom item of the column, so tapping it again closes. Outside tap, Escap
 tab order. The top-mark fit is 62 against 34 (see `.curl-links`).
 
 **The dog-ear is the landing page's only.** In a section (`body.reading`) `.curl` /
-`.curl-zone` are `visibility: hidden` and the accounts show at the RIGHT OF THE MASTHEAD
-(`.mast-links`), copied in from `#socials` by `paper.js` so the list lives once (it
-was a footer at the end of each scroller for a while; taken out on request). It fades
-with the surface on the way home (`fadeOut([leaving, backLink, mastLinks])`). ⚠️ On a
-phone the row is 16px marks with a 10px gap so it clears the centred monogram
-(back 11–69 / monogram 172–221 / marks 257–377 at 393 wide). ⚠️ intro.css's finished
+`.curl-zone` are `visibility: hidden`, and **a section shows no social accounts at all**:
+they are behind the home monogram only. They were a row of marks at the right of the
+masthead (`.mast-links`, cloned from `#socials` by `paper.js`), and before that a footer
+at the end of each scroller; both were taken out on request, so the masthead row is
+just Back on the left (`justify-content: space-between` with one item in flow).
+⚠️ intro.css's finished
 `intro-in` fill holds `.curl`'s opacity, so the corner disappears rather than fades.
 
 **The index toggle is in the card, top-left** (`#expand`, inside `.page`, a Tabler

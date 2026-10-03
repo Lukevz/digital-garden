@@ -1223,30 +1223,6 @@ body.reading .curl-zone {
   pointer-events: none;
 }
 
-/* ── The accounts, in the masthead ─────────────────────────────────────────
-   Right of the row, where the expand control used to be. Empty until
-   js/paper.js clones the marks in, and out of sight at home. */
-.mast-links { display: none; }
-body.reading .mast-links {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 17px;
-  animation: back-in 420ms ease both;
-}
-body.reading .mast-links .ico { width: 1em; height: 1em; }
-body.reading .mast-links a {
-  display: grid;
-  place-items: center;
-  /* A comfortable tap target round a small mark. */
-  padding: 6px;
-  margin: -6px;
-  color: var(--ink-soft);
-  transition: color 180ms ease;
-}
-body.reading .mast-links a:hover,
-body.reading .mast-links a:focus-visible { color: var(--ink); outline: none; }
-
 /* ── The fades under overflowing content ──────────────────────────────────
    A soft wash and a little blur over the bottom of a scroller while there is
    more to scroll to; gone once the end is on screen. js/paper.js toggles the
@@ -1978,7 +1954,6 @@ body.is-erasing .erase { opacity: 1; }
   /* No expand control here, so no row for it above the title. */
   .page-scroll { padding-top: clamp(24px, 4vh, 40px); }
   .read-next-list { grid-template-columns: minmax(0, 1fr); }
-  body.reading .mast-links { gap: 10px; font-size: 16px; }
 
   /* The index is a full-width pane here, so its fade is too. */
   .spread::before { right: 0; width: auto; }
