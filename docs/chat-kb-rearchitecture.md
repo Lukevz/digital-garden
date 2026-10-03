@@ -1,5 +1,9 @@
 # Chat Knowledge Base: Embeddings-Based Rearchitecture
 
+> **Superseded plan, kept for history.** What shipped is Gemini-based and lives in
+> `build/index-vault.js` and `api/_lib/retrieve.js` (see "Chat Assistant" in
+> `CLAUDE.md`). The `build/build.js` and `v1/` paths below no longer exist.
+
 ## Context
 
 The chat assistant at `/api/chat` currently stuffs every `.md` file under `/content/about/` into the system prompt on every request. That works at 9 files (~33KB) but is a cliff, not a slope: each new file adds to every request's token budget. With ~22 markdown files already across `/content/`, and a goal of eventually pointing the site at the user's full second brain (50–200 files in the next 12–18 months), we need a retrieval pipeline before scale becomes a forcing function.

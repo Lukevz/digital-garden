@@ -2,32 +2,41 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What this branch is
+## What this repo is
 
-`paperlike` is a **reset**. The v2 site — the fixed starfield hero, the world-descent
-director, the Bear-style feed, the section pages, the chat dock island — is gone from
-the working tree. In its place is one file's worth of site: a single, non-scrollable,
-text-only landing page.
+lukevz.com, version 3: the paper site. One sheet of generated paper, a single
+hand-drawn face, and sections that open on the same sheet (below). It replaced the
+v2 site in place (the `paperlike` branch, merged to `main` on 2026-09-20).
 
-⚠️ **Nothing was lost, and nothing here should be reconstructed from memory.** The whole
-v2 front-end plus ~40KB of notes describing it (worlds, passages, the genie drain, the
-starfield warp, per-scene ink, section pages vs. the section modal) lives on `main`.
-`git show main:CLAUDE.md` and `git show main:js/worlds.js` are the references. If a task
-needs any of that back, take it from `main` rather than rewriting it.
+**The earlier versions are separate projects now**, each its own repo and Vercel
+project, archived but runnable:
 
-**Removed here:** `_index.html`, `styles.css` (the old 280KB one), `js/`, `about.html`,
-`now.html`, `work.html`, `flipboard.*`, `fonts/chillax/`, `src/img/`, most of `images/`,
-and `api/home.js` (it existed only to serve the v2 shell with a theme-aware OG image).
+- **v1** (the Lumos / Bear-notes garden): `Lukevz/digital-garden-v1`, at
+  https://v1.lukevz.com. `/v1` here redirects there. It used to live in `v1/` and be
+  served from this repo; tag `v1-final` is the last commit that has it.
+- **v2** (the starfield hero, world descent, Bear-style feed, chat dock island):
+  `Lukevz/digital-garden-v2`, at https://v2.lukevz.com, with its own `CLAUDE.md`.
+  Tag `v2-final` is its last commit here — the same commit as the `8bda88c`
+  references below.
 
-**Kept and still working:** `content/` (the writing, photos, and the second-brain vault),
-`api/` minus `home.js`, `build/`, `src/data/`, and `v1/` — the original v1 site, still
-served at `/v1`, and still what `build/build.js` generates manifests for.
+⚠️ **Nothing from them should be reconstructed from memory.** If a task needs a piece
+of v1 or v2 back, take it from those repos or from `git show v2-final:<path>`. Both
+are still in this repo's history, which is why a fresh clone is ~1.5GB; rewriting
+them out of it is a separate, deliberate step.
+
+**No build step.** Vercel (project `lukevz`) serves the repo root as is: `vercel.json`
+has no `buildCommand` and `package.json` no `build` script. The old `build/build.js`
+only generated v1's manifests (and fetched book covers) on every deploy.
+
+**Carried over from v2 and still working:** `content/` (the writing, photos, and the
+second-brain vault), `api/` (content listing, Mapbox token, Places, chat), `build/`
+and `src/data/`. v2's YouTube, Spotify, Books and guestbook routes went with it
+(v1's guestbook and playlist routes are in the v1 repo).
 
 ## Development Commands
 
 ```bash
-npm run dev      # static server + watchers on :3000; serves index.html at /
-npm run build    # v1 manifests — this is Vercel's buildCommand
+npm run dev      # static server + the api/ routes on :3000; serves index.html at /
 npm run index    # rebuild the committed chat index from the vault
 npm run gaps     # re-check the KB gap list against the committed index
 ```
@@ -250,8 +259,8 @@ to finish at 3.45s, which made the page a blank sheet with rulers for three seco
 in turn: the L (a soft shaded shape) under a soft-edged mask that sweeps down it, the
 V and Z (straight strokes) drawn line by line via `pathLength="1"` + `stroke-dashoffset`,
 staggered by each path's `--i`. ⚠️ It is inlined in `index.html` because an `<img>`'s
-own animations can't be timed against the page's. (`images/lvz-monogram.svg` used to
-be the masthead corner's mark and is now unused: the masthead shows this same element.)
+own animations can't be timed against the page's. (The masthead shows this same
+element; the old corner mark, `images/lvz-monogram.svg`, is deleted.)
 ⚠️ The etch rules are also gated on `:not(.intro-spent)`, which `enterReading()` sets
 the first time a section opens, so the mark isn't etched in again halfway through the
 flight home.
@@ -1260,22 +1269,22 @@ shows up.
 
 ## Routing
 
-`vercel.json` has no `/` rewrite any more, so `index.html` is served statically at the
-root. `/v1` still rewrites to the v1 site. The `/work` and `/about` rewrites are gone
-with their pages. `build/dev.js` resolves `/` to `index.html` — ⚠️ it used to resolve
-to `_index.html`, and that one-line difference is the whole local-dev story.
+`vercel.json` has no rewrites: `index.html` is served statically at the root and every
+section is a hash route. Its only routes are two redirects, `/v1` and `/v1/*` to
+https://v1.lukevz.com (temporary, so the domain can still change). `build/dev.js`
+resolves `/` to `index.html`.
 
-## Backend (unchanged from `main`, and currently unused by the landing page)
+## Backend
 
 The chat API, the vault index, the KB-gap pipeline, and the Instagram photo sync all
-still run — they just have no front end on this branch. Left intact so the branch can
-grow a UI back without re-deriving any of it.
+still run, but the chat has no front end in v3 (it was v2's dock island; see below).
+Left intact so the site can grow a chat UI back without re-deriving any of it.
 
 ## Chat Assistant (api/chat.js)
 
 The chat tab answers in Luke's voice, streaming from Google Gemini via its OpenAI-compatibility endpoint. Knowledge comes from the **second-brain vault** (`/content/second-brain/`, an Obsidian-style vault — see its `AGENTS.md` for authoring conventions) through **agentic hybrid retrieval**, not prompt stuffing:
 
-- **Indexing (build time, local):** `npm run index` (`build/index-vault.js`) walks the vault, chunks by `##` heading (whole notes under ~300 words stay one chunk), prepends title/tags/dates/status into chunk text, runs a synthesis pass (groups by MOC/tag/year, Gemini Flash-Lite writes first-person `type: synthesis` summaries, cached by group hash), embeds with `gemini-embedding-001` (1536 dims, cached by chunk hash), builds BM25 stats, and emits the committed `src/data/brain-index.json`. Needs `GEMINI_API_KEY` (in `.env.local`; `set -a && source .env.local && set +a` first). Deliberately NOT run in `build/build.js` — Vercel has no key and would null out the vectors. **Re-run `npm run index` after editing vault notes, and commit the regenerated index.**
+- **Indexing (build time, local):** `npm run index` (`build/index-vault.js`) walks the vault, chunks by `##` heading (whole notes under ~300 words stay one chunk), prepends title/tags/dates/status into chunk text, runs a synthesis pass (groups by MOC/tag/year, Gemini Flash-Lite writes first-person `type: synthesis` summaries, cached by group hash), embeds with `gemini-embedding-001` (1536 dims, cached by chunk hash), builds BM25 stats, and emits the committed `src/data/brain-index.json`. Needs `GEMINI_API_KEY` (in `.env.local`; `set -a && source .env.local && set +a` first). Deliberately NOT run on deploy — Vercel has no key and would null out the vectors. **Re-run `npm run index` after editing vault notes, and commit the regenerated index.**
 - **Retrieval (request time):** `api/_lib/retrieve.js` brute-forces the index in memory — BM25 + vector cosine fused with reciprocal rank fusion, with tag/type/after_date filters. No vector DB.
 - **Agentic loop:** `api/chat.js` exposes `search_notes` and `count_notes` tools; the model calls them up to `MAX_TOOL_ROUNDS` (5) before answering. The final answer is emitted to the client as OpenAI-style SSE deltas, so `js/chat.js` needed no changes. Only `bio.md`, `out-of-scope.md`, and `now.json` remain always-in-prompt (`loadCoreContext()`); the classifier is grounded in the vault's note-title outline, not the full corpus.
 - **Cost guards:** per-IP rate limits (20/min, 300/day), a global daily token ceiling (`CHAT_DAILY_TOKEN_CEILING`, default 2M, tracked in KV) that returns a graceful in-voice message when exhausted, and a Cloudflare Turnstile gate: the first message of a session must carry a token (server answers `403 turnstile_required`, `js/chat.js` solves an interaction-only widget and retries), then a signed HttpOnly cookie (`chat_pass`, 2h) covers the conversation. `TURNSTILE_SECRET_KEY` unset = gate off (local dev / rollback lever). The public site key is inlined in `js/chat.js`.
@@ -1289,37 +1298,21 @@ The system prompt also leads with a distilled **"HOW I WRITE"** voice block (hoi
 
 **Voice examples (`content/about/conversations.md`):** a fill-in worksheet of `Q:` / `A:` pairs in Luke's real words. `loadVoiceExamples()` parses it (only pairs with a non-empty answer are kept, so it works incrementally) and `buildSystemPrompt()` injects them as a prominent `<my-real-answers>` few-shot block — the strongest signal for matching Luke's voice. It's excluded from the main KB blob so it isn't buried. Empty file → block is omitted entirely. Harvest good answers from the gap pipeline into this file over time to keep tightening the voice.
 
-**The dock island (`#chatDock.is-thread`) — where answers actually appear:**
+**The chat UI is v2's, and it is not in this repo.** The dock island, the full
+`#chatOverlay`, `js/chat.js` (history, streaming, the Turnstile solve, mock mode via
+`?chatmock=1`) and `js/main.js`'s `gotoSite()` all live in `Lukevz/digital-garden-v2`,
+whose `CLAUDE.md` documents them and whose deploy still runs them. A v3 chat UI should
+start from `js/chat.js` there: it owns the transport and is container-agnostic.
 
-Sending from the floating dock turns **the dock itself** into the conversation, on every page. `openDockThread()` (js/main.js) drops the pill's 32px of float so it sits flush on the bottom edge, squares off the two corners that leave the viewport, widens 290 → 560px, and unfurls `#chatDockThread` above the compose row — a notch, inverted. Both the visitor's message and the reply render as bubbles, focus stays in the field, and follow-ups stay in the island.
-
-`#chatDockLabel` is a **menubar layered behind the panel** — "Luke's Second Brain", an *Experimental* tag (hover/focus tooltip explains what that means), and the close ×. Same width as the panel, rounded top corners, square bottom ones, and its lower `--dock-label-tuck` (16px) hidden underneath, so the panel's own 28px top curve reveals the card behind it. A flat black wash over the same glass puts it a layer back — *not* a different `color-mix` ratio, because `--glass-bg` is lighter than `--bg` in **both** themes, so shifting the ratio changes translucency more than lightness and the depth cue dies in light mode.
-
-⚠️ Getting the menubar genuinely *behind* the panel took moving the dock's glass off `#chatDock` and onto `#chatDock::before`. An element's own background always paints below its negative-z-index children, so while the background lived on the element the label could never get under it. Now `::before` is the glass at `z-index: 0`, `#chatDockLabel` is `z-index: -1`, `#chatDockThread`/`#chatDockSuggest`/`#chatDockRow` are lifted to `z-index: 1`, and `isolation: isolate` on the dock keeps that `-1` from falling behind the whole page. The close button is deliberately *not* lifted — it rides the menubar.
-
-**Suggested prompts.** `#chatDockSuggest` offers three prompt chips after `DOCK_IDLE_MS` (7s) of an open island with an empty input — a nudge instead of a blank field. The timer is armed on open and after each answer lands, cancelled by any keystroke and by sending, and re-arms itself rather than giving up if it fires mid-stream (the visitor is reading, not hesitating). The chip list rotates via `dockSuggestCursor` so a second pause doesn't offer the same three.
-
-⚠️ **Two different ways out, and the difference matters.** Getting out of the way — click-away, Escape, switching mode, following a link out of an answer (`gotoSite()`) — calls `collapseDockThread()`, which only folds the island back into the pill. The transcript DOM and the chat history both survive, and the pill goes `is-resumable`: a `⌃` appears at the head of the compose row and the placeholder changes to "Keep chatting…". Clicking anywhere on the pill, focusing the input, or just sending the next message resumes it where it left off. Only the **×** calls `closeDockThread()`, which additionally empties the transcript and `chat.reset()`s the history — after the collapse animation, and not if `#chatOverlay` has picked the conversation up in the meantime.
-
-The **top-nav Chat tab** still opens the full `#chatOverlay` modal; opening it closes the island. `js/chat.js` owns the history and the streaming and doesn't care which one is on screen — `sendMessage(text, { transcript, send, welcome })` takes its container as a parameter and everything downstream of `streamChat()` is container-agnostic.
-
-⚠️ `#chatDock` is a **column** (`#chatDockRow` holds the old horizontal pill layout, so the thread can stack above it). Padding and gap live on the row, not the dock — `dock-enter` and `revealDock()` in js/hero-entrance.js both have to target the row for the entrance bloom to stay in sync with the width. `revealDock()` also has to fire when the hero copy is hidden (section pages `display:none` `.hero-lockup`), or the dock stays collapsed at opacity 0 and the site looks like it has no chat at all.
-
-⚠️ `chat.reset()` bumps a `generation` counter, and a stream that started before the reset won't push its reply onto the fresh history. Without that, dismissing the island mid-answer leaves a dangling assistant turn with no question in front of it.
-
-*Removed:* the hero answer — the dock used to stream its reply into the home intro copy, replacing "Hi, I'm Luke!…" (`askInHero()`, `.hero-answer`, the per-line recede). The island took its place, so that whole path and its CSS are gone; `window.chat.ask()` and `renderInto()` went with it.
-
-**The chat pointing at the site itself (`mocs/Site MOC.md` + `internalTarget()` in js/chat.js):**
+**The chat pointing at the site itself (`mocs/Site MOC.md`):**
 
 The chat can end an answer with a link into the site ("wrote the whole thing up [here](/#writing/the-search-for-the-best-todo-app)"). Three pieces have to agree for that to work:
 
 1. **One note holds the map.** `content/second-brain/mocs/Site MOC.md` is the single continuously-updated note describing every section and the real route to it, with a `##` per section so each one is its own retrievable chunk ("do you have photos" hits the Photos chunk). **When content is added to a section, update that note and re-run `npm run index`** — it is the only place the routes live. Individual topic notes also carry the route of the post they came from, inline in prose, which is what makes a topical query ("todo apps") retrieve a chunk that already contains the link.
 2. **The prompt allows it, narrowly.** A `MY SITE` block in `buildSystemPrompt()` tells the model to copy routes **verbatim** from search results, never to assemble a slug, to vary the link label, and to cap it at one link per reply. Slugs are derived from filenames (`filenameToSlug()`), so a guessed one is usually wrong: "2024 – Year in Review" is `2024--year-in-review`, with two hyphens from the en dash.
-3. **The renderer navigates in place.** `internalTarget()` in js/chat.js recognizes a router hash route (`/#writing/slug`), a mode path (`/gear`), or either written out as a full `lukevz.com` URL, and routes it through `window.gotoSite()` (js/main.js) instead of opening a tab. `gotoSite()` closes the chat overlay, clears any hero answer, returns to life mode, then hands the hash to `handleHash()` — re-invoking it directly when the hash is unchanged, since hashchange wouldn't fire. Bare routes get a humanized label via `routeLabel()` (`/#photos` → "Photos", an item → its de-slugged title); a markdown link's own label always wins. Anything off-site still opens in a new tab.
+3. **The renderer navigates in place.** In v2, `internalTarget()` in js/chat.js sent a site route through the router instead of opening a tab. v3's routes are the same hash routes, so a v3 chat UI should do the same.
 
 ⚠️ Renaming a writing post changes its route, which silently breaks whatever the vault says. Grep `content/second-brain/` for the old slug when renaming a file in `content/writing/`.
-
-To test link rendering without spending tokens, use mock mode (`?chatmock=1`) — the `links` fixture in js/chat.js covers internal routes, mode paths, and external URLs.
 
 **Question capture + gap tracking (KV-backed):**
 - Every visitor question is classified by a second Gemini call (`classifyQuestion()`) as `general`, `personal_covered`, or `personal_gap`. This runs in parallel with the streamed answer and is awaited before the response ends, so it adds no latency to the first token and never blocks chat (all KV/classify calls are best-effort, wrapped in try/catch).
@@ -1352,8 +1345,6 @@ Skips with a one-line note (never an error) when `CHAT_INSIGHTS_KEY` or the Gemi
 - `.github/workflows/kb-gaps-resolve.yml` (on PR merge) runs `.github/scripts/kb-resolve.mjs`, which reads `Resolves-KB-Gap: <key>` lines from the merged PR's title/body and POSTs them to the resolve endpoint. Now mostly redundant with autoresolve, but kept because it clears gaps immediately on merge and handles the case where a gap was answered by editing `content/about/` rather than the vault (no index change → no autoresolve trigger).
 - Required GitHub repo secrets: `CHAT_INSIGHTS_KEY` and `GEMINI_API_KEY` (Settings → Secrets and variables → Actions). Optional repo variable: `CHAT_INSIGHTS_URL` (defaults to `https://lukevz.com`).
 
-**Mock/test mode (js/chat.js):** For styling/UX work on the chat UI without spending Gemini tokens. Enable with `?chatmock=1` in the URL (that page load only) or persistently via `chat.mock(true)` in the console (`chat.mock(false)` to turn off; stored in localStorage under `chatMockMode`). An orange "chat test mode" badge shows while it's on (click it to disable). Mock mode swaps only the transport (`chatFetch()` → `mockFetch()`), faking the SSE stream with a `ReadableStream`, so the real streaming/markdown/error code paths all run. Message keywords select fixtures: `help`, `short`, `long`, `links`, `md`, `empty`, `error` (500), `429`, `netfail`; anything else cycles canned in-voice replies.
-
 **Env vars:** `GEMINI_API_KEY` (required — Google AI Studio key on a billed project), `GEMINI_MODEL` (answer + classify model, default `gemini-3.1-flash-lite`) / `GEMINI_CLASSIFY_MODEL` (optional override if classify should use a different model than the answer call), `CHAT_INSIGHTS_KEY` (required to read insights), and Vercel KV vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, auto-configured by Vercel) for capture/gap persistence. Without KV vars (e.g. local dev), chat still works and logging is silently skipped.
 
 ## Photos (Instagram sync)
@@ -1369,11 +1360,9 @@ The photos grid is served from `content/photos/` by `/api/content/list?category=
 
 ⚠️ `build/dev.js` contains a **duplicate copy** of this photos-listing logic for local dev. Keep the two sort implementations identical or the grid will reorder on deploy.
 
-**EXIF in the photo detail.** Each listed photo carries an `exif` object (camera, lens, focal length + 35mm equivalent, aperture / shutter / ISO, date, pixel dimensions) that `renderPhotoDetail()` shows in a panel beside the image. `api/_lib/exif.js` parses it — a dependency-free JPEG APP1/TIFF reader, shared by `api/content/list.js` and `build/dev.js` so the two listings can't drift on this. It reads only the first 256KB of each file (the DSCF originals run 5MB+ and the grid asks about all 60-odd at once) and memoizes on path+mtime+size.
+**EXIF in the photo detail.** Each listed photo carries an `exif` object (camera, lens, focal length + 35mm equivalent, aperture / shutter / ISO, date, pixel dimensions); v2's photo detail panel showed it, and v3's collections bake EXIF into their manifests instead. `api/_lib/exif.js` parses it — a dependency-free JPEG APP1/TIFF reader, shared by `api/content/list.js` and `build/dev.js` so the two listings can't drift on this. It reads only the first 256KB of each file (the DSCF originals run 5MB+ and the grid asks about all 60-odd at once) and memoizes on path+mtime+size.
 
 Every field is optional and the panel renders whatever survived: **Instagram strips EXIF**, so synced photos show only pixel dimensions plus the date recovered from the filename prefix (`list.js` fills that in). Dimensions come from the SOF frame header rather than EXIF, so they describe the file actually being served.
-
-The detail row is `[ ‹ ][ photo ][ EXIF ][ › ]` — the chevrons are laid-out siblings pinned to the modal's edges, not overlays on the image, and `#sModal.sm-large #sModalBody > .photo-detail` opts out of the modal's 640px reading column so the row has room. Under 760px the panel wraps beneath the photo as a single strip of facts.
 
 **`content/photos/instagram-sync.json`** records every post shortcode already handled (including video posts, so they aren't re-examined). A post is downloaded **once, ever** — which is what makes curation possible: **deleting a photo from the repo is permanent**, the sync will not re-add it. To deliberately re-pull a post, remove its entry. The file is ignored by the grid (the listing only matches image extensions). If a carousel only partially downloads, the whole post is rolled back off disk and retried next run, so half-imported albums never reach a PR.
 
@@ -1385,5 +1374,5 @@ The detail row is `[ ‹ ][ photo ][ EXIF ][ › ]` — the chevrons are laid-ou
 ## Content Sources
 
 Weather (Open-Meteo), YouTube oEmbed music metadata, and the v2 background image were
-all consumed by the deleted front end. They are documented on `main`; nothing on this
-branch reads them.
+all consumed by the v2 front end. They are documented in `Lukevz/digital-garden-v2`;
+nothing here reads them.

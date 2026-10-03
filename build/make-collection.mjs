@@ -4,7 +4,7 @@
  *   npm install --no-save sharp        # deliberately NOT in package.json
  *   node build/make-collection.mjs build/collections/montana-2024.json
  *
- * Not part of `npm run build`: it needs sharp (a ~30MB native dep Vercel would
+ * Not run on deploy: it needs sharp (a ~30MB native dep Vercel would
  * install for nothing) and the originals live in Drive. It is a tool you run,
  * and what it writes is committed.
  *

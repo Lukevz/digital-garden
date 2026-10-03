@@ -1,9 +1,16 @@
 {
-  "buildCommand": "node build/build.js",
   "outputDirectory": ".",
-  "rewrites": [
-    { "source": "/v1", "destination": "/v1/index.html" },
-    { "source": "/v1/", "destination": "/v1/index.html" }
+  "redirects": [
+    {
+      "source": "/v1",
+      "destination": "https://v1.lukevz.com/",
+      "permanent": false
+    },
+    {
+      "source": "/v1/:path*",
+      "destination": "https://v1.lukevz.com/:path*",
+      "permanent": false
+    }
   ],
   "functions": {
     "api/chat.js": {

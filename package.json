@@ -1,11 +1,10 @@
 {
   "name": "lukevz-digital-garden",
   "version": "1.0.0",
-  "description": "Personal digital garden with Bear-style notes interface",
+  "description": "lukevz.com: a paper-textured personal site (v3)",
   "type": "module",
   "scripts": {
     "dev": "node build/dev.js",
-    "build": "node build/build.js",
     "index": "node build/index-vault.js",
     "gaps": "node build/check-gaps.js"
   },
