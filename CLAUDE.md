@@ -457,6 +457,25 @@ of each piece, the two posts that follow it in the index (older), wrapping round
 newest so the last post still has somewhere to send you. Plain `#writing/<slug>` links,
 filled once the piece has loaded and hidden while the next one is fetching.
 
+## The stickers (`.stickers`)
+
+Two stickers on the home sheet, linking out: the Puffin' roundel in the top-right
+corner (startpuffin.com), the Studiolo label low on the left, above the nav row's
+line (studiolo.digital). `.stickers` is a full-sheet layer with no pointer events and
+each sticker is placed against the sheet's edges. Hovered, one lifts and a padded tip
+card (`.sticker-tip`, Wingman caps at 0.95rem, a short line with no product name, kept on one line except on a phone)
+comes up toward the open sheet: left of the puffin, right of the label (above it on a phone, where there is no room beside it). Hidden in a section like the
+dog-ear. styles.css "Stickers"; the arrival is in intro.css.
+
+- The images (`images/stickers/*.webp`) come from transparent PNGs, trimmed to the
+  sticker and resized (puffin 520px, Studiolo 760px wide) with sharp.
+- ⚠️ The tilt is the individual `rotate` property and the lift `translate` / `scale`,
+  so the arrival, the hover and the tilt never overwrite each other. The arrival
+  (`sticker-on`) fills `backwards`, not `both`: a held `scale: 1` would outrank the
+  hover's `scale` forever after.
+- ⚠️ The tip counter-rotates the sticker's HOVER tilt, not its resting one; change
+  one and change the other.
+
 ## The marks (Tabler Icons)
 
 Glyphs from **Tabler Icons** (MIT), inlined in `index.html` rather than loaded: the nav's

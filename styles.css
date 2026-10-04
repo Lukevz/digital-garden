@@ -1223,6 +1223,143 @@ body.reading .curl-zone {
   pointer-events: none;
 }
 
+/* ── Stickers ──────────────────────────────────────────────────────────────
+   Two stickers stuck on the sheet, linking out to the things being made: the
+   Puffin' roundel in the top-right corner, the Studiolo label low on the left,
+   clear of the nav row. Pressed flat at rest (a tight contact shadow);
+   hovered, one lifts toward you and its tip comes up beside it. The tilt is
+   the individual `rotate` property and the lift is `translate` / `scale`, so
+   intro.css's arrival and the hover never overwrite each other's transform.
+   Home page only, like the dog-ear.
+
+   `.stickers` is a full-sheet layer that takes no pointer events, so each
+   sticker can be placed against the sheet's own edges. */
+.stickers {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 300ms ease, visibility 300ms;
+}
+
+.sticker {
+  position: absolute;
+  display: block;
+  line-height: 0;
+  pointer-events: auto;
+  transition: translate 260ms cubic-bezier(0.2, 0.7, 0.2, 1.2),
+              scale 260ms cubic-bezier(0.2, 0.7, 0.2, 1.2),
+              rotate 260ms ease;
+}
+
+.sticker img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22))
+          drop-shadow(0 2px 5px rgba(0, 0, 0, 0.10));
+  transition: filter 260ms ease;
+}
+
+.sticker--puffin {
+  top: var(--sheet-pad);
+  right: var(--sheet-pad);
+  width: clamp(110px, 12vw, 180px);
+  rotate: 8deg;
+}
+
+.sticker--studiolo {
+  left: var(--sheet-pad);
+  bottom: calc(var(--sheet-pad) + clamp(40px, 8vh, 96px));
+  width: clamp(180px, 19vw, 290px);
+  rotate: -4deg;
+}
+
+.sticker:hover,
+.sticker:focus-visible {
+  translate: 0 -4px;
+  scale: 1.06;
+  outline: none;
+}
+.sticker--puffin:hover,
+.sticker--puffin:focus-visible { rotate: 3deg; }
+.sticker--studiolo:hover,
+.sticker--studiolo:focus-visible { rotate: -1deg; }
+
+.sticker:hover img,
+.sticker:focus-visible img {
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.18))
+          drop-shadow(0 16px 22px rgba(0, 0, 0, 0.16));
+}
+
+/* The tip. A card on the paper beside the sticker, toward the open sheet
+   (left of the puffin, right of the label), set in the page's face at a size
+   you can read without leaning in. The copy is a short line with no product name (the sticker says it),
+   kept on one line except on a phone. It counter-rotates the sticker's
+   HOVER tilt (the only one it is seen at), so the type sits level. */
+.sticker-tip {
+  position: absolute;
+  left: calc(100% + 18px);
+  top: 50%;
+  width: max-content;
+  white-space: nowrap;
+  padding: 12px 18px 11px;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 10px 28px rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+  opacity: 0;
+  translate: -6px -50%;
+  transition: opacity 180ms ease, translate 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+/* Below the roundel's centre: level with it, the card reaches the
+   letterhead's Z on a narrower window. */
+.sticker--puffin .sticker-tip {
+  left: auto;
+  right: calc(100% + 18px);
+  top: 70%;
+  translate: 6px -50%;
+  rotate: -3deg;
+}
+.sticker--studiolo .sticker-tip { rotate: 1deg; }
+
+.sticker:hover .sticker-tip,
+.sticker:focus-visible .sticker-tip {
+  opacity: 1;
+  translate: 0 -50%;
+}
+
+body.reading .stickers {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* A phone: the puffin shrinks to stay off the letterhead, the nav wraps to
+   two rows at the bottom so the label rides higher, and there is no room
+   beside the label for its tip, which goes above it instead. */
+@media (max-width: 640px) {
+  .sticker--puffin { width: 72px; }
+  .sticker--studiolo {
+    width: 168px;
+    bottom: calc(var(--sheet-pad) + 120px);
+  }
+  .sticker-tip { font-size: 0.85rem; white-space: normal; max-width: 220px; }
+  .sticker--studiolo .sticker-tip {
+    left: 0;
+    top: auto;
+    bottom: calc(100% + 12px);
+    translate: 0 6px;
+  }
+  .sticker--studiolo:hover .sticker-tip,
+  .sticker--studiolo:focus-visible .sticker-tip { translate: 0 0; }
+}
+
 /* ── The fades under overflowing content ──────────────────────────────────
    A soft wash and a little blur over the bottom of a scroller while there is
    more to scroll to; gone once the end is on screen. js/paper.js toggles the

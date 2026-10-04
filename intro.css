@@ -79,6 +79,16 @@
   body:not(.no-intro) .curl {
     animation: intro-in 800ms ease-out calc(var(--t-rest) + 880ms) both;
   }
+  /* The stickers are slapped on last, one then the other: down from a little
+     above the sheet and pressed flat. `scale` only, so the tilt (`rotate`)
+     and the hover lift (`translate`) are left alone. ⚠️ `backwards`, not `both`:
+     a held `scale: 1` would outrank the hover's `scale` forever after. */
+  body:not(.no-intro):not(.intro-spent) .sticker {
+    animation: sticker-on 420ms cubic-bezier(0.3, 0.7, 0.3, 1) calc(var(--t-rest) + 1100ms) backwards;
+  }
+  body:not(.no-intro):not(.intro-spent) .sticker--studiolo {
+    animation-delay: calc(var(--t-rest) + 1300ms);
+  }
 
   /* ── The monogram is etched, one letter at a time ───────────────────────
      It is stationery, not something the sequence writes, so it is deliberately
@@ -274,6 +284,12 @@ body.no-intro .spec { display: none; }
 @keyframes intro-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes sticker-on {
+  from { opacity: 0; scale: 1.35; }
+  60%  { opacity: 1; }
+  to   { opacity: 1; scale: 1; }
 }
 
 /* The L's sweep. The rect is 1360 tall with its soft edge in the last quarter,

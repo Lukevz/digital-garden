@@ -266,6 +266,22 @@
       </a>
     </nav>
 
+    <!-- Stickers, stuck on the sheet (Puffin' top right, Studiolo low on the
+         left): the things Luke is making, as the laptop-lid kind of link. Each tip is its own
+         element rather than a `title`, so it can be set in the page's face and
+         padded; it shows on hover and on keyboard focus. Home page only
+         (styles.css "Stickers"). -->
+    <nav class="stickers" aria-label="Things I'm making">
+      <a class="sticker sticker--puffin" href="https://www.startpuffin.com/" target="_blank" rel="noopener">
+        <img src="/images/stickers/puffin.webp" width="520" height="520" alt="Puffin">
+        <span class="sticker-tip" role="tooltip">Fitness challenges with friends</span>
+      </a>
+      <a class="sticker sticker--studiolo" href="https://studiolo.digital" target="_blank" rel="noopener">
+        <img src="/images/stickers/studiolo.webp" width="760" height="348" alt="Studiolo">
+        <span class="sticker-tip" role="tooltip">Save and share what you come across</span>
+      </a>
+    </nav>
+
     <!-- The rubber tip. Rides along each line of type as the copy is erased;
          its position is driven from js/paper.js. Sits above everything, so it
          passes over the words rather than under them. -->
