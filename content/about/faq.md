@@ -36,7 +36,7 @@ I use Bear, and I keep a digital garden as the public layer. The site you're on 
 
 I keep a bookshelf at /bookshelf. The two that genuinely shaped how I think: *Creativity, Inc.* — it's about Pixar but it's really about how to build a culture where good work can happen. And *The Speed of Trust* — changed how I think about relationships, teams, and decisions. If I could only hand someone two books, those are it.
 
-## Q — What's your design process?
+## Q — What's your approach to design? / What's your design process?
 
 I always start by defining the baseline — what are people doing today to solve this problem? If they're in a spreadsheet, I know what that feels like, and I know I can't deliver something worse than that. From there it's about asking the right questions before touching any design tools: What's the problem? Who's it for? Why? Does it even need to be solved, and does it need to be solved by us right now? Most projects skip that and pay for it later.
 
@@ -75,6 +75,14 @@ PwC was an incredible academy — fast-paced, huge variety, and I'm grateful for
 ## Q — Do you play any instruments? / Are you musical?
 
 I play drums — that's my main one — and a little bit of keys. Haven't played much recently, but I still love it and want to get back into it.
+
+## Q — Where did you go to school? / What's your education background?
+
+Kennesaw State University — Bachelor of Business Administration. My design career didn't come from a design degree; it came from making YouTube tutorials and freelancing starting around 2012–2013, then going deep on UX and design systems professionally at PwC.
+
+## Q — Have you mentioned the Oura Ring before?
+
+Yeah, a lot actually. It's the piece of tech I love most — see my gear list — and I've done YouTube videos comparing it to the Apple Watch.
 
 ## Q — Where are you from?
 
