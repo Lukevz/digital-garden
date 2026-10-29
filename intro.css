@@ -79,7 +79,7 @@
   body:not(.no-intro) .curl {
     animation: intro-in 800ms ease-out calc(var(--t-rest) + 880ms) both;
   }
-  /* The stickers are slapped on last, one then the other: down from a little
+  /* The stickers are slapped on last, one after another: down from a little
      above the sheet and pressed flat. `scale` only, so the tilt (`rotate`)
      and the hover lift (`translate`) are left alone. ⚠️ `backwards`, not `both`:
      a held `scale: 1` would outrank the hover's `scale` forever after. */
@@ -88,6 +88,9 @@
   }
   body:not(.no-intro):not(.intro-spent) .sticker--studiolo {
     animation-delay: calc(var(--t-rest) + 1300ms);
+  }
+  body:not(.no-intro):not(.intro-spent) .sticker--bigstuff {
+    animation-delay: calc(var(--t-rest) + 1500ms);
   }
 
   /* ── The monogram is etched, one letter at a time ───────────────────────
