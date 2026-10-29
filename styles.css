@@ -1224,9 +1224,10 @@ body.reading .curl-zone {
 }
 
 /* ── Stickers ──────────────────────────────────────────────────────────────
-   Two stickers stuck on the sheet, linking out to the things being made: the
-   Puffin' roundel in the top-right corner, the Studiolo label low on the left,
-   clear of the nav row. Pressed flat at rest (a tight contact shadow);
+   Three stickers stuck on the sheet, linking out to the things being made: the
+   Puffin' roundel in the top-right corner, the Big Stuff stamp in the top-left
+   (the bottom-right belongs to the dog-ear, whose open fold would cover it),
+   the Studiolo label low on the left, clear of the nav row. Pressed flat at rest (a tight contact shadow);
    hovered, one lifts toward you and its tip comes up beside it. The tilt is
    the individual `rotate` property and the lift is `translate` / `scale`, so
    intro.css's arrival and the hover never overwrite each other's transform.
@@ -1275,6 +1276,13 @@ body.reading .curl-zone {
   rotate: -4deg;
 }
 
+.sticker--bigstuff {
+  top: var(--sheet-pad);
+  left: var(--sheet-pad);
+  width: clamp(110px, 11vw, 168px);
+  rotate: -7deg;
+}
+
 .sticker:hover,
 .sticker:focus-visible {
   translate: 0 -4px;
@@ -1285,6 +1293,8 @@ body.reading .curl-zone {
 .sticker--puffin:focus-visible { rotate: 3deg; }
 .sticker--studiolo:hover,
 .sticker--studiolo:focus-visible { rotate: -1deg; }
+.sticker--bigstuff:hover,
+.sticker--bigstuff:focus-visible { rotate: -3deg; }
 
 .sticker:hover img,
 .sticker:focus-visible img {
@@ -1328,6 +1338,12 @@ body.reading .curl-zone {
   rotate: -3deg;
 }
 .sticker--studiolo .sticker-tip { rotate: 1deg; }
+/* Right of the stamp, below its centre like the puffin's, so it reaches into
+   the open sheet rather than toward the letterhead. */
+.sticker--bigstuff .sticker-tip {
+  top: 70%;
+  rotate: 3deg;
+}
 
 .sticker:hover .sticker-tip,
 .sticker:focus-visible .sticker-tip {
@@ -1344,7 +1360,8 @@ body.reading .stickers {
    two rows at the bottom so the label rides higher, and there is no room
    beside the label for its tip, which goes above it instead. */
 @media (max-width: 640px) {
-  .sticker--puffin { width: 72px; }
+  .sticker--puffin,
+  .sticker--bigstuff { width: 72px; }
   .sticker--studiolo {
     width: 168px;
     bottom: calc(var(--sheet-pad) + 120px);
